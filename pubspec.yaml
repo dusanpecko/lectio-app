@@ -55,7 +55,6 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   assets:
-    - .env
     - assets/images/slide1.jpg
     - assets/images/slide2.jpg
     - assets/images/slide3.jpg
