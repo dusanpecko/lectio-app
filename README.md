@@ -1,16 +1,23 @@
-# lectio_divina
+# 📖 Lectio Divina (Flutter App)
 
-A new Flutter project.
+Mobilná aplikácia vytvorená vo Flutteri ako súčasť projektu *Lectio Divina*.
 
-## Getting Started
+- 📲 Používa Flutter na frontend
+- 🔐 Autentifikácia cez Supabase (email & heslo)
+- 🗾 Obsah: denné čítania, zamyslenia, modlitby, Biblia a ďalšie moduly
+- ☁️ Backend: Supabase (databáza, autentifikácia, API)
 
-This project is a starting point for a Flutter application.
+## 🔧 Požiadavky
 
-A few resources to get you started if this is your first Flutter project:
+- Flutter SDK (min. 3.19+)
+- Dart
+- Supabase CLI (voliteľne)
+- `.env` súbor s API kľúčmi
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## ⚙️ Konfigurácia `.env`
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+V koreňovom adresári vytvor súbor `.env`:
+
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
