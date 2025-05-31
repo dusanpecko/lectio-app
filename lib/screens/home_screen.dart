@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'lectio_screen.dart';
+import 'support_screen.dart';
+import 'slider_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,14 +21,48 @@ class _HomeScreenState extends State<HomeScreen> {
     'assets/images/slide5.jpg',
   ];
 
+  final List<String> slideTitles = [
+    'Božie slovo',
+    'LECTIO',
+    'MEDITATIO',
+    'ORATIO',
+    'KONTEMPLATIO',
+  ];
+
+  final List<String> slideSubtitles = [
+    'formou Lectio divina',
+    'Čítanie vybraného textu ...',
+    'Pozvanie zamyslieť sa nad Slovom ...',
+    'Modlitba podľa Božieho slova ...',
+    'Vnútorný pohľad srdca na Ježiša ...',
+  ];
+
   final PageController _pageController = PageController();
   int _currentPage = 0;
   Timer? _timer;
 
+  String? quoteText;
+  String? quoteReference;
+  String? nameDay;
+  String? liturgicalDay;
+  String? saints;
+  bool isLoading = true;
+
+  List<Map<String, dynamic>> contentCards = [];
+
   @override
   void initState() {
     super.initState();
+    _startSliderTimer();
+    fetchData();
+    fetchContentCards().then((data) {
+      setState(() {
+        contentCards = data;
+      });
+    });
+  }
 
+  void _startSliderTimer() {
     _timer = Timer.periodic(const Duration(seconds: 3), (Timer timer) {
       if (_currentPage < imagePaths.length - 1) {
         _currentPage++;
@@ -42,6 +79,59 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> fetchData() async {
+    final supabase = Supabase.instance.client;
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+
+    try {
+      final quoteRes = await supabase
+          .from('daily_quotes')
+          .select()
+          .eq('date', today)
+          .limit(1)
+          .maybeSingle();
+
+      final calendarRes = await supabase
+          .from('calendar_info')
+          .select()
+          .eq('date', today)
+          .limit(1)
+          .maybeSingle();
+
+      if (!mounted) return;
+
+      setState(() {
+        quoteText = quoteRes?['quote'];
+        quoteReference = quoteRes?['reference'];
+        nameDay = calendarRes?['name_day'];
+        liturgicalDay = calendarRes?['liturgical_day'];
+        saints = calendarRes?['saints'];
+        isLoading = false;
+      });
+    } catch (e, stack) {
+      debugPrint('❌ Chyba pri načítavaní dát zo Supabase: $e');
+      debugPrint('📍 Stack trace: $stack');
+      if (!mounted) return;
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchContentCards() async {
+    final supabase = Supabase.instance.client;
+    final now = DateTime.now().toIso8601String();
+
+    final response = await supabase
+        .from('content_cards')
+        .select()
+        .lte('visible_from', now)
+        .gte('visible_to', now)
+        .order('priority', ascending: true);
+
+    return List<Map<String, dynamic>>.from(response);
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -51,108 +141,332 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final today = DateTime.now();
+    final formattedDate =
+        "${today.day.toString().padLeft(2, '0')}.${today.month.toString().padLeft(2, '0')}.${today.year}";
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Lectio Divina'), centerTitle: true),
-      body: Column(
-        children: [
-          SizedBox(
-            height: 200,
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: imagePaths.length,
-              itemBuilder: (context, index) {
-                return Image.asset(
-                  imagePaths[index],
-                  fit: BoxFit.cover,
-                  width: MediaQuery.of(context).size.width,
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    Text(
-                      '"Boh je láska, a kto ostáva v láske, ostáva v Bohu."',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontStyle: FontStyle.italic,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      '1 Jn 4,16',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Slider
+              Container(
+                height: 250,
+                decoration: const BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
                     ),
                   ],
                 ),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(8),
+                    bottomRight: Radius.circular(8),
+                  ),
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: imagePaths.length,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPage = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.asset(imagePaths[index], fit: BoxFit.cover),
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              color: Colors.black.withOpacity(0.5),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    slideTitles[index],
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    slideSubtitles[index],
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
               ),
-            ),
+
+              // Dots indicator
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(imagePaths.length, (index) {
+                  final isActive = _currentPage == index;
+                  return SizedBox(
+                    height: 16,
+                    width: 16,
+                    child: Center(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: isActive ? 12 : 8,
+                        height: isActive ? 12 : 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isActive
+                              ? Colors.deepPurple
+                              : Colors.grey.shade400,
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+
+              // Quote card
+              const SizedBox(height: 8),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16.0),
+                width: double.infinity,
+                child: Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : Column(
+                            children: [
+                              Text(
+                                quoteText ?? 'Citát nie je dostupný.',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              if (quoteReference != null)
+                                Text(
+                                  quoteReference!,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+
+              // Calendar card
+              const SizedBox(height: 8),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16.0),
+                width: double.infinity,
+                child: Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: isLoading
+                        ? const SizedBox()
+                        : Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.calendar_month,
+                                size: 40,
+                                color: Colors.deepPurple,
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    formattedDate,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text("Meniny má: ${nameDay ?? '-'}"),
+                                  Text(liturgicalDay ?? ''),
+                                  Text(saints ?? ''),
+                                ],
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+
+              // Buttons
+              const SizedBox(height: 8),
+              Container(
+                height: 60,
+                margin: const EdgeInsets.only(left: 16, right: 16, top: 16),
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: const [
+                    _RoundedModuleButton(
+                      label: 'Lectio divina',
+                      icon: Icons.menu_book,
+                    ),
+                    SizedBox(width: 12),
+                    _RoundedModuleButton(
+                      label: 'Zamyslenia',
+                      icon: Icons.lightbulb,
+                    ),
+                    SizedBox(width: 12),
+                    _RoundedModuleButton(
+                      label: 'Modlitby',
+                      icon: Icons.favorite,
+                    ),
+                    SizedBox(width: 12),
+                    _RoundedModuleButton(label: 'Biblia', icon: Icons.book),
+                  ],
+                ),
+              ),
+
+              // Support button
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SupportScreen(),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                  child: const Text(
+                    '❤️ Podporte fungovanie Lectio divina',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              // Content cards slider
+              if (contentCards.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: SizedBox(
+                    height: 130,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: contentCards.length,
+                      itemBuilder: (context, index) {
+                        final card = contentCards[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    SliderDetailScreen(data: card),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 130,
+                            margin: const EdgeInsets.only(right: 12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: Image.network(
+                              card['image_url'] ?? '',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: GridView.count(
-              crossAxisCount: 2,
-              padding: const EdgeInsets.all(16),
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              children: const [
-                _ModuleButton(icon: Icons.menu_book, label: 'Lectio divina'),
-                _ModuleButton(icon: Icons.lightbulb, label: 'Zamyslenia'),
-                _ModuleButton(icon: Icons.favorite, label: 'Modlitby'),
-                _ModuleButton(icon: Icons.book, label: 'Biblia'),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _ModuleButton extends StatelessWidget {
-  final IconData icon;
+class _RoundedModuleButton extends StatelessWidget {
   final String label;
+  final IconData icon;
 
-  const _ModuleButton({required this.icon, required this.label});
+  const _RoundedModuleButton({required this.label, required this.icon});
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () {
-        if (label == 'Lectio divina') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const LectioScreen()),
-          );
-        } else {
-          // TODO: Pridať navigáciu na iné moduly
-        }
-      },
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 36),
-          const SizedBox(height: 12),
-          Text(label, textAlign: TextAlign.center),
-        ],
+    return SizedBox(
+      width: 160,
+      child: ElevatedButton.icon(
+        onPressed: () {
+          if (label == 'Lectio divina') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const LectioScreen()),
+            );
+          }
+        },
+        icon: Icon(icon, size: 20),
+        label: Text(label),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.deepPurple,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }
