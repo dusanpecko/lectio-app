@@ -10,7 +10,7 @@ class SliderDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final imageUrl = data['image_url_2'] ?? data['image_url'];
     final descriptions =
-        List.generate(5, (index) => data['description_${index + 1}'])
+        List.generate(6, (index) => data['description_${index + 1}'])
             .where(
               (element) =>
                   element != null && element.toString().trim().isNotEmpty,
@@ -72,7 +72,27 @@ class SliderDetailScreen extends StatelessWidget {
                     border: Border.all(color: Colors.black12),
                   ),
                   padding: const EdgeInsets.all(12),
-                  child: Html(data: desc.toString()),
+                  child: Html(
+                    data: _convertImageLinks(desc.toString()),
+                    style: {
+                      "body": Style(
+                        margin: Margins.zero,
+                        padding: HtmlPaddings.zero,
+                      ),
+                    },
+                    extensions: [
+                      TagExtension(
+                        tagsToExtend: {"img"},
+                        builder: (context) {
+                          final src = context.attributes['src'] ?? '';
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Image.network(src),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
             if (data['published_at'] != null)
               Padding(
@@ -88,5 +108,13 @@ class SliderDetailScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _convertImageLinks(String html) {
+    final imageLinkRegex = RegExp(r'(https?:\/\/.+?\.(jpg|jpeg|png|gif))');
+    return html.replaceAllMapped(imageLinkRegex, (match) {
+      final url = match.group(0);
+      return '<img src="$url" />';
+    });
   }
 }
