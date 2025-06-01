@@ -92,7 +92,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
               ElevatedButton.icon(
                 onPressed: liked || loading ? null : handleLike,
                 icon: const Icon(Icons.thumb_up_alt_rounded, size: 18),
-                label: Text('Páči sa mi (${likes})'),
+                label: Text('Páči sa mi ($likes)'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: liked
                       ? Colors.deepPurple.withOpacity(0.5)

@@ -139,7 +139,7 @@ class _NewsListScreenState extends State<NewsListScreen> {
                               const SizedBox(height: 8),
                               Text(
                                 summary.length > 250
-                                    ? summary.substring(0, 247) + '...'
+                                    ? '${summary.substring(0, 247)}...'
                                     : summary,
                                 style: const TextStyle(fontSize: 15),
                               ),
