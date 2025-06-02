@@ -13,24 +13,25 @@ class NewsDetailScreen extends StatefulWidget {
 
 class _NewsDetailScreenState extends State<NewsDetailScreen> {
   late int likes;
-  bool liked = false; // Lokálna info, backend nepotvrdzuje
+  bool liked = false;
   bool loading = false;
 
   @override
   void initState() {
     super.initState();
-    likes = widget.newsData['likes'] ?? 0;
+    likes = widget.newsData['likes'] is int
+        ? widget.newsData['likes']
+        : int.tryParse(widget.newsData['likes']?.toString() ?? '0') ?? 0;
   }
 
   Future<void> handleLike() async {
-    if (liked) return; // Neumožni viackrát
+    if (liked) return;
 
     setState(() {
       liked = true;
       likes += 1;
       loading = true;
     });
-    // Update v Supabase (aj pre neregistrovaného používateľa)
     try {
       final supabase = Supabase.instance.client;
       await supabase
@@ -38,7 +39,6 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
           .update({'likes': likes})
           .eq('id', widget.newsData['id']);
     } catch (e) {
-      // Ak by nastala chyba, môžeš vrátiť späť
       setState(() {
         likes -= 1;
         liked = false;
@@ -60,7 +60,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Aktualita'),
-        backgroundColor: Colors.deepPurple,
+        // backgroundColor: Colors.deepPurple,  // Použi farbu z témy
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -73,6 +73,25 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: 220,
+                errorBuilder: (context, error, stack) => Container(
+                  height: 220,
+                  color: Colors.grey[300],
+                  child: const Center(
+                    child: Icon(
+                      Icons.broken_image,
+                      size: 48,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+                  return Container(
+                    height: 220,
+                    color: Colors.grey[200],
+                    child: const Center(child: CircularProgressIndicator()),
+                  );
+                },
               ),
             ),
           const SizedBox(height: 16),
@@ -81,7 +100,6 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
           ),
           const SizedBox(height: 12),
-          // HTML obsah
           Html(
             data: htmlContent,
             style: {"body": Style(fontSize: FontSize(16))},
@@ -95,8 +113,8 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                 label: Text('Páči sa mi ($likes)'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: liked
-                      ? Colors.deepPurple.withOpacity(0.5)
-                      : Colors.deepPurple,
+                      ? Theme.of(context).colorScheme.primary.withAlpha(128)
+                      : Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),

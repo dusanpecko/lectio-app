@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/home_screen.dart';
+import 'screens/auth_screen.dart';
+import 'shared/app_theme.dart';
+import 'dart:async';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,151 +26,65 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Lectio Divina',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.deepPurple, useMaterial3: true),
-      home: const AuthScreen(),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.system,
+      home: const SessionHandler(),
     );
   }
 }
 
-class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key});
+class SessionHandler extends StatefulWidget {
+  const SessionHandler({super.key});
 
   @override
-  State<AuthScreen> createState() => _AuthScreenState();
+  State<SessionHandler> createState() => _SessionHandlerState();
 }
 
-class _AuthScreenState extends State<AuthScreen> {
-  final supabase = Supabase.instance.client;
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-  final fullNameController = TextEditingController();
-  bool isLogin = true;
+class _SessionHandlerState extends State<SessionHandler> {
   Session? session;
-  String? errorMessage;
+  late final StreamSubscription<AuthState> _authSubscription;
 
   @override
   void initState() {
     super.initState();
-    session = supabase.auth.currentSession;
-    supabase.auth.onAuthStateChange.listen((_) {
+    session = Supabase.instance.client.auth.currentSession;
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+      _,
+    ) {
+      if (!mounted) return;
       setState(() {
-        session = supabase.auth.currentSession;
+        session = Supabase.instance.client.auth.currentSession;
       });
+      // Navigáciu rob len ak pribudne session (teda prihlásenie)
+      if (Supabase.instance.client.auth.currentSession != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _goToHome());
+      }
     });
   }
 
-  Future<void> handleAuth() async {
-    final email = emailController.text.trim();
-    final password = passwordController.text.trim();
-    final fullName = fullNameController.text.trim();
-
-    try {
-      if (isLogin) {
-        await supabase.auth.signInWithPassword(
-          email: email,
-          password: password,
-        );
-      } else {
-        final response = await supabase.auth.signUp(
-          email: email,
-          password: password,
-        );
-        final userId = response.user?.id;
-        if (userId != null && fullName.isNotEmpty) {
-          await supabase.from('users').insert({
-            'id': userId,
-            'full_name': fullName,
-            'is_active': true,
-          });
-        }
-      }
-
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
-      }
-    } on AuthException catch (e) {
-      setState(() => errorMessage = e.message);
-    }
-  }
-
-  void enterWithoutLogin() {
-    Navigator.pushReplacement(
-      context,
+  void _goToHome() {
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const HomeScreen()),
+      (route) => false,
     );
   }
 
-  Future<void> signOut() async {
-    await supabase.auth.signOut();
+  @override
+  void dispose() {
+    _authSubscription.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = session?.user;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Lectio Divina')),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: user == null
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextField(
-                    controller: emailController,
-                    decoration: const InputDecoration(labelText: 'E-mail'),
-                  ),
-                  TextField(
-                    controller: passwordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(labelText: 'Heslo'),
-                  ),
-                  if (!isLogin)
-                    TextField(
-                      controller: fullNameController,
-                      decoration: const InputDecoration(labelText: 'Meno'),
-                    ),
-                  const SizedBox(height: 16),
-                  if (errorMessage != null)
-                    Text(
-                      errorMessage!,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  ElevatedButton(
-                    onPressed: handleAuth,
-                    child: Text(isLogin ? 'Prihlásiť sa' : 'Registrovať sa'),
-                  ),
-                  TextButton(
-                    onPressed: () => setState(() => isLogin = !isLogin),
-                    child: Text(
-                      isLogin
-                          ? 'Nemáte účet? Registrovať sa'
-                          : 'Máte účet? Prihlásiť sa',
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: enterWithoutLogin,
-                    child: const Text('Pokračovať bez prihlásenia'),
-                  ),
-                ],
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text("Meno: ${user.userMetadata?['full_name'] ?? '-'}"),
-                  Text("Email: ${user.email ?? '-'}"),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: signOut,
-                    child: const Text("Odhlásiť sa"),
-                  ),
-                ],
-              ),
-      ),
-    );
+    if (session == null) {
+      // Pri odhlásení sa jednoducho vráti AuthScreen (žiadna navigácia!)
+      return const AuthScreen();
+    } else {
+      // Keď je session, zobraz len prázdny widget (navigácia hore sa postará)
+      return const SizedBox.shrink();
+    }
   }
 }

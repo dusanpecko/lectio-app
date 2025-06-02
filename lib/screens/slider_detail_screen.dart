@@ -32,7 +32,7 @@ class SliderDetailScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detail'),
-        backgroundColor: Colors.deepPurple,
+        // backgroundColor: Colors.deepPurple, // používaj farbu z témy
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 16),
@@ -57,6 +57,25 @@ class SliderDetailScreen extends StatelessWidget {
                   imageUrl,
                   fit: BoxFit.cover,
                   width: double.infinity,
+                  errorBuilder: (context, error, stack) => Container(
+                    height: 200,
+                    color: Colors.grey[300],
+                    child: const Center(
+                      child: Icon(
+                        Icons.broken_image,
+                        size: 48,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return Container(
+                      height: 200,
+                      color: Colors.grey[200],
+                      child: const Center(child: CircularProgressIndicator()),
+                    );
+                  },
                 ),
               ),
             for (final desc in descriptions)
@@ -67,7 +86,7 @@ class SliderDetailScreen extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(180),
+                    color: Theme.of(context).cardColor.withAlpha(180),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.black12),
                   ),
@@ -78,6 +97,8 @@ class SliderDetailScreen extends StatelessWidget {
                       "body": Style(
                         margin: Margins.zero,
                         padding: HtmlPaddings.zero,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                        fontSize: FontSize(16),
                       ),
                     },
                     extensions: [
@@ -100,7 +121,14 @@ class SliderDetailScreen extends StatelessWidget {
                 child: Center(
                   child: Text(
                     'Publikované: ${data['published_at'].toString().split('T').first}',
-                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                    style: TextStyle(
+                      color:
+                          Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.color?.withAlpha(179) ??
+                          Colors.grey,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ),

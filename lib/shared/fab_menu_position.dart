@@ -1,1 +1,1 @@
-enum FabMenuPosition { right, left, topRight, topLeft, center, topCenter }
+enum FabMenuPosition { left, right, topRight, topLeft, center, topCenter }

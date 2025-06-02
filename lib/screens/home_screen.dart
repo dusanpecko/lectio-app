@@ -62,27 +62,32 @@ class _HomeScreenState extends State<HomeScreen> {
     _startSliderTimer();
     fetchData();
     fetchContentCards().then((data) {
-      setState(() {
-        contentCards = data;
-      });
+      if (mounted) {
+        setState(() {
+          contentCards = data;
+        });
+      }
     });
   }
 
   void _startSliderTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 3), (Timer timer) {
-      if (_currentPage < imagePaths.length - 1) {
-        _currentPage++;
-      } else {
-        _currentPage = 0;
-      }
-      if (_pageController.hasClients) {
-        _pageController.animateToPage(
-          _currentPage,
-          duration: const Duration(milliseconds: 350),
-          curve: Curves.easeIn,
-        );
-      }
+      if (!mounted) return;
+      setState(() {
+        if (_currentPage < imagePaths.length - 1) {
+          _currentPage++;
+        } else {
+          _currentPage = 0;
+        }
+        if (_pageController.hasClients) {
+          _pageController.animateToPage(
+            _currentPage,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeIn,
+          );
+        }
+      });
     });
   }
 
@@ -136,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
         .gte('visible_to', now)
         .order('priority', ascending: true);
 
-    return List<Map<String, dynamic>>.from(response ?? []);
+    return List<Map<String, dynamic>>.from(response);
   }
 
   FloatingActionButtonLocation getFabLocation([FabMenuPosition? pos]) {
@@ -154,8 +159,6 @@ class _HomeScreenState extends State<HomeScreen> {
         return FloatingActionButtonLocation.endTop;
       case FabMenuPosition.topCenter:
         return FloatingActionButtonLocation.centerTop;
-      default:
-        return FloatingActionButtonLocation.endFloat;
     }
   }
 
@@ -178,9 +181,11 @@ class _HomeScreenState extends State<HomeScreen> {
           onRefresh: () async {
             await fetchData();
             final data = await fetchContentCards();
-            setState(() {
-              contentCards = data;
-            });
+            if (mounted) {
+              setState(() {
+                contentCards = data;
+              });
+            }
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -192,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   decoration: const BoxDecoration(
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black26,
+                        color: Color(0x1A000000),
                         blurRadius: 6,
                         offset: Offset(0, 3),
                       ),
@@ -207,6 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       controller: _pageController,
                       itemCount: imagePaths.length,
                       onPageChanged: (index) {
+                        if (!mounted) return;
                         setState(() {
                           _currentPage = index;
                         });
@@ -222,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               right: 0,
                               child: Container(
                                 padding: const EdgeInsets.all(16),
-                                color: Colors.black.withOpacity(0.5),
+                                color: Colors.black.withAlpha(128),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisSize: MainAxisSize.min,
@@ -340,20 +346,35 @@ class _HomeScreenState extends State<HomeScreen> {
                                   color: Colors.deepPurple,
                                 ),
                                 const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      formattedDate,
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        formattedDate,
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                    ),
-                                    Text("Meniny má: ${nameDay ?? '-'}"),
-                                    Text(liturgicalDay ?? ''),
-                                    Text(saints ?? ''),
-                                  ],
+                                      Text(
+                                        "Meniny má: ${nameDay ?? '-'}",
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        liturgicalDay ?? '',
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        saints ?? '',
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
@@ -463,7 +484,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
+                                    color: Color(0x1A000000),
                                     blurRadius: 6,
                                     offset: const Offset(0, 2),
                                   ),
@@ -523,11 +544,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             );
-          }
-          if (action == 'home') {
+          } else if (action == 'home') {
             Navigator.popUntil(context, (route) => route.isFirst);
+          } else if (action == 'lectio') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const LectioScreen()),
+            );
+          } else if (action == 'news') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const NewsListScreen()),
+            );
+            // ďalšie akcie podľa potreby
           }
-          // ďalšie akcie podľa potreby
+          // Odhlásenie rieši AppFloatingMenu a SessionHandler automaticky
         },
       ),
       floatingActionButtonLocation: getFabLocation(),
