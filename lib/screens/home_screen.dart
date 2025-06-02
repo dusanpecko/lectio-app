@@ -5,6 +5,9 @@ import 'lectio_screen.dart';
 import 'support_screen.dart';
 import 'slider_detail_screen.dart';
 import 'news_list_screen.dart';
+import 'settings_screen.dart';
+import 'package:lectio_divina/widgets/app_floating_menu.dart';
+import 'package:lectio_divina/shared/fab_menu_position.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,6 +17,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  FabMenuPosition fabMenuPosition = FabMenuPosition.right; // default
+
   final List<String> imagePaths = [
     'assets/images/slide1.jpg',
     'assets/images/slide2.jpg',
@@ -132,6 +137,26 @@ class _HomeScreenState extends State<HomeScreen> {
         .order('priority', ascending: true);
 
     return List<Map<String, dynamic>>.from(response ?? []);
+  }
+
+  FloatingActionButtonLocation getFabLocation([FabMenuPosition? pos]) {
+    final position = pos ?? fabMenuPosition;
+    switch (position) {
+      case FabMenuPosition.left:
+        return FloatingActionButtonLocation.startFloat;
+      case FabMenuPosition.right:
+        return FloatingActionButtonLocation.endFloat;
+      case FabMenuPosition.center:
+        return FloatingActionButtonLocation.centerFloat;
+      case FabMenuPosition.topLeft:
+        return FloatingActionButtonLocation.startTop;
+      case FabMenuPosition.topRight:
+        return FloatingActionButtonLocation.endTop;
+      case FabMenuPosition.topCenter:
+        return FloatingActionButtonLocation.centerTop;
+      default:
+        return FloatingActionButtonLocation.endFloat;
+    }
   }
 
   @override
@@ -365,6 +390,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         label: 'Aktuality',
                         icon: Icons.campaign,
                       ),
+                      SizedBox(width: 12),
+                      _RoundedModuleButton(
+                        label: 'Nastavenia',
+                        icon: Icons.settings,
+                      ),
                     ],
                   ),
                 ),
@@ -455,7 +485,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       loadingBuilder:
                                           (context, child, progress) {
                                             if (progress == null) return child;
-                                            return Center(
+                                            return const Center(
                                               child:
                                                   CircularProgressIndicator(),
                                             );
@@ -476,6 +506,31 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+      floatingActionButton: AppFloatingMenu(
+        position: fabMenuPosition,
+        onTap: (action) async {
+          if (action == 'settings') {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SettingsScreen(
+                  currentPosition: fabMenuPosition,
+                  onPositionChanged: (newPos) {
+                    setState(() {
+                      fabMenuPosition = newPos;
+                    });
+                  },
+                ),
+              ),
+            );
+          }
+          if (action == 'home') {
+            Navigator.popUntil(context, (route) => route.isFirst);
+          }
+          // ďalšie akcie podľa potreby
+        },
+      ),
+      floatingActionButtonLocation: getFabLocation(),
     );
   }
 }
@@ -501,6 +556,22 @@ class _RoundedModuleButton extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const NewsListScreen()),
+            );
+          } else if (label == 'Nastavenia') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SettingsScreen(
+                  currentPosition:
+                      (context
+                          .findAncestorStateOfType<_HomeScreenState>()
+                          ?.fabMenuPosition ??
+                      FabMenuPosition.right),
+                  onPositionChanged: (pos) {
+                    // nič, nastavuje sa v HomeScreen
+                  },
+                ),
+              ),
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
