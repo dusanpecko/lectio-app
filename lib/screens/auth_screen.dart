@@ -17,6 +17,14 @@ class _AuthScreenState extends State<AuthScreen> {
   String? _error;
   bool _isRegister = false;
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _fullNameController.dispose();
+    super.dispose();
+  }
+
   Future<void> _signIn() async {
     setState(() {
       _isLoading = true;
@@ -38,7 +46,6 @@ class _AuthScreenState extends State<AuthScreen> {
         );
       }
     } catch (e) {
-      // Ošetríme "invalid_credentials" a ostatné chyby
       if (e is AuthApiException && e.statusCode == 400) {
         setState(() {
           _error = 'Nesprávny email alebo heslo.';
@@ -68,6 +75,8 @@ class _AuthScreenState extends State<AuthScreen> {
     });
     try {
       final fullName = _fullNameController.text.trim();
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
       if (fullName.isEmpty) {
         setState(() {
           _error = 'Zadajte meno';
@@ -76,24 +85,25 @@ class _AuthScreenState extends State<AuthScreen> {
         return;
       }
       final response = await Supabase.instance.client.auth.signUp(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        data: {'full_name': fullName}, // uloží full_name do DB
+        email: email,
+        password: password,
       );
       if (response.user == null) {
         setState(() {
           _error = 'Registrácia zlyhala.';
         });
       } else {
-        setState(() {
-          _isRegister = false;
+        // Vlož používateľa do vlastnej tabuľky users
+        final userId = response.user!.id;
+        await Supabase.instance.client.from('users').insert({
+          'id': userId,
+          'full_name': fullName,
+          'email': email,
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Registrácia prebehla úspešne! Skontrolujte si email a potvrďte registráciu.',
-            ),
-          ),
+        // Pri úspechu prihlás automaticky a presmeruj do HomeScreen
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          (route) => false,
         );
       }
     } on AuthApiException catch (e) {

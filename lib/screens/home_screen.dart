@@ -8,6 +8,7 @@ import 'news_list_screen.dart';
 import 'settings_screen.dart';
 import 'package:lectio_divina/widgets/app_floating_menu.dart';
 import 'package:lectio_divina/shared/fab_menu_position.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -60,6 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _startSliderTimer();
+    _loadFabPosition();
     fetchData();
     fetchContentCards().then((data) {
       if (mounted) {
@@ -68,6 +70,16 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     });
+  }
+
+  Future<void> _loadFabPosition() async {
+    final prefs = await SharedPreferences.getInstance();
+    final index = prefs.getInt('fab_menu_position');
+    if (index != null && index >= 0 && index < FabMenuPosition.values.length) {
+      setState(() {
+        fabMenuPosition = FabMenuPosition.values[index];
+      });
+    }
   }
 
   void _startSliderTimer() {
@@ -186,6 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 contentCards = data;
               });
             }
+            await _loadFabPosition(); // refresh FAB position on pull-to-refresh
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -536,14 +549,19 @@ class _HomeScreenState extends State<HomeScreen> {
               MaterialPageRoute(
                 builder: (context) => SettingsScreen(
                   currentPosition: fabMenuPosition,
-                  onPositionChanged: (newPos) {
+                  onPositionChanged: (newPos) async {
                     setState(() {
                       fabMenuPosition = newPos;
                     });
+                    // Save to SharedPreferences:
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setInt('fab_menu_position', newPos.index);
                   },
                 ),
               ),
             );
+            // Reload FAB position after settings are changed:
+            await _loadFabPosition();
           } else if (action == 'home') {
             Navigator.popUntil(context, (route) => route.isFirst);
           } else if (action == 'lectio') {
@@ -598,8 +616,10 @@ class _RoundedModuleButton extends StatelessWidget {
                           .findAncestorStateOfType<_HomeScreenState>()
                           ?.fabMenuPosition ??
                       FabMenuPosition.right),
-                  onPositionChanged: (pos) {
-                    // nič, nastavuje sa v HomeScreen
+                  onPositionChanged: (pos) async {
+                    // Save to SharedPreferences if called from here
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setInt('fab_menu_position', pos.index);
                   },
                 ),
               ),
