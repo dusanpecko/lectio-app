@@ -210,8 +210,8 @@ class _NotesListScreenState extends State<NotesListScreen> {
           );
           fetchNotes();
         },
-        child: const Icon(Icons.add),
         tooltip: tr('add_note'),
+        child: const Icon(Icons.add),
       ),
     );
   }
