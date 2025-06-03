@@ -19,10 +19,14 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Create .env file if missing
+        run: |
+          if [ ! -f .env ]; then
+            echo -e "API_KEY=\nBASE_URL=" > .env
+          fi
+
       - name: Analyze project
         run: flutter analyze
 
       - name: Run tests
         run: flutter test
-      
-        
