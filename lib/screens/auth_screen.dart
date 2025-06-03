@@ -40,17 +40,20 @@ class _AuthScreenState extends State<AuthScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
+      if (!mounted) return;
       if (response.session == null) {
         setState(() {
           _error = tr('wrong_credentials');
         });
       } else {
+        if (!mounted) return;
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
           (route) => false,
         );
       }
     } catch (e) {
+      if (!mounted) return;
       if (e is AuthApiException && e.statusCode == 400) {
         setState(() {
           _error = tr('wrong_credentials');
@@ -66,6 +69,7 @@ class _AuthScreenState extends State<AuthScreen> {
         });
       }
     } finally {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
@@ -92,6 +96,7 @@ class _AuthScreenState extends State<AuthScreen> {
         email: email,
         password: password,
       );
+      if (!mounted) return;
       if (response.user == null) {
         setState(() {
           _error = tr('register_failed');
@@ -104,12 +109,14 @@ class _AuthScreenState extends State<AuthScreen> {
           'full_name': fullName,
           'email': email,
         });
+        if (!mounted) return;
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
           (route) => false,
         );
       }
     } on AuthApiException catch (e) {
+      if (!mounted) return;
       if (e.statusCode == 400 &&
           e.message.toLowerCase().contains('user already registered')) {
         setState(() {
@@ -126,10 +133,12 @@ class _AuthScreenState extends State<AuthScreen> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = tr('register_failed_retry');
       });
     } finally {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
@@ -151,18 +160,22 @@ class _AuthScreenState extends State<AuthScreen> {
         return;
       }
       await Supabase.instance.client.auth.resetPasswordForEmail(email);
+      if (!mounted) return;
       setState(() {
         _resetInfo = tr('reset_email_sent');
       });
     } on AuthApiException catch (e) {
+      if (!mounted) return;
       setState(() {
         _resetInfo = e.message;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _resetInfo = tr('something_went_wrong');
       });
     } finally {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });

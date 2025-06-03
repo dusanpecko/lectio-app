@@ -126,5 +126,21 @@
   "note_title": "Názov",
   "bible_reference_hint": "Biblická citácia (napr. Jn 3,16)",
   "bible_quote_hint": "Biblický verš",
-  "note_content": "Poznámka"
+  "note_content": "Poznámka",
+   "fab_menu_left": "Vľavo dole",
+  "fab_menu_right": "Vpravo dole",
+  "fab_menu_center": "Dole v strede",
+  "fab_menu_top_left": "Vľavo hore",
+  "fab_menu_top_right": "Vpravo hore",
+  "fab_menu_top_center": "Hore v strede",
+  "user": "Používateľ",
+  "guest": "Hosť",
+  "settings_coming_soon": "Ďalšie nastavenia už čoskoro.",
+  "account": "Účet",
+  "delete_account_title": "Vymazať účet",
+  "delete_account_desc": "Naozaj si želáte vymazať svoj účet? Táto akcia je nevratná.",
+  "delete_account": "Vymazať účet",
+  "account_deleted_title": "Účet vymazaný",
+  "account_deleted_desc": "Váš účet bol úspešne vymazaný.",
+  "account_delete_failed": "Zlyhalo vymazanie účtu"
 }

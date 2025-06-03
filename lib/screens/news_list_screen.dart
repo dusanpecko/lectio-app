@@ -35,8 +35,6 @@ class _NewsListScreenState extends State<NewsListScreen> {
       final locale = context.locale.languageCode;
       final now = DateTime.now().toIso8601String();
 
-      print('DEBUG: Fetching news for lang=$locale, published_at <= $now');
-
       final response = await supabase
           .from('news')
           .select()
@@ -44,17 +42,11 @@ class _NewsListScreenState extends State<NewsListScreen> {
           .lte('published_at', now)
           .order('published_at', ascending: false);
 
-      print('DEBUG: Supabase response: $response');
-
       setState(() {
         news = List<Map<String, dynamic>>.from(response);
-        print('DEBUG: Parsed news length: ${news.length}');
-        if (news.isEmpty) print('DEBUG: No articles found for filter!');
         isLoading = false;
       });
-    } catch (e, stacktrace) {
-      print('ERROR: fetchNews exception: $e');
-      print('ERROR: Stacktrace: $stacktrace');
+    } catch (e) {
       setState(() {
         isLoading = false;
         errorMessage = tr('news_load_failed');

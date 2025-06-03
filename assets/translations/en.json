@@ -126,5 +126,21 @@
   "note_title": "Title",
   "bible_reference_hint": "Bible reference (e.g. Jn 3:16)",
   "bible_quote_hint": "Bible verse",
-  "note_content": "Note"
+  "note_content": "Note",
+  "fab_menu_left": "Bottom left",
+  "fab_menu_right": "Bottom right",
+  "fab_menu_center": "Bottom center",
+  "fab_menu_top_left": "Top left",
+  "fab_menu_top_right": "Top right",
+  "fab_menu_top_center": "Top center",
+  "user": "User",
+  "guest": "Guest",
+  "settings_coming_soon": "More settings coming soon.",
+  "account": "Account",
+  "delete_account_title": "Delete Account",
+  "delete_account_desc": "Are you sure you want to delete your account? This action cannot be undone.",
+  "delete_account": "Delete account",
+  "account_deleted_title": "Account Deleted",
+  "account_deleted_desc": "Your account has been successfully deleted.",
+  "account_delete_failed": "Account deletion failed"
 }
