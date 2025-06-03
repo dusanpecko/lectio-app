@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'news_detail_screen.dart';
 
 class NewsListScreen extends StatefulWidget {
@@ -13,11 +14,15 @@ class _NewsListScreenState extends State<NewsListScreen> {
   List<Map<String, dynamic>> news = [];
   bool isLoading = true;
   String? errorMessage;
+  bool _initialized = false; // na ochranu pred opakovaným fetchom
 
   @override
-  void initState() {
-    super.initState();
-    fetchNews();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      fetchNews();
+      _initialized = true;
+    }
   }
 
   Future<void> fetchNews() async {
@@ -27,19 +32,32 @@ class _NewsListScreenState extends State<NewsListScreen> {
     });
     try {
       final supabase = Supabase.instance.client;
+      final locale = context.locale.languageCode;
+      final now = DateTime.now().toIso8601String();
+
+      print('DEBUG: Fetching news for lang=$locale, published_at <= $now');
+
       final response = await supabase
           .from('news')
           .select()
+          .eq('lang', locale)
+          .lte('published_at', now)
           .order('published_at', ascending: false);
+
+      print('DEBUG: Supabase response: $response');
 
       setState(() {
         news = List<Map<String, dynamic>>.from(response);
+        print('DEBUG: Parsed news length: ${news.length}');
+        if (news.isEmpty) print('DEBUG: No articles found for filter!');
         isLoading = false;
       });
-    } catch (e) {
+    } catch (e, stacktrace) {
+      print('ERROR: fetchNews exception: $e');
+      print('ERROR: Stacktrace: $stacktrace');
       setState(() {
         isLoading = false;
-        errorMessage = 'Nepodarilo sa načítať aktuality. Skúste znova.';
+        errorMessage = tr('news_load_failed');
       });
     }
   }
@@ -51,10 +69,7 @@ class _NewsListScreenState extends State<NewsListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Aktuality'),
-        // backgroundColor: Colors.deepPurple, // odstránené, používa sa app_theme.dart
-      ),
+      appBar: AppBar(title: Text(tr('news_title'))),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : errorMessage != null
@@ -64,6 +79,8 @@ class _NewsListScreenState extends State<NewsListScreen> {
                 style: const TextStyle(color: Colors.red),
               ),
             )
+          : news.isEmpty
+          ? Center(child: Text(tr('news_empty')))
           : RefreshIndicator(
               onRefresh: _onRefresh,
               child: ListView.separated(
@@ -178,8 +195,6 @@ class _NewsListScreenState extends State<NewsListScreen> {
                                     ),
                                     ElevatedButton(
                                       style: ElevatedButton.styleFrom(
-                                        // backgroundColor: Colors.deepPurple,
-                                        // foregroundColor: Colors.white,
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
                                             18,
@@ -200,7 +215,7 @@ class _NewsListScreenState extends State<NewsListScreen> {
                                           fetchNews();
                                         }
                                       },
-                                      child: const Text('VIAC'),
+                                      child: Text(tr('more')),
                                     ),
                                   ],
                                 ),

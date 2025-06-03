@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class SliderDetailScreen extends StatelessWidget {
   final Map<String, dynamic> data;
@@ -24,16 +25,11 @@ class SliderDetailScreen extends StatelessWidget {
     final now = DateTime.now();
 
     if (now.isBefore(visibleFrom) || now.isAfter(visibleTo)) {
-      return const Scaffold(
-        body: Center(child: Text('Obsah nie je aktuálne dostupný.')),
-      );
+      return Scaffold(body: Center(child: Text(tr('content_not_available'))));
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detail'),
-        // backgroundColor: Colors.deepPurple, // používaj farbu z témy
-      ),
+      appBar: AppBar(title: Text(tr('detail'))),
       body: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 16),
         child: Column(
@@ -120,7 +116,7 @@ class SliderDetailScreen extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 24),
                 child: Center(
                   child: Text(
-                    'Publikované: ${data['published_at'].toString().split('T').first}',
+                    '${tr('published')}: ${data['published_at'].toString().split('T').first}',
                     style: TextStyle(
                       color:
                           Theme.of(

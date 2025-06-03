@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'lectio_screen.dart';
 import 'support_screen.dart';
 import 'slider_detail_screen.dart';
@@ -9,6 +10,7 @@ import 'settings_screen.dart';
 import 'package:lectio_divina/widgets/app_floating_menu.dart';
 import 'package:lectio_divina/shared/fab_menu_position.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'notes_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,20 +30,21 @@ class _HomeScreenState extends State<HomeScreen> {
     'assets/images/slide5.jpg',
   ];
 
-  final List<String> slideTitles = [
-    'Božie slovo',
-    'LECTIO',
-    'MEDITATIO',
-    'ORATIO',
-    'KONTEMPLATIO',
+  // Lokalizované cez kľúče
+  final List<String> slideTitleKeys = [
+    'god_word',
+    'lectio_divina',
+    'meditatio',
+    'oratio',
+    'contemplatio',
   ];
 
-  final List<String> slideSubtitles = [
-    'formou Lectio divina',
-    'Čítanie vybraného textu ...',
-    'Pozvanie zamyslieť sa nad Slovom ...',
-    'Modlitba podľa Božieho slova ...',
-    'Vnútorný pohľad srdca na Ježiša ...',
+  final List<String> slideSubtitleKeys = [
+    'slider_subtitle_god_word',
+    'slider_subtitle_lectio',
+    'slider_subtitle_meditatio',
+    'slider_subtitle_oratio',
+    'slider_subtitle_contemplatio',
   ];
 
   final PageController _pageController = PageController();
@@ -56,20 +59,31 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isLoading = true;
 
   List<Map<String, dynamic>> contentCards = [];
+  bool _dataLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _startSliderTimer();
     _loadFabPosition();
-    fetchData();
-    fetchContentCards().then((data) {
-      if (mounted) {
-        setState(() {
-          contentCards = data;
-        });
-      }
-    });
+    // fetchData(); // NEVOLAŤ tu!
+    // fetchContentCards(); // NEVOLAŤ tu!
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_dataLoaded) {
+      fetchData();
+      fetchContentCards().then((data) {
+        if (mounted) {
+          setState(() {
+            contentCards = data;
+          });
+        }
+      });
+      _dataLoaded = true;
+    }
   }
 
   Future<void> _loadFabPosition() async {
@@ -108,17 +122,22 @@ class _HomeScreenState extends State<HomeScreen> {
     final today = DateTime.now().toIso8601String().substring(0, 10);
 
     try {
+      final locale = context.locale.languageCode; // napr. 'sk', 'en'
+      // Daily quotes
       final quoteRes = await supabase
           .from('daily_quotes')
           .select()
           .eq('date', today)
+          .eq('lang', locale)
           .limit(1)
           .maybeSingle();
 
+      // Calendar info (meniny, liturgický deň, svätí), tiež jazyková mutácia
       final calendarRes = await supabase
           .from('calendar_info')
           .select()
           .eq('date', today)
+          .eq('lang', locale)
           .limit(1)
           .maybeSingle();
 
@@ -247,7 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      slideTitles[index],
+                                      slideTitleKeys[index].tr(),
                                       style: const TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
@@ -256,7 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      slideSubtitles[index],
+                                      slideSubtitleKeys[index].tr(),
                                       style: const TextStyle(
                                         fontSize: 14,
                                         color: Colors.white70,
@@ -317,7 +336,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           : Column(
                               children: [
                                 Text(
-                                  quoteText ?? 'Citát nie je dostupný.',
+                                  quoteText ?? tr('quote_not_available'),
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -372,7 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                       ),
                                       Text(
-                                        "Meniny má: ${nameDay ?? '-'}",
+                                        "${tr('meniny')}: ${nameDay ?? '-'}",
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -404,29 +423,29 @@ class _HomeScreenState extends State<HomeScreen> {
                     scrollDirection: Axis.horizontal,
                     children: const [
                       _RoundedModuleButton(
-                        label: 'Lectio divina',
+                        labelKey: 'lectio_divina',
                         icon: Icons.menu_book,
                       ),
                       SizedBox(width: 12),
                       _RoundedModuleButton(
-                        label: 'Zamyslenia',
+                        labelKey: 'reflections',
                         icon: Icons.lightbulb,
                       ),
                       SizedBox(width: 12),
                       _RoundedModuleButton(
-                        label: 'Modlitby',
+                        labelKey: 'prayers',
                         icon: Icons.favorite,
                       ),
                       SizedBox(width: 12),
-                      _RoundedModuleButton(label: 'Biblia', icon: Icons.book),
+                      _RoundedModuleButton(labelKey: 'bible', icon: Icons.book),
                       SizedBox(width: 12),
                       _RoundedModuleButton(
-                        label: 'Aktuality',
+                        labelKey: 'news',
                         icon: Icons.campaign,
                       ),
                       SizedBox(width: 12),
                       _RoundedModuleButton(
-                        label: 'Nastavenia',
+                        labelKey: 'settings',
                         icon: Icons.settings,
                       ),
                     ],
@@ -457,9 +476,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         borderRadius: BorderRadius.circular(24),
                       ),
                     ),
-                    child: const Text(
-                      '❤️ Podporte fungovanie Lectio divina',
-                      style: TextStyle(
+                    child: Text(
+                      tr('support_full'),
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
@@ -574,6 +593,11 @@ class _HomeScreenState extends State<HomeScreen> {
               context,
               MaterialPageRoute(builder: (context) => const NewsListScreen()),
             );
+          } else if (action == 'notes') {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const NotesListScreen()),
+            );
             // ďalšie akcie podľa potreby
           }
           // Odhlásenie rieši AppFloatingMenu a SessionHandler automaticky
@@ -585,10 +609,10 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _RoundedModuleButton extends StatelessWidget {
-  final String label;
+  final String labelKey;
   final IconData icon;
 
-  const _RoundedModuleButton({required this.label, required this.icon});
+  const _RoundedModuleButton({required this.labelKey, required this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -596,17 +620,17 @@ class _RoundedModuleButton extends StatelessWidget {
       width: 160,
       child: ElevatedButton.icon(
         onPressed: () {
-          if (label == 'Lectio divina') {
+          if (labelKey == 'lectio_divina') {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const LectioScreen()),
             );
-          } else if (label == 'Aktuality') {
+          } else if (labelKey == 'news') {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const NewsListScreen()),
             );
-          } else if (label == 'Nastavenia') {
+          } else if (labelKey == 'settings') {
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -626,12 +650,16 @@ class _RoundedModuleButton extends StatelessWidget {
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Modul "$label" zatiaľ nie je dostupný.')),
+              SnackBar(
+                content: Text(
+                  tr('module_not_available', args: [labelKey.tr()]),
+                ),
+              ),
             );
           }
         },
         icon: Icon(icon, size: 20),
-        label: Text(label),
+        label: Text(labelKey.tr()),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.deepPurple,
           foregroundColor: Colors.white,

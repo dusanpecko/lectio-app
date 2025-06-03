@@ -2,21 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:lectio_divina/shared/fab_menu_position.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 String fabMenuPositionLabel(FabMenuPosition pos) {
   switch (pos) {
     case FabMenuPosition.left:
-      return "Vľavo dole";
+      return tr("fab_menu_left");
     case FabMenuPosition.right:
-      return "Vpravo dole";
+      return tr("fab_menu_right");
     case FabMenuPosition.center:
-      return "Uprostred dole";
+      return tr("fab_menu_center");
     case FabMenuPosition.topLeft:
-      return "Vľavo hore";
+      return tr("fab_menu_top_left");
     case FabMenuPosition.topRight:
-      return "Vpravo hore";
+      return tr("fab_menu_top_right");
     case FabMenuPosition.topCenter:
-      return "Uprostred hore";
+      return tr("fab_menu_top_center");
   }
 }
 
@@ -99,10 +100,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (!mounted) return;
         bool? deleted = await showDialog<bool>(
           context: context,
-          builder: (dialogContext) => const AlertDialog(
-            title: Text('Účet bol odstránený'),
-            content: Text('Váš účet a údaje boli natrvalo vymazané.'),
-            actions: [TextButton(onPressed: null, child: Text('OK'))],
+          builder: (dialogContext) => AlertDialog(
+            title: Text(tr('account_deleted_title')),
+            content: Text(tr('account_deleted_desc')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(tr('ok')),
+              ),
+            ],
           ),
         );
         if (deleted == true && mounted) {
@@ -113,12 +119,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         showDialog(
           context: context,
           builder: (dialogContext) => AlertDialog(
-            title: const Text('Chyba'),
-            content: Text('Nepodarilo sa odstrániť účet: ${response.data}'),
+            title: Text(tr('error')),
+            content: Text('${tr('account_delete_failed')}: ${response.data}'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('OK'),
+                child: Text(tr('ok')),
               ),
             ],
           ),
@@ -129,12 +135,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       showDialog(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Chyba'),
-          content: Text('Nepodarilo sa odstrániť účet: $e'),
+          title: Text(tr('error')),
+          content: Text('${tr('account_delete_failed')}: $e'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('OK'),
+              child: Text(tr('ok')),
             ),
           ],
         ),
@@ -152,14 +158,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Odstrániť účet?'),
-        content: const Text(
-          'Naozaj chcete natrvalo odstrániť svoj účet? Táto akcia je nezvratná a všetky vaše údaje budú vymazané.',
-        ),
+        title: Text(tr('delete_account_title')),
+        content: Text(tr('delete_account_desc')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Zrušiť'),
+            child: Text(tr('cancel')),
           ),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -167,7 +171,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.of(dialogContext).pop();
               _deleteAccount(context);
             },
-            child: const Text('Odstrániť účet'),
+            child: Text(tr('delete_account')),
           ),
         ],
       ),
@@ -177,12 +181,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final session = Supabase.instance.client.auth.currentSession;
-    final userEmail = session?.user.email ?? "Hosť";
+    final userEmail = session?.user.email ?? tr('guest');
     final isLoggedIn = session != null;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nastavenia'),
+        title: Text(tr('settings')),
         backgroundColor: Colors.deepPurple,
       ),
       body: ListView(
@@ -190,13 +194,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           ListTile(
             leading: const Icon(Icons.person),
-            title: const Text('Používateľ'),
+            title: Text(tr('user')),
             subtitle: Text(userEmail),
           ),
           const SizedBox(height: 24),
-          const Text(
-            'Nastavenie polohy menu',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          Text(
+            tr('fab_menu_position'),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           const SizedBox(height: 8),
           _isLoadingPosition
@@ -221,9 +225,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   }).toList(),
                 ),
           const SizedBox(height: 32),
-          const Text(
-            'Ďalšie nastavenia pripravujeme...',
-            style: TextStyle(color: Colors.grey),
+          Text(
+            tr('settings_coming_soon'),
+            style: const TextStyle(color: Colors.grey),
           ),
           const SizedBox(height: 32),
           if (isLoggedIn)
@@ -232,7 +236,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 const Divider(),
                 Text(
-                  'Účet',
+                  tr('account'),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.red[700],
@@ -258,7 +262,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Text('Odstrániť účet'),
+                      : Text(tr('delete_account')),
                 ),
               ],
             ),

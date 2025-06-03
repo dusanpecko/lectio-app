@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class NewsDetailScreen extends StatefulWidget {
   final Map<String, dynamic> newsData;
@@ -58,10 +59,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
     final htmlContent = data['content'] ?? '';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Aktualita'),
-        // backgroundColor: Colors.deepPurple,  // Použi farbu z témy
-      ),
+      appBar: AppBar(title: Text(tr('news_detail'))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -110,7 +108,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
               ElevatedButton.icon(
                 onPressed: liked || loading ? null : handleLike,
                 icon: const Icon(Icons.thumb_up_alt_rounded, size: 18),
-                label: Text('Páči sa mi ($likes)'),
+                label: Text(tr('likes', args: [likes.toString()])),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: liked
                       ? Theme.of(context).colorScheme.primary.withAlpha(128)
