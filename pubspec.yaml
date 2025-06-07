@@ -45,6 +45,7 @@ dependencies:
   sign_in_with_apple: ^6.1.0
   google_fonts: ^6.2.1
   easy_localization: ^3.0.5
+  just_audio: ^0.9.36
 
 dev_dependencies:
   flutter_test:
@@ -67,6 +68,7 @@ flutter:
     - .env
     - assets/translations/
     - assets/images/
+    
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

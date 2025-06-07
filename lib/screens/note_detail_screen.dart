@@ -16,6 +16,9 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   late TextEditingController _bibleReferenceCtrl;
   late TextEditingController _bibleQuoteCtrl;
 
+  bool _isSaving = false;
+  bool _isDeleting = false;
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +42,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   }
 
   Future<void> saveNote() async {
+    setState(() => _isSaving = true);
     final userId = Supabase.instance.client.auth.currentUser?.id;
     final note = {
       'title': _titleCtrl.text,
@@ -48,32 +52,90 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       'user_id': userId,
       'updated_at': DateTime.now().toIso8601String(),
     };
-    if (widget.note == null) {
-      // new note
-      await Supabase.instance.client.from('notes').insert(note);
-    } else {
-      // update note
-      await Supabase.instance.client
-          .from('notes')
-          .update(note)
-          .eq('id', widget.note!['id']);
+    try {
+      // Tu je kľúčová podmienka:
+      final isInsert =
+          widget.note == null ||
+          widget.note?['id'] == null; // ak nie je id, robí sa insert
+      if (isInsert) {
+        await Supabase.instance.client.from('notes').insert(note);
+      } else {
+        await Supabase.instance.client
+            .from('notes')
+            .update(note)
+            .eq('id', widget.note!['id']);
+      }
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Nepodarilo sa uložiť poznámku.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
-    if (mounted) Navigator.pop(context, true);
   }
 
   Future<void> deleteNote() async {
-    if (widget.note != null) {
-      await Supabase.instance.client
-          .from('notes')
-          .delete()
-          .eq('id', widget.note!['id']);
+    if (widget.note != null && widget.note?['id'] != null) {
+      setState(() => _isDeleting = true);
+      try {
+        await Supabase.instance.client
+            .from('notes')
+            .delete()
+            .eq('id', widget.note!['id']);
+        if (mounted) Navigator.pop(context, true);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Nepodarilo sa zmazať poznámku.')),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isDeleting = false);
+      }
+    } else {
+      if (mounted) Navigator.pop(context, true);
     }
-    if (mounted) Navigator.pop(context, true);
+  }
+
+  void _showDeleteDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Zmazať poznámku?'),
+        content: const Text(
+          'Naozaj chcete túto poznámku zmazať? Táto akcia je nezvratná.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Zrušiť'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await deleteNote();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: _isDeleting
+                ? const SizedBox(
+                    height: 16,
+                    width: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Zmazať'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.note != null;
+    final isEditing = widget.note != null && widget.note?['id'] != null;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(isEditing ? 'Upraviť poznámku' : 'Nová poznámka'),
@@ -81,9 +143,8 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
           if (isEditing)
             IconButton(
               icon: const Icon(Icons.delete),
-              onPressed: () async {
-                await deleteNote();
-              },
+              onPressed: _isDeleting ? null : _showDeleteDialog,
+              tooltip: 'Zmazať poznámku',
             ),
         ],
       ),
@@ -128,12 +189,23 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState?.validate() ?? false) {
-                      saveNote();
-                    }
-                  },
-                  child: const Text('Uložiť'),
+                  onPressed: _isSaving
+                      ? null
+                      : () {
+                          if (_formKey.currentState?.validate() ?? false) {
+                            saveNote();
+                          }
+                        },
+                  child: _isSaving
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Uložiť'),
                 ),
               ),
             ],

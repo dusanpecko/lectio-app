@@ -21,6 +21,17 @@ String fabMenuPositionLabel(FabMenuPosition pos) {
   }
 }
 
+// === NOVÉ: Uloženie a načítanie výberu biblie ===
+Future<void> saveSelectedBible(String value) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('selectedBible', value);
+}
+
+Future<String> loadSelectedBible() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString('selectedBible') ?? 'biblia1'; // default
+}
+
 Future<void> saveFabMenuPosition(FabMenuPosition pos) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setInt('fab_menu_position', pos.index);
@@ -54,10 +65,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isLoadingPosition = true;
   bool _isDeleting = false;
 
+  // === NOVÉ: stav a načítanie výberu biblie ===
+  String _selectedBible = 'biblia1'; // default
+  bool _isLoadingBible = true;
+
   @override
   void initState() {
     super.initState();
     _initPosition();
+    _initBible();
   }
 
   Future<void> _initPosition() async {
@@ -70,6 +86,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _initBible() async {
+    String bible = await loadSelectedBible();
+    if (mounted) {
+      setState(() {
+        _selectedBible = bible;
+        _isLoadingBible = false;
+      });
+    }
+  }
+
   Future<void> _onPositionChanged(FabMenuPosition? pos) async {
     if (pos == null) return;
     setState(() {
@@ -77,6 +103,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
     await saveFabMenuPosition(pos);
     widget.onPositionChanged?.call(pos);
+  }
+
+  Future<void> _onBibleChanged(String? value) async {
+    if (value == null) return;
+    setState(() {
+      _selectedBible = value;
+    });
+    await saveSelectedBible(value);
   }
 
   Future<void> _deleteAccount(BuildContext context) async {
@@ -183,6 +217,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final session = Supabase.instance.client.auth.currentSession;
     final userEmail = session?.user.email ?? tr('guest');
     final isLoggedIn = session != null;
+    final locale = context.locale.languageCode;
 
     return Scaffold(
       appBar: AppBar(
@@ -225,6 +260,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   }).toList(),
                 ),
           const SizedBox(height: 32),
+
+          // === NOVÝ BLOK: výber biblie podľa jazyka ===
+          if (locale == 'sk') ...[
+            Text(
+              tr('select_bible'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            _isLoadingBible
+                ? const Center(child: CircularProgressIndicator())
+                : DropdownButtonFormField<String>(
+                    value: _selectedBible,
+                    onChanged: _onBibleChanged,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                    ),
+                    items: [
+                      DropdownMenuItem(
+                        value: 'biblia1',
+                        child: Text(tr('bible_1')),
+                      ),
+                      DropdownMenuItem(
+                        value: 'biblia2',
+                        child: Text(tr('bible_2')),
+                      ),
+                      DropdownMenuItem(
+                        value: 'biblia3',
+                        child: Text(tr('bible_3')),
+                      ),
+                    ],
+                  ),
+            const SizedBox(height: 32),
+          ] else if (locale == 'en') ...[
+            Text(
+              tr('bible_en_only'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.deepPurple.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(tr('bible_en_desc')),
+            ),
+            const SizedBox(height: 32),
+          ],
+
           Text(
             tr('settings_coming_soon'),
             style: const TextStyle(color: Colors.grey),

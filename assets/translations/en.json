@@ -142,5 +142,12 @@
   "delete_account": "Delete account",
   "account_deleted_title": "Account Deleted",
   "account_deleted_desc": "Your account has been successfully deleted.",
-  "account_delete_failed": "Account deletion failed"
+  "account_delete_failed": "Account deletion failed",
+  "silencio": "Silence (Silencio)",
+  "lectio_not_available": "Lectio for this day is not available.",
+  "conclusion": "Conclusion",
+  "bible_reading_1": "Bible Reading",
+  "actio": "Actio",
+  "error_loading_data": "Error loading data.",
+  "play_audio": "Play audio"
 }
