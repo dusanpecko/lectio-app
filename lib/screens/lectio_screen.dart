@@ -313,7 +313,7 @@ class _LectioScreenState extends State<LectioScreen> {
                   IconButton(
                     icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
                     iconSize: 36,
-                    onPressed: currentSection != null ? _togglePlayPause : null,
+                    onPressed: _togglePlayPause,
                   ),
                   IconButton(
                     icon: const Icon(Icons.stop),
@@ -484,12 +484,14 @@ class _LectioScreenState extends State<LectioScreen> {
     );
   }
 
+  // ZMENA: Parameter `subtitle` je teraz non-nullable s predvolenou hodnotou.
   Widget _buildSection({
     required String? title,
-    String? subtitle,
+    String subtitle = '',
     required String text,
   }) {
-    if (text.isEmpty && (subtitle == null || subtitle.isEmpty)) {
+    // ZMENA: Zjednodušená podmienka, keďže `subtitle` už nemôže byť null.
+    if (text.isEmpty && subtitle.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -508,7 +510,8 @@ class _LectioScreenState extends State<LectioScreen> {
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
-            if (subtitle != null && subtitle.isNotEmpty) ...[
+            // Podmienka `subtitle != null` je už zbytočná, ale neprekáža.
+            if (subtitle.isNotEmpty) ...[
               const SizedBox(height: 6),
               Text(
                 subtitle,
@@ -544,7 +547,6 @@ class _LectioScreenState extends State<LectioScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // ZMENA: Formát dátumu bol upravený podľa požiadavky.
     final formattedDate = DateFormat(
       'dd.MM.yyyy',
       context.locale.toString(),
@@ -738,8 +740,6 @@ class _LectioScreenState extends State<LectioScreen> {
                               title: tr("prayer_outro"),
                               text: lectioData?['modlitba_zaver'] ?? '',
                             ),
-                            //if ((lectioData?['audio_5_min'] ?? '').isNotEmpty)
-                            // _buildSection(title: tr("audio_5_min"), text: ""),
                             _buildSection(
                               title: tr("outro"),
                               text: lectioData?['zaver'] ?? '',
