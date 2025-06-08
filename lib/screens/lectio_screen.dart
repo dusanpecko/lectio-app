@@ -6,6 +6,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:lectio_divina/services/audio_handler.dart';
 import 'package:lectio_divina/main.dart';
+import 'note_detail_screen.dart'; // <- nezabudni importovať, ak ešte nie je!
 
 class MediaState {
   final MediaItem? mediaItem;
@@ -29,6 +30,9 @@ class _LectioScreenState extends State<LectioScreen> {
   String _selectedBible = 'biblia1';
   Map<String, bool> _selectedAudios = {};
   bool _isPlayerExpanded = false;
+
+  // >>>>> PRIDANÉ: getter na usera
+  User? get _currentUser => Supabase.instance.client.auth.currentUser;
 
   Stream<MediaState> get _mediaStateStream =>
       Rx.combineLatest2<MediaItem?, PlaybackState, MediaState>(
@@ -230,7 +234,6 @@ class _LectioScreenState extends State<LectioScreen> {
         final duration = mediaItem?.duration ?? Duration.zero;
         final sideControlsEnabled = mediaItem != null;
 
-        // --- StreamBuilder na pozíciu --- //
         return StreamBuilder<Duration>(
           stream: audioHandler.positionStream,
           builder: (context, snapshot) {
@@ -451,6 +454,34 @@ class _LectioScreenState extends State<LectioScreen> {
     fetchLectioData();
   }
 
+  // >>>>> PRIDANÉ: funkcia na otvorenie poznámky
+  void _handleAddNote() {
+    if (lectioData == null) return;
+    String bibleReference = '';
+    if (_selectedBible == 'biblia1') {
+      bibleReference = lectioData?['biblia_1'] ?? '';
+    } else if (_selectedBible == 'biblia2') {
+      bibleReference = lectioData?['biblia_2'] ?? '';
+    } else if (_selectedBible == 'biblia3') {
+      bibleReference = lectioData?['biblia_3'] ?? '';
+    }
+
+    final now = DateTime.now();
+    final formattedDate = DateFormat('d.M.yyyy').format(now);
+
+    final noteData = {
+      'id': null,
+      'title': formattedDate, // tu je dnesný dátum
+      'content': '',
+      'bible_reference': lectioData?['suradnice_pismo'] ?? '',
+      'bible_quote': bibleReference,
+    };
+
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => NoteDetailScreen(note: noteData)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -459,13 +490,18 @@ class _LectioScreenState extends State<LectioScreen> {
       context.locale.toString(),
     ).format(selectedDate);
     final lang = widget.selectedLang ?? context.locale.languageCode;
-    final screenHeight = MediaQuery.of(context).size.height;
     final expandedPlayerHeight = 360.0;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("Lectio divina"),
         actions: [
+          if (_currentUser != null)
+            IconButton(
+              icon: const Icon(Icons.note_add_outlined),
+              tooltip: "Pridať poznámku",
+              onPressed: _handleAddNote,
+            ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: fetchLectioData,
@@ -714,35 +750,39 @@ class _SimpleSection extends StatelessWidget {
     final theme = Theme.of(context);
     final localTitle = title;
     if (text.isEmpty && subtitle.isEmpty) return const SizedBox.shrink();
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.all(18.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (localTitle != null && localTitle.isNotEmpty)
-              Text(
-                localTitle,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+    return Container(
+      width: double.infinity,
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (localTitle != null && localTitle.isNotEmpty)
+                Text(
+                  localTitle,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            if (subtitle.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text(
-                subtitle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              if (subtitle.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
+              ],
+              if (text.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(text, style: theme.textTheme.bodyMedium),
+              ],
             ],
-            if (text.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(text, style: theme.textTheme.bodyMedium),
-            ],
-          ],
+          ),
         ),
       ),
     );
