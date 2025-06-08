@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:audio_service/audio_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/auth_screen.dart';
 import 'shared/app_theme.dart';
+import 'services/audio_handler.dart';
 import 'dart:async';
+
+// ===== ZMENA: Typ je teraz naša konkrétna trieda LectioAudioHandler =====
+late LectioAudioHandler audioHandler;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,23 +22,32 @@ Future<void> main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
+  audioHandler = await AudioService.init(
+    builder: () => LectioAudioHandler(),
+    config: const AudioServiceConfig(
+      androidNotificationChannelId: 'sk.dusanpecko.lectio_divina.channel.audio',
+      androidNotificationChannelName: 'Prehrávanie audia',
+      androidNotificationOngoing: true,
+    ),
+  );
+
   runApp(
     EasyLocalization(
       supportedLocales: const [Locale('sk'), Locale('en')],
-      path: 'assets/translations', // cesta k prekladom
+      path: 'assets/translations',
       fallbackLocale: const Locale('sk'),
       child: const MyApp(),
     ),
   );
 }
 
+// Ostatok súboru main.dart zostáva bez zmeny
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: tr('app_title'), // lokalizovaný titulok
+      title: tr('app_title'),
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
@@ -48,7 +62,6 @@ class MyApp extends StatelessWidget {
 
 class SessionHandler extends StatefulWidget {
   const SessionHandler({super.key});
-
   @override
   State<SessionHandler> createState() => _SessionHandlerState();
 }
@@ -56,7 +69,6 @@ class SessionHandler extends StatefulWidget {
 class _SessionHandlerState extends State<SessionHandler> {
   Session? session;
   late final StreamSubscription<AuthState> _authSubscription;
-
   @override
   void initState() {
     super.initState();

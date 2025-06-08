@@ -221,5 +221,6 @@
   "audio_bible_select_error": "Chyba pri výbere biblického textu",
   "audio_bible_select_error_desc": "Nepodarilo sa načítať vybraný biblický text. Skúste to prosím znova.",
   "audio_bible_select_no_text": "Žiadny biblický text nie je dostupný",
-  "audio_bible_select_no_text_desc": "Momentálne nie sú k dispozícii žiadne biblické texty pre audio prehrávanie."
+  "audio_bible_select_no_text_desc": "Momentálne nie sú k dispozícii žiadne biblické texty pre audio prehrávanie.",
+  "audio_nothing_playing": "Momentálne nič nehrá."
 }
