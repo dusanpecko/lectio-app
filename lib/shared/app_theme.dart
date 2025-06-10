@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // Farby na jednom mieste pre ľahkú zmenu
-const Color kPrimaryColor = Color(0xFF673AB7); // deepPurple
+const Color kPrimaryColor = Color(0xFF4A5085); // deepPurple
 const Color kAccentColor = Color(0xFFEDE7F6); // svetlá fialová na pozadie
-const Color kButtonColor = Color(0xFF512DA8);
+const Color kButtonColor = Color(0xFF4A5085);
 
 class AppTheme {
   static final ThemeData light = ThemeData(
@@ -17,7 +17,7 @@ class AppTheme {
     ),
     useMaterial3: true,
     scaffoldBackgroundColor: kAccentColor,
-    textTheme: GoogleFonts.notoSansTextTheme(), // Hlavný Google Font
+    textTheme: GoogleFonts.questrialTextTheme(), // Zmena na Questrial
     appBarTheme: const AppBarTheme(
       backgroundColor: kPrimaryColor,
       foregroundColor: Colors.white,
@@ -43,7 +43,7 @@ class AppTheme {
         foregroundColor: Colors.white,
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(20)),
+          borderRadius: BorderRadius.all(Radius.circular(18)),
         ),
       ),
     ),
@@ -57,11 +57,11 @@ class AppTheme {
       filled: true,
       fillColor: Colors.white,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(12)),
+        borderRadius: BorderRadius.all(Radius.circular(18)),
         borderSide: BorderSide(color: kPrimaryColor),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(12)),
+        borderRadius: BorderRadius.all(Radius.circular(18)),
         borderSide: BorderSide(color: kPrimaryColor, width: 2),
       ),
       labelStyle: TextStyle(color: kPrimaryColor),
@@ -92,9 +92,9 @@ class AppTheme {
     ),
     useMaterial3: true,
     scaffoldBackgroundColor: const Color(0xFF181225),
-    textTheme: GoogleFonts.notoSansTextTheme(
+    textTheme: GoogleFonts.questrialTextTheme(
       ThemeData(brightness: Brightness.dark).textTheme,
-    ),
+    ), // Zmena na Questrial
     appBarTheme: const AppBarTheme(
       backgroundColor: kPrimaryColor,
       foregroundColor: Colors.white,
@@ -120,7 +120,7 @@ class AppTheme {
         foregroundColor: Colors.white,
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(20)),
+          borderRadius: BorderRadius.all(Radius.circular(18)),
         ),
       ),
     ),
@@ -134,11 +134,11 @@ class AppTheme {
       filled: true,
       fillColor: Color(0xFF33224C),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(12)),
+        borderRadius: BorderRadius.all(Radius.circular(18)),
         borderSide: BorderSide(color: kPrimaryColor),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(12)),
+        borderRadius: BorderRadius.all(Radius.circular(18)),
         borderSide: BorderSide(color: kPrimaryColor, width: 2),
       ),
       labelStyle: TextStyle(color: Colors.white70),

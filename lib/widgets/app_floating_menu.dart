@@ -78,7 +78,7 @@ class AppFloatingMenu extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       showDragHandle: true,
-      isScrollControlled: false,
+      isScrollControlled: true,
       useSafeArea: true,
     );
     if (!context.mounted) return; // bezpečnostná kontrola
@@ -107,36 +107,69 @@ class AppFloatingMenu extends StatelessWidget {
       child: Wrap(
         children: [
           ListTile(
-            leading: Icon(Icons.home, color: theme.colorScheme.primary),
+            leading: Icon(
+              Icons.house_rounded,
+              color: theme.colorScheme.primary,
+            ), // výraznejší dom
             title: Text(tr('home')),
             onTap: () => Navigator.pop(context, 'home'),
           ),
           ListTile(
-            leading: Icon(Icons.menu_book, color: theme.colorScheme.primary),
+            leading: Icon(
+              Icons.menu_book_rounded,
+              color: theme.colorScheme.primary,
+            ), // Lectio Divina - kniha
             title: Text(tr('lectio_divina')),
             onTap: () => Navigator.pop(context, 'lectio'),
           ),
           ListTile(
-            leading: Icon(Icons.campaign, color: theme.colorScheme.primary),
+            leading: Icon(
+              Icons.campaign_rounded,
+              color: theme.colorScheme.primary,
+            ), // Novinky - megafón
             title: Text(tr('news')),
             onTap: () => Navigator.pop(context, 'news'),
           ),
-          // --- Položka pre poznámky bude len pre prihlásených ---
           if (session != null)
             ListTile(
-              leading: Icon(Icons.note, color: theme.colorScheme.primary),
+              leading: Icon(
+                Icons.notes_rounded,
+                color: theme.colorScheme.primary,
+              ), // Poznámky
               title: Text(tr('notes_title')),
               onTap: () => Navigator.pop(context, 'notes'),
             ),
-          // ------------------------------------------------------
+          if (session != null)
+            ListTile(
+              leading: Icon(
+                Icons.favorite_rounded,
+                color: theme.colorScheme.primary,
+              ), // Úmysly - srdce
+              title: Text(tr('pray_intentions_title')),
+              onTap: () => Navigator.pop(context, 'pray_intentions'),
+            ),
           ListTile(
-            leading: Icon(Icons.settings, color: theme.colorScheme.primary),
+            leading: Icon(
+              Icons.info_rounded,
+              color: theme.colorScheme.primary,
+            ), // O aplikácii
+            title: Text(tr('about.title')),
+            onTap: () => Navigator.pop(context, 'about'),
+          ),
+          ListTile(
+            leading: Icon(
+              Icons.settings_rounded,
+              color: theme.colorScheme.primary,
+            ), // Nastavenia
             title: Text(tr('settings')),
             onTap: () => Navigator.pop(context, 'settings'),
           ),
           const Divider(),
           ListTile(
-            leading: Icon(getAuthIcon(), color: getAuthColor(theme)),
+            leading: Icon(
+              getAuthIcon(),
+              color: getAuthColor(theme),
+            ), // Login/logout ostáva dynamický
             title: Text(getAuthLabel(context)),
             onTap: () => Navigator.pop(context, 'auth'),
           ),

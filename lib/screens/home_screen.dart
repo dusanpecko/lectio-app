@@ -11,6 +11,9 @@ import 'package:lectio_divina/widgets/app_floating_menu.dart';
 import 'package:lectio_divina/shared/fab_menu_position.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'notes_list_screen.dart';
+import 'about_screen.dart';
+import 'intentions_list_screen.dart';
+import 'Intention_Submit_Screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -203,359 +206,401 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final today = DateTime.now();
-    final formattedDate =
-        "${today.day.toString().padLeft(2, '0')}.${today.month.toString().padLeft(2, '0')}.${today.year}";
+    final dateDayMonth =
+        "${today.day.toString().padLeft(2, '0')}.${today.month.toString().padLeft(2, '0')}";
+    final dateYear = "${today.year}";
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final calendarColor = isDark ? Colors.white : const Color(0xFF4A5085);
 
     return Scaffold(
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            await fetchData();
-            final data = await fetchContentCards();
-            if (mounted) {
-              setState(() {
-                contentCards = data;
-              });
-            }
-            await _loadFabPosition(); // refresh FAB position on pull-to-refresh
-          },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              children: [
-                // Slider
-                Container(
-                  height: 250,
-                  decoration: const BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0x1A000000),
-                        blurRadius: 6,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(8),
-                      bottomRight: Radius.circular(8),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await fetchData();
+          final data = await fetchContentCards();
+          if (mounted) {
+            setState(() {
+              contentCards = data;
+            });
+          }
+          await _loadFabPosition(); // refresh FAB position on pull-to-refresh
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              // SLIDER ÚPLNE OD VRCHU (BEZ SafeArea)
+              Container(
+                height: 280,
+                decoration: const BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x1A000000),
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
                     ),
-                    child: PageView.builder(
-                      controller: _pageController,
-                      itemCount: imagePaths.length,
-                      onPageChanged: (index) {
-                        if (!mounted) return;
-                        setState(() {
-                          _currentPage = index;
-                        });
-                      },
-                      itemBuilder: (context, index) {
-                        return Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Image.asset(imagePaths[index], fit: BoxFit.cover),
-                            Positioned(
-                              bottom: 0,
-                              left: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                color: Colors.black.withAlpha(128),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(14),
+                    bottomRight: Radius.circular(14),
+                  ),
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: imagePaths.length,
+                    onPageChanged: (index) {
+                      if (!mounted) return;
+                      setState(() {
+                        _currentPage = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.asset(imagePaths[index], fit: BoxFit.cover),
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              color: Colors.black.withAlpha(128),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    slideTitleKeys[index].tr(),
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    slideSubtitleKeys[index].tr(),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+              // ZVYŠOK OBSAHU v SafeArea
+              SafeArea(
+                top:
+                    false, // <- dôležité, aby SafeArea nepridal padding hore (keďže slider je už hore)
+                child: Column(
+                  children: [
+                    // Dots indicator
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(imagePaths.length, (index) {
+                        final isActive = _currentPage == index;
+                        return SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: Center(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              width: isActive ? 12 : 8,
+                              height: isActive ? 12 : 8,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isActive
+                                    ? Color(0xFF4A5085)
+                                    : Colors.grey.shade400,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+
+                    // Quote card
+                    const SizedBox(height: 8),
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16.0),
+                      width: double.infinity,
+                      child: Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: isLoading
+                              ? const Center(child: CircularProgressIndicator())
+                              : Column(
                                   children: [
                                     Text(
-                                      slideTitleKeys[index].tr(),
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      slideSubtitleKeys[index].tr(),
+                                      quoteText ?? tr('quote_not_available'),
                                       style: const TextStyle(
                                         fontSize: 14,
-                                        color: Colors.white70,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 7),
+                                    if (quoteReference != null)
+                                      Text(
+                                        quoteReference!,
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                  ],
+                                ),
+                        ),
+                      ),
+                    ),
+
+                    // Calendar card
+                    const SizedBox(height: 8),
+
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16.0),
+                      width: double.infinity,
+                      child: Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: isLoading
+                              ? const SizedBox()
+                              : Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    // Prvý stĺpec: Ikona
+                                    Icon(
+                                      Icons.calendar_month,
+                                      size: 30,
+                                      color: calendarColor,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    // Druhý stĺpec: Dátum v dvoch riadkoch
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          dateDayMonth,
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: calendarColor,
+                                          ),
+                                        ),
+                                        Text(
+                                          dateYear,
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: calendarColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(width: 18),
+                                    // Tretí stĺpec: Ostatný text, zaberá zvyšok miesta
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "${tr('meniny')}: ${nameDay ?? '-'}",
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            liturgicalDay ?? '',
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            saints ?? '',
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ),
-
-                // Dots indicator
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(imagePaths.length, (index) {
-                    final isActive = _currentPage == index;
-                    return SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: Center(
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: isActive ? 12 : 8,
-                          height: isActive ? 12 : 8,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isActive
-                                ? Colors.deepPurple
-                                : Colors.grey.shade400,
-                          ),
                         ),
                       ),
-                    );
-                  }),
-                ),
+                    ),
 
-                // Quote card
-                const SizedBox(height: 8),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16.0),
-                  width: double.infinity,
-                  child: Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: isLoading
-                          ? const Center(child: CircularProgressIndicator())
-                          : Column(
-                              children: [
-                                Text(
-                                  quoteText ?? tr('quote_not_available'),
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 8),
-                                if (quoteReference != null)
-                                  Text(
-                                    quoteReference!,
-                                    style: const TextStyle(fontSize: 14),
-                                  ),
-                              ],
-                            ),
-                    ),
-                  ),
-                ),
-
-                // Calendar card
-                const SizedBox(height: 8),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16.0),
-                  width: double.infinity,
-                  child: Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: isLoading
-                          ? const SizedBox()
-                          : Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Icon(
-                                  Icons.calendar_month,
-                                  size: 40,
-                                  color: Colors.deepPurple,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        formattedDate,
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Text(
-                                        "${tr('meniny')}: ${nameDay ?? '-'}",
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      Text(
-                                        liturgicalDay ?? '',
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      Text(
-                                        saints ?? '',
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
-                  ),
-                ),
-
-                // Buttons
-                const SizedBox(height: 8),
-                Container(
-                  height: 60,
-                  margin: const EdgeInsets.only(left: 16, right: 16, top: 16),
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: const [
-                      _RoundedModuleButton(
-                        labelKey: 'lectio_divina',
-                        icon: Icons.menu_book,
+                    // Buttons
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 60,
+                      margin: const EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        top: 16,
                       ),
-                      SizedBox(width: 12),
-                      _RoundedModuleButton(
-                        labelKey: 'reflections',
-                        icon: Icons.lightbulb,
-                      ),
-                      SizedBox(width: 12),
-                      _RoundedModuleButton(
-                        labelKey: 'prayers',
-                        icon: Icons.favorite,
-                      ),
-                      SizedBox(width: 12),
-                      _RoundedModuleButton(labelKey: 'bible', icon: Icons.book),
-                      SizedBox(width: 12),
-                      _RoundedModuleButton(
-                        labelKey: 'news',
-                        icon: Icons.campaign,
-                      ),
-                      SizedBox(width: 12),
-                      _RoundedModuleButton(
-                        labelKey: 'settings',
-                        icon: Icons.settings,
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Support button
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SupportScreen(),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                    ),
-                    child: Text(
-                      tr('support_full'),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Content cards slider
-                if (contentCards.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: SizedBox(
-                      height: 130,
-                      child: ListView.builder(
+                      child: ListView(
                         scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: contentCards.length,
-                        itemBuilder: (context, index) {
-                          final card = contentCards[index];
-                          final imageUrl = card['image_url'] as String?;
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      SliderDetailScreen(data: card),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              width: 130,
-                              margin: const EdgeInsets.only(right: 12),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Color(0x1A000000),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              clipBehavior: Clip.antiAlias,
-                              child: imageUrl != null && imageUrl.isNotEmpty
-                                  ? Image.network(
-                                      imageUrl,
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) =>
-                                              Container(
-                                                color: Colors.grey[300],
-                                                child: const Icon(
-                                                  Icons.broken_image,
-                                                ),
-                                              ),
-                                      loadingBuilder:
-                                          (context, child, progress) {
-                                            if (progress == null) return child;
-                                            return const Center(
-                                              child:
-                                                  CircularProgressIndicator(),
-                                            );
-                                          },
-                                    )
-                                  : Container(
-                                      color: Colors.grey[300],
-                                      child: const Icon(Icons.image, size: 48),
-                                    ),
+                        children: const [
+                          _RoundedModuleButton(
+                            labelKey: 'lectio_divina',
+                            icon: Icons.menu_book,
+                          ),
+                          SizedBox(width: 12),
+                          _RoundedModuleButton(
+                            labelKey: 'reflections',
+                            icon: Icons.lightbulb,
+                          ),
+                          SizedBox(width: 12),
+                          _RoundedModuleButton(
+                            labelKey: 'prayers',
+                            icon: Icons.favorite,
+                          ),
+                          SizedBox(width: 12),
+                          _RoundedModuleButton(
+                            labelKey: 'bible',
+                            icon: Icons.book,
+                          ),
+                          SizedBox(width: 12),
+                          _RoundedModuleButton(
+                            labelKey: 'news',
+                            icon: Icons.campaign,
+                          ),
+                          SizedBox(width: 12),
+                          _RoundedModuleButton(
+                            labelKey: 'settings',
+                            icon: Icons.settings,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Support button
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SupportScreen(),
                             ),
                           );
                         },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                        child: Text(
+                          tr('support_full'),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            ),
+
+                    // Content cards slider
+                    if (contentCards.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: SizedBox(
+                          height: 130,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: contentCards.length,
+                            itemBuilder: (context, index) {
+                              final card = contentCards[index];
+                              final imageUrl = card['image_url'] as String?;
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          SliderDetailScreen(data: card),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  width: 130,
+                                  margin: const EdgeInsets.only(right: 12),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Color(0x1A000000),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: imageUrl != null && imageUrl.isNotEmpty
+                                      ? Image.network(
+                                          imageUrl,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  Container(
+                                                    color: Colors.grey[300],
+                                                    child: const Icon(
+                                                      Icons.broken_image,
+                                                    ),
+                                                  ),
+                                          loadingBuilder:
+                                              (context, child, progress) {
+                                                if (progress == null) {
+                                                  return child;
+                                                }
+                                                return const Center(
+                                                  child:
+                                                      CircularProgressIndicator(),
+                                                );
+                                              },
+                                        )
+                                      : Container(
+                                          color: Colors.grey[300],
+                                          child: const Icon(
+                                            Icons.image,
+                                            size: 48,
+                                          ),
+                                        ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -598,9 +643,41 @@ class _HomeScreenState extends State<HomeScreen> {
               context,
               MaterialPageRoute(builder: (context) => const NotesListScreen()),
             );
-            // ďalšie akcie podľa potreby
+          } else if (action == 'about') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AboutScreen()),
+            );
+          } else if (action == 'pray_intentions') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const IntentionsListScreen()),
+            );
+          } else if (action == 'pray_submit') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const IntentionSubmitScreen()),
+            );
+          } else if (action == 'support') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SupportScreen()),
+            );
+          } else if (action == 'auth') {
+            final session = Supabase.instance.client.auth.currentSession;
+            if (session == null) {
+              Navigator.of(context).pushNamed('/auth');
+            } else {
+              await Supabase.instance.client.auth.signOut();
+            }
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(tr('module_not_available', args: [action])),
+              ),
+            );
           }
-          // Odhlásenie rieši AppFloatingMenu a SessionHandler automaticky
+          // ďalšie akcie podľa potreby
         },
       ),
       floatingActionButtonLocation: getFabLocation(),
@@ -630,6 +707,11 @@ class _RoundedModuleButton extends StatelessWidget {
               context,
               MaterialPageRoute(builder: (context) => const NewsListScreen()),
             );
+          } else if (labelKey == 'about') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AboutScreen()),
+            );
           } else if (labelKey == 'settings') {
             Navigator.push(
               context,
@@ -658,14 +740,14 @@ class _RoundedModuleButton extends StatelessWidget {
             );
           }
         },
-        icon: Icon(icon, size: 20),
+        icon: Icon(icon, size: 23),
         label: Text(labelKey.tr()),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.deepPurple,
+          backgroundColor: Color(0xFF4A5085),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(18),
           ),
           textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),

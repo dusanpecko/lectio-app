@@ -1,8 +1,13 @@
 name: lectio_divina
-description: "Lectio divina aplikácia"
-# The following line prevents the package from being accidentally published to
-# pub.dev using `flutter pub publish`. This is preferred for private packages.
+description: Aplikácia Lectio Divina pre každodenné zamyslenia nad Božím slovom.
+
+
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+homepage: https://www.lectiodivina.org
+repository: https://github.com/dusanpecko/lectio-app.git
+issue_tracker: https://github.com/dusanpecko/lectio-app/issues
+documentation: https://github.com/dusanpecko/lectio-app/wiki
+
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -48,6 +53,8 @@ dependencies:
   just_audio: ^0.9.36
   audio_service: ^0.18.12 # For background audio playback
   rxdart: ^0.27.7
+  package_info_plus: ^8.3.0
+  url_launcher: ^6.2.6
 
 dev_dependencies:
   flutter_test:

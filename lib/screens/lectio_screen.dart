@@ -750,7 +750,7 @@ class _SimpleSection extends StatelessWidget {
     final theme = Theme.of(context);
     final localTitle = title;
     if (text.isEmpty && subtitle.isEmpty) return const SizedBox.shrink();
-    return Container(
+    return SizedBox(
       width: double.infinity,
       child: Card(
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),

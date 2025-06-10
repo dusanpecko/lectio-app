@@ -220,10 +220,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final locale = context.locale.languageCode;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(tr('settings')),
-        backgroundColor: Colors.deepPurple,
-      ),
+      appBar: AppBar(title: Text(tr('settings'))),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
