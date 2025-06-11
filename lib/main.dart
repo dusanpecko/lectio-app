@@ -8,7 +8,11 @@ import 'screens/auth_screen.dart';
 import 'shared/app_theme.dart';
 import 'services/audio_handler.dart';
 import 'services/notification_service.dart';
+import 'screens/lectio_screen.dart'; // <-- pridaj tento import
 import 'dart:async';
+
+final GlobalKey<NavigatorState> navigatorKey =
+    GlobalKey<NavigatorState>(); // <- pre navigáciu z notifikácie
 
 late LectioAudioHandler audioHandler;
 
@@ -50,6 +54,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey, // <- aby mohla notifikácia otvoriť screen
       title: tr('app_title'),
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
@@ -59,6 +64,7 @@ class MyApp extends StatelessWidget {
       localizationsDelegates: context.localizationDelegates,
       supportedLocales: context.supportedLocales,
       locale: context.locale,
+      routes: {'/lectio': (context) => const LectioScreen()},
     );
   }
 }

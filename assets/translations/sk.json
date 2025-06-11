@@ -277,5 +277,6 @@
   "send_comment": "Odoslať komentár",
   "confirm": "Potvrdenie",
   "delete_comment_confirm": "Naozaj chceš vymazať tento komentár?",
-  "daily_quote_time": "Denný citát"
+  "daily_quote_time": "Denný citát",
+  "daily_tip_time": "Nastavenie notifikácii - ACTIO"
 }

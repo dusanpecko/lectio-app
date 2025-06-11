@@ -1,15 +1,20 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
+import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:logger/logger.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+final Logger _logger = Logger();
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  /// Inicializuje timezone a notification kanály. Volaj iba raz v main().
   static Future<void> initialize() async {
-    // Nastavenie timezone podľa zariadenia
     tz.initializeTimeZones();
     final String timeZone = await FlutterNativeTimezone.getLocalTimezone();
     tz.setLocalLocation(tz.getLocation(timeZone));
@@ -20,36 +25,29 @@ class NotificationService {
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
+
     final settings = InitializationSettings(android: android, iOS: iOS);
+    await _notificationsPlugin.initialize(
+      settings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        if (navigatorKey.currentState != null) {
+          navigatorKey.currentState!.pushNamed('/lectio');
+        }
+      },
+    );
 
-    await _notificationsPlugin.initialize(settings);
-
-    // Android: create notification channels
-    const AndroidNotificationChannel dailyChannel = AndroidNotificationChannel(
-      'daily_channel',
-      'Denné citáty',
-      description: 'Denné pripomienky citátu',
+    const AndroidNotificationChannel tipChannel = AndroidNotificationChannel(
+      'tip_channel',
+      'Denné tipy',
+      description: 'Denné pripomienky tipov',
       importance: Importance.high,
     );
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
         >()
-        ?.createNotificationChannel(dailyChannel);
+        ?.createNotificationChannel(tipChannel);
 
-    const AndroidNotificationChannel testChannel = AndroidNotificationChannel(
-      'test_channel',
-      'Test Notifikácie',
-      description: 'Na overenie správneho zobrazenia',
-      importance: Importance.high,
-    );
-    await _notificationsPlugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.createNotificationChannel(testChannel);
-
-    // iOS špecifické – žiadosť o povolenie
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
           IOSFlutterLocalNotificationsPlugin
@@ -57,36 +55,66 @@ class NotificationService {
         ?.requestPermissions(alert: true, badge: true, sound: true);
   }
 
-  /// Naplánovanie dennej notifikácie na určitý čas
-  static Future<void> showDailyQuoteNotification(
+  static Future<void> showDailyTipNotification(
     int hour,
     int minute,
-    String quote,
+    String locale,
   ) async {
-    final time = _nextInstanceOfTime(hour, minute);
+    final today = DateTime.now().toIso8601String().split('T').first;
+    final supabase = Supabase.instance.client;
 
-    await _notificationsPlugin.zonedSchedule(
-      1,
-      'Denný citát',
-      quote,
-      time,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'daily_channel',
-          'Denné citáty',
-          channelDescription: 'Denné pripomienky citátu',
-          importance: Importance.high,
+    try {
+      final response = await supabase
+          .from('daily_quotes')
+          .select()
+          .eq('date', today)
+          .eq('lang', locale)
+          .maybeSingle();
+
+      if (response == null) {
+        _logger.w('[NotificationService] No tip found for today.');
+        return;
+      }
+
+      final quote = response['quote'] as String?;
+      final reference = response['reference'] as String?;
+
+      if (quote == null) {
+        _logger.w('[NotificationService] Missing quote.');
+        return;
+      }
+
+      final body = reference != null && reference.trim().isNotEmpty
+          ? '$quote\n$reference'
+          : quote;
+
+      final scheduledTime = _nextInstanceOfTime(hour, minute);
+
+      await _notificationsPlugin.zonedSchedule(
+        2,
+        'Denný tip',
+        body,
+        scheduledTime,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'tip_channel',
+            'Denné tipy',
+            channelDescription: 'Denné pripomienky tipov',
+            importance: Importance.high,
+          ),
+          iOS: DarwinNotificationDetails(),
         ),
-        iOS: DarwinNotificationDetails(),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
-    );
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+      _logger.i('[NotificationService] Tip scheduled for $scheduledTime');
+    } catch (e) {
+      _logger.e('[NotificationService] Error fetching tip', error: e);
+    }
   }
 
-  /// Pomocná funkcia na výpočet najbližšieho času na plánovanie notifikácie
   static tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
     final now = tz.TZDateTime.now(tz.local);
     var scheduled = tz.TZDateTime(
@@ -103,25 +131,84 @@ class NotificationService {
     return scheduled;
   }
 
-  /// TEST – okamžitá notifikácia po 10 sekundách
   static Future<void> showTestNotification() async {
     await _notificationsPlugin.zonedSchedule(
-      99, // Unikátne ID pre test
+      999,
       'Test notifikácia',
-      'Funguje to!',
-      tz.TZDateTime.now(tz.local).add(const Duration(seconds: 10)),
+      'Funguje!',
+      tz.TZDateTime.now(tz.local).add(const Duration(seconds: 5)),
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          'test_channel',
-          'Test Notifikácie',
-          channelDescription: 'Na overenie správneho zobrazenia',
-          importance: Importance.high,
+          'tip_channel',
+          'Denné tipy',
+          channelDescription: 'Test',
         ),
         iOS: DarwinNotificationDetails(),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
     );
+  }
+
+  static Future<void> deleteAccount(BuildContext context) async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final response = await supabase.functions.invoke(
+        'delete_user',
+        body: {
+          'user': {'id': user.id},
+        },
+      );
+      if (response.status == 200) {
+        await supabase.auth.signOut();
+        if (!context.mounted) return;
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(tr('account_deleted_title')),
+            content: Text(tr('account_deleted_desc')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(tr('ok')),
+              ),
+            ],
+          ),
+        );
+      } else {
+        if (!context.mounted) return;
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(tr('error')),
+            content: Text('${tr('account_delete_failed')}: ${response.data}'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(tr('ok')),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(tr('error')),
+          content: Text('${tr('account_delete_failed')}: $e'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(tr('ok')),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }
