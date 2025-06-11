@@ -7,9 +7,9 @@ import 'screens/home_screen.dart';
 import 'screens/auth_screen.dart';
 import 'shared/app_theme.dart';
 import 'services/audio_handler.dart';
+import 'services/notification_service.dart';
 import 'dart:async';
 
-// ===== ZMENA: Typ je teraz naša konkrétna trieda LectioAudioHandler =====
 late LectioAudioHandler audioHandler;
 
 Future<void> main() async {
@@ -21,6 +21,10 @@ Future<void> main() async {
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
+
+  // Inicializácia lokálnych notifikácií
+  await NotificationService.initialize();
+  await NotificationService.showTestNotification();
 
   audioHandler = await AudioService.init(
     builder: () => LectioAudioHandler(),
@@ -41,7 +45,6 @@ Future<void> main() async {
   );
 }
 
-// Ostatok súboru main.dart zostáva bez zmeny
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
@@ -69,6 +72,7 @@ class SessionHandler extends StatefulWidget {
 class _SessionHandlerState extends State<SessionHandler> {
   Session? session;
   late final StreamSubscription<AuthState> _authSubscription;
+
   @override
   void initState() {
     super.initState();

@@ -3,6 +3,7 @@ import 'package:lectio_divina/shared/fab_menu_position.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:lectio_divina/services/notification_service.dart';
 
 String fabMenuPositionLabel(FabMenuPosition pos) {
   switch (pos) {
@@ -21,7 +22,6 @@ String fabMenuPositionLabel(FabMenuPosition pos) {
   }
 }
 
-// === NOVÉ: Uloženie a načítanie výberu biblie ===
 Future<void> saveSelectedBible(String value) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString('selectedBible', value);
@@ -29,7 +29,7 @@ Future<void> saveSelectedBible(String value) async {
 
 Future<String> loadSelectedBible() async {
   final prefs = await SharedPreferences.getInstance();
-  return prefs.getString('selectedBible') ?? 'biblia1'; // default
+  return prefs.getString('selectedBible') ?? 'biblia1';
 }
 
 Future<void> saveFabMenuPosition(FabMenuPosition pos) async {
@@ -64,35 +64,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late FabMenuPosition _selectedPosition;
   bool _isLoadingPosition = true;
   bool _isDeleting = false;
-
-  // === NOVÉ: stav a načítanie výberu biblie ===
-  String _selectedBible = 'biblia1'; // default
+  String _selectedBible = 'biblia1';
   bool _isLoadingBible = true;
+  TimeOfDay _quoteTime = const TimeOfDay(hour: 9, minute: 0);
+  bool _isLoadingNotificationTime = true;
 
   @override
   void initState() {
     super.initState();
     _initPosition();
     _initBible();
+    _loadQuoteNotificationTime();
   }
 
   Future<void> _initPosition() async {
     FabMenuPosition pos = widget.currentPosition ?? await loadFabMenuPosition();
-    if (mounted) {
-      setState(() {
-        _selectedPosition = pos;
-        _isLoadingPosition = false;
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      _selectedPosition = pos;
+      _isLoadingPosition = false;
+    });
   }
 
   Future<void> _initBible() async {
     String bible = await loadSelectedBible();
-    if (mounted) {
+    if (!mounted) return;
+    setState(() {
+      _selectedBible = bible;
+      _isLoadingBible = false;
+    });
+  }
+
+  Future<void> _loadQuoteNotificationTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hour = prefs.getInt('quote_hour') ?? 9;
+    final minute = prefs.getInt('quote_minute') ?? 0;
+    if (!mounted) return;
+    setState(() {
+      _quoteTime = TimeOfDay(hour: hour, minute: minute);
+      _isLoadingNotificationTime = false;
+    });
+  }
+
+  Future<void> _selectQuoteTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _quoteTime,
+    );
+
+    if (picked != null) {
+      if (!mounted) return;
       setState(() {
-        _selectedBible = bible;
-        _isLoadingBible = false;
+        _quoteTime = picked;
       });
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('quote_hour', picked.hour);
+      await prefs.setInt('quote_minute', picked.minute);
+
+      const String quote = '„Tvoje slovo je svetlo pre moje nohy.“';
+      await NotificationService.showDailyQuoteNotification(
+        picked.hour,
+        picked.minute,
+        quote,
+      );
     }
   }
 
@@ -257,8 +292,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   }).toList(),
                 ),
           const SizedBox(height: 32),
-
-          // === NOVÝ BLOK: výber biblie podľa jazyka ===
+          Text(
+            tr('daily_quote_time'),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          _isLoadingNotificationTime
+              ? const Center(child: CircularProgressIndicator())
+              : ListTile(
+                  title: Text(
+                    '${_quoteTime.hour.toString().padLeft(2, '0')}:${_quoteTime.minute.toString().padLeft(2, '0')}',
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                  trailing: const Icon(Icons.edit),
+                  onTap: () => _selectQuoteTime(context),
+                ),
+          const SizedBox(height: 32),
           if (locale == 'sk') ...[
             Text(
               tr('select_bible'),
@@ -311,7 +360,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 32),
           ],
-
           Text(
             tr('settings_coming_soon'),
             style: const TextStyle(color: Colors.grey),

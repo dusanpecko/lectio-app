@@ -197,7 +197,7 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
                                 child: _buildIntentionCard(item, isAuthor),
                               )
                             : _buildIntentionCard(item, isAuthor);
-                      }).toList(),
+                      }),
                   ],
                 ),
               ),

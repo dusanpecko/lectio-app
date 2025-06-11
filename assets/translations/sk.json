@@ -276,5 +276,6 @@
   "login_required_message": "Pre označenie „Páči sa mi“ sa musíte prihlásiť.",
   "send_comment": "Odoslať komentár",
   "confirm": "Potvrdenie",
-  "delete_comment_confirm": "Naozaj chceš vymazať tento komentár?"
+  "delete_comment_confirm": "Naozaj chceš vymazať tento komentár?",
+  "daily_quote_time": "Denný citát"
 }

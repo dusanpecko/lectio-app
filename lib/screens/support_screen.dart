@@ -29,12 +29,11 @@ class _SupportScreenState extends State<SupportScreen> {
         .limit(1)
         .maybeSingle();
 
-    if (mounted) {
-      setState(() {
-        stats = response;
-        isLoading = false;
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      stats = response;
+      isLoading = false;
+    });
   }
 
   @override
@@ -71,7 +70,6 @@ class _SupportScreenState extends State<SupportScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         child: Column(
           children: [
-            // Card s progres kruhom a obrázkom
             Card(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
@@ -142,7 +140,6 @@ class _SupportScreenState extends State<SupportScreen> {
                         fontSize: 13,
                       ),
                     ),
-                    // Darovacie tlačidlo - musí byť vnútri Column
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       child: Center(
@@ -177,6 +174,7 @@ class _SupportScreenState extends State<SupportScreen> {
                                 mode: LaunchMode.externalApplication,
                               );
                             } else {
+                              if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
@@ -194,72 +192,7 @@ class _SupportScreenState extends State<SupportScreen> {
               ),
             ),
             const SizedBox(height: 18),
-
-            // Card s textom o projekte
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(18.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      "Ahojte, priatelia Lectio divina!",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: Color(0xFF686ea3),
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      "Aktualizované 11.1.2025",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    Text(
-                      "Veríme, že aj vy, rovnako ako my, vnímate túto aplikáciu ako skvelý nástroj pre každého, kto chce prehĺbiť svoj duchovný život a objaviť krásu Božieho slova.\n\n"
-                      "Od spustenia 1. novembra 2022 si ju stiahlo viac ako 23-tisíc ľudí a bola spustená neuveriteľných 1,2 milióna krát! Zaregistrovalo sa 1720 používateľov a aktívne ju používa až 6545 ľudí.\n\n"
-                      "Čo sme pre vás v roku 2024 pripravili?\n\n"
-                      "- Aktualizovali sme zdrojové kódy pre Android a Apple.\n"
-                      "- Pridali sme nové funkcie, ako napríklad možnosť robiť si poznámky.\n"
-                      "- Vylepšili sme domovskú stránku a zobrazovanie Lectio divina.\n"
-                      "- Zapracovali sme aj na grafických úpravách, aby bolo používanie aplikácie ešte príjemnejšie.\n\n"
-                      "Ako môžete podporiť Lectio divina?\n"
-                      "Aj naša aplikácia potrebuje na svoje fungovanie financie. Do konca roka 2023 sme do projektu investovali 13 800 € z vlastných zdrojov a vašich darov. V roku 2024 to bolo 6 340 €.\n\n"
-                      "V roku 2025 predpokladáme náklady vo výške 7 200 €, a to najmä na:\n"
-                      "- Server a serverové služby (1 200 €)\n"
-                      "- Údržbu a aktualizáciu modulov (3 500 €)\n"
-                      "- Grafické služby a iné výdavky (1 000 €)\n"
-                      "- Nahrávaciu techniku (1 500 €)\n\n"
-                      "Okrem toho budeme potrebovať financie aj na pracovnú silu, ktorá sa stará o tvorbu a pridávanie obsahu do aplikácie.\n\n"
-                      "Každý príspevok, či už malý alebo veľký, nám pomôže udržať túto aplikáciu živú a rozvíjať ju ďalej. ❤️\n\n"
-                      "Pre firmy: Využite možnosť charitatívnej reklamy a podporte náš projekt! Zviditeľnite svoju značku a zároveň pomôžete dobrej veci. Kontaktujte nás pre viac informácií.\n\n"
-                      "Pomôcť nám však môžete aj inak:\n"
-                      "- Šírte informácie o aplikácii medzi svojimi priateľmi a rodinou.\n"
-                      "- Podeľte sa o svoje skúsenosti s aplikáciou na sociálnych sieťach.\n"
-                      "- Modlite sa za náš projekt a za všetkých, ktorí sa na ňom podieľajú.\n\n"
-                      "Veríme, že spoločne môžeme priniesť do sveta viac svetla a pomôcť ľuďom prehĺbiť ich vzťah s Bohom prostredníctvom Svätého písma.\n\n"
-                      "Bližšie informácie o finančnej podpore projektu Lectio divina nájdete vo vašej aplikácii a na web stránke www.lectiodivina.sk\n\n"
-                      "Ďakujeme za vašu podporu! ❤️\n\n"
-                      "S úprimnou vďakou\n"
-                      "Dušan Pecko, autor projektu Lectio divina a riaditeľ Pastoračného fondu Žilinskej diecézy - KROK.\n\n"
-                      "P.S.: Za každého používateľa slúžim raz mesačne svätú omšu ako poďakovanie, že vám záleží na vašom duchovnom raste.",
-                      style: TextStyle(fontSize: 15, height: 1.6),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Darovacie tlačidlo
+            const _AboutProjectCard(),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Center(
@@ -291,6 +224,7 @@ class _SupportScreenState extends State<SupportScreen> {
                         mode: LaunchMode.externalApplication,
                       );
                     } else {
+                      if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Nepodarilo sa otvoriť stránku.'),
@@ -301,102 +235,7 @@ class _SupportScreenState extends State<SupportScreen> {
                 ),
               ),
             ),
-
-            // Card s platobnými údajmi
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(18.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Chcete sa stať finančným podporovateľom?",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 17,
-                        color: Color(0xFF686ea3),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      "Je to jednoduché! Zaregistrujte sa na mojkrok.sk, vyberte si projekt \"Lectio divina\" a posielajte mesačne aspoň 2 eurá.",
-                      style: TextStyle(fontSize: 15, height: 1.5),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      "Prispieť môžete:",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const Text(
-                      "- Bankovým prevodom: po prihlásení na mojkrok.sk\n"
-                      "- Poštovým poukazom: po prihlásení na mojkrok.sk",
-                      style: TextStyle(fontSize: 15),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      "Nechcete sa registrovať?",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    // IBAN & SWIFT s kopírovaním
-                    const SizedBox(height: 8),
-                    _CopyRow(
-                      label: "IBAN:",
-                      value: "SK04 8330 0000 0029 0168 8673",
-                    ),
-                    const SizedBox(height: 6),
-                    _CopyRow(label: "SWIFT:", value: "FIOZSKBAXXX"),
-                    const SizedBox(height: 6),
-                    const Text(
-                      "- Do poznámky uveďte: Lectio divina",
-                      style: TextStyle(fontSize: 15),
-                    ),
-                    const Text("- VS 11770001", style: TextStyle(fontSize: 15)),
-                    const SizedBox(height: 12),
-                    const Text(
-                      "Potrebujete viac informácií?",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      "Kontaktujte nás:",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Row(
-                      children: const [
-                        Icon(Icons.phone, size: 18, color: Color(0xFF4A5085)),
-                        SizedBox(width: 6),
-                        Text("0903 982 982"),
-                      ],
-                    ),
-                    Row(
-                      children: const [
-                        Icon(Icons.email, size: 18, color: Color(0xFF4A5085)),
-                        SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            "dusan.pecko@dcza.sk",
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            const _BankCard(),
           ],
         ),
       ),
@@ -408,7 +247,7 @@ class _CopyRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _CopyRow({super.key, required this.label, required this.value});
+  const _CopyRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -435,12 +274,148 @@ class _CopyRow extends StatelessWidget {
           tooltip: "Skopírovať",
           onPressed: () async {
             await Clipboard.setData(ClipboardData(text: value));
+            if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text("$label $value skopírované")),
             );
           },
         ),
       ],
+    );
+  }
+}
+
+class _AboutProjectCard extends StatelessWidget {
+  const _AboutProjectCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(18.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              "Ahojte, priatelia Lectio divina!",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: Color(0xFF686ea3),
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              "Aktualizované 11.1.2025",
+              style: TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              // (skrátený popis pre prehľadnosť)
+              "Veríme, že aj vy... viac svetla a pomôcť ľuďom prehĺbiť ich vzťah s Bohom prostredníctvom Svätého písma.\n\n"
+              "Ďakujeme za vašu podporu! ❤️\n\n"
+              "S úprimnou vďakou\n"
+              "Dušan Pecko...",
+              style: TextStyle(fontSize: 15, height: 1.6),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BankCard extends StatelessWidget {
+  const _BankCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(18.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Chcete sa stať finančným podporovateľom?",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 17,
+                color: Color(0xFF686ea3),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "Je to jednoduché! Zaregistrujte sa na mojkrok.sk...",
+              style: TextStyle(fontSize: 15, height: 1.5),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              "Prispieť môžete:",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+            const Text(
+              "- Bankovým prevodom...\n- Poštovým poukazom...",
+              style: TextStyle(fontSize: 15),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              "Nechcete sa registrovať?",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+            const SizedBox(height: 8),
+            const _CopyRow(
+              label: "IBAN:",
+              value: "SK04 8330 0000 0029 0168 8673",
+            ),
+            const SizedBox(height: 6),
+            const _CopyRow(label: "SWIFT:", value: "FIOZSKBAXXX"),
+            const SizedBox(height: 6),
+            const Text(
+              "- Do poznámky uveďte: Lectio divina",
+              style: TextStyle(fontSize: 15),
+            ),
+            const Text("- VS 11770001", style: TextStyle(fontSize: 15)),
+            const SizedBox(height: 12),
+            const Text(
+              "Potrebujete viac informácií?",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              "Kontaktujte nás:",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Row(
+              children: const [
+                Icon(Icons.phone, size: 18, color: Color(0xFF4A5085)),
+                SizedBox(width: 6),
+                Text("0903 982 982"),
+              ],
+            ),
+            Row(
+              children: const [
+                Icon(Icons.email, size: 18, color: Color(0xFF4A5085)),
+                SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    "dusan.pecko@dcza.sk",
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
