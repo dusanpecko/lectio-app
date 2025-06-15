@@ -14,6 +14,7 @@ import 'notes_list_screen.dart';
 import 'about_screen.dart';
 import 'intentions_list_screen.dart';
 import 'Intention_Submit_Screen.dart';
+import 'package:lectio_divina/services/notification_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -489,7 +490,28 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                     ),
-
+                    // Testovacie tlačidlo na notifikáciu
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.notifications_active),
+                        label: const Text('Test notifikácie'),
+                        onPressed: () async {
+                          await NotificationService.showTestNotification();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Test notifikácia bola naplánovaná!',
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                     // Support button
                     Container(
                       width: double.infinity,

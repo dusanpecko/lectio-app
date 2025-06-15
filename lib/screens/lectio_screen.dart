@@ -5,8 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:lectio_divina/services/audio_handler.dart';
-import 'package:lectio_divina/main.dart';
-import 'note_detail_screen.dart'; // <- nezabudni importovať, ak ešte nie je!
+import 'note_detail_screen.dart';
+import 'package:lectio_divina/shared/globals.dart';
 
 class MediaState {
   final MediaItem? mediaItem;
@@ -31,23 +31,11 @@ class _LectioScreenState extends State<LectioScreen> {
   Map<String, bool> _selectedAudios = {};
   bool _isPlayerExpanded = false;
 
-  // >>>>> PRIDANÉ: getter na usera
-  User? get _currentUser => Supabase.instance.client.auth.currentUser;
-
-  Stream<MediaState> get _mediaStateStream =>
-      Rx.combineLatest2<MediaItem?, PlaybackState, MediaState>(
-        audioHandler.mediaItem,
-        audioHandler.playbackState,
-        (mediaItem, playbackState) => MediaState(mediaItem, playbackState),
-      );
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_dataLoaded) {
-      _loadSelectedBible().then((_) {
-        fetchLectioData();
-      });
+      _loadSelectedBible().then((_) => fetchLectioData());
       _dataLoaded = true;
     }
   }
@@ -80,6 +68,16 @@ class _LectioScreenState extends State<LectioScreen> {
         isLoading = false;
         _resetSelectedAudios();
       });
+      final currentPlaylist = getAllAudioSections(context)
+          .where(
+            (section) => (result?[section.key] ?? '').toString().isNotEmpty,
+          )
+          .toList();
+
+      if (currentPlaylist.isNotEmpty) {
+        final handler = await audioHandlerFuture;
+        await handler.loadPlaylist(result!, currentPlaylist);
+      }
     }
   }
 
@@ -110,19 +108,19 @@ class _LectioScreenState extends State<LectioScreen> {
   List<AudioSection> getBibleAudioSections(BuildContext context) {
     final List<AudioSection> bibleAudioSections = [];
     if (_selectedBible == 'biblia1' &&
-        (lectioData?['biblia_1_audio'] ?? '').isNotEmpty) {
+        (lectioData?['biblia_1_audio'] ?? '').toString().isNotEmpty) {
       bibleAudioSections.add(
         AudioSection(key: 'biblia_1_audio', label: tr('audio_bible1')),
       );
     }
     if (_selectedBible == 'biblia2' &&
-        (lectioData?['biblia_2_audio'] ?? '').isNotEmpty) {
+        (lectioData?['biblia_2_audio'] ?? '').toString().isNotEmpty) {
       bibleAudioSections.add(
         AudioSection(key: 'biblia_2_audio', label: tr('audio_bible2')),
       );
     }
     if (_selectedBible == 'biblia3' &&
-        (lectioData?['biblia_3_audio'] ?? '').isNotEmpty) {
+        (lectioData?['biblia_3_audio'] ?? '').toString().isNotEmpty) {
       bibleAudioSections.add(
         AudioSection(key: 'biblia_3_audio', label: tr('audio_bible3')),
       );
@@ -150,209 +148,88 @@ class _LectioScreenState extends State<LectioScreen> {
       .toList();
 
   Future<void> playOrPauseHandler(bool isPlaying) async {
-    if (audioHandler.queue.valueOrNull == null ||
-        audioHandler.queue.valueOrNull!.isEmpty) {
+    final handler = await audioHandlerFuture;
+    if (handler.queue.valueOrNull == null ||
+        handler.queue.valueOrNull!.isEmpty) {
       if (_playlist.isEmpty) return;
-      await audioHandler.loadPlaylist(lectioData!, _playlist);
+      await handler.loadPlaylist(lectioData!, _playlist);
     }
     if (isPlaying) {
-      await audioHandler.pause();
+      await handler.pause();
     } else {
-      await audioHandler.play();
+      await handler.play();
     }
   }
 
+  Stream<MediaState> _mediaStateStreamFromHandler(AudioHandler handler) =>
+      Rx.combineLatest2<MediaItem?, PlaybackState, MediaState>(
+        handler.mediaItem,
+        handler.playbackState,
+        (mediaItem, playbackState) => MediaState(mediaItem, playbackState),
+      );
+
   Widget _buildMiniAudioPlayer(BuildContext context) {
-    return StreamBuilder<MediaState>(
-      stream: _mediaStateStream,
-      builder: (context, snapshot) {
-        final mediaState = snapshot.data;
-        final mediaItem = mediaState?.mediaItem;
-        final playbackState = mediaState?.playbackState;
-        final isPlaying = playbackState?.playing ?? false;
+    return FutureBuilder<LectioAudioHandler>(
+      future: audioHandlerFuture,
+      builder: (context, snap) {
+        if (!snap.hasData) return const SizedBox.shrink();
+        final handler = snap.data!;
+        return StreamBuilder<MediaState>(
+          stream: _mediaStateStreamFromHandler(handler),
+          builder: (ctx, snapshot) {
+            final mediaState = snapshot.data;
+            final mediaItem = mediaState?.mediaItem;
+            final playbackState = mediaState?.playbackState;
+            final isPlaying = playbackState?.playing ?? false;
+            final hasQueue = handler.queue.valueOrNull?.isNotEmpty ?? false;
 
-        return GestureDetector(
-          onTap: () => setState(() => _isPlayerExpanded = true),
-          child: AnimatedOpacity(
-            opacity: (audioHandler.queue.valueOrNull?.isNotEmpty ?? false)
-                ? 1.0
-                : 0.0,
-            duration: const Duration(milliseconds: 250),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                border: Border(
-                  top: BorderSide(
-                    color: Theme.of(context).dividerColor,
-                    width: 1,
-                  ),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha((0.07 * 255).toInt()),
-                    blurRadius: 4,
-                    offset: Offset(0, -1),
-                  ),
-                ],
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-              height: 56,
-              child: Row(
-                children: [
-                  Icon(Icons.headphones, color: Theme.of(context).primaryColor),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      mediaItem?.title ?? tr('audio_player'),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow),
-                    onPressed: () => playOrPauseHandler(isPlaying),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildAudioPlayer(BuildContext context) {
-    return StreamBuilder<MediaState>(
-      stream: _mediaStateStream,
-      builder: (context, snapshot) {
-        final mediaState = snapshot.data;
-        final mediaItem = mediaState?.mediaItem;
-        final playbackState = mediaState?.playbackState;
-        final isPlaying = playbackState?.playing ?? false;
-        final processingState =
-            playbackState?.processingState ?? AudioProcessingState.idle;
-        final duration = mediaItem?.duration ?? Duration.zero;
-        final sideControlsEnabled = mediaItem != null;
-
-        return StreamBuilder<Duration>(
-          stream: audioHandler.positionStream,
-          builder: (context, snapshot) {
-            final position = snapshot.data ?? Duration.zero;
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.headphones,
-                          color: Theme.of(context).primaryColor,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            tr('audio_player'),
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.more_vert),
-                          tooltip: tr('audio_choose_title'),
-                          onPressed: () => _showAudioSelectionPopup(
-                            context,
-                            getAllAudioSections(context),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      mediaItem?.title ?? tr('audio_nothing_playing'),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    Slider(
-                      min: 0,
-                      max: duration.inMilliseconds.toDouble() > 0
-                          ? duration.inMilliseconds.toDouble()
-                          : 1.0,
-                      value: position.inMilliseconds
-                          .clamp(0, duration.inMilliseconds)
-                          .toDouble(),
-                      onChanged: sideControlsEnabled && duration > Duration.zero
-                          ? (value) {
-                              audioHandler.seek(
-                                Duration(milliseconds: value.toInt()),
-                              );
-                            }
-                          : null,
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(_formatDuration(position)),
-                        Text(_formatDuration(duration)),
-                      ],
-                    ),
-                    if (processingState == AudioProcessingState.loading ||
-                        processingState == AudioProcessingState.buffering)
-                      const Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: CircularProgressIndicator(),
-                      )
-                    else
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.skip_previous),
-                            onPressed: sideControlsEnabled
-                                ? audioHandler.skipToPrevious
-                                : null,
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              isPlaying ? Icons.pause : Icons.play_arrow,
-                            ),
-                            iconSize: 36,
-                            onPressed: () => playOrPauseHandler(isPlaying),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.stop),
-                            onPressed: sideControlsEnabled
-                                ? audioHandler.stop
-                                : null,
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.skip_next),
-                            onPressed: sideControlsEnabled
-                                ? audioHandler.skipToNext
-                                : null,
-                          ),
-                        ],
-                      ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.playlist_play),
-                        label: Text(tr('audio_play_selected')),
-                        onPressed: _playlist.isEmpty
-                            ? null
-                            : () async {
-                                await audioHandler.loadPlaylist(
-                                  lectioData!,
-                                  _playlist,
-                                );
-                                audioHandler.play();
-                              },
+            return GestureDetector(
+              onTap: () => setState(() => _isPlayerExpanded = true),
+              child: AnimatedOpacity(
+                opacity: hasQueue ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 250),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    border: Border(
+                      top: BorderSide(
+                        color: Theme.of(context).dividerColor,
+                        width: 1,
                       ),
                     ),
-                  ],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha((0.07 * 255).toInt()),
+                        blurRadius: 4,
+                        offset: const Offset(0, -1),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 10,
+                  ),
+                  height: 56,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.headphones,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          mediaItem?.title ?? tr('audio_player'),
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow),
+                        onPressed: () => playOrPauseHandler(isPlaying),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -362,10 +239,156 @@ class _LectioScreenState extends State<LectioScreen> {
     );
   }
 
+  Widget _buildAudioPlayer(BuildContext context) {
+    return FutureBuilder<LectioAudioHandler>(
+      future: audioHandlerFuture,
+      builder: (context, snap) {
+        if (!snap.hasData) return const SizedBox.shrink();
+        final handler = snap.data!;
+        return StreamBuilder<MediaState>(
+          stream: _mediaStateStreamFromHandler(handler),
+          builder: (ctx, snapshot) {
+            final mediaState = snapshot.data;
+            final mediaItem = mediaState?.mediaItem;
+            final playbackState = mediaState?.playbackState;
+            final isPlaying = playbackState?.playing ?? false;
+            final procState =
+                playbackState?.processingState ?? AudioProcessingState.idle;
+            final duration = mediaItem?.duration ?? Duration.zero;
+            final sideEnabled = mediaItem != null;
+
+            return StreamBuilder<Duration>(
+              stream: handler.positionStream,
+              builder: (ctx2, snapPos) {
+                final position = snapPos.data ?? Duration.zero;
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.headphones,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                tr('audio_player'),
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.more_vert),
+                              tooltip: tr('audio_choose_title'),
+                              onPressed: () => _showAudioSelectionPopup(
+                                context,
+                                getAllAudioSections(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          mediaItem?.title ?? tr('audio_nothing_playing'),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                          textAlign: TextAlign.center,
+                        ),
+                        Slider(
+                          min: 0,
+                          max: duration.inMilliseconds.toDouble() > 0
+                              ? duration.inMilliseconds.toDouble()
+                              : 1.0,
+                          value: position.inMilliseconds
+                              .clamp(0, duration.inMilliseconds)
+                              .toDouble(),
+                          onChanged: sideEnabled && duration > Duration.zero
+                              ? (value) => handler.seek(
+                                  Duration(milliseconds: value.toInt()),
+                                )
+                              : null,
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(_formatDuration(position)),
+                            Text(_formatDuration(duration)),
+                          ],
+                        ),
+                        if (procState == AudioProcessingState.loading ||
+                            procState == AudioProcessingState.buffering)
+                          const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: CircularProgressIndicator(),
+                          )
+                        else
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.skip_previous),
+                                onPressed: sideEnabled
+                                    ? handler.skipToPrevious
+                                    : null,
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  isPlaying ? Icons.pause : Icons.play_arrow,
+                                ),
+                                iconSize: 36,
+                                onPressed: () => playOrPauseHandler(isPlaying),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.stop),
+                                onPressed: sideEnabled ? handler.stop : null,
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.skip_next),
+                                onPressed: sideEnabled
+                                    ? handler.skipToNext
+                                    : null,
+                              ),
+                            ],
+                          ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.playlist_play),
+                            label: Text(tr('audio_play_selected')),
+                            onPressed: _playlist.isEmpty
+                                ? null
+                                : () async {
+                                    await handler.loadPlaylist(
+                                      lectioData!,
+                                      _playlist,
+                                    );
+                                    handler.play();
+                                  },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
   String _formatDuration(Duration d) {
-    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return "$minutes:$seconds";
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return "$m:$s";
   }
 
   void _showAudioSelectionPopup(
@@ -426,10 +449,11 @@ class _LectioScreenState extends State<LectioScreen> {
         _selectedAudios = tempSelection;
       });
       final newPlaylist = _playlist;
+      final handler = await audioHandlerFuture;
       if (newPlaylist.isNotEmpty) {
-        await audioHandler.loadPlaylist(lectioData!, newPlaylist);
+        await handler.loadPlaylist(lectioData!, newPlaylist);
       } else {
-        await audioHandler.stop();
+        await handler.stop();
       }
     }
   }
@@ -496,7 +520,7 @@ class _LectioScreenState extends State<LectioScreen> {
       appBar: AppBar(
         title: const Text("Lectio divina"),
         actions: [
-          if (_currentUser != null)
+          if (Supabase.instance.client.auth.currentUser != null)
             IconButton(
               icon: const Icon(Icons.note_add_outlined),
               tooltip: "Pridať poznámku",

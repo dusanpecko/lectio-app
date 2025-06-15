@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.example.lectio_divina.app-mergeReleaseResources-54:/values-land/values-land.xml",
+            "map": [
+                {
+                    "source": "/Users/dusanpecko/.gradle/caches/8.12/transforms/0d0ad2c9a7eee0ad2b557032bddebd70/transformed/appcompat-1.1.0/res/values-land/values-land.xml",
+                    "from": {
+                        "startLines": "2,3,4",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "55,125,196",
+                        "endColumns": "69,70,67",
+                        "endOffsets": "120,191,259"
+                    }
+                }
+            ]
+        }
+    ]
+}

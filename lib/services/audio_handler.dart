@@ -16,18 +16,25 @@ class LectioAudioHandler extends BaseAudioHandler
   Stream<Duration> get positionStream => _player.positionStream;
 
   LectioAudioHandler() {
-    _player.setAudioSource(_playlist);
+    _init();
+  }
+
+  Future<void> _init() async {
+    try {
+      await _player.setAudioSource(_playlist);
+    } catch (e) {
+      print("Chyba pri nastavovaní audio source: $e");
+    }
+
     _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
 
     _player.sequenceStateStream.listen((sequenceState) {
-      final newQueue = sequenceState?.effectiveSequence.map((source) {
+      final newQueue = sequenceState.effectiveSequence.map((source) {
         return source.tag as MediaItem;
       }).toList();
-      if (newQueue != null) {
-        queue.add(newQueue);
-        _currentItems = newQueue;
-      }
-      // Update current mediaItem keď sa zmení index
+      queue.add(newQueue);
+      _currentItems = newQueue;
+
       final idx = _player.currentIndex ?? 0;
       if (_currentItems.isNotEmpty && idx < _currentItems.length) {
         mediaItem.add(_currentItems[idx]);
@@ -51,7 +58,7 @@ class LectioAudioHandler extends BaseAudioHandler
           final tempPlayer = AudioPlayer();
           duration = await tempPlayer.setUrl(url);
           await tempPlayer.dispose();
-        } catch (_) {
+        } catch (e) {
           duration = null;
         }
         final mediaItem = MediaItem(
@@ -65,9 +72,10 @@ class LectioAudioHandler extends BaseAudioHandler
         print('Pridávam: ${mediaItem.title} - duration: $duration');
       }
     }
+
     queue.add(mediaItems);
     _currentItems = mediaItems;
-    // Nastav mediaItem na začiatok (prvý) ak playlist nie je prázdny
+
     if (mediaItems.isNotEmpty) {
       mediaItem.add(mediaItems.first);
     }

@@ -2,10 +2,10 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:logger/logger.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final Logger _logger = Logger();
@@ -16,9 +16,8 @@ class NotificationService {
 
   static Future<void> initialize() async {
     tz.initializeTimeZones();
-    final String timeZone = await FlutterNativeTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(timeZone));
-
+    final String timeZoneName = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(timeZoneName));
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iOS = DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -104,10 +103,10 @@ class NotificationService {
           ),
           iOS: DarwinNotificationDetails(),
         ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         matchDateTimeComponents: DateTimeComponents.time,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.wallClockTime,
       );
       _logger.i('[NotificationService] Tip scheduled for $scheduledTime');
     } catch (e) {
@@ -132,21 +131,20 @@ class NotificationService {
   }
 
   static Future<void> showTestNotification() async {
-    await _notificationsPlugin.zonedSchedule(
+    await _notificationsPlugin.show(
       999,
       'Test notifikácia',
       'Funguje!',
-      tz.TZDateTime.now(tz.local).add(const Duration(seconds: 5)),
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'tip_channel',
           'Denné tipy',
           channelDescription: 'Test',
+          importance: Importance.max,
+          priority: Priority.high,
         ),
         iOS: DarwinNotificationDetails(),
       ),
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 

@@ -1,23 +1,30 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:lectio_divina/screens/auth_screen.dart';
+import 'package:lectio_divina/screens/home_screen.dart';
+import 'package:lectio_divina/screens/lectio_screen.dart';
+import 'package:lectio_divina/services/notification_service.dart';
+import 'package:lectio_divina/shared/app_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:easy_localization/easy_localization.dart';
-import 'package:audio_service/audio_service.dart';
-import 'screens/home_screen.dart';
-import 'screens/auth_screen.dart';
-import 'shared/app_theme.dart';
-import 'services/audio_handler.dart';
-import 'services/notification_service.dart';
-import 'screens/lectio_screen.dart'; // <-- pridaj tento import
-import 'dart:async';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:permission_handler/permission_handler.dart';
 
-final GlobalKey<NavigatorState> navigatorKey =
-    GlobalKey<NavigatorState>(); // <- pre navigáciu z notifikácie
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-late LectioAudioHandler audioHandler;
+Future<void> requestAndroidNotificationPermission() async {
+  if (Platform.isAndroid) {
+    await Permission.notification.request();
+  }
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  tz.initializeTimeZones();
   await dotenv.load();
   await EasyLocalization.ensureInitialized();
 
@@ -26,18 +33,9 @@ Future<void> main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
-  // Inicializácia lokálnych notifikácií
   await NotificationService.initialize();
+  await requestAndroidNotificationPermission();
   await NotificationService.showTestNotification();
-
-  audioHandler = await AudioService.init(
-    builder: () => LectioAudioHandler(),
-    config: const AudioServiceConfig(
-      androidNotificationChannelId: 'sk.dusanpecko.lectio_divina.channel.audio',
-      androidNotificationChannelName: 'Prehrávanie audia',
-      androidNotificationOngoing: true,
-    ),
-  );
 
   runApp(
     EasyLocalization(
@@ -54,7 +52,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorKey: navigatorKey, // <- aby mohla notifikácia otvoriť screen
+      navigatorKey: navigatorKey,
       title: tr('app_title'),
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
@@ -83,6 +81,7 @@ class _SessionHandlerState extends State<SessionHandler> {
   void initState() {
     super.initState();
     session = Supabase.instance.client.auth.currentSession;
+
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
       _,
     ) {

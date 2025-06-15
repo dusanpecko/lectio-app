@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 ///
 class FlutterNativeTimezone {
   static const MethodChannel _channel =
-      const MethodChannel('flutter_native_timezone');
+      MethodChannel('flutter_native_timezone');
 
   ///
   /// Returns local timezone from the native layer.

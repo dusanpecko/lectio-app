@@ -1,0 +1,94 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.example.lectio_divina.app-mergeReleaseResources-54:/values-bn/values-bn.xml",
+            "map": [
+                {
+                    "source": "/Users/dusanpecko/.gradle/caches/8.12/transforms/0c69679757972620720ec039d7103818/transformed/browser-1.8.0/res/values-bn/values-bn.xml",
+                    "from": {
+                        "startLines": "2,3,4,5",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,161,263,372",
+                        "endColumns": "105,101,108,105",
+                        "endOffsets": "156,258,367,473"
+                    },
+                    "to": {
+                        "startLines": "37,48,49,50",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "3636,4585,4687,4796",
+                        "endColumns": "105,101,108,105",
+                        "endOffsets": "3737,4682,4791,4897"
+                    }
+                },
+                {
+                    "source": "/Users/dusanpecko/.gradle/caches/8.12/transforms/0d0ad2c9a7eee0ad2b557032bddebd70/transformed/appcompat-1.1.0/res/values-bn/values-bn.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "105,213,319,425,514,619,740,823,906,997,1089,1183,1277,1378,1471,1566,1660,1751,1842,1927,2037,2141,2244,2352,2460,2565,2730,2835",
+                        "endColumns": "107,105,105,88,104,120,82,82,90,91,93,93,100,92,94,93,90,90,84,109,103,102,107,107,104,164,104,85",
+                        "endOffsets": "208,314,420,509,614,735,818,901,992,1084,1178,1272,1373,1466,1561,1655,1746,1837,1922,2032,2136,2239,2347,2455,2560,2725,2830,2916"
+                    },
+                    "to": {
+                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,53",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "105,213,319,425,514,619,740,823,906,997,1089,1183,1277,1378,1471,1566,1660,1751,1842,1927,2037,2141,2244,2352,2460,2565,2730,5131",
+                        "endColumns": "107,105,105,88,104,120,82,82,90,91,93,93,100,92,94,93,90,90,84,109,103,102,107,107,104,164,104,85",
+                        "endOffsets": "208,314,420,509,614,735,818,901,992,1084,1178,1272,1373,1466,1561,1655,1746,1837,1922,2032,2136,2239,2347,2455,2560,2725,2830,5212"
+                    }
+                },
+                {
+                    "source": "/Users/dusanpecko/.gradle/caches/8.12/transforms/b83b8b00b8346c9e7414a1f1298f055d/transformed/preference-1.2.1/res/values-bn/values-bn.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8",
+                        "startColumns": "4,4,4,4,4,4,4",
+                        "startOffsets": "105,177,261,341,490,659,740",
+                        "endColumns": "71,83,79,148,168,80,77",
+                        "endOffsets": "172,256,336,485,654,735,813"
+                    },
+                    "to": {
+                        "startLines": "36,47,51,52,55,56,57",
+                        "startColumns": "4,4,4,4,4,4,4",
+                        "startOffsets": "3564,4501,4902,4982,5318,5487,5568",
+                        "endColumns": "71,83,79,148,168,80,77",
+                        "endOffsets": "3631,4580,4977,5126,5482,5563,5641"
+                    }
+                },
+                {
+                    "source": "/Users/dusanpecko/.gradle/caches/8.12/transforms/66aa7f682cf61ffe3ee75db6ee238d77/transformed/core-1.13.1/res/values-bn/values-bn.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,154,256,358,461,562,664,784",
+                        "endColumns": "98,101,101,102,100,101,119,100",
+                        "endOffsets": "149,251,353,456,557,659,779,880"
+                    },
+                    "to": {
+                        "startLines": "29,30,31,32,33,34,35,54",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "2835,2934,3036,3138,3241,3342,3444,5217",
+                        "endColumns": "98,101,101,102,100,101,119,100",
+                        "endOffsets": "2929,3031,3133,3236,3337,3439,3559,5313"
+                    }
+                },
+                {
+                    "source": "/Users/dusanpecko/.gradle/caches/8.12/transforms/66c3f8d759689e7c8bf8d566a47d4905/transformed/jetified-media3-exoplayer-1.4.1/res/values-bn/values-bn.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9,10",
+                        "startColumns": "4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,123,189,256,322,397,464,596,725",
+                        "endColumns": "67,65,66,65,74,66,131,128,88",
+                        "endOffsets": "118,184,251,317,392,459,591,720,809"
+                    },
+                    "to": {
+                        "startLines": "38,39,40,41,42,43,44,45,46",
+                        "startColumns": "4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "3742,3810,3876,3943,4009,4084,4151,4283,4412",
+                        "endColumns": "67,65,66,65,74,66,131,128,88",
+                        "endOffsets": "3805,3871,3938,4004,4079,4146,4278,4407,4496"
+                    }
+                }
+            ]
+        }
+    ]
+}

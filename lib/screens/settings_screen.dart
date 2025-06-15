@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lectio_divina/services/notification_service.dart';
+import 'package:lectio_divina/screens/profile_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   final FabMenuPosition? currentPosition;
@@ -59,6 +60,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     final hour = prefs.getInt('tip_hour') ?? 9;
     final minute = prefs.getInt('tip_minute') ?? 0;
+
+    final locale = context.locale.languageCode;
+    await NotificationService.showDailyTipNotification(hour, minute, locale);
+
     if (!mounted) return;
     setState(() {
       _tipTime = TimeOfDay(hour: hour, minute: minute);
@@ -128,7 +133,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildUserInfoCard(userEmail),
+          _buildUserInfoCard(context, userEmail),
           const SizedBox(height: 16),
           _buildPositionCard(),
           const SizedBox(height: 16),
@@ -144,7 +149,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildUserInfoCard(String email) {
+  Widget _buildUserInfoCard(BuildContext context, String email) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 4,
@@ -155,6 +160,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(email),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProfileScreen()),
+          );
+        },
       ),
     );
   }

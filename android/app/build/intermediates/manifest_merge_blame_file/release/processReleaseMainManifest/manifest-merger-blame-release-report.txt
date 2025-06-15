@@ -1,0 +1,279 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.example.lectio_divina"
+4    android:versionCode="1"
+5    android:versionName="1.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="21"
+9        android:targetSdkVersion="35" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:5:5-66
+11-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:5:22-64
+12    <uses-permission android:name="android.permission.WAKE_LOCK" />
+12-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:6:5-67
+12-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:6:22-65
+13    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+13-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:7:5-76
+13-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:7:22-74
+14    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+14-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:8:5-91
+14-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:8:22-89
+15
+16    <queries>
+16-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:9:5-20:15
+17        <intent>
+17-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:10:9-14:18
+18            <action android:name="android.intent.action.VIEW" />
+18-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:11:13-65
+18-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:11:21-62
+19
+20            <category android:name="android.intent.category.BROWSABLE" />
+20-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:12:13-74
+20-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:12:23-71
+21
+22            <data android:scheme="http" />
+22-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:13:13-42
+22-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:13:19-40
+23        </intent>
+24        <intent>
+24-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:15:9-19:18
+25            <action android:name="android.intent.action.VIEW" />
+25-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:11:13-65
+25-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:11:21-62
+26
+27            <category android:name="android.intent.category.BROWSABLE" />
+27-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:12:13-74
+27-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:12:23-71
+28
+29            <data android:scheme="https" />
+29-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:13:13-42
+29-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:13:19-40
+30        </intent>
+31    </queries>
+32
+33    <uses-permission android:name="android.permission.VIBRATE" />
+33-->[:flutter_local_notifications] /Users/dusanpecko/.pub-cache/hosted/pub.dev/flutter_local_notifications-19.2.1/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:7:5-66
+33-->[:flutter_local_notifications] /Users/dusanpecko/.pub-cache/hosted/pub.dev/flutter_local_notifications-19.2.1/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:7:22-63
+34    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+34-->[:flutter_local_notifications] /Users/dusanpecko/.pub-cache/hosted/pub.dev/flutter_local_notifications-19.2.1/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:8:5-77
+34-->[:flutter_local_notifications] /Users/dusanpecko/.pub-cache/hosted/pub.dev/flutter_local_notifications-19.2.1/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:8:22-74
+35    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+35-->[androidx.media3:media3-common:1.4.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/3f3f2e728699f00eba298007738e88a2/transformed/jetified-media3-common-1.4.1/AndroidManifest.xml:22:5-79
+35-->[androidx.media3:media3-common:1.4.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/3f3f2e728699f00eba298007738e88a2/transformed/jetified-media3-common-1.4.1/AndroidManifest.xml:22:22-76
+36
+37    <permission
+37-->[androidx.core:core:1.13.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/66aa7f682cf61ffe3ee75db6ee238d77/transformed/core-1.13.1/AndroidManifest.xml:22:5-24:47
+38        android:name="com.example.lectio_divina.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+38-->[androidx.core:core:1.13.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/66aa7f682cf61ffe3ee75db6ee238d77/transformed/core-1.13.1/AndroidManifest.xml:23:9-81
+39        android:protectionLevel="signature" />
+39-->[androidx.core:core:1.13.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/66aa7f682cf61ffe3ee75db6ee238d77/transformed/core-1.13.1/AndroidManifest.xml:24:9-44
+40
+41    <uses-permission android:name="com.example.lectio_divina.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+41-->[androidx.core:core:1.13.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/66aa7f682cf61ffe3ee75db6ee238d77/transformed/core-1.13.1/AndroidManifest.xml:26:5-97
+41-->[androidx.core:core:1.13.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/66aa7f682cf61ffe3ee75db6ee238d77/transformed/core-1.13.1/AndroidManifest.xml:26:22-94
+42
+43    <application
+43-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:21:4-56:19
+44        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+44-->[androidx.core:core:1.13.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/66aa7f682cf61ffe3ee75db6ee238d77/transformed/core-1.13.1/AndroidManifest.xml:28:18-86
+45        android:extractNativeLibs="true"
+46        android:icon="@mipmap/ic_launcher"
+46-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:23:9-43
+47        android:label="lectio_divina" >
+47-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:22:9-38
+48        <activity
+48-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:24:9-40:20
+49            android:name="com.example.lectio_divina.MainActivity"
+49-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:25:13-66
+50            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+50-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:29:13-163
+51            android:exported="true"
+51-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:26:13-36
+52            android:hardwareAccelerated="true"
+52-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:30:13-47
+53            android:launchMode="singleTop"
+53-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:27:13-43
+54            android:theme="@style/LaunchTheme"
+54-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:28:13-47
+55            android:windowSoftInputMode="adjustResize" >
+55-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:31:13-55
+56            <meta-data
+56-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:32:13-35:17
+57                android:name="io.flutter.embedding.android.NormalTheme"
+57-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:33:15-70
+58                android:resource="@style/NormalTheme" />
+58-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:34:15-52
+59
+60            <intent-filter>
+60-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:36:13-39:29
+61                <action android:name="android.intent.action.MAIN" />
+61-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:37:17-68
+61-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:37:25-66
+62
+63                <category android:name="android.intent.category.LAUNCHER" />
+63-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:38:17-76
+63-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:38:27-74
+64            </intent-filter>
+65        </activity>
+66
+67        <service
+67-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:41:9-46:19
+68            android:name="com.ryanheise.audioservice.AudioService"
+68-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:41:18-72
+69            android:exported="true" >
+69-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:42:13-36
+70            <intent-filter>
+70-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:43:13-45:29
+71                <action android:name="android.media.browse.MediaBrowserService" />
+71-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:44:17-83
+71-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:44:25-80
+72            </intent-filter>
+73        </service>
+74
+75        <receiver
+75-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:47:9-52:20
+76            android:name="com.ryanheise.audioservice.MediaButtonReceiver"
+76-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:47:19-80
+77            android:exported="true" >
+77-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:48:13-36
+78            <intent-filter>
+78-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:49:13-51:29
+79                <action android:name="android.intent.action.MEDIA_BUTTON" />
+79-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:50:17-77
+79-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:50:25-74
+80            </intent-filter>
+81        </receiver>
+82
+83        <meta-data
+83-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:53:9-55:33
+84            android:name="flutterEmbedding"
+84-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:54:13-44
+85            android:value="2" />
+85-->/Users/dusanpecko/lectio_divina/android/app/src/main/AndroidManifest.xml:55:13-30
+86
+87        <provider
+87-->[:image_picker_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/image_picker_android-0.8.12+23/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:9:9-17:20
+88            android:name="io.flutter.plugins.imagepicker.ImagePickerFileProvider"
+88-->[:image_picker_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/image_picker_android-0.8.12+23/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:10:13-82
+89            android:authorities="com.example.lectio_divina.flutter.image_provider"
+89-->[:image_picker_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/image_picker_android-0.8.12+23/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:11:13-74
+90            android:exported="false"
+90-->[:image_picker_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/image_picker_android-0.8.12+23/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:12:13-37
+91            android:grantUriPermissions="true" >
+91-->[:image_picker_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/image_picker_android-0.8.12+23/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:13:13-47
+92            <meta-data
+92-->[:image_picker_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/image_picker_android-0.8.12+23/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:14:13-16:75
+93                android:name="android.support.FILE_PROVIDER_PATHS"
+93-->[:image_picker_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/image_picker_android-0.8.12+23/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:15:17-67
+94                android:resource="@xml/flutter_image_picker_file_paths" />
+94-->[:image_picker_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/image_picker_android-0.8.12+23/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:16:17-72
+95        </provider> <!-- Trigger Google Play services to install the backported photo picker module. -->
+96        <service
+96-->[:image_picker_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/image_picker_android-0.8.12+23/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:19:9-31:19
+97            android:name="com.google.android.gms.metadata.ModuleDependencies"
+97-->[:image_picker_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/image_picker_android-0.8.12+23/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:20:13-78
+98            android:enabled="false"
+98-->[:image_picker_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/image_picker_android-0.8.12+23/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:21:13-36
+99            android:exported="false" >
+99-->[:image_picker_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/image_picker_android-0.8.12+23/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:22:13-37
+100            <intent-filter>
+100-->[:image_picker_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/image_picker_android-0.8.12+23/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:24:13-26:29
+101                <action android:name="com.google.android.gms.metadata.MODULE_DEPENDENCIES" />
+101-->[:image_picker_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/image_picker_android-0.8.12+23/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:25:17-94
+101-->[:image_picker_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/image_picker_android-0.8.12+23/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:25:25-91
+102            </intent-filter>
+103
+104            <meta-data
+104-->[:image_picker_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/image_picker_android-0.8.12+23/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:28:13-30:36
+105                android:name="photopicker_activity:0:required"
+105-->[:image_picker_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/image_picker_android-0.8.12+23/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:29:17-63
+106                android:value="" />
+106-->[:image_picker_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/image_picker_android-0.8.12+23/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:30:17-33
+107        </service>
+108
+109        <activity
+109-->[:url_launcher_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.16/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:8:9-11:74
+110            android:name="io.flutter.plugins.urllauncher.WebViewActivity"
+110-->[:url_launcher_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.16/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:9:13-74
+111            android:exported="false"
+111-->[:url_launcher_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.16/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:10:13-37
+112            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
+112-->[:url_launcher_android] /Users/dusanpecko/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.16/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:11:13-71
+113
+114        <provider
+114-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/dusanpecko/.gradle/caches/8.12/transforms/0c7cd1674da718ccee593f79cf8da244/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:24:9-32:20
+115            android:name="androidx.startup.InitializationProvider"
+115-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/dusanpecko/.gradle/caches/8.12/transforms/0c7cd1674da718ccee593f79cf8da244/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:25:13-67
+116            android:authorities="com.example.lectio_divina.androidx-startup"
+116-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/dusanpecko/.gradle/caches/8.12/transforms/0c7cd1674da718ccee593f79cf8da244/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:26:13-68
+117            android:exported="false" >
+117-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/dusanpecko/.gradle/caches/8.12/transforms/0c7cd1674da718ccee593f79cf8da244/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:27:13-37
+118            <meta-data
+118-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/dusanpecko/.gradle/caches/8.12/transforms/0c7cd1674da718ccee593f79cf8da244/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:29:13-31:52
+119                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+119-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/dusanpecko/.gradle/caches/8.12/transforms/0c7cd1674da718ccee593f79cf8da244/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:30:17-78
+120                android:value="androidx.startup" />
+120-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/dusanpecko/.gradle/caches/8.12/transforms/0c7cd1674da718ccee593f79cf8da244/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:31:17-49
+121            <meta-data
+121-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:29:13-31:52
+122                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+122-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:30:17-85
+123                android:value="androidx.startup" />
+123-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:31:17-49
+124        </provider>
+125
+126        <uses-library
+126-->[androidx.window:window:1.2.0] /Users/dusanpecko/.gradle/caches/8.12/transforms/197f12b192a3f06912c946d4cbd2dd7d/transformed/jetified-window-1.2.0/AndroidManifest.xml:23:9-25:40
+127            android:name="androidx.window.extensions"
+127-->[androidx.window:window:1.2.0] /Users/dusanpecko/.gradle/caches/8.12/transforms/197f12b192a3f06912c946d4cbd2dd7d/transformed/jetified-window-1.2.0/AndroidManifest.xml:24:13-54
+128            android:required="false" />
+128-->[androidx.window:window:1.2.0] /Users/dusanpecko/.gradle/caches/8.12/transforms/197f12b192a3f06912c946d4cbd2dd7d/transformed/jetified-window-1.2.0/AndroidManifest.xml:25:13-37
+129        <uses-library
+129-->[androidx.window:window:1.2.0] /Users/dusanpecko/.gradle/caches/8.12/transforms/197f12b192a3f06912c946d4cbd2dd7d/transformed/jetified-window-1.2.0/AndroidManifest.xml:26:9-28:40
+130            android:name="androidx.window.sidecar"
+130-->[androidx.window:window:1.2.0] /Users/dusanpecko/.gradle/caches/8.12/transforms/197f12b192a3f06912c946d4cbd2dd7d/transformed/jetified-window-1.2.0/AndroidManifest.xml:27:13-51
+131            android:required="false" />
+131-->[androidx.window:window:1.2.0] /Users/dusanpecko/.gradle/caches/8.12/transforms/197f12b192a3f06912c946d4cbd2dd7d/transformed/jetified-window-1.2.0/AndroidManifest.xml:28:13-37
+132
+133        <receiver
+133-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:34:9-52:20
+134            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+134-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:35:13-76
+135            android:directBootAware="false"
+135-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:36:13-44
+136            android:enabled="true"
+136-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:37:13-35
+137            android:exported="true"
+137-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:38:13-36
+138            android:permission="android.permission.DUMP" >
+138-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:39:13-57
+139            <intent-filter>
+139-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:40:13-42:29
+140                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+140-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:41:17-91
+140-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:41:25-88
+141            </intent-filter>
+142            <intent-filter>
+142-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:43:13-45:29
+143                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+143-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:44:17-85
+143-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:44:25-82
+144            </intent-filter>
+145            <intent-filter>
+145-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:46:13-48:29
+146                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+146-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:47:17-88
+146-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:47:25-85
+147            </intent-filter>
+148            <intent-filter>
+148-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:49:13-51:29
+149                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+149-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:50:17-95
+149-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/dusanpecko/.gradle/caches/8.12/transforms/a41c77be64ae79775eea5abf0296f1bb/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:50:25-92
+150            </intent-filter>
+151        </receiver>
+152    </application>
+153
+154</manifest>
