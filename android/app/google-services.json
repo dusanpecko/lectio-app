@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1013914441659",
+    "project_id": "lectio-divina-ef223",
+    "storage_bucket": "lectio-divina-ef223.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1013914441659:android:c3a4610abee5ae0818569e",
+        "android_client_info": {
+          "package_name": "com.example.lectio_divina"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA4LUGUCvLhuKBCYqMHFg5xqCsZs2UH-Js"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

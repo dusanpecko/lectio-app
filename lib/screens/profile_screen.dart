@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -93,12 +94,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Profil bol uložený.')));
+        ).showSnackBar(SnackBar(content: Text('profile.snackbar.saved'.tr())));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Nepodarilo sa uložiť profil: $e')),
+          SnackBar(
+            content: Text(
+              'profile.snackbar.save_failed'.tr(args: [e.toString()]),
+            ),
+          ),
         );
       }
     } finally {
@@ -117,10 +122,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await showDialog(
       context: context,
       builder: (ctx) {
+        final theme = Theme.of(context);
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text('Zmeniť heslo'),
+              title: Text('profile.password2.title'.tr()),
               content: Form(
                 key: formKey,
                 child: Column(
@@ -129,26 +135,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     TextFormField(
                       controller: currentPassCtrl,
                       obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Súčasné heslo',
+                      decoration: InputDecoration(
+                        labelText: 'profile.password2.current'.tr(),
                       ),
                       validator: (v) => v == null || v.isEmpty
-                          ? 'Zadajte súčasné heslo'
+                          ? 'profile.password2.current_required'.tr()
                           : null,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: newPassCtrl,
                       obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Nové heslo',
+                      decoration: InputDecoration(
+                        labelText: 'profile.password2.new'.tr(),
                       ),
                       validator: (v) {
                         if (v == null || v.length < 6) {
-                          return 'Min. 6 znakov';
+                          return 'profile.password2.min_length'.tr();
                         }
                         if (v == currentPassCtrl.text) {
-                          return 'Nové heslo musí byť iné než súčasné.';
+                          return 'profile.password2.same_as_current'.tr();
                         }
                         return null;
                       },
@@ -157,15 +163,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     TextFormField(
                       controller: confirmPassCtrl,
                       obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Potvrďte nové heslo',
+                      decoration: InputDecoration(
+                        labelText: 'profile.password2.confirm'.tr(),
                       ),
-                      validator: (v) =>
-                          v != newPassCtrl.text ? 'Heslá sa nezhodujú' : null,
+                      validator: (v) => v != newPassCtrl.text
+                          ? 'profile.password2.not_match'.tr()
+                          : null,
                     ),
                     if (error != null) ...[
                       const SizedBox(height: 12),
-                      Text(error!, style: const TextStyle(color: Colors.red)),
+                      Text(
+                        error!,
+                        style: TextStyle(color: theme.colorScheme.error),
+                      ),
                     ],
                   ],
                 ),
@@ -177,7 +187,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       : () {
                           Navigator.of(context).pop();
                         },
-                  child: const Text('Zrušiť'),
+                  child: Text(
+                    'profile.button.cancel'.tr(),
+                    style: TextStyle(color: theme.colorScheme.primary),
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: isLoading
@@ -195,7 +208,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 );
                             if (signInResp.user == null) {
                               setState(() {
-                                error = 'Súčasné heslo je nesprávne';
+                                error = 'profile.password2.incorrect_current'
+                                    .tr();
                                 isLoading = false;
                               });
                               return;
@@ -206,25 +220,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             if (mounted) Navigator.of(context).pop();
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Heslo bolo zmenené'),
+                                SnackBar(
+                                  content: Text(
+                                    'profile.password2.changed'.tr(),
+                                  ),
                                 ),
                               );
                             }
                           } catch (e) {
                             setState(() {
-                              error = 'Chyba: ${e.toString()}';
+                              error = 'profile.snackbar.error'.tr(
+                                args: [e.toString()],
+                              );
                               isLoading = false;
                             });
                           }
                         },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                  ),
                   child: isLoading
                       ? const SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Uložiť'),
+                      : Text('profile.button.save'.tr()),
                 ),
               ],
             );
@@ -235,22 +257,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> showAvatarPicker() async {
+    final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
         child: Wrap(
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_camera),
-              title: const Text('Odfotiť'),
+              leading: Icon(
+                Icons.photo_camera,
+                color: theme.colorScheme.primary,
+              ),
+              title: Text('profile.avatar.camera'.tr()),
               onTap: () {
                 Navigator.pop(context);
                 changeAvatar(ImageSource.camera);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Vybrať z galérie'),
+              leading: Icon(
+                Icons.photo_library,
+                color: theme.colorScheme.primary,
+              ),
+              title: Text('profile.avatar.gallery'.tr()),
               onTap: () {
                 Navigator.pop(context);
                 changeAvatar(ImageSource.gallery);
@@ -314,13 +343,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Avatar bol zmenený!')));
+        ).showSnackBar(SnackBar(content: Text('profile.avatar.changed'.tr())));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Chyba pri zmene avatara: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('profile.avatar.error'.tr(args: [e.toString()])),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -343,21 +374,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final user = supabase.auth.currentUser;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Môj profil'),
+        title: Text('profile.title'.tr()),
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        foregroundColor: theme.appBarTheme.foregroundColor,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            tooltip: 'Odhlásiť sa',
+            tooltip: 'profile.button.logout'.tr(),
             onPressed: signOut,
           ),
         ],
       ),
       body: user == null
-          ? const Center(child: Text("Nie ste prihlásený."))
+          ? Center(child: Text("profile.not_logged".tr()))
           : Padding(
               padding: const EdgeInsets.all(24.0),
               child: Form(
@@ -372,7 +406,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           CircleAvatar(
                             radius: 42,
-                            backgroundColor: Colors.deepPurple.shade100,
+                            backgroundColor: theme.colorScheme.surfaceVariant,
                             backgroundImage:
                                 (_avatarUrl != null && _avatarUrl!.isNotEmpty)
                                 ? NetworkImage(_avatarUrl!)
@@ -381,7 +415,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ? Icon(
                                     Icons.person,
                                     size: 48,
-                                    color: Colors.deepPurple.shade600,
+                                    color: theme.colorScheme.primary,
                                   )
                                 : null,
                           ),
@@ -397,33 +431,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 6),
                     TextButton(
                       onPressed: _isUploading ? null : showAvatarPicker,
-                      child: const Text('Zmeniť avatar'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: theme.colorScheme.primary,
+                      ),
+                      child: Text('profile.avatar.change'.tr()),
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _nameCtrl,
-                      decoration: const InputDecoration(labelText: 'Celé meno'),
+                      decoration: InputDecoration(
+                        labelText: 'profile.field.fullname'.tr(),
+                        filled: true,
+                        fillColor: theme.colorScheme.surface,
+                      ),
                       validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Zadajte meno'
+                          ? 'profile.field.fullname_required'.tr()
                           : null,
                     ),
                     const SizedBox(height: 14),
                     ListTile(
-                      leading: const Icon(
+                      leading: Icon(
                         Icons.email,
-                        color: Colors.deepPurple,
+                        color: theme.colorScheme.primary,
                       ),
-                      title: const Text('E-mail'),
+                      title: Text('profile.field.email'.tr()),
                       subtitle: Text(_emailCtrl.text),
                     ),
                     const SizedBox(height: 14),
                     if (_registeredAt != null) ...[
                       ListTile(
-                        leading: const Icon(
+                        leading: Icon(
                           Icons.event,
-                          color: Colors.deepPurple,
+                          color: theme.colorScheme.primary,
                         ),
-                        title: const Text('Dátum registrácie:'),
+                        title: Text('profile.field.registered_at'.tr()),
                         subtitle: Text(
                           '${_registeredAt!.day.toString().padLeft(2, '0')}.'
                           '${_registeredAt!.month.toString().padLeft(2, '0')}.'
@@ -433,27 +474,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 14),
                     ],
                     ListTile(
-                      leading: const Icon(
+                      leading: Icon(
                         Icons.verified_user,
-                        color: Colors.deepPurple,
+                        color: theme.colorScheme.primary,
                       ),
-                      title: const Text('Rola v aplikácii:'),
-                      subtitle: Text(_role ?? 'načítavam...'),
+                      title: Text('profile.field.role'.tr()),
+                      subtitle: Text(
+                        _role ?? 'profile.field.role_loading'.tr(),
+                      ),
                     ),
                     const SizedBox(height: 10),
                     OutlinedButton.icon(
                       onPressed: changePassword,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.lock_reset,
-                        color: Colors.deepPurple,
+                        color: theme.colorScheme.primary,
                       ),
-                      label: const Text('Zmeniť heslo'),
+                      label: Text('profile.button.change_password'.tr()),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: theme.colorScheme.primary),
+                        foregroundColor: theme.colorScheme.primary,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _isSaving ? null : saveProfile,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          textStyle: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
                         child: _isSaving
                             ? const SizedBox(
                                 width: 20,
@@ -463,7 +521,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text('Uložiť zmeny'),
+                            : Text('profile.button.save_changes'.tr()),
                       ),
                     ),
                   ],

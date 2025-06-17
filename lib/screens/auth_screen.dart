@@ -69,10 +69,11 @@ class _AuthScreenState extends State<AuthScreen> {
         });
       }
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -138,10 +139,11 @@ class _AuthScreenState extends State<AuthScreen> {
         _error = tr('register_failed_retry');
       });
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -175,10 +177,11 @@ class _AuthScreenState extends State<AuthScreen> {
         _resetInfo = tr('something_went_wrong');
       });
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

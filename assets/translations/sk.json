@@ -244,7 +244,7 @@
   "about.version": "Verzia"
 },
 "pray_intentions_title": "Modlitbové úmysly",
-"pray_intentions": "Modlitbové úmysly",
+"pray_intentions": "Modlitby",
 "pray_submit": "Odoslať úmysel",
 "pray_submit_title": "Odoslať modlitbový úmysel",
 "edit_intention_title": "Upraviť úmysel",
@@ -278,5 +278,124 @@
   "confirm": "Potvrdenie",
   "delete_comment_confirm": "Naozaj chceš vymazať tento komentár?",
   "daily_quote_time": "Denný citát",
-  "daily_tip_time": "Nastavenie notifikácii - ACTIO"
+  "daily_tip_time": "Nastavenie notifikácii - ACTIO",
+  "intro_screan": "Na úvod",
+  "intro_title": "Na úvod",
+  "intro_pages": {
+    "title": "Na úvod",
+    "button": "Ako mám postupovať?",
+    "section1": "Milí priatelia!\n\nKdekoľvek sa v živote nachádzame, Duch Svätý nás pozýva do aktívneho priateľstva s Kristom - Slovom, ktoré sa stalo telom a prišlo prebývať medzi nami (Ján 1,14). No ak máme vytvárať priateľský vzťah s Kristom, je dôležité naučiť sa počúvať ho, teda naučiť sa vnímať, čo nám chce Boh povedať. A jedným z najlepších spôsobov, ako počúvať Boha, je pravidelné čítanie Božieho slova.",
+    "section2": "Preto Vám chceme ponúknuť starobylý spôsob, ako s úžitkom čítať Božie slovo a aplikovať ho do svojho života. Volá sa \"Lectio Divina\", čo doslova znamená \"božské čítanie\", ale prekladá sa aj ako \"duchovné čítanie\".",
+    "section3": "Lectio Divina je známe od prvých storočí cirkvi, už Origenes použil grécku frázu thea anagnosis (Božské čítanie), aby opísal spôsob, ako sa priblížiť prostredníctvom Písma k Bohu a k jeho vôli.\n\nTáto prax sa stala bežnou, keď púštni otcovia a matky urobili Božie slovo základom pre svoju osobnú modlitbu. Krátko na to svätý Benedikt urobil prax Lectio divina základnou normou západného mníšstva. Od najstarších storočí až po dnešné časy je Lectio Divina životnou praxou, ktorá nás pozýva do intímneho vzťahu s Bohom.",
+    "section4": "Pápež Benedikt XVI. v roku 2005 zdôraznil, že jedným z účinných spôsobov, akým sa môže dnes obnoviť Cirkev, je práve Lectio divina. Povedal, že „stále čítanie Svätého písma, sprevádzané modlitbou prinesie Cirkvi novú duchovnú jar.“ Túto myšlienku upresnil slovami: „Medzi mnohorakým ovocím tejto novej biblickej jari by som rád spomenul rozšírenie sa starodávnej praxe lectio divina, duchovného čítania Svätého písma. Táto prax spočíva v dlhšom zotrvaní nad biblickým textom, ktorý sa opätovne číta, ba takmer „prežúva“, … s cieľom vyťažiť z neho takpovediac „šťavu“, ktorá by živila meditáciu a kontempláciu a stala by sa akoby životnou miazgou pre konkrétny život. Podmienkou praktizovania Lectio divina je, aby myseľ i srdce osvietil Duch Svätý, teda sám inšpirátor Svätého písma, a teda, aby boli disponované na postoj „nábožného počúvania.“ Takýto bol typický postoj Panny Márie, ako ho symbolicky predstavujú ikony zvestovania. Stačí, ak aj my dovolíme Duchu Svätému, aby nás viedol - tak, ako to urobila Panna Mária.",
+    "section5": "Žalmista vyznáva: „Tvoje slovo je svetlo pre moje nohy a pochodeň na mojich chodníkoch“ (Ž 119, 105). Aj pre nás môže byť Božie Slovo svetlom, aby sme videli, kam máme kráčať v tomto čase zmätku a dezorientácie.",
+    "section6": "Preto Vám chceme ponúknuť tento diár. Okrem kalendára a miesta pre poznámky v ňom nájdete aj zápisník, do ktorého si môžete zapisovať svoje myšlienky. Neskôr Vám tieto myšlienky môžu pomáhať nachádzať odpovede na životné otázky.\n\nV časti kalendára / diára nájdete liturgické súradnice na evanjelium zo dňa. Môže Vám to pomôcť pri výbere textu na čítanie a meditáciu. Zároveň vám ponúkame webstránku www.lectiodivina.sk a mobilnú aplikáciu “Lectio divina”, ktorú nájdete vo svojom obchode App Store alebo Play store.\n\nV mobilnej aplikácii nájdete pripravené texty, ktoré Vám pomôžu dostať sa do tejto praxe. Do aplikácie pravidelne pridávame nedeľné liturgické čítania Evanjelia spolu s meditáciou, modlitbou, kontempláciou a jednoduchou výzvou na aplikáciu Božieho slova v každodennom živote. Ďalej je tam možnosť vytvárať si vlastné poznámky, ktoré budú zoradené podľa dátumu meditácie. Ak budete využívať túto možnosť, odporúčame Vám uviesť ako názov poznámky text, nad ktorým rozjímate, prípadne kľúčové slovo, ktoré vystihuje to, čo ste premeditovali. Uľahčí Vám to návrat k premeditovanému Slovu, keď budete hľadať odpoveď na nejakú životnú otázku."
+  },
+  "how": {
+    "title": "Ako mám postupovať?",
+    "button": "Lectio divina na dnes",
+    "intro": "Čítanie Biblie systémom „lectio divina“ – vysvetlenie krokov:",
+    "lectio": {
+      "title": "LECTIO – ČÍTANIE",
+      "body": "Čítanie vybraného textu, napr. podľa rozpisu na každý deň. Čítajte pomaly, neunáhlene, v duchu modlitby, nahlas a potom znova aspoň trikrát. Nechajte text na seba pôsobiť, nesnažte sa ho len intelektuálne pochopiť. Všimnite si najmä slová, slovné spojenia či vety, ktoré sa vás dotkli. S vierou očakávame, že Boh prehovorí prostredníctvom Slova a Ducha k našej duši."
+    },
+    "meditatio": {
+      "title": "MEDITATIO – ROZJÍMANIE",
+      "body": "Tento druhý krok vás pozýva zamyslieť sa nad Slovom – slovami, slovnými spojeniami, vetami, ktoré vás oslovili, a nechať ich vystúpiť do popredia.\nZapíšte si ich a dovoľte im preniknúť do hĺbky vášho srdca. Opakujte si ich znovu a znovu a uvažujte pritom o pocitoch alebo emóciách, ktoré vo vás vyvolávajú. Spýtajte sa samých seba: \"Čo mi cez tieto slová hovorí Duch Svätý?\" Čo pre mňa znamenajú tieto slová? Čo Boh skrze ne hovorí k môjmu srdcu?\nTáto časť je ako Máriina odpoveď v Lukášovi (2,51), kde sa píše, že \"zachovávala všetky slová vo svojom srdci.\""
+    },
+    "oratio": {
+      "title": "ORATIO – MODLITBA",
+      "body": "Modlitba podľa Božieho slova (svojimi slovami).\nTáto časť pobáda k odpovedi v modlitbe. Keď ste si opätovne prečítali a uvažovali ste nad slovami, frázami a vetami, ktoré sa vás dotkli, a keď ste si položili otázky súvisiace s nimi, zoberte si teraz tieto myšlienky k srdcu a vytvorte modlitbu. Svoju vlastnú osobnú odpoveď Pánovi. Povedzte Bohu, čo máte na srdci, ponúknite mu v modlitbe odpoveď lásky, vďačnosti, prosby či príhovoru. Ticho seďte, napíšte modlitbu, nakreslite obrázok, jednoducho odpovedzte činorodým spôsobom na slovo, ktoré ste dostali."
+    },
+    "contemplatio": {
+      "title": "KONTEMPLATIO – KONTEMPLÁCIA",
+      "body": "Vnútorný pohľad srdca na Ježiša, ktorý „vystupuje“ z textu; teda pohľad na Ježiša, ktorého jednu vlastnosť som spoznal pri rozjímaní nad textom. Tu je priestor, spočinúť v Bohu.\nStávame sa neaktívnymi a jednoducho prebývame v Bohu ako jeho milovaní. Toto nie je jednoduché a vyžaduje si to trpezlivosť a disciplínu.\nJednoducho zotrvajte na chvíľu v pokoji a dovoľte Pánovi milovať vás a upevňovať vo vašom srdci slová, ktoré vám doteraz dal v tomto procese lectio divina. Toto je modlitba prítomnosti, je to smerovanie od rozhovoru k zjednoteniu."
+    },
+    "actio": {
+      "title": "ACTIO – KONANIE",
+      "body": "Sformulujem si jednu krátku vetu, ktorú si budem cez deň pripomínať."
+    },
+    "practical": {
+      "title": "Čítanie Biblie systémom „lectio divina“ – prakticky:",
+      "body": "Prípravný krok: Vyber si krátky biblický text (úryvok z Nového zákona). Skôr ako začneš čítať posvätný text, vzývaj Ducha Svätého. Modli sa, aby bol s tebou, uvedom si jeho prítomnosť, pros ho, aby ti zjavil to, čo je v texte ukryté; aby ťa viedol. Napr.: Príď, Duchu Svätý. Osvieť moju myseľ. Daruj mi lásku k BOŽIEMU SLOVU. Pomôž mi pochopiť, čo mi chce BOŽIE SLOVO povedať. Pomôž mi pozorne počúvať tvoje pokyny\n\nDruhý krok: Čítaj BOŽIE SLOVO (LECTIO)...\nTretí krok: Rozjímaj (MEDITATIO)...\nŠtvrtý krok modli sa BOŽIE SLOVO (ORATIO)...\nPiaty krok Nazeranie na Božie Slovo – na Ježiša (CONTEMPLATIO)...\nŠiesty krok Ži Božie slovo (ACTIO)...\nSiedmý krok: Svoje stretnutie s BOŽÍM SLOVOM zakonči modlitbou. Najmä ďakovnou."
+    },
+    "tips": {
+      "title": "Na čo netreba zabudnúť pri tejto forme čítania Božieho slova:",
+      "body": "\n<b>NÁJDITE SI ČAS:</b> Väčšina z nás nemá času nazvyš. Tento diár spolu s aplikáciou vám pomôžu, aby ste si počas dňa našli aspoň dvadsať minút na praktizovanie čítania Božieho slova formou Lectio divina. Urobte si čas!\n\n<b>VYTVORTE SI MIESTO:</b> Skutočne si nájdite miesto, kde by ste mohli vstúpiť do procesu Lectio. Príkladom je Ježiš, ktorý si našiel čas, aby odišiel na určité miesto, aby strávil čas v modlitbe s Otcom.\n\n<b>VYTRVAJTE:</b> Toto je dlhodobý projekt. Bude si to vyžadovať zmysel pre oddanosť a odhodlanie. Vytrvalosť je potrebné trénovať."
+    },
+    "wish": "Prajem vám, aby takto strávený čas s Kristom, bol pre vás časom, kde budete objavovať seba, Božiu vôľu a odhodlanosť vytrvať v dobrom."
+  },
+  "profile": {
+    "title": "Môj profil",
+    "not_logged": "Nie ste prihlásený.",
+    "snackbar": {
+      "saved": "Profil bol uložený.",
+      "save_failed": "Nepodarilo sa uložiť profil: {}",
+      "error": "Chyba: {}"
+    },
+    "button": {
+      "logout": "Odhlásiť sa",
+      "cancel": "Zrušiť",
+      "save": "Uložiť",
+      "save_changes": "Uložiť zmeny",
+      "change_password": "Zmeniť heslo"
+    },
+    "avatar": {
+      "change": "Zmeniť avatar",
+      "camera": "Odfotiť",
+      "gallery": "Vybrať z galérie",
+      "changed": "Avatar bol zmenený!",
+      "error": "Chyba pri zmene avatara: {}"
+    },
+    "field": {
+      "fullname": "Celé meno",
+      "fullname_required": "Zadajte meno",
+      "email": "E-mail",
+      "registered_at": "Dátum registrácie:",
+      "role": "Rola v aplikácii:",
+      "role_loading": "načítavam..."
+    },
+    "password2": {
+      "title": "Zmeniť heslo",
+      "current": "Súčasné heslo",
+      "current_required": "Zadajte súčasné heslo",
+      "new": "Nové heslo",
+      "min_length": "Min. 6 znakov",
+      "same_as_current": "Nové heslo musí byť iné než súčasné.",
+      "confirm": "Potvrďte nové heslo",
+      "not_match": "Heslá sa nezhodujú",
+      "incorrect_current": "Súčasné heslo je nesprávne",
+      "changed": "Heslo bolo zmenené"
+    }
+  },
+  "support2": {
+    "title": "Podporte tento projekt",
+    "nodata": "Dáta nie sú dostupné",
+    "supported": "Už podporené<br>na rok <b>{year}</b>",
+    "amount": "<b>{supported}</b> z <b>{target} €</b>",
+    "updated": "aktualizované: {date}",
+    "donate_online": "<b>Darovať online</b>",
+    "cant_open": "Nepodarilo sa otvoriť stránku.",
+    "open_fail_title": "Odkaz sa nedá otvoriť",
+    "miui_notice": "<b>Pozor!</b><br>Na niektorých zariadeniach Xiaomi nemusí Google Chrome otvárať odkazy. Použite predvolený prehliadač zariadenia alebo odkaz skopírujte ručne.",
+    "copy_link": "Skopírovať odkaz",
+    "copied_link": "Odkaz bol skopírovaný do schránky.",
+    "close": "Zavrieť",
+    "hello": "<b>Ahojte, priatelia Lectio divina!</b>",
+    "updated_label": "<span style='color:red'>Aktualizované 11.1.2025</span>",
+    "about_text": "Veríme, že aj vy... <br>Ďakujeme za vašu podporu! ❤️<br>S úprimnou vďakou<br>Dušan Pecko...",
+    "become_supporter": "Chcete sa stať finančným podporovateľom?",
+    "easy_register": "Je to jednoduché! Zaregistrujte sa na mojkrok.sk...",
+    "can_contribute": "Prispieť môžete:",
+    "how_contribute": "- Bankovým prevodom...<br>- Poštovým poukazom...",
+    "no_registration": "Nechcete sa registrovať?",
+    "iban": "IBAN:",
+    "swift": "SWIFT:",
+    "note": "- Do poznámky uveďte: Lectio divina",
+    "vs": "- VS 11770001",
+    "need_info": "Potrebujete viac informácií?",
+    "contact_us": "Kontaktujte nás:",
+    "copy": "Skopírovať",
+    "copied": "{label} {value} skopírované"
+  }
 }

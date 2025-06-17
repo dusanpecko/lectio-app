@@ -169,6 +169,7 @@ class _LectioScreenState extends State<LectioScreen> {
       );
 
   Widget _buildMiniAudioPlayer(BuildContext context) {
+    final theme = Theme.of(context);
     return FutureBuilder<LectioAudioHandler>(
       future: audioHandlerFuture,
       builder: (context, snap) {
@@ -190,12 +191,9 @@ class _LectioScreenState extends State<LectioScreen> {
                 duration: const Duration(milliseconds: 250),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
+                    color: theme.cardColor,
                     border: Border(
-                      top: BorderSide(
-                        color: Theme.of(context).dividerColor,
-                        width: 1,
-                      ),
+                      top: BorderSide(color: theme.dividerColor, width: 1),
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -212,15 +210,12 @@ class _LectioScreenState extends State<LectioScreen> {
                   height: 56,
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.headphones,
-                        color: Theme.of(context).primaryColor,
-                      ),
+                      Icon(Icons.headphones, color: theme.colorScheme.primary),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           mediaItem?.title ?? tr('audio_player'),
-                          style: Theme.of(context).textTheme.bodyMedium,
+                          style: theme.textTheme.bodyMedium,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -240,6 +235,7 @@ class _LectioScreenState extends State<LectioScreen> {
   }
 
   Widget _buildAudioPlayer(BuildContext context) {
+    final theme = Theme.of(context);
     return FutureBuilder<LectioAudioHandler>(
       future: audioHandlerFuture,
       builder: (context, snap) {
@@ -266,6 +262,7 @@ class _LectioScreenState extends State<LectioScreen> {
                     horizontal: 16,
                     vertical: 16,
                   ),
+                  color: theme.cardColor,
                   child: Padding(
                     padding: const EdgeInsets.all(14),
                     child: Column(
@@ -274,13 +271,13 @@ class _LectioScreenState extends State<LectioScreen> {
                           children: [
                             Icon(
                               Icons.headphones,
-                              color: Theme.of(context).primaryColor,
+                              color: theme.colorScheme.primary,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 tr('audio_player'),
-                                style: Theme.of(context).textTheme.titleMedium,
+                                style: theme.textTheme.titleMedium,
                               ),
                             ),
                             IconButton(
@@ -296,8 +293,9 @@ class _LectioScreenState extends State<LectioScreen> {
                         const SizedBox(height: 8),
                         Text(
                           mediaItem?.title ?? tr('audio_nothing_playing'),
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.w600),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                         Slider(
@@ -403,7 +401,9 @@ class _LectioScreenState extends State<LectioScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
+            final theme = Theme.of(context);
             return AlertDialog(
+              backgroundColor: theme.cardColor,
               title: Text(tr('audio_choose_title')),
               content: SingleChildScrollView(
                 child: Column(
@@ -414,6 +414,8 @@ class _LectioScreenState extends State<LectioScreen> {
                     return CheckboxListTile(
                       value: tempSelection[section.key] ?? false,
                       title: Text(section.label),
+                      activeColor: theme.colorScheme.primary,
+                      checkColor: theme.colorScheme.onPrimary,
                       onChanged: audioExists
                           ? (v) {
                               setStateDialog(() {
@@ -478,7 +480,6 @@ class _LectioScreenState extends State<LectioScreen> {
     fetchLectioData();
   }
 
-  // >>>>> PRIDANÉ: funkcia na otvorenie poznámky
   void _handleAddNote() {
     if (lectioData == null) return;
     String bibleReference = '';
@@ -495,7 +496,7 @@ class _LectioScreenState extends State<LectioScreen> {
 
     final noteData = {
       'id': null,
-      'title': formattedDate, // tu je dnesný dátum
+      'title': formattedDate,
       'content': '',
       'bible_reference': lectioData?['suradnice_pismo'] ?? '',
       'bible_quote': bibleReference,
@@ -517,6 +518,7 @@ class _LectioScreenState extends State<LectioScreen> {
     final expandedPlayerHeight = 360.0;
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("Lectio divina"),
         actions: [
@@ -535,7 +537,7 @@ class _LectioScreenState extends State<LectioScreen> {
       body: Stack(
         children: [
           Container(
-            color: theme.colorScheme.surface,
+            color: theme.scaffoldBackgroundColor,
             child: Column(
               children: [
                 Padding(
@@ -545,8 +547,7 @@ class _LectioScreenState extends State<LectioScreen> {
                   ),
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest
-                          .withAlpha((0.9 * 255).toInt()),
+                      color: theme.cardColor.withOpacity(0.9),
                       borderRadius: BorderRadius.circular(18),
                       boxShadow: [
                         BoxShadow(
@@ -576,7 +577,7 @@ class _LectioScreenState extends State<LectioScreen> {
                     ),
                   ),
                 ),
-                const Divider(height: 1),
+                Divider(height: 1, color: theme.dividerColor),
                 Expanded(
                   child: isLoading
                       ? const Center(child: CircularProgressIndicator())
@@ -729,7 +730,7 @@ class _LectioScreenState extends State<LectioScreen> {
                 color: Colors.transparent,
                 child: _isPlayerExpanded
                     ? Container(
-                        color: theme.colorScheme.surface,
+                        color: theme.cardColor,
                         child: Column(
                           children: [
                             Align(
@@ -779,6 +780,7 @@ class _SimpleSection extends StatelessWidget {
       child: Card(
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         elevation: 4,
+        color: theme.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -803,7 +805,12 @@ class _SimpleSection extends StatelessWidget {
               ],
               if (text.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                Text(text, style: theme.textTheme.bodyMedium),
+                Text(
+                  text,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
               ],
             ],
           ),

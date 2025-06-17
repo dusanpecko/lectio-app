@@ -150,6 +150,14 @@ class AppFloatingMenu extends StatelessWidget {
             ),
           ListTile(
             leading: Icon(
+              Icons.article_rounded,
+              color: theme.colorScheme.primary,
+            ), // Lectio Divina - kniha
+            title: Text(tr('intro_title')),
+            onTap: () => Navigator.pop(context, 'intro_screan'),
+          ),
+          ListTile(
+            leading: Icon(
               Icons.info_rounded,
               color: theme.colorScheme.primary,
             ), // O aplikácii

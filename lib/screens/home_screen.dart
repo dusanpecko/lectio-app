@@ -12,9 +12,9 @@ import 'package:lectio_divina/shared/fab_menu_position.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'notes_list_screen.dart';
 import 'about_screen.dart';
+import 'intro_screen.dart';
 import 'intentions_list_screen.dart';
-import 'Intention_Submit_Screen.dart';
-import 'package:lectio_divina/services/notification_service.dart';
+import 'intention_submit_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -168,10 +168,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<List<Map<String, dynamic>>> fetchContentCards() async {
     final supabase = Supabase.instance.client;
     final now = DateTime.now().toIso8601String();
+    final locale = context.locale.languageCode; // napr. 'sk', 'en'
 
     final response = await supabase
         .from('content_cards')
         .select()
+        .eq('lang', locale) // <-- DOPLNENÝ FILTER PODĽA JAZYKA!
         .lte('visible_from', now)
         .gte('visible_to', now)
         .order('priority', ascending: true);
@@ -464,18 +466,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           SizedBox(width: 12),
                           _RoundedModuleButton(
-                            labelKey: 'reflections',
-                            icon: Icons.lightbulb,
-                          ),
-                          SizedBox(width: 12),
-                          _RoundedModuleButton(
-                            labelKey: 'prayers',
+                            labelKey: 'pray_intentions',
                             icon: Icons.favorite,
-                          ),
-                          SizedBox(width: 12),
-                          _RoundedModuleButton(
-                            labelKey: 'bible',
-                            icon: Icons.book,
                           ),
                           SizedBox(width: 12),
                           _RoundedModuleButton(
@@ -488,28 +480,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             icon: Icons.settings,
                           ),
                         ],
-                      ),
-                    ),
-                    // Testovacie tlačidlo na notifikáciu
-                    Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.notifications_active),
-                        label: const Text('Test notifikácie'),
-                        onPressed: () async {
-                          await NotificationService.showTestNotification();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Test notifikácia bola naplánovaná!',
-                              ),
-                            ),
-                          );
-                        },
                       ),
                     ),
                     // Support button
@@ -545,7 +515,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ),
-
                     // Content cards slider
                     if (contentCards.isNotEmpty)
                       Padding(
@@ -680,6 +649,11 @@ class _HomeScreenState extends State<HomeScreen> {
               context,
               MaterialPageRoute(builder: (_) => const IntentionSubmitScreen()),
             );
+          } else if (action == 'intro_screan') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const IntroScreen()),
+            );
           } else if (action == 'support') {
             Navigator.push(
               context,
@@ -716,13 +690,20 @@ class _RoundedModuleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 160,
+      width: 170,
       child: ElevatedButton.icon(
         onPressed: () {
           if (labelKey == 'lectio_divina') {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const LectioScreen()),
+            );
+          } else if (labelKey == 'pray_intentions') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const IntentionsListScreen(),
+              ),
             );
           } else if (labelKey == 'news') {
             Navigator.push(
