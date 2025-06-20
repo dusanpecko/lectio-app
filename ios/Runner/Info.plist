@@ -56,5 +56,16 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+	<dict>
+		<key>CFBundleURLName</key>
+		<string>lectio_divina</string>
+		<key>CFBundleURLSchemes</key>
+		<array>
+		<string>lectio_divina</string>
+		</array>
+	</dict>
+	</array>
 </dict>
 </plist>

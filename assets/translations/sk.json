@@ -397,5 +397,16 @@
     "contact_us": "Kontaktujte nás:",
     "copy": "Skopírovať",
     "copied": "{label} {value} skopírované"
-  }
+  },
+  "password_too_short": "Heslo musí mať aspoň 6 znakov",
+  "confirm_password_required": "Potvrdenie hesla je povinné",
+  "network_error": "Chyba siete. Skúste to znova.",
+  "create_new_password": "Vytvorte nové heslo",
+  "password_requirements": "Heslo musí mať aspoň 6 znakov",
+   "reset_email_sent_web": "Email na obnovenie hesla bol odoslaný",
+  "reset_password_web_description": "Zadajte svoj email a pošleme vám odkaz na obnovenie hesla",
+  "reset_email_web_instructions": "Kliknite na odkaz v emaili, zmení sa vám heslo na webovej stránke, potom sa môžete vrátiť do aplikácie a prihlásiť sa s novým heslom",
+  "send_reset_email": "Odoslať email na obnovenie",
+  "enter_your_email": "Zadajte svoj email",
+  "reset_password_description": "Zadajte svoj email a pošleme vám odkaz na obnovenie hesla"
 }
