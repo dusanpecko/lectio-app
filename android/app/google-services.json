@@ -1,0 +1,84 @@
+{
+  "project_info": {
+    "project_number": "1013914441659",
+    "project_id": "lectio-divina-ef223",
+    "storage_bucket": "lectio-divina-ef223.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1013914441659:android:c3a4610abee5ae0818569e",
+        "android_client_info": {
+          "package_name": "com.example.lectio_divina"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1013914441659-5vm13nloipnk1926q9qe2olu87eqqoha.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA4LUGUCvLhuKBCYqMHFg5xqCsZs2UH-Js"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1013914441659-5vm13nloipnk1926q9qe2olu87eqqoha.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1013914441659-kago8n1qligh9b2cibi4hnthjni1if8h.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "sk.dpapp.app.ios604688a889d93",
+                "app_store_id": "6443882687"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1013914441659:android:ab114a740b8993a718569e",
+        "android_client_info": {
+          "package_name": "sk.dpapp.app.android604688a88a394"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1013914441659-5vm13nloipnk1926q9qe2olu87eqqoha.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA4LUGUCvLhuKBCYqMHFg5xqCsZs2UH-Js"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1013914441659-5vm13nloipnk1926q9qe2olu87eqqoha.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1013914441659-kago8n1qligh9b2cibi4hnthjni1if8h.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "sk.dpapp.app.ios604688a889d93",
+                "app_store_id": "6443882687"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

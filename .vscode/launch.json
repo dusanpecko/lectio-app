@@ -1,0 +1,42 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+  
+    {
+      "name": "Flutter (Production)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lectio_divina/lib/main.dart",
+      "cwd": "${workspaceFolder}/lectio_divina"
+    },
+    {
+      "name": "Flutter (Mock Mode)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lectio_divina/lib/main.dart",
+      "cwd": "${workspaceFolder}/lectio_divina",
+      "args": [
+        "--dart-define=USE_MOCK_DATA=true"
+      ]
+    },
+    {
+      "name": "Flutter (Mock + Verbose Logging)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lectio_divina/lib/main.dart",
+      "cwd": "${workspaceFolder}/lectio_divina",
+      "args": [
+        "--dart-define=USE_MOCK_DATA=true",
+        "-v"
+      ]
+    },
+    {
+      "name": "Flutter (Profile Mode)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lectio_divina/lib/main.dart",
+      "cwd": "${workspaceFolder}/lectio_divina",
+      "flutterMode": "profile"
+    }
+  ]
+}

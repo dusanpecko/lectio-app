@@ -1,0 +1,8 @@
+{
+  "importMap": "./import_map.json",
+  "tasks": {},
+  "compilerOptions": {
+    "lib": ["deno.ns", "deno.unstable"],
+    "strict": true
+  }
+}
