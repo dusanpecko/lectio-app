@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Global Theme Provider pre správu témy, fontu a veľkosti písma
@@ -116,70 +117,50 @@ class ThemeProvider with ChangeNotifier {
 
   /// Vytvorí TextTheme s použitými font nastaveniami
   TextTheme applyFontSettings(TextTheme baseTheme) {
-    final fontFamily = getFontFamilyForTextStyle();
     final scaleFactor = _fontSize / 16.0; // 16 je baseline
 
+    // Pre každý TextStyle aplikuj font family a scale
+    TextStyle? applyToStyle(TextStyle? style) {
+      if (style == null) return null;
+
+      final baseSize = style.fontSize ?? 14.0;
+      final scaledSize = baseSize * scaleFactor;
+
+      // Aplikuj správny font podľa výberu
+      switch (_fontFamily) {
+        case 'Default':
+          // Inter font z Google Fonts
+          return GoogleFonts.inter(textStyle: style, fontSize: scaledSize);
+        case 'Serif':
+          // Merriweather - elegantný serif font
+          return GoogleFonts.merriweather(
+            textStyle: style,
+            fontSize: scaledSize,
+          );
+        case 'Monospace':
+          // Roboto Mono - čitateľný monospace font
+          return GoogleFonts.robotoMono(textStyle: style, fontSize: scaledSize);
+        default:
+          return style.copyWith(fontSize: scaledSize);
+      }
+    }
+
     return TextTheme(
-      displayLarge: baseTheme.displayLarge?.copyWith(
-        fontFamily: fontFamily,
-        fontSize: (baseTheme.displayLarge?.fontSize ?? 57) * scaleFactor,
-      ),
-      displayMedium: baseTheme.displayMedium?.copyWith(
-        fontFamily: fontFamily,
-        fontSize: (baseTheme.displayMedium?.fontSize ?? 45) * scaleFactor,
-      ),
-      displaySmall: baseTheme.displaySmall?.copyWith(
-        fontFamily: fontFamily,
-        fontSize: (baseTheme.displaySmall?.fontSize ?? 36) * scaleFactor,
-      ),
-      headlineLarge: baseTheme.headlineLarge?.copyWith(
-        fontFamily: fontFamily,
-        fontSize: (baseTheme.headlineLarge?.fontSize ?? 32) * scaleFactor,
-      ),
-      headlineMedium: baseTheme.headlineMedium?.copyWith(
-        fontFamily: fontFamily,
-        fontSize: (baseTheme.headlineMedium?.fontSize ?? 28) * scaleFactor,
-      ),
-      headlineSmall: baseTheme.headlineSmall?.copyWith(
-        fontFamily: fontFamily,
-        fontSize: (baseTheme.headlineSmall?.fontSize ?? 24) * scaleFactor,
-      ),
-      titleLarge: baseTheme.titleLarge?.copyWith(
-        fontFamily: fontFamily,
-        fontSize: (baseTheme.titleLarge?.fontSize ?? 22) * scaleFactor,
-      ),
-      titleMedium: baseTheme.titleMedium?.copyWith(
-        fontFamily: fontFamily,
-        fontSize: (baseTheme.titleMedium?.fontSize ?? 16) * scaleFactor,
-      ),
-      titleSmall: baseTheme.titleSmall?.copyWith(
-        fontFamily: fontFamily,
-        fontSize: (baseTheme.titleSmall?.fontSize ?? 14) * scaleFactor,
-      ),
-      bodyLarge: baseTheme.bodyLarge?.copyWith(
-        fontFamily: fontFamily,
-        fontSize: (baseTheme.bodyLarge?.fontSize ?? 16) * scaleFactor,
-      ),
-      bodyMedium: baseTheme.bodyMedium?.copyWith(
-        fontFamily: fontFamily,
-        fontSize: (baseTheme.bodyMedium?.fontSize ?? 14) * scaleFactor,
-      ),
-      bodySmall: baseTheme.bodySmall?.copyWith(
-        fontFamily: fontFamily,
-        fontSize: (baseTheme.bodySmall?.fontSize ?? 12) * scaleFactor,
-      ),
-      labelLarge: baseTheme.labelLarge?.copyWith(
-        fontFamily: fontFamily,
-        fontSize: (baseTheme.labelLarge?.fontSize ?? 14) * scaleFactor,
-      ),
-      labelMedium: baseTheme.labelMedium?.copyWith(
-        fontFamily: fontFamily,
-        fontSize: (baseTheme.labelMedium?.fontSize ?? 12) * scaleFactor,
-      ),
-      labelSmall: baseTheme.labelSmall?.copyWith(
-        fontFamily: fontFamily,
-        fontSize: (baseTheme.labelSmall?.fontSize ?? 11) * scaleFactor,
-      ),
+      displayLarge: applyToStyle(baseTheme.displayLarge),
+      displayMedium: applyToStyle(baseTheme.displayMedium),
+      displaySmall: applyToStyle(baseTheme.displaySmall),
+      headlineLarge: applyToStyle(baseTheme.headlineLarge),
+      headlineMedium: applyToStyle(baseTheme.headlineMedium),
+      headlineSmall: applyToStyle(baseTheme.headlineSmall),
+      titleLarge: applyToStyle(baseTheme.titleLarge),
+      titleMedium: applyToStyle(baseTheme.titleMedium),
+      titleSmall: applyToStyle(baseTheme.titleSmall),
+      bodyLarge: applyToStyle(baseTheme.bodyLarge),
+      bodyMedium: applyToStyle(baseTheme.bodyMedium),
+      bodySmall: applyToStyle(baseTheme.bodySmall),
+      labelLarge: applyToStyle(baseTheme.labelLarge),
+      labelMedium: applyToStyle(baseTheme.labelMedium),
+      labelSmall: applyToStyle(baseTheme.labelSmall),
     );
   }
 }

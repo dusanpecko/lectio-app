@@ -14,12 +14,13 @@ import 'package:lectio_divina/screens/home_screen.dart';
 import 'package:lectio_divina/screens/lectio_screen.dart';
 import 'package:lectio_divina/shared/app_theme.dart';
 import 'package:logger/logger.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'firebase_options.dart';
+import 'providers/theme_provider.dart';
 import 'services/audio_handler.dart';
 import 'services/fcm_service.dart';
 import 'services/local_notifications_service.dart';
@@ -471,59 +472,77 @@ Future<void> main() async {
     _logger.e('❌ Error initializing LocalNotificationsService: $e');
   }
 
+  // Inicializuj ThemeProvider
+  final themeProvider = ThemeProvider();
+  await themeProvider.initialize();
+
   runApp(
-    EasyLocalization(
-      supportedLocales: const [Locale('sk'), Locale('en')],
-      path: 'assets/translations',
-      fallbackLocale: const Locale('sk'),
-      child: const MyApp(),
+    ChangeNotifierProvider.value(
+      value: themeProvider,
+      child: EasyLocalization(
+        supportedLocales: const [Locale('sk'), Locale('en')],
+        path: 'assets/translations',
+        fallbackLocale: const Locale('sk'),
+        child: const MyApp(),
+      ),
     ),
   );
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+
+    // Aplikuj font nastavenia na témy
+    final lightTheme = AppTheme.light.copyWith(
+      textTheme: themeProvider.applyFontSettings(AppTheme.light.textTheme),
+    );
+
+    final darkTheme = AppTheme.dark.copyWith(
+      textTheme: themeProvider.applyFontSettings(AppTheme.dark.textTheme),
+    );
+
+    return MaterialApp(
+      navigatorKey: navigatorKey,
+      title: 'Lectio Divina',
+      debugShowCheckedModeBanner: false,
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: themeProvider.themeMode,
+      initialRoute: '/',
+      localizationsDelegates: [...context.localizationDelegates],
+      supportedLocales: context.supportedLocales,
+      locale: context.locale,
+      home: const FCMInitializer(child: SessionHandler()),
+      routes: {'/lectio': (context) => const LectioScreen()},
+    );
+  }
 }
 
-class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+class FCMInitializer extends StatefulWidget {
+  final Widget child;
+
+  const FCMInitializer({super.key, required this.child});
+
+  @override
+  State<FCMInitializer> createState() => _FCMInitializerState();
+}
+
+class _FCMInitializerState extends State<FCMInitializer>
+    with WidgetsBindingObserver {
   StreamSubscription<RemoteMessage>? _openedAppSub;
-  ThemeMode _themeMode = ThemeMode.system;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _logger.i('🚀 MyApp initState() - registered lifecycle observer');
+    _logger.i('🚀 FCMInitializer initState() - registered lifecycle observer');
 
     // Vyčisti badge pri štarte
     _clearAppBadge();
-
-    // Načítaj theme mode
-    _loadThemeMode();
-  }
-
-  Future<void> _loadThemeMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    final themeModeString = prefs.getString('themeMode') ?? 'system';
-
-    ThemeMode mode;
-    switch (themeModeString) {
-      case 'light':
-        mode = ThemeMode.light;
-        break;
-      case 'dark':
-        mode = ThemeMode.dark;
-        break;
-      default:
-        mode = ThemeMode.system;
-    }
-
-    if (mounted) {
-      setState(() => _themeMode = mode);
-    }
   }
 
   @override
@@ -591,7 +610,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    _logger.i('🗑️ MyApp dispose() - removing lifecycle observer');
+    _logger.i('🗑️ FCMInitializer dispose() - removing lifecycle observer');
     WidgetsBinding.instance.removeObserver(this);
     _openedAppSub?.cancel();
     super.dispose();
@@ -599,22 +618,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: navigatorKey,
-      title: 'Lectio Divina',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: _themeMode,
-      initialRoute: '/',
-      localizationsDelegates: context.localizationDelegates,
-      supportedLocales: context.supportedLocales,
-      locale: context.locale,
-      routes: {
-        '/': (context) => const SessionHandler(),
-        '/lectio': (context) => const LectioScreen(),
-      },
-    );
+    return widget.child;
   }
 }
 

@@ -1,7 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lectio_divina/providers/theme_provider.dart';
 import 'package:lectio_divina/screens/auth_screen.dart';
 import 'package:lectio_divina/screens/profile_screen.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -16,15 +19,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _selectedBible = 'biblia1';
   bool _isLoadingBible = true;
 
-  // Theme settings
-  ThemeMode _themeMode = ThemeMode.system;
-  bool _isLoadingTheme = true;
-
-  // Font settings
-  String _fontFamily = 'Default';
-  double _fontSize = 16.0;
-  bool _isLoadingFont = true;
-
   @override
   void initState() {
     super.initState();
@@ -37,46 +31,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Bible
     final bible = prefs.getString('selectedBible') ?? 'biblia1';
 
-    // Theme
-    final themeModeString = prefs.getString('themeMode') ?? 'system';
-    final themeMode = _themeModeFromString(themeModeString);
-
-    // Font
-    final fontFamily = prefs.getString('fontFamily') ?? 'Default';
-    final fontSize = prefs.getDouble('fontSize') ?? 16.0;
-
     if (!mounted) return;
     setState(() {
       _selectedBible = bible;
-      _themeMode = themeMode;
-      _fontFamily = fontFamily;
-      _fontSize = fontSize;
       _isLoadingBible = false;
-      _isLoadingTheme = false;
-      _isLoadingFont = false;
     });
-  }
-
-  ThemeMode _themeModeFromString(String mode) {
-    switch (mode) {
-      case 'light':
-        return ThemeMode.light;
-      case 'dark':
-        return ThemeMode.dark;
-      default:
-        return ThemeMode.system;
-    }
-  }
-
-  String _themeModeToString(ThemeMode mode) {
-    switch (mode) {
-      case ThemeMode.light:
-        return 'light';
-      case ThemeMode.dark:
-        return 'dark';
-      default:
-        return 'system';
-    }
   }
 
   Future<void> _onBibleChanged(String? value) async {
@@ -88,39 +47,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _onThemeModeChanged(ThemeMode? mode) async {
     if (mode == null) return;
-    setState(() => _themeMode = mode);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('themeMode', _themeModeToString(mode));
-
-    // Aplikuj zmenu témy okamžite
-    if (mounted) {
-      // TODO: Potrebuješ propagovať themeMode do MaterialApp
-      // Bude potrebné refaktorovať main.dart aby používal provider alebo similar
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(tr('settings_screen.theme_changed')),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
+    final themeProvider = context.read<ThemeProvider>();
+    await themeProvider.setThemeMode(mode);
   }
 
   Future<void> _onFontFamilyChanged(String? family) async {
     if (family == null) return;
-    setState(() => _fontFamily = family);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('fontFamily', family);
+    final themeProvider = context.read<ThemeProvider>();
+    await themeProvider.setFontFamily(family);
   }
 
   Future<void> _onFontSizeChanged(double size) async {
-    setState(() => _fontSize = size);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('fontSize', size);
+    final themeProvider = context.read<ThemeProvider>();
+    await themeProvider.setFontSize(size);
+  }
+
+  /// Vráti správny TextStyle pre preview podľa zvoleného fontu
+  TextStyle _getPreviewTextStyle(ThemeProvider themeProvider) {
+    final fontSize = themeProvider.fontSize;
+
+    switch (themeProvider.fontFamily) {
+      case 'Default':
+        return GoogleFonts.inter(fontSize: fontSize);
+      case 'Serif':
+        return GoogleFonts.merriweather(fontSize: fontSize);
+      case 'Monospace':
+        return GoogleFonts.robotoMono(fontSize: fontSize);
+      default:
+        return TextStyle(fontSize: fontSize);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final session = Supabase.instance.client.auth.currentSession;
+    final themeProvider = context.watch<ThemeProvider>();
     final userEmail = session?.user.email ?? tr('guest');
     final locale = context.locale.languageCode;
 
@@ -133,11 +94,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 16),
 
           // Theme Settings
-          _buildThemeCard(),
+          _buildThemeCard(themeProvider),
           const SizedBox(height: 16),
 
           // Font Settings
-          _buildFontCard(),
+          _buildFontCard(themeProvider),
           const SizedBox(height: 16),
 
           // Bible Selection (len pre SK)
@@ -226,7 +187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildThemeCard() {
+  Widget _buildThemeCard(ThemeProvider themeProvider) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 4,
@@ -249,58 +210,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            _isLoadingTheme
-                ? const Center(child: CircularProgressIndicator())
-                : Column(
+            Column(
+              children: [
+                RadioListTile<ThemeMode>(
+                  title: Row(
                     children: [
-                      RadioListTile<ThemeMode>(
-                        title: Row(
-                          children: [
-                            const Icon(Icons.phone_android, size: 20),
-                            const SizedBox(width: 8),
-                            Text(tr('settings_screen.theme.system')),
-                          ],
-                        ),
-                        subtitle: Text(tr('settings_screen.theme.system_desc')),
-                        value: ThemeMode.system,
-                        groupValue: _themeMode,
-                        onChanged: _onThemeModeChanged,
-                      ),
-                      RadioListTile<ThemeMode>(
-                        title: Row(
-                          children: [
-                            const Icon(Icons.light_mode, size: 20),
-                            const SizedBox(width: 8),
-                            Text(tr('settings_screen.theme.light')),
-                          ],
-                        ),
-                        subtitle: Text(tr('settings_screen.theme.light_desc')),
-                        value: ThemeMode.light,
-                        groupValue: _themeMode,
-                        onChanged: _onThemeModeChanged,
-                      ),
-                      RadioListTile<ThemeMode>(
-                        title: Row(
-                          children: [
-                            const Icon(Icons.dark_mode, size: 20),
-                            const SizedBox(width: 8),
-                            Text(tr('settings_screen.theme.dark')),
-                          ],
-                        ),
-                        subtitle: Text(tr('settings_screen.theme.dark_desc')),
-                        value: ThemeMode.dark,
-                        groupValue: _themeMode,
-                        onChanged: _onThemeModeChanged,
-                      ),
+                      const Icon(Icons.phone_android, size: 20),
+                      const SizedBox(width: 8),
+                      Text(tr('settings_screen.theme.system')),
                     ],
                   ),
+                  subtitle: Text(tr('settings_screen.theme.system_desc')),
+                  value: ThemeMode.system,
+                  groupValue: themeProvider.themeMode,
+                  onChanged: _onThemeModeChanged,
+                ),
+                RadioListTile<ThemeMode>(
+                  title: Row(
+                    children: [
+                      const Icon(Icons.light_mode, size: 20),
+                      const SizedBox(width: 8),
+                      Text(tr('settings_screen.theme.light')),
+                    ],
+                  ),
+                  subtitle: Text(tr('settings_screen.theme.light_desc')),
+                  value: ThemeMode.light,
+                  groupValue: themeProvider.themeMode,
+                  onChanged: _onThemeModeChanged,
+                ),
+                RadioListTile<ThemeMode>(
+                  title: Row(
+                    children: [
+                      const Icon(Icons.dark_mode, size: 20),
+                      const SizedBox(width: 8),
+                      Text(tr('settings_screen.theme.dark')),
+                    ],
+                  ),
+                  subtitle: Text(tr('settings_screen.theme.dark_desc')),
+                  value: ThemeMode.dark,
+                  groupValue: themeProvider.themeMode,
+                  onChanged: _onThemeModeChanged,
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildFontCard() {
+  Widget _buildFontCard(ThemeProvider themeProvider) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 4,
@@ -330,44 +289,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 8),
-            _isLoadingFont
-                ? const Center(child: CircularProgressIndicator())
-                : DropdownButtonFormField<String>(
-                    value: _fontFamily,
-                    onChanged: _onFontFamilyChanged,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                    ),
-                    items: [
-                      DropdownMenuItem(
-                        value: 'Default',
-                        child: Text(
-                          tr('settings_screen.font.default'),
-                          style: const TextStyle(fontFamily: 'Roboto'),
-                        ),
-                      ),
-                      const DropdownMenuItem(
-                        value: 'Serif',
-                        child: Text(
-                          'Serif',
-                          style: TextStyle(fontFamily: 'serif'),
-                        ),
-                      ),
-                      const DropdownMenuItem(
-                        value: 'Monospace',
-                        child: Text(
-                          'Monospace',
-                          style: TextStyle(fontFamily: 'monospace'),
-                        ),
-                      ),
-                    ],
+            DropdownButtonFormField<String>(
+              value: themeProvider.fontFamily,
+              onChanged: _onFontFamilyChanged,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+              ),
+              items: [
+                DropdownMenuItem(
+                  value: 'Default',
+                  child: Text(
+                    tr('settings_screen.font.default'),
+                    style: const TextStyle(fontFamily: 'Inter'),
                   ),
+                ),
+                const DropdownMenuItem(
+                  value: 'Serif',
+                  child: Text('Serif', style: TextStyle(fontFamily: 'serif')),
+                ),
+                const DropdownMenuItem(
+                  value: 'Monospace',
+                  child: Text(
+                    'Monospace',
+                    style: TextStyle(fontFamily: 'monospace'),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
 
             // Font Size
@@ -384,11 +338,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 Expanded(
                   child: Slider(
-                    value: _fontSize,
+                    value: themeProvider.fontSize,
                     min: 12.0,
                     max: 24.0,
                     divisions: 12,
-                    label: _fontSize.round().toString(),
+                    label: themeProvider.fontSize.round().toString(),
                     onChanged: _onFontSizeChanged,
                   ),
                 ),
@@ -409,10 +363,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               child: Text(
                 tr('settings_screen.font.preview'),
-                style: TextStyle(
-                  fontFamily: _fontFamily == 'Default' ? null : _fontFamily,
-                  fontSize: _fontSize,
-                ),
+                style: _getPreviewTextStyle(themeProvider),
               ),
             ),
           ],

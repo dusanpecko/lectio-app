@@ -391,7 +391,7 @@
     "font": {
       "title": "Font and Size",
       "family": "Font Family",
-      "default": "Default (Roboto)",
+      "default": "Default (Inter)",
       "size": "Font Size",
       "small": "Small",
       "large": "Large",

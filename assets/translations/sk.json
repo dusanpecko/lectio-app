@@ -576,7 +576,7 @@
     "font": {
       "title": "Písmo a veľkosť",
       "family": "Typ písma",
-      "default": "Predvolené (Roboto)",
+      "default": "Predvolené (Inter)",
       "size": "Veľkosť písma",
       "small": "Malé",
       "large": "Veľké",
