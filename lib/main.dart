@@ -1,6 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+
+import 'package:audio_service/audio_service.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -8,20 +13,42 @@ import 'package:lectio_divina/screens/auth_screen.dart';
 import 'package:lectio_divina/screens/home_screen.dart';
 import 'package:lectio_divina/screens/lectio_screen.dart';
 import 'package:lectio_divina/shared/app_theme.dart';
+import 'package:logger/logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest.dart' as tz;
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:logger/logger.dart';
-import 'package:audio_service/audio_service.dart';
+import 'package:timezone/timezone.dart' as tz;
+
+import 'firebase_options.dart';
 import 'services/audio_handler.dart';
 import 'services/fcm_service.dart';
-import 'firebase_options.dart';
+import 'services/local_notifications_service.dart';
 
 final Logger _logger = Logger();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 AudioHandler? globalAudioHandler;
+
+// Globálna premenná pre čakajúcu notifikáciu
+String? _pendingNotificationPayload;
+
+/// Getter pre pending notification
+String? getPendingNotification() {
+  _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  _logger.i('🔍 getPendingNotification() CALLED');
+  _logger.i(
+    '🔍 Current _pendingNotificationPayload: $_pendingNotificationPayload',
+  );
+
+  final payload = _pendingNotificationPayload;
+  _pendingNotificationPayload = null; // Vymaž po prečítaní
+
+  _logger.i('🔍 Returning payload: $payload');
+  _logger.i('🔍 Cleared _pendingNotificationPayload to null');
+  _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+  return payload;
+}
 
 // Method channel pre komunikáciu s natívnym iOS kódom
 const MethodChannel _badgeChannel = MethodChannel('com.lectio_divina/badge');
@@ -66,6 +93,167 @@ void _handleNotificationTap(RemoteMessage message) {
     }
   } catch (e) {
     _logger.e('Error handling notification tap: $e');
+  }
+}
+
+/// Spracovanie kliknutia na lokálnu notifikáciu
+void _handleLocalNotificationTap(String? payload) {
+  _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  _logger.i('🎯 LOCAL NOTIFICATION TAP HANDLER CALLED!');
+  _logger.i('🎯 Payload received: $payload');
+  _logger.i(
+    '🎯 Current _pendingNotificationPayload before: $_pendingNotificationPayload',
+  );
+  _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+  try {
+    _clearAppBadge();
+
+    // Jednoducho ulož payload pre neskoršie spracovanie
+    _pendingNotificationPayload = payload;
+    _logger.i('✅ Successfully stored pending notification payload');
+    _logger.i(
+      '📍 New _pendingNotificationPayload value: $_pendingNotificationPayload',
+    );
+
+    // Ak máme dostupný context a aplikácia je už spustená, zobraz dialóg okamžite
+    if (navigatorKey.currentContext != null) {
+      _logger.i('🚀 Context available - showing dialog immediately');
+      // Počkaj chvíľu kým sa notifikácia zavrie
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (navigatorKey.currentContext != null) {
+          final tempPayload = _pendingNotificationPayload;
+          _pendingNotificationPayload = null; // Vymaž aby sa neopakoval
+          _showLocalNotificationDialog(
+            navigatorKey.currentContext!,
+            tempPayload,
+          );
+        }
+      });
+    } else {
+      _logger.i('⏳ No context available - will show dialog on app resume');
+    }
+  } catch (e) {
+    _logger.e('❌ Error handling local notification tap: $e');
+  }
+}
+
+/// Zobrazí dialóg pre lokálnu notifikáciu
+void _showLocalNotificationDialog(BuildContext context, String? payload) async {
+  try {
+    _logger.i('🎨 SHOW DIALOG: Starting with payload = $payload');
+
+    if (!context.mounted) {
+      _logger.e('🎨 Context is not mounted!');
+      return;
+    }
+
+    String title = 'Notifikácia';
+    String body = 'Máte novú notifikáciu.';
+    String? actionRoute;
+
+    // Dekóduj payload a nastav obsah
+    if (payload != null) {
+      try {
+        final data = jsonDecode(payload);
+        final type = data['type'] as String?;
+        _logger.i('🎨 Parsed notification type: $type');
+
+        switch (type) {
+          case 'daily_lectio':
+            title = '📖 Denné zamyslenie';
+            body = 'Čas na dnešné lectio divina. Chcete ho otvoriť?';
+            actionRoute = '/lectio';
+            break;
+          case 'prayer_reminder':
+            title = '🙏 Pripomenutie modlitby';
+            body =
+                'Čas na modlitbu a zamyslenie. Chcete otvoriť lectio divina?';
+            actionRoute = '/lectio';
+            break;
+          case 'welcome':
+            title = '✨ Vitajte v aplikácii!';
+            body =
+                'Ďakujeme, že používate Lectio Divina. Preskúmajte naše denné zamyslenia.';
+            break;
+        }
+      } catch (e) {
+        _logger.w('🎨 Error parsing notification payload: $e');
+      }
+    }
+
+    _logger.i('🎨 Showing dialog with title: $title');
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              const Icon(
+                Icons.notifications_active,
+                color: Color(0xFF4A5085),
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            body,
+            style: const TextStyle(
+              fontSize: 16,
+              height: 1.4,
+              color: Color(0xFF2D3748),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text(
+                'Zavrieť',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            if (actionRoute != null)
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  // Naviguj na cieľovú obrazovku
+                  navigatorKey.currentState?.pushNamed(actionRoute!);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4A5085),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text(
+                  'Otvoriť',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+          ],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        );
+      },
+    );
+  } catch (e) {
+    _logger.e('Error showing local notification dialog: $e');
   }
 }
 
@@ -208,6 +396,8 @@ void _showNotificationDialog(
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   tz.initializeTimeZones();
+  tz.setLocalLocation(tz.getLocation('Europe/Bratislava'));
+  _logger.i('✅ Timezone set to Europe/Bratislava');
 
   // .env
   try {
@@ -261,6 +451,26 @@ Future<void> main() async {
     _logger.e('Chyba pri inicializácii AudioService: $e');
   }
 
+  // Lokálne notifikácie - NAJPRV nastav callback, POTOM inicializuj
+  try {
+    _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    _logger.i('🔧 Setting up LocalNotificationsService...');
+    _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    // KRITICKÉ: Najprv nastav callback, potom inicializuj!
+    LocalNotificationsService.instance.setNotificationCallback(
+      _handleLocalNotificationTap,
+    );
+    _logger.i('✅ Notification callback set BEFORE initialization');
+
+    await LocalNotificationsService.instance.initialize();
+    _logger.i('✅ LocalNotificationsService initialized successfully');
+
+    _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  } catch (e) {
+    _logger.e('❌ Error initializing LocalNotificationsService: $e');
+  }
+
   runApp(
     EasyLocalization(
       supportedLocales: const [Locale('sk'), Locale('en')],
@@ -280,14 +490,40 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   StreamSubscription<RemoteMessage>? _openedAppSub;
+  ThemeMode _themeMode = ThemeMode.system;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _logger.i('🚀 MyApp initState() - registered lifecycle observer');
 
     // Vyčisti badge pri štarte
     _clearAppBadge();
+
+    // Načítaj theme mode
+    _loadThemeMode();
+  }
+
+  Future<void> _loadThemeMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final themeModeString = prefs.getString('themeMode') ?? 'system';
+
+    ThemeMode mode;
+    switch (themeModeString) {
+      case 'light':
+        mode = ThemeMode.light;
+        break;
+      case 'dark':
+        mode = ThemeMode.dark;
+        break;
+      default:
+        mode = ThemeMode.system;
+    }
+
+    if (mounted) {
+      setState(() => _themeMode = mode);
+    }
   }
 
   @override
@@ -314,13 +550,48 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    _logger.i('🔄 App Lifecycle State Changed: $state');
+    _logger.i(
+      '🔍 Current _pendingNotificationPayload: $_pendingNotificationPayload',
+    );
+    _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
     if (state == AppLifecycleState.resumed) {
+      _logger.i('✅ App RESUMED from background');
       _clearAppBadge();
+
+      // Kontrola pending notifikácie keď aplikácia prejde do popredia
+      if (_pendingNotificationPayload != null) {
+        _logger.i('🎯 FOUND pending notification on resume!');
+        _logger.i('📦 Payload: $_pendingNotificationPayload');
+
+        final payload = _pendingNotificationPayload;
+        _pendingNotificationPayload = null; // Vymaž aby sa neopakoval
+
+        // Počkaj na stabilizáciu aplikácie
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _logger.i('⏱️ Delay completed, showing dialog...');
+          _logger.i(
+            '🔍 navigatorKey.currentContext available: ${navigatorKey.currentContext != null}',
+          );
+
+          if (navigatorKey.currentContext != null) {
+            _logger.i('✅ Calling _showLocalNotificationDialog()');
+            _showLocalNotificationDialog(navigatorKey.currentContext!, payload);
+          } else {
+            _logger.e('❌ No context available to show dialog!');
+          }
+        });
+      } else {
+        _logger.i('ℹ️ No pending notification on resume');
+      }
     }
   }
 
   @override
   void dispose() {
+    _logger.i('🗑️ MyApp dispose() - removing lifecycle observer');
     WidgetsBinding.instance.removeObserver(this);
     _openedAppSub?.cancel();
     super.dispose();
@@ -334,7 +605,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+      themeMode: _themeMode,
       initialRoute: '/',
       localizationsDelegates: context.localizationDelegates,
       supportedLocales: context.supportedLocales,
@@ -361,12 +632,28 @@ class _SessionHandlerState extends State<SessionHandler> {
   @override
   void initState() {
     super.initState();
+    _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    _logger.i('🔐 SessionHandler initState() CALLED');
+    _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
     session = Supabase.instance.client.auth.currentSession;
+    _logger.i(
+      '🔐 Current session: ${session != null ? "LOGGED IN" : "NOT LOGGED IN"}',
+    );
 
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
       data,
     ) {
       if (!mounted) return;
+
+      // Ak sa user prihlásil, nastav welcome notification
+      if (data.event == AuthChangeEvent.signedIn) {
+        LocalNotificationsService.instance
+            .setupRegistrationNotification()
+            .catchError((error) {
+              _logger.w('Failed to setup welcome notification: $error');
+            });
+      }
 
       // Ak sa user odhlásil, deaktivuj FCM token
       if (data.event == AuthChangeEvent.signedOut) {
@@ -378,6 +665,64 @@ class _SessionHandlerState extends State<SessionHandler> {
       setState(() {
         session = Supabase.instance.client.auth.currentSession;
       });
+    });
+
+    // Kontrola čakajúcej notifikácie
+    _checkPendingNotification();
+  }
+
+  /// Kontrola a spracovanie čakajúcej notifikácie
+  void _checkPendingNotification() {
+    _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    _logger.i('🔔 SessionHandler _checkPendingNotification() CALLED');
+    _logger.i(
+      '🔔 Current _pendingNotificationPayload: $_pendingNotificationPayload',
+    );
+    _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    // Počkaj kým sa context úplne vytvorí
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _logger.i('⏰ PostFrameCallback EXECUTED in SessionHandler');
+      _logger.i(
+        '🔍 _pendingNotificationPayload = $_pendingNotificationPayload',
+      );
+      _logger.i('🔍 mounted = $mounted');
+
+      if (_pendingNotificationPayload != null && mounted) {
+        _logger.i('✅ CONDITION MET: Will process notification');
+        _logger.i(
+          '🎯 Processing pending notification: $_pendingNotificationPayload',
+        );
+        final payload = _pendingNotificationPayload;
+        _pendingNotificationPayload = null; // Vymaž aby sa neopakoval
+        _logger.i('🗑️ Cleared _pendingNotificationPayload');
+
+        // Počkaj na dokončenie navigácie
+        Future.delayed(const Duration(milliseconds: 800), () {
+          _logger.i('⏱️ 800ms delay completed');
+          _logger.i('🔍 mounted after delay = $mounted');
+          _logger.i(
+            '🔍 navigatorKey.currentContext = ${navigatorKey.currentContext}',
+          );
+
+          if (mounted && navigatorKey.currentContext != null) {
+            _logger.i('✅ About to call _showLocalNotificationDialog()');
+            _showLocalNotificationDialog(navigatorKey.currentContext!, payload);
+          } else {
+            _logger.w('⚠️ Cannot show dialog:');
+            _logger.w('   - mounted: $mounted');
+            _logger.w(
+              '   - context available: ${navigatorKey.currentContext != null}',
+            );
+          }
+        });
+      } else {
+        _logger.i('ℹ️ Condition NOT met:');
+        _logger.i(
+          '   - _pendingNotificationPayload is null: ${_pendingNotificationPayload == null}',
+        );
+        _logger.i('   - mounted: $mounted');
+      }
     });
   }
 

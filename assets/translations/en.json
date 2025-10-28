@@ -137,6 +137,8 @@
   "fab_menu_top_center": "Top center",
   "user": "User",
   "guest": "Guest",
+  "not_logged_in": "You are not logged in",
+  "login_to_sync": "Sign in to sync your notes and settings",
   "settings_coming_soon": "More settings coming soon.",
   "account": "Account",
   "delete_account_title": "Delete Account",
@@ -321,7 +323,22 @@
   
   "profile": {
     "button": {
-      "notification_settings": "Notification Settings"
+      "notification_settings": "Notification Settings",
+      "download_data": "Download My Data",
+      "delete_account": "Delete Account"
+    },
+    "download": {
+      "export_title": "Data Export",
+      "export_description": "Your Lectio Divina data",
+      "success": "Data exported successfully",
+      "error": "Error exporting data: {}"
+    },
+    "delete": {
+      "confirm_title": "Delete Account?",
+      "confirm_message": "Are you sure you want to permanently delete your account and all your data? This action cannot be undone.",
+      "confirm_button": "Delete Account",
+      "success": "Account successfully deleted",
+      "error": "Error deleting account: {}"
     }
   },
   
@@ -329,8 +346,8 @@
     "title": "Notifications",
     "permission": {
       "title": "Notification Permission",
-      "description": "To receive notifications about new reflections, prayers and news, please allow notifications.",
-      "request": "Allow Notifications"
+      "description": "To receive notifications about new meditations, prayers, and news, please enable notifications.",
+      "request": "Enable Notifications"
     },
     "settings": {
       "title": "Notification Settings",
@@ -338,7 +355,7 @@
     },
     "category": {
       "spiritual": "Spiritual",
-      "educational": "Educational", 
+      "educational": "Educational",
       "news": "News",
       "reminders": "Reminders",
       "special": "Special"
@@ -353,12 +370,34 @@
       "unknown": "Unknown error"
     },
     "success": {
-      "preferences_saved": "Settings saved successfully"
+      "preferences_saved": "Settings successfully saved"
     },
     "action": {
       "retry": "Try Again",
       "save_changes": "Save Changes"
     }
+  },
+
+  "settings_screen": {
+    "theme": {
+      "title": "App Theme",
+      "system": "System",
+      "system_desc": "Automatically follow device settings",
+      "light": "Light",
+      "light_desc": "Light mode always active",
+      "dark": "Dark",
+      "dark_desc": "Dark mode always active"
+    },
+    "font": {
+      "title": "Font and Size",
+      "family": "Font Family",
+      "default": "Default (Roboto)",
+      "size": "Font Size",
+      "small": "Small",
+      "large": "Large",
+      "preview": "This is a sample text with the selected font and size."
+    },
+    "theme_changed": "Theme has been changed. Restart the app for full effect."
   }
 
 }

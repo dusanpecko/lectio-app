@@ -1,9 +1,17 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:image/image.dart' as img;
-import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+import 'package:image/image.dart' as img;
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'notification_settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -366,6 +374,194 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> downloadUserData() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    setState(() => _isSaving = true);
+
+    try {
+      // Načítaj všetky užívateľské dáta
+      final userData = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      // Načítaj poznámky používateľa
+      final notes = await supabase
+          .from('notes')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', ascending: false);
+
+      // Načítaj preferencie notifikácií
+      final notificationPrefs = await supabase
+          .from('user_notification_preferences')
+          .select('*, notification_topics(*)')
+          .eq('user_id', user.id);
+
+      // Vytvor kompletný export
+      final exportData = {
+        'export_date': DateTime.now().toIso8601String(),
+        'user_info': {
+          'id': user.id,
+          'email': user.email,
+          'full_name': userData?['full_name'],
+          'role': userData?['role'],
+          'created_at': userData?['created_at'],
+          'avatar_url': userData?['avatar_url'],
+        },
+        'notes': notes,
+        'notification_preferences': notificationPrefs,
+        'metadata': {
+          'app': 'Lectio Divina',
+          'version': '1.0',
+          'format': 'JSON',
+        },
+      };
+
+      // Konvertuj na JSON string
+      final jsonString = const JsonEncoder.withIndent('  ').convert(exportData);
+
+      // Ulož do dočasného súboru
+      final directory = await getTemporaryDirectory();
+      final timestamp = DateFormat(
+        'yyyy-MM-dd_HH-mm-ss',
+      ).format(DateTime.now());
+      final fileName = 'lectio_divina_export_$timestamp.json';
+      final file = File('${directory.path}/$fileName');
+      await file.writeAsString(jsonString);
+
+      if (mounted) {
+        setState(() => _isSaving = false);
+
+        // Zisti pozíciu pre iOS popover
+        final box = context.findRenderObject() as RenderBox?;
+        final sharePositionOrigin = box != null
+            ? box.localToGlobal(Offset.zero) & box.size
+            : null;
+
+        // Zobraz možnosti zdieľania
+        final result = await Share.shareXFiles(
+          [XFile(file.path)],
+          subject: 'profile.download.export_title'.tr(),
+          text: 'profile.download.export_description'.tr(),
+          sharePositionOrigin: sharePositionOrigin,
+        );
+
+        if (result.status == ShareResultStatus.success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('profile.download.success'.tr()),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('profile.download.error'.tr(args: [e.toString()])),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> deleteAccount() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    // Potvrdenie pred vymazaním
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          title: Text('profile.delete.confirm_title'.tr()),
+          content: Text('profile.delete.confirm_message'.tr()),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(
+                'profile.button.cancel'.tr(),
+                style: TextStyle(color: theme.colorScheme.primary),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.error,
+                foregroundColor: Colors.white,
+              ),
+              child: Text('profile.delete.confirm_button'.tr()),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isSaving = true);
+
+    try {
+      // Získaj aktuálnu session token
+      final session = supabase.auth.currentSession;
+      if (session == null) {
+        throw Exception('No active session');
+      }
+
+      final token = session.accessToken;
+
+      // Zavolaj backend API endpoint pre vymazanie účtu
+      final backendUrl =
+          dotenv.env['NEXT_PUBLIC_BACKEND_URL'] ?? 'https://lectio.one';
+
+      final response = await http.delete(
+        Uri.parse('$backendUrl/api/user/delete-account'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 207) {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['error'] ?? 'Failed to delete account');
+      }
+
+      // Odhláš používateľa lokálne
+      await supabase.auth.signOut();
+
+      if (mounted) {
+        // Presmeruj na login obrazovku
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('profile.delete.success'.tr()),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('profile.delete.error'.tr(args: [e.toString()])),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
     _nameCtrl.dispose();
@@ -518,6 +714,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         foregroundColor: theme.colorScheme.primary,
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _isSaving ? null : downloadUserData,
+                      icon: Icon(
+                        Icons.download,
+                        color: theme.colorScheme.primary,
+                      ),
+                      label: Text('profile.button.download_data'.tr()),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: theme.colorScheme.primary),
+                        foregroundColor: theme.colorScheme.primary,
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
@@ -544,6 +753,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               )
                             : Text('profile.button.save_changes'.tr()),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    OutlinedButton.icon(
+                      onPressed: _isSaving ? null : deleteAccount,
+                      icon: const Icon(Icons.delete_forever, color: Colors.red),
+                      label: Text('profile.button.delete_account'.tr()),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.red),
+                        foregroundColor: Colors.red,
                       ),
                     ),
                   ],

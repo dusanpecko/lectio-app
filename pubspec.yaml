@@ -72,6 +72,7 @@ dependencies:
   firebase_messaging: ^16.0.0
   flutter_secure_storage: ^9.0.0
   flutter_local_notifications: ^17.2.2
+  provider: ^6.1.2
 
 dev_dependencies:
   flutter_test:

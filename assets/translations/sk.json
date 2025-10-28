@@ -137,6 +137,8 @@
   "fab_menu_top_center": "Hore v strede",
   "user": "Používateľ",
   "guest": "Hosť",
+  "not_logged_in": "Nie ste prihlásený",
+  "login_to_sync": "Prihláste sa pre synchronizáciu vašich poznámok a nastavení",
   "settings_coming_soon": "Ďalšie nastavenia už čoskoro.",
   "account": "Účet",
   "delete_account_title": "Vymazať účet",
@@ -291,7 +293,7 @@
     "section3": "Lectio Divina je známe od prvých storočí cirkvi, už Origenes použil grécku frázu thea anagnosis (Božské čítanie), aby opísal spôsob, ako sa priblížiť prostredníctvom Písma k Bohu a k jeho vôli.\n\nTáto prax sa stala bežnou, keď púštni otcovia a matky urobili Božie slovo základom pre svoju osobnú modlitbu. Krátko na to svätý Benedikt urobil prax Lectio divina základnou normou západného mníšstva. Od najstarších storočí až po dnešné časy je Lectio Divina životnou praxou, ktorá nás pozýva do intímneho vzťahu s Bohom.",
     "section4": "Pápež Benedikt XVI. v roku 2005 zdôraznil, že jedným z účinných spôsobov, akým sa môže dnes obnoviť Cirkev, je práve Lectio divina. Povedal, že „stále čítanie Svätého písma, sprevádzané modlitbou prinesie Cirkvi novú duchovnú jar.“ Túto myšlienku upresnil slovami: „Medzi mnohorakým ovocím tejto novej biblickej jari by som rád spomenul rozšírenie sa starodávnej praxe lectio divina, duchovného čítania Svätého písma. Táto prax spočíva v dlhšom zotrvaní nad biblickým textom, ktorý sa opätovne číta, ba takmer „prežúva“, … s cieľom vyťažiť z neho takpovediac „šťavu“, ktorá by živila meditáciu a kontempláciu a stala by sa akoby životnou miazgou pre konkrétny život. Podmienkou praktizovania Lectio divina je, aby myseľ i srdce osvietil Duch Svätý, teda sám inšpirátor Svätého písma, a teda, aby boli disponované na postoj „nábožného počúvania.“ Takýto bol typický postoj Panny Márie, ako ho symbolicky predstavujú ikony zvestovania. Stačí, ak aj my dovolíme Duchu Svätému, aby nás viedol - tak, ako to urobila Panna Mária.",
     "section5": "Žalmista vyznáva: „Tvoje slovo je svetlo pre moje nohy a pochodeň na mojich chodníkoch“ (Ž 119, 105). Aj pre nás môže byť Božie Slovo svetlom, aby sme videli, kam máme kráčať v tomto čase zmätku a dezorientácie.",
-    "section6": "Preto Vám chceme ponúknuť tento diár. Okrem kalendára a miesta pre poznámky v ňom nájdete aj zápisník, do ktorého si môžete zapisovať svoje myšlienky. Neskôr Vám tieto myšlienky môžu pomáhať nachádzať odpovede na životné otázky.\n\nV časti kalendára / diára nájdete liturgické súradnice na evanjelium zo dňa. Môže Vám to pomôcť pri výbere textu na čítanie a meditáciu. Zároveň vám ponúkame webstránku www.lectiodivina.sk a mobilnú aplikáciu “Lectio divina”, ktorú nájdete vo svojom obchode App Store alebo Play store.\n\nV mobilnej aplikácii nájdete pripravené texty, ktoré Vám pomôžu dostať sa do tejto praxe. Do aplikácie pravidelne pridávame nedeľné liturgické čítania Evanjelia spolu s meditáciou, modlitbou, kontempláciou a jednoduchou výzvou na aplikáciu Božieho slova v každodennom živote. Ďalej je tam možnosť vytvárať si vlastné poznámky, ktoré budú zoradené podľa dátumu meditácie. Ak budete využívať túto možnosť, odporúčame Vám uviesť ako názov poznámky text, nad ktorým rozjímate, prípadne kľúčové slovo, ktoré vystihuje to, čo ste premeditovali. Uľahčí Vám to návrat k premeditovanému Slovu, keď budete hľadať odpoveď na nejakú životnú otázku."
+    "section6": "Preto Vám chceme ponúknuť tento diár. Okrem kalendára a miesta pre poznámky v ňom nájdete aj zápisník, do ktorého si môžete zapisovať svoje myšlienky. Neskôr Vám tieto myšlienky môžu pomáhať nachádzať odpovede na životné otázky.\n\nV časti kalendára / diára nájdete liturgické súradnice na evanjelium zo dňa. Môže Vám to pomôcť pri výbere textu na čítanie a meditáciu. Zároveň vám ponúkame webstránku www.lectio.one a mobilnú aplikáciu “Lectio divina”, ktorú nájdete vo svojom obchode App Store alebo Play store.\n\nV mobilnej aplikácii nájdete pripravené texty, ktoré Vám pomôžu dostať sa do tejto praxe. Do aplikácie pravidelne pridávame nedeľné liturgické čítania Evanjelia spolu s meditáciou, modlitbou, kontempláciou a jednoduchou výzvou na aplikáciu Božieho slova v každodennom živote. Ďalej je tam možnosť vytvárať si vlastné poznámky, ktoré budú zoradené podľa dátumu meditácie. Ak budete využívať túto možnosť, odporúčame Vám uviesť ako názov poznámky text, nad ktorým rozjímate, prípadne kľúčové slovo, ktoré vystihuje to, čo ste premeditovali. Uľahčí Vám to návrat k premeditovanému Slovu, keď budete hľadať odpoveď na nejakú životnú otázku."
   },
   "how": {
     "title": "Ako mám postupovať?",
@@ -341,7 +343,9 @@
       "save": "Uložiť",
       "save_changes": "Uložiť zmeny",
       "change_password": "Zmeniť heslo",
-      "notification_settings": "Nastavenia notifikácií"
+      "notification_settings": "Nastavenia notifikácií",
+      "download_data": "Stiahnuť moje dáta",
+      "delete_account": "Vymazať účet"
     },
     "avatar": {
       "change": "Zmeniť avatar",
@@ -369,6 +373,19 @@
       "not_match": "Heslá sa nezhodujú",
       "incorrect_current": "Súčasné heslo je nesprávne",
       "changed": "Heslo bolo zmenené"
+    },
+    "download": {
+      "export_title": "Export údajov",
+      "export_description": "Vaše dáta z Lectio Divina",
+      "success": "Dáta úspešne exportované",
+      "error": "Chyba pri exporte dát: {}"
+    },
+    "delete": {
+      "confirm_title": "Vymazať účet?",
+      "confirm_message": "Naozaj chcete natrvalo vymazať váš účet a všetky vaše dáta? Túto akciu nie je možné vrátiť späť.",
+      "confirm_button": "Vymazať účet",
+      "success": "Účet bol úspešne vymazaný",
+      "error": "Chyba pri vymazávaní účtu: {}"
     }
   },
   "support2": {
@@ -544,6 +561,28 @@
       "retry": "Skúsiť znova",
       "save_changes": "Uložiť zmeny"
     }
+  },
+
+  "settings_screen": {
+    "theme": {
+      "title": "Téma aplikácie",
+      "system": "Systémová",
+      "system_desc": "Automaticky podľa nastavení zariadenia",
+      "light": "Svetlá",
+      "light_desc": "Svetlý režim vždy aktívny",
+      "dark": "Tmavá",
+      "dark_desc": "Tmavý režim vždy aktívny"
+    },
+    "font": {
+      "title": "Písmo a veľkosť",
+      "family": "Typ písma",
+      "default": "Predvolené (Roboto)",
+      "size": "Veľkosť písma",
+      "small": "Malé",
+      "large": "Veľké",
+      "preview": "Toto je ukážka textu s nastaveným písmom a veľkosťou."
+    },
+    "theme_changed": "Téma bola zmenená. Reštartujte aplikáciu pre úplnú aplikáciu zmeny."
   }
 
 }

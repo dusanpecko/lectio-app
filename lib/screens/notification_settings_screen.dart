@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
-import '../services/fcm_service.dart';
+
 import '../models/notification_models.dart';
+import '../services/fcm_service.dart';
+import '../services/local_notifications_service.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -16,12 +18,19 @@ class _NotificationSettingsScreenState
     extends State<NotificationSettingsScreen> {
   final Logger _logger = Logger();
   final FcmService _fcmService = FcmService.instance;
+  final LocalNotificationsService _localNotifications =
+      LocalNotificationsService.instance;
 
   bool _isLoading = true;
   bool _hasPermission = false;
   String? _errorMessage;
   NotificationPreferencesResponse? _preferencesData;
   Map<String, bool> _pendingChanges = {};
+
+  // Lokálne notifikácie state
+  bool _dailyLectioEnabled = false;
+  bool _prayerReminderEnabled = false;
+  TimeOfDay? _prayerReminderTime;
 
   @override
   void initState() {
@@ -48,18 +57,28 @@ class _NotificationSettingsScreenState
         return;
       }
 
+      // Inicializuj lokálne notifikácie
+      await _localNotifications.initialize();
+
       // Force clear cache if requested (to sync with web changes)
       if (forceRefresh) {
         _logger.i('🔄 Force refreshing notification preferences from database');
       }
 
-      // Načítaj notification preferences (pass forceRefresh to bypass cache)
+      // Načítaj FCM notification preferences
       final preferencesData = await _fcmService.getNotificationPreferences(
         forceRefresh: forceRefresh,
       );
 
+      // Načítaj lokálne nastavenia
+      final localSettings = await _localNotifications.getSettings();
+
       setState(() {
         _preferencesData = preferencesData;
+        _dailyLectioEnabled = localSettings['daily_lectio_enabled'] ?? false;
+        _prayerReminderEnabled =
+            localSettings['prayer_reminder_enabled'] ?? false;
+        _prayerReminderTime = localSettings['prayer_reminder_time'];
         _isLoading = false;
       });
 
@@ -153,6 +172,86 @@ class _NotificationSettingsScreenState
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  // Lokálne notifikácie handlers
+  Future<void> _onDailyLectioChanged(bool enabled) async {
+    try {
+      await _localNotifications.setDailyLectioEnabled(enabled);
+      setState(() => _dailyLectioEnabled = enabled);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            enabled
+                ? 'Denné lectio notifikácie zapnuté (9:00)'
+                : 'Denné lectio notifikácie vypnuté',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      _logger.e('Error toggling daily lectio: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Chyba pri nastavovaní denných notifikácií'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _onPrayerReminderTimeChanged() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _prayerReminderTime ?? const TimeOfDay(hour: 18, minute: 0),
+    );
+
+    if (picked != null) {
+      try {
+        await _localNotifications.setPrayerReminderTime(picked);
+        setState(() {
+          _prayerReminderTime = picked;
+          _prayerReminderEnabled = true;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Pripomenutie modlitby nastavené na ${picked.hour}:${picked.minute.toString().padLeft(2, '0')}',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        _logger.e('Error setting prayer reminder: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Chyba pri nastavovaní pripomenutia'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _onPrayerReminderDisabled() async {
+    try {
+      await _localNotifications.setPrayerReminderTime(null);
+      setState(() {
+        _prayerReminderEnabled = false;
+        _prayerReminderTime = null;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Pripomenutie modlitby vypnuté'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      _logger.e('Error disabling prayer reminder: $e');
     }
   }
 
@@ -281,6 +380,77 @@ class _NotificationSettingsScreenState
     );
   }
 
+  Widget _buildLocalNotificationsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+          child: Text(
+            'Lokálne notifikácie',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+
+        // Denné lectio
+        Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: Color(0xFF4A5085),
+              child: Text('📖', style: TextStyle(fontSize: 20)),
+            ),
+            title: const Text('Denné zamyslenie'),
+            subtitle: const Text('Každý deň o 9:00 - lectio divina text'),
+            trailing: Switch(
+              value: _dailyLectioEnabled,
+              onChanged: _isLoading
+                  ? null
+                  : (value) => _onDailyLectioChanged(value),
+            ),
+          ),
+        ),
+
+        // Pripomenutie modlitby
+        Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: Color(0xFF4A5085),
+              child: Text('🙏', style: TextStyle(fontSize: 20)),
+            ),
+            title: const Text('Pripomenutie modlitby'),
+            subtitle: Text(
+              _prayerReminderEnabled && _prayerReminderTime != null
+                  ? 'Každý deň o ${_prayerReminderTime!.hour}:${_prayerReminderTime!.minute.toString().padLeft(2, '0')}'
+                  : 'Nastaviť čas pripomenutia',
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_prayerReminderEnabled)
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.red),
+                    onPressed: _onPrayerReminderDisabled,
+                    tooltip: 'Vypnúť',
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.access_time),
+                  onPressed: _onPrayerReminderTimeChanged,
+                  tooltip: 'Nastaviť čas',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTopicsSection() {
     if (_preferencesData == null) {
       return const SizedBox.shrink();
@@ -313,7 +483,21 @@ class _NotificationSettingsScreenState
             ),
           ),
 
-          // Topics rozdelené podľa kategórií
+          // Lokálne notifikácie
+          _buildLocalNotificationsSection(),
+
+          // FCM Topics rozdelené podľa kategórií
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 32, 16, 8),
+            child: Text(
+              'Vzdialené notifikácie',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+
           ...groupedTopics.entries.map((categoryEntry) {
             final category = categoryEntry.key;
             final topics = categoryEntry.value;
@@ -326,9 +510,9 @@ class _NotificationSettingsScreenState
                   padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
                   child: Text(
                     'notifications.category.${category.value}'.tr(),
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.bold,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),

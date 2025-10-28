@@ -1,14 +1,17 @@
 // lib/services/fcm_service.dart
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logger/logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'notification_api.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../models/notification_models.dart';
+import 'local_notifications_service.dart';
+import 'notification_api.dart';
 
 final Logger _logger = Logger();
 
@@ -149,6 +152,11 @@ class FcmService {
   /// Callback pre kliknutie na lokálnu notifikáciu
   void _onLocalNotificationTapped(NotificationResponse response) {
     _logger.i('Local notification tapped with payload: ${response.payload}');
+
+    // Forward to LocalNotificationsService so main.dart handlers receive payload.
+    LocalNotificationsService.instance.handleExternalNotificationTap(
+      response.payload,
+    );
 
     if (response.payload != null) {
       try {
@@ -315,38 +323,30 @@ class FcmService {
       _logger.i('Registering with locale: $code, platform: $platform');
 
       // Registruj token na backend API (Supabase)
-      try {
-        await _api.registerFCMToken(
-          fcmToken: token,
-          deviceType: platform,
-          appVersion: appVersion,
-          deviceId: null, // Optional: Add device ID if needed
-        );
-        _logger.i('Token registered in Supabase via API');
-      } catch (apiError) {
-        _logger.w('API registration failed: $apiError');
-        // Pokračuj s lokálnou registráciou
-      }
-
-      // Upsert do Supabase DB - fallback
+      // Používame SPRÁVNU tabuľku: user_fcm_tokens (nie push_tokens)
       try {
         final userId = Supabase.instance.client.auth.currentUser?.id;
 
-        await Supabase.instance.client.from('push_tokens').upsert({
+        await Supabase.instance.client.from('user_fcm_tokens').upsert({
           'token': token,
-          'platform': platform,
+          'device_type': platform,
           'locale_code': code,
+          'app_version': appVersion,
           'user_id': userId,
+          'is_active': true,
+          'last_used_at': DateTime.now().toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),
         });
 
-        _logger.i('Token successfully registered in Supabase database');
+        _logger.i(
+          '✅ Token successfully registered in Supabase (user_fcm_tokens)',
+        );
       } catch (dbError) {
-        _logger.e('Supabase database error (continuing anyway): $dbError');
-        // Pokračujeme aj s chybou DB
+        _logger.e('❌ Supabase registration failed: $dbError');
+        // Pokračujeme aj s chybou - token je stále platný lokálne
       }
 
-      _logger.i('Successfully registered FCM token with backend');
+      _logger.i('Successfully completed FCM token registration');
     } catch (e) {
       _logger.e('Error in FCM registration: $e');
     }
@@ -361,28 +361,16 @@ class FcmService {
 
       final token = await m.getToken();
       if (token != null) {
-        // Aktualizuj v backend API
-        try {
-          final platform = Platform.isIOS ? 'ios' : 'android';
-          final packageInfo = await PackageInfo.fromPlatform();
-          final appVersion =
-              '${packageInfo.version}+${packageInfo.buildNumber}';
-
-          await _api.registerFCMToken(
-            fcmToken: token,
-            deviceType: platform,
-            appVersion: appVersion,
-          );
-        } catch (e) {
-          _logger.w('Failed to update language on backend API: $e');
-        }
-
-        // Aktualizuj v Supabase DB
+        // Aktualizuj v Supabase DB - použijeme správnu tabuľku user_fcm_tokens
         try {
           await Supabase.instance.client
-              .from('push_tokens')
-              .update({'locale_code': newCode})
+              .from('user_fcm_tokens')
+              .update({
+                'locale_code': newCode,
+                'updated_at': DateTime.now().toIso8601String(),
+              })
               .eq('token', token);
+          _logger.i('✅ Language updated in Supabase (user_fcm_tokens)');
         } catch (e) {
           _logger.w('Failed to update language in Supabase: $e');
         }
@@ -443,8 +431,15 @@ class FcmService {
   Future<void> deactivateToken() async {
     try {
       if (_currentToken != null) {
-        await _api.deactivateFCMToken(_currentToken!);
-        _logger.i('FCM token deactivated');
+        // Deaktivuj v databáze - použijeme správnu tabuľku user_fcm_tokens
+        await Supabase.instance.client
+            .from('user_fcm_tokens')
+            .update({
+              'is_active': false,
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('token', _currentToken!);
+        _logger.i('✅ FCM token deactivated (user_fcm_tokens)');
       }
     } catch (e) {
       _logger.e('Failed to deactivate FCM token: $e');

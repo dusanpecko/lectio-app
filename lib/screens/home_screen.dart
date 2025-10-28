@@ -1,18 +1,20 @@
 import 'dart:async';
+
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:easy_localization/easy_localization.dart';
-import 'lectio_screen.dart';
-import 'support_screen.dart';
-import 'news_list_screen.dart';
-import 'news_detail_screen.dart';
-import 'settings_screen.dart';
-import 'notes_list_screen.dart';
-import 'about_screen.dart';
-import 'intro_screen.dart';
-import 'intentions_list_screen.dart';
-import 'rosary_screen.dart';
+
 import '../widgets/speed_dial_fab.dart';
+import 'about_screen.dart';
+import 'intentions_list_screen.dart';
+import 'intro_screen.dart';
+import 'lectio_screen.dart';
+import 'news_detail_screen.dart';
+import 'news_list_screen.dart';
+import 'notes_list_screen.dart';
+import 'rosary_screen.dart';
+import 'settings_screen.dart';
+import 'support_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
