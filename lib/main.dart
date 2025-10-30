@@ -21,7 +21,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'firebase_options.dart';
 import 'providers/theme_provider.dart';
-import 'services/audio_handler.dart';
+import 'services/background_audio_manager.dart';
 import 'services/fcm_service.dart';
 import 'services/local_notifications_service.dart';
 
@@ -64,6 +64,22 @@ void _clearAppBadge() async {
   } catch (e) {
     _logger.w('Failed to clear badge via native channel: $e');
     // Badge sa vyčistí automaticky keď user otvorí app z notifikácie
+  }
+}
+
+/// Získa správnu štartovaciu lokalizáciu na základe uloženého nastavenia
+Future<Locale> _getStartLocale(String languageCode) async {
+  if (languageCode == 'system') {
+    // Pre 'system' použij systémový jazyk
+    final systemLocale = WidgetsBinding.instance.platformDispatcher.locale;
+    final supportedLanguages = ['sk', 'en'];
+    final systemLang = supportedLanguages.contains(systemLocale.languageCode)
+        ? systemLocale.languageCode
+        : 'sk';
+    return Locale(systemLang);
+  } else {
+    // Použij explicitne zvolený jazyk
+    return Locale(languageCode);
   }
 }
 
@@ -435,23 +451,6 @@ Future<void> main() async {
   // Supabase
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
 
-  // AudioService
-  try {
-    globalAudioHandler = await AudioService.init(
-      builder: () => LectioAudioHandler(),
-      config: const AudioServiceConfig(
-        androidNotificationChannelId: 'com.lectio_divina.audio',
-        androidNotificationChannelName: 'Lectio Divina Audio',
-        androidNotificationOngoing: true,
-        androidShowNotificationBadge: true,
-        androidStopForegroundOnPause: true,
-      ),
-    );
-    _logger.i('AudioService úspešne inicializovaný');
-  } catch (e) {
-    _logger.e('Chyba pri inicializácii AudioService: $e');
-  }
-
   // Lokálne notifikácie - NAJPRV nastav callback, POTOM inicializuj
   try {
     _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -467,6 +466,14 @@ Future<void> main() async {
     await LocalNotificationsService.instance.initialize();
     _logger.i('✅ LocalNotificationsService initialized successfully');
 
+    // Inicializácia Background Audio Manager
+    try {
+      await BackgroundAudioManager().initialize();
+      _logger.i('✅ BackgroundAudioManager initialized successfully');
+    } catch (e) {
+      _logger.e('❌ Error initializing BackgroundAudioManager: $e');
+    }
+
     _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   } catch (e) {
     _logger.e('❌ Error initializing LocalNotificationsService: $e');
@@ -476,6 +483,9 @@ Future<void> main() async {
   final themeProvider = ThemeProvider();
   await themeProvider.initialize();
 
+  // Získaj správnu štartovaciu lokalizáciu
+  Locale startLocale = await _getStartLocale(themeProvider.languageCode);
+
   runApp(
     ChangeNotifierProvider.value(
       value: themeProvider,
@@ -483,6 +493,7 @@ Future<void> main() async {
         supportedLocales: const [Locale('sk'), Locale('en')],
         path: 'assets/translations',
         fallbackLocale: const Locale('sk'),
+        startLocale: startLocale,
         child: const MyApp(),
       ),
     ),

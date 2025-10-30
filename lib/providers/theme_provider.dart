@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,6 +15,9 @@ class ThemeProvider with ChangeNotifier {
   String _fontFamily = 'Default';
   double _fontSize = 16.0;
 
+  // Language Settings
+  String _languageCode = 'system'; // 'system', 'sk', 'en'
+
   // Loading state
   bool _isInitialized = false;
 
@@ -21,6 +25,7 @@ class ThemeProvider with ChangeNotifier {
   ThemeMode get themeMode => _themeMode;
   String get fontFamily => _fontFamily;
   double get fontSize => _fontSize;
+  String get languageCode => _languageCode;
   bool get isInitialized => _isInitialized;
 
   /// Konštruktor - načíta nastavenia pri inicializácii
@@ -46,6 +51,9 @@ class ThemeProvider with ChangeNotifier {
 
     // Font Size
     _fontSize = prefs.getDouble('fontSize') ?? 16.0;
+
+    // Language Code
+    _languageCode = prefs.getString('languageCode') ?? 'system';
 
     _isInitialized = true;
     notifyListeners();
@@ -106,6 +114,30 @@ class ThemeProvider with ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('fontSize', size);
+  }
+
+  /// Zmení jazyk aplikácie a uloží do SharedPreferences
+  Future<void> setLanguageCode(String code, BuildContext context) async {
+    if (_languageCode == code) return;
+
+    _languageCode = code;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('languageCode', code);
+
+    // Aplikuj zmenu jazyka okamžite
+    if (code != 'system') {
+      await context.setLocale(Locale(code));
+    } else {
+      // Pre 'system' použij systémový jazyk
+      final systemLocale = WidgetsBinding.instance.platformDispatcher.locale;
+      final supportedLanguages = ['sk', 'en'];
+      final systemLang = supportedLanguages.contains(systemLocale.languageCode)
+          ? systemLocale.languageCode
+          : 'sk';
+      await context.setLocale(Locale(systemLang));
+    }
   }
 
   /// Vráti správnu font family pre TextStyle

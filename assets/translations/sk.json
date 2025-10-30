@@ -177,8 +177,17 @@
   "reset_password_instructions": "Zadajte svoj email a my vám pošleme inštrukcie na obnovenie hesla.",
   "select_bible": "Vybrať biblický text",
   "bible_1": "Preklad SSV",
+  "bible_1_desc": "Slovenský štandardný verš",
   "bible_2": "Jeruzalemský preklad",
+  "bible_2_desc": "Katolícky preklad z francúzštiny",
   "bible_3": "Ekumenický preklad",
+  "bible_3_desc": "Moderný ekumenický preklad",
+  "bible_en_1": "New International Version (NIV)",
+  "bible_en_1_desc": "Modern English translation",
+  "bible_en_2": "English Standard Version (ESV)",
+  "bible_en_2_desc": "Literal English translation",
+  "bible_en_3": "New Revised Standard Version (NRSV)",
+  "bible_en_3_desc": "Academic English translation",
   "bible_en_only": "Bible selection",
   "bible_en_desc": "English version uses only one Bible text.",
   "add_note_with_bible": "Pridať poznámku",
@@ -582,7 +591,15 @@
       "large": "Veľké",
       "preview": "Toto je ukážka textu s nastaveným písmom a veľkosťou."
     },
+    "language": {
+      "title": "Jazyk aplikácie",
+      "system": "Systémový jazyk",
+      "slovak": "Slovenčina",
+      "english": "Angličtina"
+    },
     "theme_changed": "Téma bola zmenená. Reštartujte aplikáciu pre úplnú aplikáciu zmeny."
-  }
+  },
+
+  "do_not_disturb_active": "Nerušiť"
 
 }

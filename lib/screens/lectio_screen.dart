@@ -1,10 +1,17 @@
+import 'dart:io';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../services/background_audio_manager.dart';
+import '../services/do_not_disturb_service.dart';
+import '../services/prayer_focus_service.dart';
 import '../shared/app_colors.dart';
+import '../widgets/lectio_speed_dial_fab.dart';
+import '../widgets/prayer_focus_indicator.dart';
 import 'note_detail_screen.dart';
 
 class LectioScreen extends StatefulWidget {
@@ -23,6 +30,10 @@ class LectioScreen extends StatefulWidget {
 
 class _LectioScreenState extends State<LectioScreen> {
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final PrayerFocusService _prayerFocusService = PrayerFocusService();
+  final BackgroundAudioManager _backgroundAudioManager =
+      BackgroundAudioManager();
+  final DoNotDisturbService _dndService = DoNotDisturbService();
 
   Map<String, dynamic>? lectioData;
   bool isLoading = true;
@@ -43,6 +54,10 @@ class _LectioScreenState extends State<LectioScreen> {
   bool _isProcessingInterludeCompletion =
       false; // Flag pre zabránenie dvojitého volania
 
+  // Do Not Disturb state
+  bool _isDndActive = false;
+  bool _dndEnabled = false;
+
   // Cache pre tracks
   List<Map<String, dynamic>>? _cachedTracks;
   String? _lastCachedBible;
@@ -55,6 +70,70 @@ class _LectioScreenState extends State<LectioScreen> {
   void initState() {
     super.initState();
     _setupAudioListeners();
+    _initializeDndService();
+
+    // Register callback for auto-progression in background
+    _backgroundAudioManager.setOnSectionCompleted(() {
+      debugPrint('🎵 Background audio completed - triggering auto-progression');
+      if (mounted) {
+        _onAudioCompleted();
+      }
+    });
+
+    // Notifikuj Prayer Focus Service o vstupe do Lectio screen
+    _prayerFocusService.onSpiritualScreenEntered(SpiritualScreen.lectio);
+  }
+
+  Future<void> _initializeDndService() async {
+    await _dndService.initialize();
+    if (mounted) {
+      setState(() {
+        _dndEnabled = _dndService.isEnabled;
+        _isDndActive = _dndService.isDndActive;
+      });
+    }
+  }
+
+  Future<void> _playBackgroundAudio(String url, String sectionKey) async {
+    try {
+      // Get section title for media notification
+      String title = _getSectionTitle(sectionKey);
+      String subtitle = 'Lectio Divina';
+
+      if (lectioData != null) {
+        subtitle = lectioData?['hlava'] ?? 'Lectio Divina';
+      }
+
+      await _backgroundAudioManager.play(url, title: title, artist: subtitle);
+
+      debugPrint('🎵 Background audio started: $title');
+    } catch (e) {
+      debugPrint('❌ Error playing background audio: $e');
+      // Fallback to regular audio player
+      await _audioPlayer.setUrl(url);
+      await _audioPlayer.play();
+    }
+  }
+
+  String _getSectionTitle(String sectionKey) {
+    switch (sectionKey) {
+      case 'biblia_1':
+      case 'biblia_2':
+      case 'biblia_3':
+        return lectioData?['nazov_$sectionKey'] ?? 'Biblický text';
+      case 'lectio':
+        return 'LECTIO - Čítanie';
+      case 'meditatio':
+        return 'MEDITATIO - Rozjímanie';
+      case 'oratio':
+        return 'ORATIO - Modlitba';
+      case 'contemplatio':
+        return 'CONTEMPLATIO - Rozjímanie';
+      case 'actio':
+        return 'ACTIO - Konanie';
+      default:
+        return 'Lectio Divina Audio';
+    }
   }
 
   @override
@@ -73,6 +152,17 @@ class _LectioScreenState extends State<LectioScreen> {
 
   @override
   void dispose() {
+    // Clear background audio callback
+    _backgroundAudioManager.clearOnSectionCompleted();
+
+    // Notifikuj Prayer Focus Service o opustení Lectio screen
+    _prayerFocusService.onSpiritualScreenExited(SpiritualScreen.lectio);
+
+    // End DND session ak je aktívne
+    if (_isDndActive) {
+      _dndService.endReadingSession();
+    }
+
     _audioPlayer.dispose();
     _playlistPageController.dispose();
     super.dispose();
@@ -369,8 +459,13 @@ class _LectioScreenState extends State<LectioScreen> {
     }
 
     // Bible audio (dynamické podľa vybranej biblie - rovnako ako v Next.js)
-    // Konvertovať 'biblia1' → 'biblia_1_audio'
-    final bibleNumber = _selectedBible.replaceAll('biblia', '');
+    // Konvertovať 'biblia1' → 'biblia_1_audio' alebo 'bible_en_1' → 'biblia_1_audio'
+    String bibleNumber;
+    if (_selectedBible.startsWith('bible_en_')) {
+      bibleNumber = _selectedBible.replaceAll('bible_en_', '');
+    } else {
+      bibleNumber = _selectedBible.replaceAll('biblia', '');
+    }
     final bibleAudioKey = 'biblia_${bibleNumber}_audio';
     final nazovKey = 'nazov_biblia_$bibleNumber';
 
@@ -513,8 +608,13 @@ class _LectioScreenState extends State<LectioScreen> {
         }
       }
 
-      await _audioPlayer.setUrl(url);
-      await _audioPlayer.play();
+      // Use background audio service if available, fallback to regular audio player
+      if (_backgroundAudioManager.isInitialized) {
+        await _playBackgroundAudio(url, sectionKey);
+      } else {
+        await _audioPlayer.setUrl(url);
+        await _audioPlayer.play();
+      }
 
       if (mounted) {
         debugPrint('🎵 Audio spustené úspešne');
@@ -813,6 +913,227 @@ class _LectioScreenState extends State<LectioScreen> {
     }
   }
 
+  Future<void> _handleDndToggle() async {
+    try {
+      if (_isDndActive) {
+        // Deaktivácia DND
+        await _dndService.deactivateDndManually();
+      } else {
+        // Aktivácia DND
+        final hasPermissions = await _dndService.checkPermissions();
+
+        if (!hasPermissions) {
+          // Požiadaj o povolenia
+          final granted = await _dndService.requestPermissions();
+          if (!granted) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Pre aktiváciu Nerušiť je potrebné povoliť prístup k notifikáciám',
+                  ),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+            return;
+          }
+        }
+
+        // Aktivuj DND manuálne
+        await _dndService.activateDndManually();
+      }
+
+      // Aktualizuj UI stav podľa skutočného stavu service
+      setState(() {
+        _isDndActive = _dndService.isDndActive;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.do_not_disturb_on, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    Platform.isIOS
+                        ? 'Zapnite "Nerušiť" manuálne v Control Center'
+                        : 'Režim Nerušiť aktivovaný',
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            action: Platform.isIOS
+                ? SnackBarAction(
+                    label: 'Ako na to',
+                    textColor: Colors.white,
+                    onPressed: () => _showIOSDndInstructions(),
+                  )
+                : null,
+          ),
+        );
+      }
+    } catch (e) {
+      // Chyba pri toggle DND
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Chyba pri prepínaní režimu Nerušiť: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showIOSDndInstructions() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.shortcut_outlined, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('iOS Shortcuts pre DND'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.auto_awesome,
+                          color: Colors.blue,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Automatické riešenie',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue[800],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Vytvorte si iOS Shortcuts pre automatické zapínanie/vypínanie Focus režimu pri používaní DND tlačidla.',
+                      style: TextStyle(fontSize: 13, color: Colors.blue[700]),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              _buildInstructionStep(
+                '1',
+                'Vytvorte Shortcuts',
+                'Nastavenia → Vytvorte Shortcuts pre DND',
+              ),
+              const SizedBox(height: 8),
+              _buildInstructionStep(
+                '2',
+                'Použite DND tlačidlo',
+                'Shortcuts sa spustia automaticky',
+              ),
+              const SizedBox(height: 16),
+
+              const Divider(),
+              const SizedBox(height: 12),
+
+              Text(
+                'Manuálne riešenie:',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildInstructionStep(
+                'A',
+                'Control Center',
+                'Potiahnite zhora doprava → 🌙',
+              ),
+              const SizedBox(height: 8),
+              _buildInstructionStep(
+                'B',
+                'Focus režim',
+                'Nastavenia → Focus → Do Not Disturb',
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Zavrieť'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/settings');
+            },
+            child: const Text('Nastavenia'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInstructionStep(String number, String title, String subtitle) {
+    return Row(
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          decoration: const BoxDecoration(
+            color: Colors.orange,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(
+              number,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+              Text(
+                subtitle,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   void _handleAddNote() {
     if (lectioData == null) return;
     String bibleReference = '';
@@ -847,358 +1168,418 @@ class _LectioScreenState extends State<LectioScreen> {
       'dd.MM.yyyy',
       context.locale.toString(),
     ).format(selectedDate);
-    final lang = widget.selectedLang ?? context.locale.languageCode;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF4A5085).withValues(alpha: 0.1),
-                  theme.scaffoldBackgroundColor,
-                  const Color(0xFF4A5085).withValues(alpha: 0.05),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: CustomScrollView(
-              slivers: [
-                // Hero SliverAppBar s obrázkom
-                SliverAppBar(
-                  expandedHeight: 250,
-                  floating: false,
-                  pinned: true,
-                  backgroundColor: const Color(0xFF4A5085),
-                  foregroundColor: Colors.white,
-                  actions: [
-                    if (Supabase.instance.client.auth.currentUser != null)
-                      IconButton(
-                        icon: const Icon(Icons.note_add_outlined),
-                        tooltip: "Pridať poznámku",
-                        onPressed: _handleAddNote,
-                      ),
-                    // Audio button
-                    if (_getAvailableAudioTracks().isNotEmpty)
-                      IconButton(
-                        icon: Icon(
-                          _showAudioPlayer
-                              ? Icons.music_note
-                              : Icons.music_note_outlined,
-                        ),
-                        tooltip: "Audio prehrávač",
-                        onPressed: () {
-                          setState(() {
-                            _showAudioPlayer = !_showAudioPlayer;
-                          });
-                        },
-                      ),
-                    IconButton(
-                      icon: const Icon(Icons.refresh),
-                      onPressed: fetchLectioData,
-                    ),
+      body: GestureDetector(
+        onTap: () => _prayerFocusService.onUserInteraction(),
+        onPanDown: (_) => _prayerFocusService.onUserInteraction(),
+        child: Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF4A5085).withValues(alpha: 0.1),
+                    theme.scaffoldBackgroundColor,
+                    const Color(0xFF4A5085).withValues(alpha: 0.05),
                   ],
-                  flexibleSpace: FlexibleSpaceBar(
-                    titlePadding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                    title: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text(
-                        "Lectio Divina",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black26,
-                              blurRadius: 4,
-                              offset: Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    background: Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF4A5085), Color(0xFF6B73A8)],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                      ),
-                      child: Stack(
-                        children: [
-                          // Background image
-                          Positioned.fill(
-                            child: Image.asset(
-                              'assets/images/lectio_header.png',
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Container(),
-                            ),
-                          ),
-                          // Gradient overlay
-                          Positioned.fill(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: CustomScrollView(
+                slivers: [
+                  // Hero SliverAppBar s obrázkom
+                  SliverAppBar(
+                    expandedHeight: 250,
+                    floating: false,
+                    pinned: true,
+                    centerTitle:
+                        true, // Vycentruje títul na všetkých platformách
+                    backgroundColor: const Color(0xFF4A5085),
+                    foregroundColor: Colors.white,
+                    actions: [
+                      // DND Status Indicator
+                      StreamBuilder<bool>(
+                        stream: DoNotDisturbService().dndStateStream,
+                        initialData: DoNotDisturbService().isDndActive,
+                        builder: (context, snapshot) {
+                          final isDndActive = snapshot.data ?? false;
+
+                          return AnimatedOpacity(
+                            opacity: isDndActive ? 1.0 : 0.0,
+                            duration: const Duration(milliseconds: 300),
                             child: Container(
-                              decoration: const BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.transparent,
-                                    Color(0x4D4A5085),
-                                    Color(0xFF4A5085),
-                                  ],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                ),
+                              margin: const EdgeInsets.only(
+                                right: 16,
+                                top: 8,
+                                bottom: 8,
                               ),
-                            ),
-                          ),
-                          // Date badge
-                          Positioned(
-                            top: 120,
-                            right: 20,
-                            child: Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
+                                horizontal: 12,
+                                vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.9),
+                                color: Colors.white.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color: Colors.white.withValues(alpha: 0.3),
+                                  width: 1,
                                 ),
                               ),
-                              child: Text(
-                                formattedDate,
-                                style: const TextStyle(
-                                  color: Color(0xFF4A5085),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.do_not_disturb_on_rounded,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    tr('do_not_disturb_active'),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                    flexibleSpace: FlexibleSpaceBar(
+                      titlePadding: const EdgeInsets.fromLTRB(
+                        72,
+                        16,
+                        72,
+                        16,
+                      ), // Viac priestoru pre centrálne zarovnanie
+                      title: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(
+                          "Lectio Divina",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black26,
+                                blurRadius: 4,
+                                offset: Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      background: Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF4A5085), Color(0xFF6B73A8)],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                        child: Stack(
+                          children: [
+                            // Background image
+                            Positioned.fill(
+                              child: Image.asset(
+                                'assets/images/lectio_header.png',
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(),
+                              ),
+                            ),
+                            // Gradient overlay
+                            Positioned.fill(
+                              child: Container(
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.transparent,
+                                      Color(0x4D4A5085),
+                                      Color(0xFF4A5085),
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Date Navigation Header
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 16,
-                    ),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: theme.cardColor.withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.shadowColor.withValues(alpha: 0.07),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          IconButton(
-                            tooltip: tr("previous_day"),
-                            icon: const Icon(Icons.chevron_left, size: 32),
-                            onPressed: _goToPreviousDay,
-                          ),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: _showDatePicker,
+                            // Date badge
+                            Positioned(
+                              top: 120,
+                              right: 20,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
                                   horizontal: 16,
+                                  vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF4A5085,
-                                  ).withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.3),
+                                  ),
                                 ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(
-                                      Icons.calendar_today_rounded,
-                                      size: 20,
-                                      color: Color(0xFF4A5085),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      formattedDate,
-                                      style: theme.textTheme.titleMedium
-                                          ?.copyWith(
-                                            color: const Color(0xFF4A5085),
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  formattedDate,
+                                  style: const TextStyle(
+                                    color: Color(0xFF4A5085),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          IconButton(
-                            tooltip: tr("next_day"),
-                            icon: const Icon(Icons.chevron_right, size: 32),
-                            onPressed: _goToNextDay,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-                SliverToBoxAdapter(
-                  child: Divider(height: 1, color: theme.dividerColor),
-                ),
-
-                // Main Content
-                SliverToBoxAdapter(
-                  child: isLoading
-                      ? const SizedBox(
-                          height: 200,
-                          child: Center(child: CircularProgressIndicator()),
-                        )
-                      : lectioData == null
-                      ? SizedBox(
-                          height: 200,
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.info_outline,
-                                  size: 64,
-                                  color: Colors.grey.shade400,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  tr("lectio_not_available"),
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    color: Colors.grey.shade600,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
+                  // Date Navigation Header
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 16,
+                      ),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: theme.cardColor.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.shadowColor.withValues(alpha: 0.07),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
                             ),
-                          ),
-                        )
-                      : Column(
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // Title and Bible Reference
-                            if ((lectioData?['hlava'] ?? '').isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 16.0),
-                                child: Center(
-                                  child: Text(
-                                    lectioData?['hlava'] ?? '',
-                                    style: theme.textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF4A5085),
-                                    ),
+                            IconButton(
+                              tooltip: tr("previous_day"),
+                              icon: const Icon(Icons.chevron_left, size: 32),
+                              onPressed: _goToPreviousDay,
+                            ),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: _showDatePicker,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                    horizontal: 16,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(
+                                      0xFF4A5085,
+                                    ).withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        Icons.calendar_today_rounded,
+                                        size: 20,
+                                        color: Color(0xFF4A5085),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        formattedDate,
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              color: const Color(0xFF4A5085),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: tr("next_day"),
+                              icon: const Icon(Icons.chevron_right, size: 32),
+                              onPressed: _goToNextDay,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  SliverToBoxAdapter(
+                    child: Divider(height: 1, color: theme.dividerColor),
+                  ),
+
+                  // Main Content
+                  SliverToBoxAdapter(
+                    child: isLoading
+                        ? const SizedBox(
+                            height: 200,
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        : lectioData == null
+                        ? SizedBox(
+                            height: 200,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.info_outline,
+                                    size: 64,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    tr("lectio_not_available"),
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(color: Colors.grey.shade600),
                                     textAlign: TextAlign.center,
                                   ),
-                                ),
+                                ],
                               ),
-                            if ((lectioData?['suradnice_pismo'] ?? '')
-                                .isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  top: 4,
-                                  bottom: 8,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    lectioData?['suradnice_pismo'] ?? '',
-                                    style: theme.textTheme.labelLarge?.copyWith(
-                                      color: Colors.grey.shade600,
+                            ),
+                          )
+                        : Column(
+                            children: [
+                              // Title and Bible Reference
+                              if ((lectioData?['hlava'] ?? '').isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 16.0),
+                                  child: Center(
+                                    child: Text(
+                                      lectioData?['hlava'] ?? '',
+                                      style: theme.textTheme.titleLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFF4A5085),
+                                          ),
+                                      textAlign: TextAlign.center,
                                     ),
                                   ),
                                 ),
-                              ),
+                              if ((lectioData?['suradnice_pismo'] ?? '')
+                                  .isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: 4,
+                                    bottom: 8,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      lectioData?['suradnice_pismo'] ?? '',
+                                      style: theme.textTheme.labelLarge
+                                          ?.copyWith(
+                                            color: Colors.grey.shade600,
+                                          ),
+                                    ),
+                                  ),
+                                ),
 
-                            // Biblický text podľa vybranej biblie
-                            if (lang == 'sk') ...[
-                              if (_selectedBible == 'biblia1')
+                              // Biblický text podľa vybranej biblie (rovnako pre SK aj EN)
+                              if (_selectedBible == 'biblia1' ||
+                                  _selectedBible == 'bible_en_1')
                                 _buildSection(
                                   title: lectioData?['nazov_biblia_1'],
                                   text: lectioData?['biblia_1'] ?? '',
                                 ),
-                              if (_selectedBible == 'biblia2')
+                              if (_selectedBible == 'biblia2' ||
+                                  _selectedBible == 'bible_en_2')
                                 _buildSection(
                                   title: lectioData?['nazov_biblia_2'],
                                   text: lectioData?['biblia_2'] ?? '',
                                 ),
-                              if (_selectedBible == 'biblia3')
+                              if (_selectedBible == 'biblia3' ||
+                                  _selectedBible == 'bible_en_3')
                                 _buildSection(
                                   title: lectioData?['nazov_biblia_3'],
                                   text: lectioData?['biblia_3'] ?? '',
                                 ),
-                            ] else ...[
+
+                              // Lectio Divina sekcie
                               _buildSection(
-                                title: lectioData?['nazov_biblia_1'],
-                                text: lectioData?['biblia_1'] ?? '',
+                                title: "LECTIO",
+                                subtitle: tr("l_commenter"),
+                                text: lectioData?['lectio_text'] ?? '',
                               ),
+                              _buildSection(
+                                title: "MEDITATIO",
+                                subtitle: tr("l_meditatio"),
+                                text: lectioData?['meditatio_text'] ?? '',
+                              ),
+                              _buildSection(
+                                title: "ORATIO",
+                                subtitle: tr("l_oratio"),
+                                text: lectioData?['oratio_text'] ?? '',
+                              ),
+                              _buildSection(
+                                title: "CONTEMPLATIO",
+                                subtitle: tr("l_contemplatio"),
+                                text: lectioData?['contemplatio_text'] ?? '',
+                              ),
+                              _buildSection(
+                                title: "ACTIO",
+                                subtitle: tr("l_actio"),
+                                text: lectioData?['actio_text'] ?? '',
+                                reference: lectioData?['reference'],
+                              ),
+                              const SizedBox(height: 40),
                             ],
-
-                            // Lectio Divina sekcie
-                            _buildSection(
-                              title: "LECTIO",
-                              subtitle: tr("l_commenter"),
-                              text: lectioData?['lectio_text'] ?? '',
-                            ),
-                            _buildSection(
-                              title: "MEDITATIO",
-                              subtitle: tr("l_meditatio"),
-                              text: lectioData?['meditatio_text'] ?? '',
-                            ),
-                            _buildSection(
-                              title: "ORATIO",
-                              subtitle: tr("l_oratio"),
-                              text: lectioData?['oratio_text'] ?? '',
-                            ),
-                            _buildSection(
-                              title: "CONTEMPLATIO",
-                              subtitle: tr("l_contemplatio"),
-                              text: lectioData?['contemplatio_text'] ?? '',
-                            ),
-                            _buildSection(
-                              title: "ACTIO",
-                              subtitle: tr("l_actio"),
-                              text: lectioData?['actio_text'] ?? '',
-                              reference: lectioData?['reference'],
-                            ),
-                            const SizedBox(height: 40),
-                          ],
-                        ),
-                ),
-              ],
+                          ),
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // Floating Audio Player
-          if (_showAudioPlayer && _getAvailableAudioTracks().isNotEmpty)
-            _buildFloatingAudioPlayer(theme),
-        ],
+            // Floating Audio Player
+            if (_showAudioPlayer && _getAvailableAudioTracks().isNotEmpty)
+              _buildFloatingAudioPlayer(theme),
+
+            // Prayer Focus Mode Indicator
+            const PrayerFocusIndicator(),
+          ], // Stack children
+        ), // Stack
+      ), // GestureDetector
+      // Floating Action Button Menu
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 20),
+        child: LectioSpeedDialFAB(
+          onAddNote: Supabase.instance.client.auth.currentUser != null
+              ? _handleAddNote
+              : null,
+          onDndToggle: _dndEnabled ? _handleDndToggle : null,
+          onAudioToggle: _getAvailableAudioTracks().isNotEmpty
+              ? () {
+                  setState(() {
+                    _showAudioPlayer = !_showAudioPlayer;
+                  });
+                }
+              : null,
+          onRefresh: fetchLectioData,
+          isDndActive: _isDndActive,
+          hasAudio: _getAvailableAudioTracks().isNotEmpty,
+          showAudioPlayer: _showAudioPlayer,
+          dndEnabled: _dndEnabled,
+        ),
       ),
-    );
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    ); // Scaffold
   }
 
   Widget _buildFloatingAudioPlayer(ThemeData theme) {
@@ -1984,8 +2365,8 @@ class _SimpleSection extends StatelessWidget {
               ],
             ],
           ),
-        ),
-      ),
+        ), // Stack
+      ), // GestureDetector
     );
   }
 }

@@ -1,0 +1,101 @@
+#!/bin/bash
+
+# Test script pre Do Not Disturb funkcionalitu
+# Lectio Divina - Automatické stlmenie notifikácií
+
+echo "🔕 === TESTOVANIE DO NOT DISTURB FUNKCIONALITY ==="
+echo ""
+
+echo "📱 1. NASTAVENIA - Settings Screen"
+echo "   • Otvor Settings v aplikácii"
+echo "   • Nájdi sekciu 'Režim Nerušiť'"
+echo "   • Skontroluj či sa zobrazuje upozornenie o povoleniach"
+echo "   • Klikni 'Povoliť prístup' ak je potrebné"
+echo ""
+
+echo "🔧 2. POVOLENIA - Android/iOS"
+echo "   ANDROID:"
+echo "   • Otvorí sa Settings -> Apps -> Special access -> Device admin apps"
+echo "   • Alebo Settings -> Sound & notifications -> Do not disturb -> Apps"
+echo "   • Povolte Lectio Divina prístup k DND nastaveniam"
+echo ""
+echo "   iOS:"
+echo "   • Otvorí sa Settings -> Notifications"
+echo "   • Povoľte notifikácie pre Lectio Divina"
+echo "   • Pre najlepší zážitok vytvorte Focus režim 'Prayer'"
+echo "   • Control Center -> Focus -> + -> Custom -> Prayer"
+echo ""
+
+echo "⚙️ 3. KONFIGURÁCIA - Do Not Disturb nastavenia"
+echo "   • Zapnite 'Zapnúť automaticky'"
+echo "   • Nastavte oneskorenie aktivácie (default 30s)"
+echo "   • Zapnite 'Automatická aktivácia'"
+echo ""
+
+echo "🎵 4. TESTOVANIE - Audio playback"
+echo "   • Spustite akékoľvek Lectio Divina audio"
+echo "   • Po 30 sekundách by sa mal aktivovať DND režim"
+echo "   • ANDROID: Skontrolujte notification panel - mal by byť prázdny/tichý"
+echo "   • iOS: Skontrolujte Control Center - mal by sa aktivovať Focus"
+echo ""
+
+echo "📲 5. OVERENIE FUNKCIONALITY"
+echo "   • Pošlite si testovú notifikáciu z inej aplikácie"
+echo "   • Notifikácia by sa nemala zobraziť/ozývať počas prehrávania"
+echo "   • Emergency hovory by mali byť stále povolené"
+echo ""
+
+echo "🛑 6. DEAKTIVÁCIA"
+echo "   • Zastavte audio prehrávanie"
+echo "   • DND režim by sa mal automaticky deaktivovať"
+echo "   • Notifikácie by sa mali vrátiť do normálneho stavu"
+echo ""
+
+echo "📋 7. TESTOVÉ SCENÁRE"
+echo ""
+
+echo "   SCENÁR A: Automatická aktivácia"
+echo "   1. Spustite audio -> začne sa timer (30s)"
+echo "   2. Čakajte 30s -> aktivuje sa DND"
+echo "   3. Zastavte audio -> deaktivuje sa DND"
+echo ""
+
+echo "   SCENÁR B: Background play"
+echo "   1. Spustite audio"
+echo "   2. Minimalizujte aplikáciu"
+echo "   3. Po 30s -> DND zostáva aktívny"
+echo "   4. Vráťte sa do aplikácie -> všetko funguje"
+echo ""
+
+echo "   SCENÁR C: Prerušenie"
+echo "   1. Spustite audio"
+echo "   2. Aktivuje sa DND"
+echo "   3. Zatvorte aplikáciu -> DND sa deaktivuje"
+echo ""
+
+echo "🐛 8. DEBUGGING"
+echo "   • Skontrolujte logy: flutter logs"
+echo "   • Hľadajte: '🔕 Do Not Disturb' messages"
+echo "   • Overenie stavu: 'DND session started/ended'"
+echo ""
+
+echo "✅ 9. OČAKÁVANÉ VÝSLEDKY"
+echo "   ANDROID:"
+echo "   • Notification panel: prázdny/tichý počas audio"
+echo "   • Settings -> Do not disturb: ACTIVE počas audio"
+echo "   • Emergency calls: fungujú"
+echo ""
+echo "   iOS:"
+echo "   • Control Center -> Focus: aktívny počas audio"
+echo "   • Notifikácia s inštrukciami pre manuálnu aktiváciu"
+echo "   • Audio session: optimalizovaný pre speech"
+echo ""
+
+echo "❌ 10. MOŽNÉ PROBLÉMY"
+echo "   • 'Permissions not granted' -> Povolte prístup v systémových nastaveniach"
+echo "   • 'DND activation failed' -> Reštartujte aplikáciu"
+echo "   • iOS: Focus režim nie je dostupný -> použije sa fallback"
+echo ""
+
+echo "🔕 === TESTOVANIE UKONČENÉ ==="
+echo "Pre viac informácií pozrite dokumentáciu DoNotDisturbService."

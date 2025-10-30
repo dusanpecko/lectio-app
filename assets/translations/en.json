@@ -177,8 +177,17 @@
 "reset_password_instructions": "Enter your email and we will send you instructions to reset your password.",
 "select_bible": "Select Bible Text",
 "bible_1": "SSV Translation",
-"bible_2": "Jerusalem Translation",
+"bible_1_desc": "Slovak Standard Version",
+"bible_2": "Jerusalem Translation", 
+"bible_2_desc": "Catholic translation from French",
 "bible_3": "Ecumenical Translation",
+"bible_3_desc": "Modern ecumenical translation",
+"bible_en_1": "New International Version (NIV)",
+"bible_en_1_desc": "Modern English translation",
+"bible_en_2": "English Standard Version (ESV)",
+"bible_en_2_desc": "Literal English translation",
+"bible_en_3": "New Revised Standard Version (NRSV)",
+"bible_en_3_desc": "Academic English translation",
 "bible_en_only": "Bible Selection",
 "bible_en_desc": "The English version uses only one Bible text.",
 "add_note_with_bible": "Add Note",
@@ -397,7 +406,15 @@
       "large": "Large",
       "preview": "This is a sample text with the selected font and size."
     },
+    "language": {
+      "title": "App Language",
+      "system": "System Language",
+      "slovak": "Slovak",
+      "english": "English"
+    },
     "theme_changed": "Theme has been changed. Restart the app for full effect."
-  }
+  },
+
+  "do_not_disturb_active": "Do Not Disturb"
 
 }
