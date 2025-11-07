@@ -54,9 +54,9 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentPage = 0;
   Timer? _timer;
 
-  // Quote data
-  String? quoteText;
-  String? quoteReference;
+  // Actio data (z lectio_sources namiesto daily_quotes)
+  String? actioText;
+  String? actioReference;
   bool isLoading = true;
   bool _dataLoaded = false;
 
@@ -109,31 +109,94 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Fetch daily quote
+  // Fetch daily actio from lectio_sources (rovnaký princíp ako web homepage)
   Future<void> _fetchQuoteData() async {
     final supabase = Supabase.instance.client;
     final today = DateTime.now().toIso8601String().substring(0, 10);
 
     try {
       final locale = context.locale.languageCode;
-      final quoteRes = await supabase
-          .from('daily_quotes')
-          .select()
-          .eq('date', today)
-          .eq('lang', locale)
-          .limit(1)
+
+      // 1. Nájdi dnešný liturgický deň
+      final calendarResponse = await supabase
+          .from('liturgical_calendar')
+          .select('*, liturgical_years(*)')
+          .eq('datum', today)
+          .eq('locale_code', locale)
           .maybeSingle();
 
+      if (calendarResponse == null ||
+          calendarResponse['lectio_hlava'] == null) {
+        if (!mounted) return;
+        setState(() {
+          actioText = null;
+          actioReference = null;
+          isLoading = false;
+        });
+        return;
+      }
+
+      final lectioHlava = calendarResponse['lectio_hlava'];
+      final celebrationTitle = calendarResponse['celebration_title'] ?? '';
+      final celebrationRankNum = calendarResponse['celebration_rank_num'];
+
+      // 2. Určíme či použiť cyklus (A/B/C) alebo 'N' pre všedné dni
+      final isWeekday = RegExp(
+        r'(Pondelok|Utorok|Streda|Štvrtok|Piatok|Sobota|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday).+(týždňa|Week)',
+      ).hasMatch(celebrationTitle);
+
+      final isSpecialDay =
+          !isWeekday &&
+          (celebrationTitle.toLowerCase().contains('nedeľa') ||
+              celebrationTitle.toLowerCase().contains('sunday') ||
+              (celebrationRankNum != null && celebrationRankNum > 1));
+
+      final liturgicalYear = calendarResponse['liturgical_years'];
+      final lectionaryCycle = liturgicalYear?['lectionary_cycle'] ?? 'A';
+      final rokToSearch = isSpecialDay ? lectionaryCycle : 'N';
+
+      debugPrint(
+        '🔍 Home: Hľadám actio pre rok: $rokToSearch, hlava: $lectioHlava, lang: $locale',
+      );
+
+      // 3. Nájdi lectio source s actio textom
+      var lectioSource = await supabase
+          .from('lectio_sources')
+          .select()
+          .eq('hlava', lectioHlava)
+          .eq('lang', locale)
+          .eq('rok', rokToSearch)
+          .maybeSingle();
+
+      // Fallback logika
+      if (lectioSource == null && isSpecialDay && rokToSearch != 'N') {
+        debugPrint('🔄 Home: Sviatok nenájdený s rokom A/B/C, skúšam rok N...');
+        lectioSource = await supabase
+            .from('lectio_sources')
+            .select()
+            .eq('hlava', lectioHlava)
+            .eq('lang', locale)
+            .eq('rok', 'N')
+            .maybeSingle();
+      }
+
       if (!mounted) return;
 
       setState(() {
-        quoteText = quoteRes?['quote'];
-        quoteReference = quoteRes?['reference'];
+        actioText = lectioSource?['actio_text'];
+        actioReference = lectioSource?['reference'] ?? celebrationTitle;
         isLoading = false;
       });
+
+      debugPrint(
+        '✅ Home: Actio načítané: ${actioText != null ? "áno" : "nie"}',
+      );
     } catch (e) {
+      debugPrint('❌ Home: Error fetching actio: $e');
       if (!mounted) return;
       setState(() {
+        actioText = null;
+        actioReference = null;
         isLoading = false;
       });
     }
@@ -641,14 +704,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(width: 12),
 
-                      // Quote content
+                      // Actio content (z lectio_sources)
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Quote text
+                            // Actio text
                             Text(
-                              quoteText ?? tr('quote_not_available'),
+                              actioText ?? tr('quote_not_available'),
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -660,10 +723,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               overflow: TextOverflow.ellipsis,
                             ),
 
-                            if (quoteReference != null) ...[
+                            if (actioReference != null) ...[
                               const SizedBox(height: 4),
                               Text(
-                                quoteReference!,
+                                actioReference!,
                                 style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,

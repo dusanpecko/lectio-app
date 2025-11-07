@@ -600,6 +600,9 @@
     "theme_changed": "Téma bola zmenená. Reštartujte aplikáciu pre úplnú aplikáciu zmeny."
   },
 
-  "do_not_disturb_active": "Nerušiť"
+  "do_not_disturb_active": "Nerušiť",
+  "interactive_form": "Registracia",
+  "fill_form_below": "Vyplňte registračný formulár",
+  "open_form": "Otvoriť registračný formulár"
 
 }

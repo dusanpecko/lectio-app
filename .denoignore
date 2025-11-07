@@ -1,0 +1,54 @@
+# Deno ignore file - excludes files from Deno language server analysis
+
+# Node.js projects
+**/node_modules/
+**/package-lock.json
+**/yarn.lock
+
+# Next.js build outputs
+**/.next/
+**/out/
+**/build/
+
+# Backend directory (Node.js project)
+../backend/
+
+# Documentation
+../docs/
+
+# Flutter/Dart build outputs  
+**/build/
+**/.dart_tool/
+
+# iOS
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework/
+**/ios/Flutter/Flutter.podspec
+
+# Android
+**/android/.gradle/
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/key.properties
+
+# IDE files
+**/.vscode/
+**/.idea/
+**/*.iml
+
+# OS files
+**/.DS_Store
+**/Thumbs.db
+
+# Logs
+**/logs/
+**/*.log
+
+# Environment files
+**/.env*
+
+# Lock files
+**/deno.lock

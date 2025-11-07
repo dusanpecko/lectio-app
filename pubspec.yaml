@@ -1,13 +1,11 @@
 name: lectio_divina
 description: Aplikácia Lectio Divina pre každodenné zamyslenia nad Božím slovom.
 
-
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 homepage: https://www.lectio.one
 repository: https://github.com/dusanpecko/lectio-app.git
 issue_tracker: https://github.com/dusanpecko/lectio-app/issues
 documentation: https://github.com/dusanpecko/lectio-app/wiki
-
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -96,7 +94,7 @@ flutter:
     - assets/translations/
     - assets/images/
     - assets/icon/
-    
+
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

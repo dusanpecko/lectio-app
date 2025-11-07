@@ -415,6 +415,9 @@
     "theme_changed": "Theme has been changed. Restart the app for full effect."
   },
 
-  "do_not_disturb_active": "Do Not Disturb"
+  "do_not_disturb_active": "Do Not Disturb",
+  "interactive_form": "Interactive Form",
+  "fill_form_below": "Fill out the form below",
+  "open_form": "Open Form"
 
 }

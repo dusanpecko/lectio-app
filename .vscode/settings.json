@@ -1,4 +1,22 @@
 {
     "deno.enable": true,
-    "cmake.sourceDirectory": "/Users/dusanpecko/lectio_divina/linux"
+    "deno.enablePaths": ["./"],
+    "deno.disablePaths": ["../backend", "../docs"],
+    "deno.documentPreloadLimit": 500,
+    "cmake.sourceDirectory": "/Users/dusanpecko/lectio_divina/linux",
+    
+    // Flutter/Dart specific settings
+    "dart.flutterSdkPath": "/Users/dusanpecko/fvm/default",
+    "dart.devToolsPort": 9100,
+    
+    // File exclusions for better performance
+    "files.exclude": {
+        "**/node_modules": true,
+        "**/.git": true,
+        "**/build": true,
+        "**/.dart_tool": true,
+        "**/ios/Pods": true,
+        "**/android/.gradle": true,
+        "**/deno.lock": true
+    }
 }

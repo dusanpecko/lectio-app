@@ -1,7 +1,8 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:easy_localization/easy_localization.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class NewsDetailScreen extends StatefulWidget {
   final Map<String, dynamic> newsData;
@@ -22,6 +23,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
   bool sendingComment = false;
 
   String? currentUserRole;
+  String? _formUrl;
 
   @override
   void initState() {
@@ -33,6 +35,71 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
     checkIfLiked();
     loadComments();
     fetchCurrentUserRole();
+    _extractFormUrl();
+  }
+
+  void _extractFormUrl() {
+    final formEmbedCode = widget.newsData['form_embed_code'];
+    if (formEmbedCode != null && formEmbedCode.isNotEmpty) {
+      // Extrahuj URL z href="https://dpforms.sk/app/form?id=XXXXX"
+      final hrefRegex = RegExp(
+        r'href="(https://dpforms\.sk/app/form\?id=[^"]+)"',
+      );
+      final match = hrefRegex.firstMatch(formEmbedCode);
+
+      if (match != null) {
+        setState(() {
+          _formUrl = match.group(1);
+        });
+        debugPrint('Extracted form URL: $_formUrl');
+      }
+    }
+  }
+
+  Future<void> _openForm() async {
+    if (_formUrl == null) return;
+
+    final uri = Uri.parse(_formUrl!);
+    try {
+      // Pokúsi sa otvoriť URL - najprv inAppBrowserView, potom externalApplication
+      bool launched = false;
+
+      // Skús najprv inAppBrowserView (funguje na iOS, niektorých Android)
+      try {
+        launched = await launchUrl(
+          uri,
+          mode: LaunchMode.inAppBrowserView,
+          browserConfiguration: const BrowserConfiguration(showTitle: true),
+        );
+      } catch (e) {
+        debugPrint('inAppBrowserView failed: $e');
+      }
+
+      // Ak nefungovalo, skús externalApplication (otvorí Chrome/Safari)
+      if (!launched) {
+        try {
+          launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } catch (e) {
+          debugPrint('externalApplication failed: $e');
+        }
+      }
+
+      if (!launched) {
+        debugPrint('Cannot launch URL: $_formUrl');
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(tr('error'))));
+        }
+      }
+    } catch (e) {
+      debugPrint('Error launching URL: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(tr('error'))));
+      }
+    }
   }
 
   Future<void> fetchCurrentUserRole() async {
@@ -316,6 +383,77 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                 ),
               ),
             ),
+
+            // EasyForms Button
+            if (_formUrl != null) ...[
+              const SizedBox(height: 24),
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.assignment,
+                            color: Color(0xFF40467b),
+                            size: 24,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              tr('interactive_form'),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                                color: Color(0xFF40467b),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        tr('fill_form_below'),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _openForm,
+                          icon: const Icon(Icons.open_in_browser, size: 20),
+                          label: Text(
+                            tr('open_form'),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF40467b),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 16,
+                              horizontal: 24,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
             Text(
               tr('comments'),

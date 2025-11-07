@@ -4,5 +4,13 @@
   "compilerOptions": {
     "lib": ["deno.ns", "deno.unstable"],
     "strict": true
-  }
+  },
+  "exclude": [
+    "../backend/**",
+    "../docs/**",
+    "build/**",
+    ".dart_tool/**",
+    "ios/Pods/**",
+    "android/.gradle/**"
+  ]
 }
