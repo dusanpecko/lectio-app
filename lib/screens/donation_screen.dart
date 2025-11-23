@@ -14,6 +14,7 @@ class DonationScreen extends StatefulWidget {
 
 class _DonationScreenState extends State<DonationScreen> {
   bool _isLoading = false;
+  bool _isAnonymous = false;
   final _amountController = TextEditingController(text: '10');
   final _messageController = TextEditingController();
 
@@ -76,8 +77,8 @@ class _DonationScreenState extends State<DonationScreen> {
         },
         body: json.encode({
           'amount': amount,
-          'userId': user?.id,
-          'email': user?.email,
+          'userId': user?.id ?? '',
+          'email': _isAnonymous ? 'stripe@lectio.one' : (user?.email ?? ''),
           'message': _messageController.text.trim().isEmpty
               ? null
               : _messageController.text.trim(),
@@ -114,12 +115,18 @@ class _DonationScreenState extends State<DonationScreen> {
   }
 
   Future<void> _startSubscription(String tier, String interval) async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+
+    // Check if user is logged in - subscription requires account
+    if (user == null) {
+      _showLoginRequired();
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      final supabase = Supabase.instance.client;
-      final user = supabase.auth.currentUser;
-
       final baseUrl = const String.fromEnvironment(
         'API_URL',
         defaultValue: 'https://lectio.one',
@@ -134,8 +141,8 @@ class _DonationScreenState extends State<DonationScreen> {
         body: json.encode({
           'tier': tier,
           'interval': interval,
-          'userId': user?.id,
-          'email': user?.email,
+          'userId': user.id,
+          'email': user.email ?? '',
         }),
       );
 
@@ -166,6 +173,34 @@ class _DonationScreenState extends State<DonationScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  void _showLoginRequired() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Prihlásenie potrebné'),
+        content: const Text(
+          'Pre vytvorenie predplatného sa musíte najprv prihlásiť. '
+          'Jednorazový dar môžete poslať aj bez prihlásenia.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Zrušiť'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context); // Close donation screen
+              // Navigate to login/profile screen
+              // You can add navigation to login screen here
+            },
+            child: const Text('Prihlásiť sa'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showError(String message) {
@@ -231,6 +266,25 @@ class _DonationScreenState extends State<DonationScreen> {
                               labelText: 'Správa (voliteľné)',
                               border: OutlineInputBorder(),
                             ),
+                          ),
+                          const SizedBox(height: 12),
+                          CheckboxListTile(
+                            title: const Text(
+                              '🕶️ Anonymný dar (bez potvrdzovacieho e-mailu)',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            subtitle: const Text(
+                              'Platba bude spracovaná, ale nedostanete potvrdenie.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            value: _isAnonymous,
+                            onChanged: (value) =>
+                                setState(() => _isAnonymous = value ?? false),
+                            controlAffinity: ListTileControlAffinity.leading,
+                            contentPadding: EdgeInsets.zero,
                           ),
                           const SizedBox(height: 16),
                           SizedBox(
