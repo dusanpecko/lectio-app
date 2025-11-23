@@ -1,9 +1,11 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_html/flutter_html.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter/services.dart';
-import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter_html/flutter_html.dart';
+
+import 'donation_screen.dart';
 
 class SupportScreen extends StatefulWidget {
   const SupportScreen({super.key});
@@ -208,37 +210,82 @@ class _SupportScreenState extends State<SupportScreen> {
                           ),
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                icon: const Icon(Icons.volunteer_activism),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: color,
-                                  foregroundColor: onPrimary,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 30,
-                                    vertical: 14,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                  elevation: 2,
-                                ),
-                                onPressed: () => _tryOpenDonateUrl(context),
-                                label: Center(
-                                  child: Html(
-                                    data: tr("support2.donate_online"),
-                                    style: {
-                                      "*": Style(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: FontSize(16),
-                                        margin: Margins.zero,
-                                        textAlign: TextAlign.center,
+                            child: Column(
+                              children: [
+                                // New Stripe donation button
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    icon: const Icon(Icons.credit_card),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(
+                                        0xFF635BFF,
+                                      ), // Stripe purple
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 30,
+                                        vertical: 14,
                                       ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(24),
+                                      ),
+                                      elevation: 2,
+                                    ),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const DonationScreen(),
+                                        ),
+                                      );
                                     },
+                                    label: const Center(
+                                      child: Text(
+                                        '💳 Darovať kartou (Stripe)',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
+                                const SizedBox(height: 12),
+                                // Original 24-pay button
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    icon: const Icon(Icons.volunteer_activism),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: color,
+                                      foregroundColor: onPrimary,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 30,
+                                        vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(24),
+                                      ),
+                                      elevation: 2,
+                                    ),
+                                    onPressed: () => _tryOpenDonateUrl(context),
+                                    label: Center(
+                                      child: Html(
+                                        data: tr("support2.donate_online"),
+                                        style: {
+                                          "*": Style(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: FontSize(16),
+                                            margin: Margins.zero,
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
