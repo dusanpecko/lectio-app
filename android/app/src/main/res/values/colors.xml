@@ -2,4 +2,5 @@
 <resources>
     <!-- Default notification color for FCM -->
     <color name="notification_color">#4A5085</color>
+	<color name="ic_launcher_background">#4A5C7E</color>
 </resources>

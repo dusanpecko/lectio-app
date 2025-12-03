@@ -65,7 +65,7 @@ dependencies:
   app_links: ^6.0.2
   http: ^1.4.0
   share_plus: ^11.1.0
-  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.14.4
   firebase_core: ^4.0.0
   firebase_messaging: ^16.0.0
   flutter_secure_storage: ^9.0.0
@@ -131,8 +131,18 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
-flutter_icons:
-  android: "launcher_icon"
+flutter_launcher_icons:
+  android: true
   ios: true
-  image_path: "assets/icon/icon.png"
+  image_path: "assets/icon/icon.png"  # base iOS ikona
+  min_sdk_android: 21
+  
+  # Android Adaptive Icons (Material Design)
+  adaptive_icon_background: "#4A5C7E"
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
+  adaptive_icon_monochrome: "assets/icon/icon_monochrome.png"
+  
+  # iOS Light/Dark/Tinted Icons (iOS 18+)
+  image_path_ios: "assets/icon/icon.png"  # light mode - farebná ikona
+  image_path_ios_dark_transparent: "assets/icon/icon_dark.png"  # dark mode - svetlejšie pozadie
   remove_alpha_ios: true
