@@ -100,10 +100,13 @@ class _NotificationSettingsScreenState
     try {
       final granted = await _fcmService.requestNotificationPermissions();
 
+      if (!mounted) return;
+
       if (granted) {
         setState(() => _hasPermission = true);
         _initializeNotificationSettings();
       } else {
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('notifications.error.permission_denied'.tr()),
@@ -181,6 +184,7 @@ class _NotificationSettingsScreenState
       await _localNotifications.setDailyLectioEnabled(enabled);
       setState(() => _dailyLectioEnabled = enabled);
 
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -193,6 +197,7 @@ class _NotificationSettingsScreenState
       );
     } catch (e) {
       _logger.e('Error toggling daily lectio: $e');
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Chyba pri nastavovaní denných notifikácií'),
@@ -216,6 +221,7 @@ class _NotificationSettingsScreenState
           _prayerReminderEnabled = true;
         });
 
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -226,6 +232,7 @@ class _NotificationSettingsScreenState
         );
       } catch (e) {
         _logger.e('Error setting prayer reminder: $e');
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Chyba pri nastavovaní pripomenutia'),
@@ -244,6 +251,7 @@ class _NotificationSettingsScreenState
         _prayerReminderTime = null;
       });
 
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Pripomenutie modlitby vypnuté'),
@@ -374,7 +382,11 @@ class _NotificationSettingsScreenState
           onChanged: _isLoading
               ? null
               : (value) => _onTopicChanged(topic.id, value),
-          activeColor: Theme.of(context).colorScheme.primary,
+          thumbColor: WidgetStateProperty.resolveWith<Color?>(
+            (states) => states.contains(WidgetState.selected)
+                ? Theme.of(context).colorScheme.primary
+                : null,
+          ),
         ),
       ),
     );

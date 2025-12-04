@@ -7,6 +7,11 @@ import UserNotifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
+
+  // Store channel references for later use
+  private var badgeChannel: FlutterMethodChannel?
+  private var dndChannel: FlutterMethodChannel?
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -22,53 +27,64 @@ import UserNotifications
 
     GeneratedPluginRegistrant.register(with: self)
 
-    if let controller = window?.rootViewController as? FlutterViewController {
-      // Badge channel
-      let badgeChannel = FlutterMethodChannel(
-        name: "com.lectio_divina/badge",
-        binaryMessenger: controller.binaryMessenger)
-      badgeChannel.setMethodCallHandler { [weak self] (call, result) in
-        if call.method == "clearBadge" {
-          DispatchQueue.main.async {
-            UIApplication.shared.applicationIconBadgeNumber = 0
-            UNUserNotificationCenter.current().removeAllDeliveredNotifications()
-            result(true)
-          }
-        } else {
-          result(FlutterMethodNotImplemented)
-        }
-      }
+    // Setup platform channels using FlutterPluginRegistry
+    setupPlatformChannels()
 
-      // Do Not Disturb channel
-      let dndChannel = FlutterMethodChannel(
-        name: "sk.lectio.divina/do_not_disturb",
-        binaryMessenger: controller.binaryMessenger)
-      dndChannel.setMethodCallHandler { [weak self] (call, result) in
-        switch call.method {
-        case "checkDndPermissions":
-          self?.checkDndPermissions(result: result)
-        case "requestDndPermissions":
-          self?.requestDndPermissions(result: result)
-        case "activateIOSFocus":
-          if let arguments = call.arguments as? [String: Any] {
-            self?.activateIOSFocus(arguments: arguments, result: result)
-          } else {
-            result(
-              FlutterError(code: "INVALID_ARGUMENTS", message: "Invalid arguments", details: nil))
-          }
-        case "deactivateIOSFocus":
-          self?.deactivateIOSFocus(result: result)
-        case "activateIOSSilent":
-          self?.activateIOSSilent(result: result)
-        case "deactivateIOSSilent":
-          self?.deactivateIOSSilent(result: result)
-        default:
-          result(FlutterMethodNotImplemented)
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  private func setupPlatformChannels() {
+    // Get the Flutter view controller - use window property from FlutterAppDelegate
+    guard let window = self.window,
+      let controller = window.rootViewController as? FlutterViewController
+    else {
+      print("⚠️ Failed to get FlutterViewController")
+      return
+    }
+
+    // Badge channel
+    badgeChannel = FlutterMethodChannel(
+      name: "com.lectio_divina/badge",
+      binaryMessenger: controller.binaryMessenger)
+    badgeChannel?.setMethodCallHandler { [weak self] (call, result) in
+      if call.method == "clearBadge" {
+        DispatchQueue.main.async {
+          UIApplication.shared.applicationIconBadgeNumber = 0
+          UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+          result(true)
         }
+      } else {
+        result(FlutterMethodNotImplemented)
       }
     }
 
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    // Do Not Disturb channel
+    dndChannel = FlutterMethodChannel(
+      name: "sk.lectio.divina/do_not_disturb",
+      binaryMessenger: controller.binaryMessenger)
+    dndChannel?.setMethodCallHandler { [weak self] (call, result) in
+      switch call.method {
+      case "checkDndPermissions":
+        self?.checkDndPermissions(result: result)
+      case "requestDndPermissions":
+        self?.requestDndPermissions(result: result)
+      case "activateIOSFocus":
+        if let arguments = call.arguments as? [String: Any] {
+          self?.activateIOSFocus(arguments: arguments, result: result)
+        } else {
+          result(
+            FlutterError(code: "INVALID_ARGUMENTS", message: "Invalid arguments", details: nil))
+        }
+      case "deactivateIOSFocus":
+        self?.deactivateIOSFocus(result: result)
+      case "activateIOSSilent":
+        self?.activateIOSSilent(result: result)
+      case "deactivateIOSSilent":
+        self?.deactivateIOSSilent(result: result)
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
   }
 
   // Handle Google Sign-In URL scheme
@@ -179,7 +195,11 @@ import UserNotifications
 
   // Zobrazí prompt pre aktiváciu Do Not Disturb
   private func showDoNotDisturbPrompt() {
-    guard let rootViewController = self.window?.rootViewController else { return }
+    guard let window = self.window,
+      let rootViewController = window.rootViewController as? FlutterViewController
+    else {
+      return
+    }
 
     let alert = UIAlertController(
       title: "Režim Nerušiť - Lectio Divina",

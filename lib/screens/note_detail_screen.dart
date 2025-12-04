@@ -317,10 +317,14 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
 
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) async {
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
+
+        if (!mounted) return;
         final shouldPop = await _onWillPop();
-        if (shouldPop && mounted) {
+
+        if (!mounted) return;
+        if (shouldPop) {
           Navigator.of(context).pop();
         }
       },
@@ -465,11 +469,11 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                         style: IconButton.styleFrom(
                           backgroundColor: Theme.of(
                             context,
-                          ).colorScheme.error.withOpacity(0.1),
+                          ).colorScheme.error.withValues(alpha: 0.1),
                           side: BorderSide(
                             color: Theme.of(
                               context,
-                            ).colorScheme.error.withOpacity(0.3),
+                            ).colorScheme.error.withValues(alpha: 0.3),
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),

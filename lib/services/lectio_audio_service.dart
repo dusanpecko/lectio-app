@@ -6,6 +6,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'background_audio_manager.dart';
 import 'do_not_disturb_service.dart';
 
 class LectioAudioHandler extends BaseAudioHandler
@@ -46,11 +47,10 @@ class LectioAudioHandler extends BaseAudioHandler
           genre: 'Spiritual',
           duration: Duration.zero,
           playable: true,
-          artUri: Platform.isIOS
-              ? Uri.parse('asset:///assets/icon/icon.png')
-              : Uri.parse(
-                  'https://unnijykbupxguogrkolj.supabase.co/storage/v1/object/public/news/images/lectio-divina-app-icon.png',
-                ),
+          // iOS lock screen artwork
+          artUri: Uri.parse(
+            'https://unnijykbupxguogrkolj.supabase.co/storage/v1/object/public/avatars/avatars/icon.png',
+          ),
         ),
       );
 
@@ -116,11 +116,14 @@ class LectioAudioHandler extends BaseAudioHandler
   void _setupAudioPlayerListeners() {
     // Player state changes
     _audioPlayer.playerStateStream.listen((state) {
-      _logger.d(
+      _logger.i(
         '🎵 Player state changed: ${state.processingState}, playing: ${state.playing}',
       );
 
       if (state.processingState == ProcessingState.completed) {
+        _logger.i(
+          '🏁 ProcessingState.completed detected - calling _onAudioCompleted()',
+        );
         _onAudioCompleted();
       }
 
@@ -234,7 +237,11 @@ class LectioAudioHandler extends BaseAudioHandler
   /// Custom method to play specific URL with metadata
   Future<void> playFromUrl(String url, {String? title, String? artist}) async {
     try {
-      _logger.i('🎵 Loading audio from URL: $url');
+      _logger.i('🎵 ════════════════════════════════════════════════════════');
+      _logger.i('🎵 playFromUrl() START');
+      _logger.i('🎵 URL: $url');
+      _logger.i('🎵 Title: $title');
+      _logger.i('🎵 ════════════════════════════════════════════════════════');
 
       // Create MediaItem with comprehensive metadata for better iOS/Android support
       final mediaItemData = MediaItem(
@@ -245,38 +252,43 @@ class LectioAudioHandler extends BaseAudioHandler
         genre: 'Spiritual',
         duration: null, // Will be set when audio loads
         playable: true,
-        // Try both approaches for artwork - Asset for iOS, URL for Android fallback
-        artUri: Platform.isIOS
-            ? Uri.parse('asset:///assets/icon/icon.png')
-            : Uri.parse(
-                'https://unnijykbupxguogrkolj.supabase.co/storage/v1/object/public/news/images/lectio-divina-app-icon.png',
-              ),
+        // iOS lock screen artwork - use hosted icon
+        artUri: Uri.parse(
+          'https://unnijykbupxguogrkolj.supabase.co/storage/v1/object/public/avatars/avatars/icon.png',
+        ),
         extras: {
-          'artwork': Platform.isIOS
-              ? 'asset:///assets/icon/icon.png'
-              : 'https://unnijykbupxguogrkolj.supabase.co/storage/v1/object/public/news/images/lectio-divina-app-icon.png',
           'displayTitle': title ?? 'Lectio Divina Audio',
           'displaySubtitle': artist ?? 'Spiritual Audio',
         },
       );
 
+      _logger.i('🎵 MediaItem created, adding to stream...');
       mediaItem.add(mediaItemData);
+      _logger.i('🎵 MediaItem added');
 
       // Load the audio source with enhanced headers
+      _logger.i('🎵 Loading audio source...');
       await _audioPlayer.setAudioSource(
         AudioSource.uri(
           Uri.parse(url),
           headers: {'User-Agent': 'LectioDivina/1.0', 'Accept': 'audio/*'},
         ),
       );
+      _logger.i('🎵 Audio source loaded successfully');
+      _logger.i('🎵 Duration: ${_audioPlayer.duration}');
 
       // Start Do Not Disturb session when audio starts playing
       await _dndService.startReadingSession();
       _logger.i('🔕 Do Not Disturb session started for audio playback');
 
       // Start playing immediately to trigger media session
+      _logger.i('🎵 Calling play()...');
       await play();
+      _logger.i('🎵 play() completed, audio should be playing now');
+      _logger.i('🎵 isPlaying: ${_audioPlayer.playing}');
+      _logger.i('🎵 position: ${_audioPlayer.position}');
     } catch (e) {
+      _logger.e('🎵 ❌ ERROR in playFromUrl: $e');
       // Use enhanced error handling with network diagnostics
       await _handleAudioError('playFromUrl', e);
 
@@ -344,6 +356,10 @@ class LectioAudioHandler extends BaseAudioHandler
     try {
       _logger.i('🎵 Playing Lectio audio: $title');
 
+      // Default artwork URI for iOS lock screen
+      const defaultArtUri =
+          'https://unnijykbupxguogrkolj.supabase.co/storage/v1/object/public/avatars/avatars/icon.png';
+
       // Set media item for notification
       mediaItem.add(
         MediaItem(
@@ -352,11 +368,7 @@ class LectioAudioHandler extends BaseAudioHandler
           title: title,
           artist: subtitle,
           duration: null, // Will be updated when known
-          artUri: artUri != null
-              ? Uri.parse(artUri)
-              : Uri.parse(
-                  'asset:///assets/icon/icon.png',
-                ), // Default Lectio Divina icon
+          artUri: Uri.parse(artUri ?? defaultArtUri),
           extras: {'source': 'lectio_divina', 'type': 'spiritual_audio'},
         ),
       );
@@ -389,7 +401,10 @@ class LectioAudioHandler extends BaseAudioHandler
 
   /// Handle audio completion
   void _onAudioCompleted() {
-    _logger.i('🏁 Audio playback completed');
+    _logger.i('🏁 ════════════════════════════════════════════════════════');
+    _logger.i('🏁 Audio playback completed - _onAudioCompleted() called');
+    _logger.i('🏁 _backgroundPlayEnabled: $_backgroundPlayEnabled');
+    _logger.i('🏁 ════════════════════════════════════════════════════════');
 
     // If background play is enabled, try to continue to next section
     if (_backgroundPlayEnabled) {
@@ -405,7 +420,24 @@ class LectioAudioHandler extends BaseAudioHandler
   void _tryPlayNextSection() {
     _logger.i('🎵 Attempting to play next section in background...');
 
-    // Notify any listeners that we're ready for next section
+    // FIRST: Use BackgroundAudioManager directly for reliable background playback
+    // This doesn't depend on widget being mounted
+    final bgManager = BackgroundAudioManager();
+
+    // Only use BackgroundAudioManager if it has valid playlist AND valid track index
+    if (bgManager.playlist.isNotEmpty && bgManager.currentTrackIndex >= 0) {
+      _logger.i(
+        '📝 Using BackgroundAudioManager.onTrackCompleted() for background playback (index: ${bgManager.currentTrackIndex})',
+      );
+      bgManager.onTrackCompleted();
+      return;
+    }
+
+    _logger.i(
+      '📝 BackgroundAudioManager not ready (playlist: ${bgManager.playlist.length}, index: ${bgManager.currentTrackIndex})',
+    );
+
+    // FALLBACK: Use callback for widget (only works when mounted)
     if (_onSectionCompleted != null) {
       _logger.i('📝 Calling registered section completion callback');
       _onSectionCompleted!();

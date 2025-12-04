@@ -1,11 +1,13 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:easy_localization/easy_localization.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import 'home_screen.dart';
+
 import 'package:app_links/app_links.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../services/credentials_service.dart';
+import 'home_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -49,7 +51,7 @@ class _AuthScreenState extends State<AuthScreen> {
         });
       }
     } catch (e) {
-      print('Error loading saved credentials: $e');
+      // Error loading saved credentials
     }
   }
 
@@ -62,7 +64,7 @@ class _AuthScreenState extends State<AuthScreen> {
         _handleDeepLink(initialLink);
       }
     } catch (e) {
-      print('Error getting initial app link: $e');
+      // Error getting initial app link
     }
 
     _linkSubscription = _appLinks.uriLinkStream.listen(
@@ -70,22 +72,22 @@ class _AuthScreenState extends State<AuthScreen> {
         _handleDeepLink(uri);
       },
       onError: (Object err) {
-        print('Error listening to app links: $err');
+        // Error listening to app links
       },
     );
   }
 
   void _handleDeepLink(Uri uri) {
-    print('Received deep link: $uri');
+    // Handle deep link
 
     // Handle Google OAuth callback - nový jednoduchší scheme
     if (uri.scheme == 'lectio-divina' && uri.host == 'login-callback') {
-      print('🔗 Google OAuth callback received');
+      // Google OAuth callback received
       // Supabase automaticky spracuje OAuth callback
       // Skontroluj či je používateľ prihlásený
       final session = Supabase.instance.client.auth.currentSession;
       if (session != null && mounted) {
-        print('🎉 OAuth login successful, navigating to home');
+        // OAuth login successful, navigating to home
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
           (route) => false,
@@ -97,10 +99,10 @@ class _AuthScreenState extends State<AuthScreen> {
     if ((uri.scheme == 'sk.lectio-divina.app' ||
             uri.scheme == 'lectio_divina') &&
         uri.host == 'login-callback') {
-      print('🔗 Google OAuth callback received (legacy)');
+      // Google OAuth callback received (legacy)
       final session = Supabase.instance.client.auth.currentSession;
       if (session != null && mounted) {
-        print('🎉 OAuth login successful, navigating to home');
+        // OAuth login successful, navigating to home
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
           (route) => false,
@@ -112,7 +114,7 @@ class _AuthScreenState extends State<AuthScreen> {
     if (uri.scheme == 'lectio_divina' && uri.host == 'reset-password') {
       final accessToken = uri.queryParameters['access_token'];
       if (accessToken != null) {
-        print('Reset password deep link received with token: $accessToken');
+        // Reset password deep link received with token
       }
     }
   }
@@ -264,25 +266,24 @@ class _AuthScreenState extends State<AuthScreen> {
     });
 
     try {
-      print('🚀 Starting Supabase Google OAuth with external application...');
+      // Starting Supabase Google OAuth with external application
 
       // Radikálne riešenie: späť na externe application ale s lepším callback
-      final response = await Supabase.instance.client.auth.signInWithOAuth(
+      await Supabase.instance.client.auth.signInWithOAuth(
         OAuthProvider.google,
         redirectTo: 'lectio-divina://login-callback',
         authScreenLaunchMode: LaunchMode.externalApplication,
       );
 
-      print('📊 Supabase OAuth response: $response');
+      // Supabase OAuth response logged
 
       if (!mounted) return;
 
       // Monitoruj zmeny v auth state s dlhším timeout
       _monitorAuthState();
-    } catch (e, stackTrace) {
+    } catch (e) {
       if (!mounted) return;
-      print('💥 Supabase Google OAuth error: $e');
-      print('📋 Stack trace: $stackTrace');
+      // Supabase Google OAuth error
       setState(() {
         _error = 'Google Sign-In chyba: ${e.toString()}';
       });
@@ -302,22 +303,22 @@ class _AuthScreenState extends State<AuthScreen> {
     });
 
     try {
-      print('🍎 Starting Apple Sign-In...');
+      // Starting Apple Sign-In
 
-      final response = await Supabase.instance.client.auth.signInWithOAuth(
+      await Supabase.instance.client.auth.signInWithOAuth(
         OAuthProvider.apple,
         redirectTo: 'lectio-divina://login-callback',
         authScreenLaunchMode: LaunchMode.externalApplication,
       );
 
-      print('📊 Supabase Apple OAuth response: $response');
+      // Supabase Apple OAuth response logged
 
       if (!mounted) return;
 
       // Monitoruj zmeny v auth state
       _monitorAuthState();
     } catch (e) {
-      print('💥 Supabase Apple OAuth error: $e');
+      // Supabase Apple OAuth error
       if (!mounted) return;
       setState(() {
         _error = 'Apple Sign-In chyba: ${e.toString()}';
@@ -327,13 +328,13 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   void _monitorAuthState() {
-    print('👀 Starting auth state monitoring...');
+    // Starting auth state monitoring
     late StreamSubscription<AuthState> subscription;
 
     // Kontrola aktuálnej session hneď na začiatku
     final currentSession = Supabase.instance.client.auth.currentSession;
     if (currentSession != null && mounted) {
-      print('🎉 User already signed in, navigating to home');
+      // User already signed in, navigating to home
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const HomeScreen()),
         (route) => false,
@@ -347,13 +348,13 @@ class _AuthScreenState extends State<AuthScreen> {
       final AuthChangeEvent event = data.event;
       final Session? session = data.session;
 
-      print('🔄 Auth state changed: $event');
+      // Auth state changed logged
       if (session != null) {
-        print('📋 Session details: ${session.user.email}');
+        // Session details logged
       }
 
       if (event == AuthChangeEvent.signedIn && session != null && mounted) {
-        print('🎉 User signed in via OAuth, navigating to home');
+        // User signed in via OAuth, navigating to home
         subscription.cancel(); // Zruš subscription
 
         // Malé oneskorenie pre stabilitu
@@ -371,7 +372,7 @@ class _AuthScreenState extends State<AuthScreen> {
           );
         }
       } else if (event == AuthChangeEvent.signedOut) {
-        print('👋 User signed out');
+        // User signed out
         subscription.cancel();
       }
     });
@@ -384,7 +385,7 @@ class _AuthScreenState extends State<AuthScreen> {
           _isLoading = false;
           _error = 'Google Sign-In timeout. Skúste to znovu.';
         });
-        print('⏰ Auth monitoring timeout after 120 seconds');
+        // Auth monitoring timeout after 120 seconds
       }
     });
   }
@@ -405,8 +406,6 @@ class _AuthScreenState extends State<AuthScreen> {
       }
 
       const webResetUrl = 'https://lectio.one/auth/reset-password';
-
-      print('Sending reset email to: $email with redirect: $webResetUrl');
 
       await Supabase.instance.client.auth.resetPasswordForEmail(
         email,
@@ -549,7 +548,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: _isLoading ? null : _signInWithGoogle,
-                        icon: Container(
+                        icon: SizedBox(
                           width: 20,
                           height: 20,
                           child: Image.asset(

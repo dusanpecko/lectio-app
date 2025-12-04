@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -53,6 +54,11 @@ class _LectioScreenState extends State<LectioScreen> {
   bool _audioPlayerClosed = false; // Flag pre sledovanie zatvorenia prehrávača
   bool _isProcessingInterludeCompletion =
       false; // Flag pre zabránenie dvojitého volania
+  bool _isSeeking = false; // Flag pre ignorovanie completed stavu počas seek
+  bool _usingFallbackPlayer =
+      false; // Flag keď používame priamy _audioPlayer namiesto BackgroundAudioManager
+  StreamSubscription?
+  _fallbackPlayerSubscription; // Subscription pre fallback player completion
 
   // Do Not Disturb state
   bool _isDndActive = false;
@@ -66,19 +72,17 @@ class _LectioScreenState extends State<LectioScreen> {
   // PageView controller
   final PageController _playlistPageController = PageController();
 
+  // Timer pre pravidelnú aktualizáciu pozície
+  Timer? _positionUpdateTimer;
+
   @override
   void initState() {
     super.initState();
     _setupAudioListeners();
     _initializeDndService();
+    _startPositionTimer();
 
-    // Register callback for auto-progression in background
-    _backgroundAudioManager.setOnSectionCompleted(() {
-      debugPrint('🎵 Background audio completed - triggering auto-progression');
-      if (mounted) {
-        _onAudioCompleted();
-      }
-    });
+    // Callback sa zaregistruje v _playBackgroundAudio po inicializácii
 
     // Notifikuj Prayer Focus Service o vstupe do Lectio screen
     _prayerFocusService.onSpiritualScreenEntered(SpiritualScreen.lectio);
@@ -96,6 +100,101 @@ class _LectioScreenState extends State<LectioScreen> {
 
   Future<void> _playBackgroundAudio(String url, String sectionKey) async {
     try {
+      // Reset fallback flag - budeme skúšať hlavný prehrávač
+      _usingFallbackPlayer = false;
+
+      // Initialize if needed
+      if (!_backgroundAudioManager.isInitialized) {
+        await _backgroundAudioManager.initialize();
+        debugPrint('✅ BackgroundAudioManager initialized');
+
+        // Register media item listener for duration updates (only once)
+        if (_backgroundAudioManager.audioHandler != null) {
+          _backgroundAudioManager.audioHandler!.mediaItem.listen((item) {
+            if (!mounted || item == null) return;
+
+            if (item.duration != null && _currentAudioSection != 'interlude') {
+              setState(() {
+                _totalDuration = item.duration!;
+              });
+              debugPrint(
+                '🎵 Duration updated from mediaItem: ${item.duration}',
+              );
+            }
+          });
+          debugPrint('✅ Media item listener registered');
+        }
+      }
+
+      // 🎯 NOVÁ LOGIKA: Nastaviť playlist do BackgroundAudioManager
+      // Toto umožňuje pokračovanie v background aj keď widget nie je mounted
+      final tracks = _getAvailableAudioTracks();
+      final currentIndex = tracks.indexWhere((t) => t['key'] == sectionKey);
+
+      // Nastaviť playlist a audio mode
+      _backgroundAudioManager.setPlaylist(tracks, _audioMode);
+      if (currentIndex >= 0) {
+        // Nastaviť current index manuálne (nie cez playTrackByIndex aby sa neprehral znova)
+        debugPrint(
+          '🎵 Setting playlist with ${tracks.length} tracks, current: $currentIndex',
+        );
+      }
+
+      // Callback pre UI update keď sa zmení track (pre prípad keď je widget mounted)
+      _backgroundAudioManager.setOnTrackChanged((trackKey, index) {
+        debugPrint('🎵 onTrackChanged: trackKey=$trackKey, index=$index');
+        if (mounted) {
+          // Poznámka: NERUŠÍME _fallbackPlayerSubscription tu,
+          // lebo callback môže prísť aj keď BAM nefunguje (Android)
+          // Subscription sa ruší v _playBackgroundAudio pri novom prehrávaní
+
+          setState(() {
+            if (trackKey == 'interlude') {
+              _currentAudioSection = 'interlude';
+            } else if (index >= 0 && index < tracks.length) {
+              _currentAudioSection = tracks[index]['key'];
+              // Animovať na nový track
+              if (_playlistPageController.hasClients) {
+                _playlistPageController.animateToPage(
+                  index,
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeInOut,
+                );
+              }
+            }
+          });
+        }
+      });
+
+      // Callback keď sa playlist dokončí
+      _backgroundAudioManager.setOnPlaylistCompleted(() {
+        debugPrint('🎵 Playlist completed');
+        if (mounted) {
+          setState(() {
+            _isPlaying = false;
+            _currentAudioSection = null;
+          });
+        }
+      });
+
+      // ALWAYS register callback - not just on first initialization
+      // This ensures callback is set even if screen was previously opened
+      _backgroundAudioManager.setOnSectionCompleted(() {
+        debugPrint(
+          '🎵 🚀 CALLBACK INVOKED from lectio_screen.dart _playBackgroundAudio',
+        );
+        debugPrint(
+          '🎵 mounted=$mounted, _currentAudioSection=$_currentAudioSection',
+        );
+        if (mounted) {
+          debugPrint('🎵 ➡️ Calling _onAudioCompleted()...');
+          _onAudioCompleted();
+        } else {
+          debugPrint('🎵 ❌ Widget not mounted, skipping _onAudioCompleted()');
+        }
+      });
+      debugPrint('✅ Auto-progression callback registered');
+
       // Get section title for media notification
       String title = _getSectionTitle(sectionKey);
       String subtitle = 'Lectio Divina';
@@ -104,14 +203,44 @@ class _LectioScreenState extends State<LectioScreen> {
         subtitle = lectioData?['hlava'] ?? 'Lectio Divina';
       }
 
+      // Nastaviť current track index v BackgroundAudioManager
+      _backgroundAudioManager.setCurrentTrackByKey(sectionKey);
+
       await _backgroundAudioManager.play(url, title: title, artist: subtitle);
 
       debugPrint('🎵 Background audio started: $title');
     } catch (e) {
       debugPrint('❌ Error playing background audio: $e');
       // Fallback to regular audio player
+      _usingFallbackPlayer = true;
+      debugPrint(
+        '🎵 🔄 Using fallback player, _usingFallbackPlayer=$_usingFallbackPlayer',
+      );
+
+      // Zrušiť predchádzajúcu subscription ak existuje
+      await _fallbackPlayerSubscription?.cancel();
+      _fallbackPlayerSubscription = null;
+      debugPrint('🎵 Previous fallback subscription cancelled');
+
       await _audioPlayer.setUrl(url);
       await _audioPlayer.play();
+      debugPrint('🎵 Fallback player started playing');
+
+      // Listen for completion on fallback player
+      _fallbackPlayerSubscription = _audioPlayer.playerStateStream.listen((
+        state,
+      ) {
+        debugPrint(
+          '🎵 📡 Fallback listener: processingState=${state.processingState}, _usingFallbackPlayer=$_usingFallbackPlayer, section=$_currentAudioSection',
+        );
+        if (state.processingState == ProcessingState.completed &&
+            _usingFallbackPlayer &&
+            _currentAudioSection != 'interlude') {
+          debugPrint('🎵 ✅ Fallback player completed, triggering next');
+          _onAudioCompleted();
+        }
+      });
+      debugPrint('🎵 ✅ New fallback subscription created');
     }
   }
 
@@ -150,8 +279,78 @@ class _LectioScreenState extends State<LectioScreen> {
     }
   }
 
+  void _startPositionTimer() {
+    // Timer pre pravidelnú aktualizáciu pozície (každých 200ms)
+    _positionUpdateTimer = Timer.periodic(
+      const Duration(milliseconds: 200),
+      (_) => _updatePositionFromPlayer(),
+    );
+  }
+
+  void _updatePositionFromPlayer() {
+    if (!mounted || _currentAudioSection == null) return;
+
+    // Ak používame fallback player (Android keď BAM zlyhá)
+    if (_usingFallbackPlayer) {
+      final position = _audioPlayer.position;
+      final duration = _audioPlayer.duration;
+      final isPlaying = _audioPlayer.playing;
+
+      // Debug výpis každú sekundu
+      if (position.inMilliseconds % 1000 < 250) {
+        debugPrint(
+          '🎵 Fallback timer: pos=${position.inSeconds}s, dur=${duration?.inSeconds}s, playing=$isPlaying',
+        );
+      }
+
+      if (position != _currentPosition ||
+          (duration != null && duration != _totalDuration) ||
+          isPlaying != _isPlaying) {
+        setState(() {
+          _currentPosition = position;
+          _isPlaying = isPlaying;
+          if (duration != null) {
+            _totalDuration = duration;
+          }
+        });
+      }
+    }
+    // Pre BackgroundAudioManager (vrátane interlude na iOS)
+    else if (_backgroundAudioManager.isInitialized) {
+      final position = _backgroundAudioManager.currentPosition;
+      final duration = _backgroundAudioManager.totalDuration;
+      final isPlaying = _backgroundAudioManager.isPlaying;
+
+      // Debug výpis každú sekundu
+      if (position.inMilliseconds % 1000 < 250) {
+        debugPrint(
+          '🎵 Timer update: pos=${position.inSeconds}s, dur=${duration?.inSeconds}s, playing=$isPlaying, _isPlaying=$_isPlaying',
+        );
+      }
+
+      // Aktualizuj stav ak sa zmenil
+      if (position != _currentPosition ||
+          (duration != null && duration != _totalDuration) ||
+          isPlaying != _isPlaying) {
+        setState(() {
+          _currentPosition = position;
+          _isPlaying = isPlaying;
+          if (duration != null) {
+            _totalDuration = duration;
+          }
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
+    // Zrušiť position timer
+    _positionUpdateTimer?.cancel();
+
+    // Zrušiť fallback player subscription
+    _fallbackPlayerSubscription?.cancel();
+
     // Clear background audio callback
     _backgroundAudioManager.clearOnSectionCompleted();
 
@@ -169,37 +368,87 @@ class _LectioScreenState extends State<LectioScreen> {
   }
 
   void _setupAudioListeners() {
-    // Listen to player state
+    // Setup listener for BackgroundAudioManager (will be used once initialized)
+    // We'll listen to the stream even before initialization
+    _backgroundAudioManager.playbackStateStream.listen((playbackState) {
+      if (!mounted || !_backgroundAudioManager.isInitialized) return;
+
+      final isPlaying = playbackState.playing;
+      final position = playbackState.position;
+
+      debugPrint(
+        '🎵 BackgroundAudioManager state: playing=$isPlaying, position=${position.inSeconds}s, processingState=${playbackState.processingState}',
+      );
+
+      // Only update if not playing interlude
+      if (_currentAudioSection != 'interlude') {
+        setState(() {
+          _isPlaying = isPlaying;
+          _currentPosition = position;
+
+          // Update duration if available
+          if (_backgroundAudioManager.totalDuration != null) {
+            _totalDuration = _backgroundAudioManager.totalDuration!;
+          }
+        });
+        debugPrint(
+          '🎵 ✅ State updated from BackgroundAudioManager: _isPlaying=$_isPlaying',
+        );
+      }
+
+      // Completion is handled by callback, not by stream listener
+      // This prevents double completion calls
+    });
+
+    // Listen to media item changes for duration updates (once initialized)
+    // This will be called after initialization in _playBackgroundAudio
+
+    // Listen to regular player state (for interlude music or fallback)
     _audioPlayer.playerStateStream.listen((state) {
       if (!mounted) return;
 
       debugPrint(
-        '🎵 Player state changed: playing=${state.playing}, processingState=${state.processingState}',
+        '🎵 AudioPlayer state changed: playing=${state.playing}, processingState=${state.processingState}',
       );
       debugPrint('🎵 Current _currentAudioSection: $_currentAudioSection');
-      setState(() {
-        _isPlaying = state.playing;
-      });
+
+      // Update state for interlude or when background audio not available
+      if (!_backgroundAudioManager.isInitialized ||
+          _currentAudioSection == 'interlude') {
+        setState(() {
+          _isPlaying = state.playing;
+        });
+        debugPrint(
+          '🎵 ✅ State updated from AudioPlayer: _isPlaying=$_isPlaying',
+        );
+      }
 
       // Auto-play next track when current ends
-      if (state.processingState == ProcessingState.completed) {
-        debugPrint('🎵 Volám _onAudioCompleted()');
+      // Only for interlude or when BackgroundAudioManager is not used
+      if (state.processingState == ProcessingState.completed &&
+          _currentAudioSection == 'interlude') {
+        debugPrint('🎵 Volám _onAudioCompleted() z AudioPlayer (interlude)');
         _onAudioCompleted();
       }
     });
 
-    // Listen to position changes
+    // Listen to position changes (for interlude music or fallback)
     _audioPlayer.positionStream.listen((position) {
-      if (mounted) {
+      if (mounted &&
+          (!_backgroundAudioManager.isInitialized ||
+              _currentAudioSection == 'interlude')) {
         setState(() {
           _currentPosition = position;
         });
       }
     });
 
-    // Listen to duration changes
+    // Listen to duration changes (for interlude music or fallback)
     _audioPlayer.durationStream.listen((duration) {
-      if (mounted && duration != null) {
+      if (mounted &&
+          duration != null &&
+          (!_backgroundAudioManager.isInitialized ||
+              _currentAudioSection == 'interlude')) {
         setState(() {
           _totalDuration = duration;
         });
@@ -208,9 +457,19 @@ class _LectioScreenState extends State<LectioScreen> {
   }
 
   Future<void> _onAudioCompleted() async {
+    debugPrint('🎵 ═══════════════════════════════════════════════════════');
+    debugPrint('🎵 🟢 _onAudioCompleted() STARTED');
+    debugPrint('🎵 ═══════════════════════════════════════════════════════');
     debugPrint('🎵 Audio dokončené: $_currentAudioSection');
     debugPrint('🎵 _audioPlayerClosed: $_audioPlayerClosed');
     debugPrint('🎵 _isPlaying: $_isPlaying');
+    debugPrint('🎵 _isSeeking: $_isSeeking');
+
+    // Ignoruj completed stav počas seekovania
+    if (_isSeeking) {
+      debugPrint('🛑 Prebieha seeking, ignorujem completed stav');
+      return;
+    }
 
     // Ak bol prehrávač zatvorený, nič nerob
     if (_audioPlayerClosed) {
@@ -558,9 +817,17 @@ class _LectioScreenState extends State<LectioScreen> {
     try {
       debugPrint('▶️ Prehrávam: $sectionKey');
 
-      // Zastaviť aktuálne audio ak beží
+      // Zrušiť fallback subscription PRED zastavením audio
+      // aby sa nezachytil "completed" stav pri stop()
+      await _fallbackPlayerSubscription?.cancel();
+      _fallbackPlayerSubscription = null;
+
+      // Zastaviť aktuálne audio ak beží (oba playery)
       if (_currentAudioSection != null && _currentAudioSection != sectionKey) {
         debugPrint('🛑 Zastavujem predchádzajúce audio: $_currentAudioSection');
+        if (_backgroundAudioManager.isInitialized) {
+          await _backgroundAudioManager.stop();
+        }
         await _audioPlayer.stop();
       }
 
@@ -571,6 +838,9 @@ class _LectioScreenState extends State<LectioScreen> {
           _isPlaying = false; // Ešte sa nehraje
           _audioPlayerClosed = false; // Reset flag keď začína nové audio
           _isMinimized = false; // Reset minimalizácie pri novom tracku
+          // Reset pozície a trvania pre nový track
+          _currentPosition = Duration.zero;
+          _totalDuration = Duration.zero;
           // Vždy otvor prehrávač pri novom tracku
           _showAudioPlayer = true;
         });
@@ -610,16 +880,23 @@ class _LectioScreenState extends State<LectioScreen> {
 
       // Use background audio service if available, fallback to regular audio player
       if (_backgroundAudioManager.isInitialized) {
+        // Zastaviť aj regular audio player pre istotu
+        await _audioPlayer.stop();
         await _playBackgroundAudio(url, sectionKey);
+        debugPrint('🎵 Background audio started successfully');
       } else {
+        // Zastaviť background audio ak beží
+        if (_backgroundAudioManager.isInitialized) {
+          await _backgroundAudioManager.stop();
+        }
         await _audioPlayer.setUrl(url);
         await _audioPlayer.play();
+        debugPrint('🎵 Regular audio player started successfully');
       }
 
-      if (mounted) {
-        debugPrint('🎵 Audio spustené úspešne');
-      } else {
-        debugPrint('🎵 ❌ Widget nie je mounted!');
+      // State updates will come through listeners
+      if (!mounted) {
+        debugPrint('🎵 ❌ Widget not mounted after audio start!');
       }
     } catch (e) {
       debugPrint('❌ Chyba pri prehrávaní: $e');
@@ -635,26 +912,50 @@ class _LectioScreenState extends State<LectioScreen> {
   }
 
   Future<void> _pauseAudio() async {
-    await _audioPlayer.pause();
-    if (mounted) {
-      setState(() {
-        _isPlaying = false;
-      });
+    debugPrint(
+      '⏸️ Pozastavujem audio: section=$_currentAudioSection, fallback=$_usingFallbackPlayer',
+    );
+    try {
+      if (_currentAudioSection == 'interlude' || _usingFallbackPlayer) {
+        await _audioPlayer.pause();
+        debugPrint('✅ AudioPlayer paused (fallback)');
+      } else if (_backgroundAudioManager.isInitialized) {
+        await _backgroundAudioManager.pause();
+        debugPrint('✅ BackgroundAudioManager paused');
+      }
+      // State sa aktualizuje cez listener, nie tu
+    } catch (e) {
+      debugPrint('❌ Error pausing audio: $e');
     }
   }
 
   Future<void> _resumeAudio() async {
-    await _audioPlayer.play();
-    if (mounted) {
-      setState(() {
-        _isPlaying = true;
-      });
+    debugPrint(
+      '▶️ Obnovujem audio: section=$_currentAudioSection, fallback=$_usingFallbackPlayer',
+    );
+    try {
+      if (_currentAudioSection == 'interlude' || _usingFallbackPlayer) {
+        await _audioPlayer.play();
+        debugPrint('✅ AudioPlayer playing (fallback)');
+      } else if (_backgroundAudioManager.isInitialized) {
+        await _backgroundAudioManager.resume();
+        debugPrint('✅ BackgroundAudioManager resumed');
+      }
+      // State sa aktualizuje cez listener, nie tu
+    } catch (e) {
+      debugPrint('❌ Error resuming audio: $e');
     }
   }
 
   Future<void> _stopAudio() async {
-    debugPrint('🛑 Zastavujem audio');
+    debugPrint('🛑 Zastavujem audio, _audioPlayerClosed=$_audioPlayerClosed');
+
+    // Stop both audio players
+    if (_backgroundAudioManager.isInitialized) {
+      await _backgroundAudioManager.stop();
+    }
     await _audioPlayer.stop();
+
     if (mounted) {
       setState(() {
         _currentAudioSection = null;
@@ -662,7 +963,7 @@ class _LectioScreenState extends State<LectioScreen> {
         _isPlaying = false;
         _currentPosition = Duration.zero;
         _totalDuration = Duration.zero;
-        _audioPlayerClosed = false; // Reset flag
+        // NERESET _audioPlayerClosed tu - to sa robí inde
         _isProcessingInterludeCompletion =
             false; // Reset interlude processing flag
       });
@@ -670,50 +971,64 @@ class _LectioScreenState extends State<LectioScreen> {
   }
 
   Future<void> _playNextTrack() async {
+    debugPrint('🎵 === _playNextTrack START ===');
+    debugPrint('🎵 _currentAudioSection: $_currentAudioSection');
+    debugPrint('🎵 _audioPlayerClosed: $_audioPlayerClosed');
+
     if (_currentAudioSection == null || _currentAudioSection == 'interlude') {
+      debugPrint('🛑 Skipping _playNextTrack - invalid section');
       return;
     }
 
     final tracks = _getAvailableAudioTracks();
+    debugPrint('🎵 Total tracks available: ${tracks.length}');
+
     final currentIndex = tracks.indexWhere(
       (t) => t['key'] == _currentAudioSection,
     );
+    debugPrint('🎵 Current track index: $currentIndex');
 
     if (currentIndex == -1) {
-      debugPrint('⚠️ Track nenájdený');
+      debugPrint('⚠️ Track not found in list');
       return;
     }
 
-    // Je ešte ďalší track?
+    // Is there a next track?
     final hasNext = currentIndex < tracks.length - 1;
+    debugPrint('🎵 Has next track: $hasNext');
 
     if (!hasNext) {
-      // Posledný track - počkaj trochu pred spustením záverečnej meditácie
-      debugPrint('🎵 ⏳ Čakám 500ms pred záverečnou meditáciou');
+      // Last track - wait before final meditation
+      debugPrint('🎵 ⏳ Last track - waiting 500ms before final meditation');
       await Future.delayed(const Duration(milliseconds: 500));
 
       if (_audioMode != 'none') {
-        _playMeditationMusic(null); // Žiadny ďalší track
+        debugPrint('🎵 Starting final meditation music (no next track)');
+        _playMeditationMusic(null); // No next track
       } else {
+        debugPrint('🛑 Audio mode is none - stopping playback');
         _stopAudio();
       }
       return;
     }
 
-    // Máme ďalší track - počkaj pred spustením interlude
+    // We have next track - wait before interlude
     final nextTrack = tracks[currentIndex + 1];
-    debugPrint(
-      '🎵 ⏳ Čakám 500ms pred spustením interlude pre ${nextTrack['key']}',
-    );
+    debugPrint('🎵 Next track: ${nextTrack['key']} - ${nextTrack['label']}');
+    debugPrint('🎵 ⏳ Waiting 500ms before interlude');
     await Future.delayed(const Duration(milliseconds: 500));
 
     if (_audioMode != 'none') {
-      // Prehraj meditáciu → potom nextTrack
+      // Play meditation → then nextTrack
+      debugPrint('🎵 Starting interlude music before next track');
       _playMeditationMusic(nextTrack);
     } else {
-      // Rovno nextTrack - BEZ animácie (automatický prechod)
+      // Play nextTrack directly - WITHOUT animation (automatic transition)
+      debugPrint('🎵 Playing next track directly (no interlude)');
       _playAudio(nextTrack['url'], nextTrack['key'], skipAnimation: true);
     }
+
+    debugPrint('🎵 === _playNextTrack END ===');
   }
 
   Future<void> _playMeditationMusic(Map<String, dynamic>? nextTrack) async {
@@ -752,18 +1067,21 @@ class _LectioScreenState extends State<LectioScreen> {
         await Future.delayed(const Duration(milliseconds: 700));
       }
 
-      await _audioPlayer.setUrl(url);
-      await _audioPlayer.play();
-
+      // Set state BEFORE playing to ensure listener sees correct section
       if (mounted) {
         setState(() {
           _currentAudioSection = 'interlude';
           _isPlaying = true;
         });
         debugPrint(
-          '🎵 🎸 Interlude spustené - state zmenený na interlude (${isAudioNull ? "KRÁTKE" : "DLHÉ"})',
+          '🎵 🎸 Interlude state nastavený PRED spustením (${isAudioNull ? "KRÁTKE" : "DLHÉ"})',
         );
       }
+
+      await _audioPlayer.setUrl(url);
+      await _audioPlayer.play();
+
+      debugPrint('🎵 ✅ Interlude audio spustené');
     } catch (e) {
       debugPrint('❌ Meditácia zlyhala: $e');
       _nextTrackAfterInterlude = null;
@@ -775,22 +1093,53 @@ class _LectioScreenState extends State<LectioScreen> {
     }
   }
 
-  void _playPreviousTrack() {
+  Future<void> _playPreviousTrack() async {
     final tracks = _getAvailableAudioTracks();
-    if (tracks.isEmpty || _currentAudioSection == null) return;
+    if (tracks.isEmpty) return;
+
+    // Ak je interlude, vráť sa na aktuálnu nahrávku (nie predchádzajúcu)
+    if (_currentAudioSection == 'interlude') {
+      _nextTrackAfterInterlude = null;
+      await _audioPlayer.stop();
+      // Nájdi posledne hraný track pred interlude
+      // Keďže nevieme presne ktorý to bol, vrátime sa na začiatok playlistu
+      debugPrint('🎵 Interlude stopped, returning to first track');
+      if (tracks.isNotEmpty) {
+        await _playAudio(tracks[0]['url'], tracks[0]['key']);
+      }
+      return;
+    }
+
+    if (_currentAudioSection == null) {
+      // Ak nič nehrá, začni od prvého tracku
+      if (tracks.isNotEmpty) {
+        await _playAudio(tracks[0]['url'], tracks[0]['key']);
+      }
+      return;
+    }
 
     final currentIndex = tracks.indexWhere(
       (t) => t['key'] == _currentAudioSection,
     );
-    if (currentIndex <= 0) return;
 
-    // Prehraj predchádzajúcu stopu
+    // Ak sme na začiatku alebo pozícia > 3 sekundy, seekni na začiatok
+    if (currentIndex <= 0 || _currentPosition.inSeconds > 3) {
+      debugPrint('🎵 Seeking to beginning of current track');
+      if (_usingFallbackPlayer || _currentAudioSection == 'interlude') {
+        await _audioPlayer.seek(Duration.zero);
+      } else if (_backgroundAudioManager.isInitialized) {
+        await _backgroundAudioManager.seek(Duration.zero);
+      }
+      setState(() {
+        _currentPosition = Duration.zero;
+      });
+      return;
+    }
+
+    // Inak prehraj predchádzajúcu stopu
     final previousTrack = tracks[currentIndex - 1];
-    _playAudio(
-      previousTrack['url'],
-      previousTrack['key'],
-      // Manuálne previous = animovať hneď
-    );
+    debugPrint('🎵 Playing previous track: ${previousTrack['key']}');
+    await _playAudio(previousTrack['url'], previousTrack['key']);
   }
 
   String _formatDuration(Duration duration) {
@@ -1008,7 +1357,7 @@ class _LectioScreenState extends State<LectioScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: Colors.blue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -1664,12 +2013,17 @@ class _LectioScreenState extends State<LectioScreen> {
                         tooltip: 'Zatvoriť a zastaviť',
                         onPressed: () async {
                           debugPrint('🔒 Zatváram prehrávač');
-                          setState(() {
-                            _audioPlayerClosed =
-                                true; // Nastav flag pred zatvorením
-                            _showAudioPlayer = false;
-                          });
-                          await _stopAudio(); // Zastaviť audio
+                          // Nastav flag PRED zastavením aby sa ignorovali completion callbacks
+                          _audioPlayerClosed = true;
+                          // Zruš fallback subscription
+                          await _fallbackPlayerSubscription?.cancel();
+                          _fallbackPlayerSubscription = null;
+                          await _stopAudio();
+                          if (mounted) {
+                            setState(() {
+                              _showAudioPlayer = false;
+                            });
+                          }
                         },
                       ),
                     ],
@@ -1791,15 +2145,54 @@ class _LectioScreenState extends State<LectioScreen> {
                               ),
                             ),
                             child: Slider(
-                              value: _currentPosition.inSeconds.toDouble(),
-                              max: _totalDuration.inSeconds.toDouble() > 0
-                                  ? _totalDuration.inSeconds.toDouble()
+                              value: _totalDuration.inMilliseconds > 0
+                                  ? _currentPosition.inMilliseconds
+                                        .toDouble()
+                                        .clamp(
+                                          0.0,
+                                          _totalDuration.inMilliseconds
+                                              .toDouble(),
+                                        )
+                                  : 0.0,
+                              min: 0.0,
+                              max: _totalDuration.inMilliseconds > 0
+                                  ? _totalDuration.inMilliseconds.toDouble()
                                   : 1.0,
-                              onChanged: (value) {
-                                _audioPlayer.seek(
-                                  Duration(seconds: value.toInt()),
-                                );
-                              },
+                              onChangeStart: _currentAudioSection != null
+                                  ? (value) {
+                                      _isSeeking = true;
+                                    }
+                                  : null,
+                              onChangeEnd: _currentAudioSection != null
+                                  ? (value) async {
+                                      final position = Duration(
+                                        milliseconds: value.toInt(),
+                                      );
+                                      if (_currentAudioSection == 'interlude' ||
+                                          _usingFallbackPlayer) {
+                                        await _audioPlayer.seek(position);
+                                      } else if (_backgroundAudioManager
+                                          .isInitialized) {
+                                        await _backgroundAudioManager.seek(
+                                          position,
+                                        );
+                                      }
+                                      await Future.delayed(
+                                        const Duration(milliseconds: 300),
+                                      );
+                                      _isSeeking = false;
+                                    }
+                                  : null,
+                              onChanged: _currentAudioSection != null
+                                  ? (value) {
+                                      final position = Duration(
+                                        milliseconds: value.toInt(),
+                                      );
+                                      setState(() {
+                                        _currentPosition = position;
+                                      });
+                                    }
+                                  : null,
                             ),
                           ),
                         ),
@@ -1922,10 +2315,10 @@ class _LectioScreenState extends State<LectioScreen> {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.skip_previous),
-                          color: currentTrackIndex > 0
+                          color: _currentAudioSection != null
                               ? const Color(0xFF4A5085)
                               : Colors.grey.shade400,
-                          onPressed: currentTrackIndex > 0
+                          onPressed: _currentAudioSection != null
                               ? _playPreviousTrack
                               : null,
                         ),
@@ -1997,11 +2390,28 @@ class _LectioScreenState extends State<LectioScreen> {
                         const SizedBox(width: 8),
                         IconButton(
                           icon: const Icon(Icons.skip_next),
-                          color: currentTrackIndex < tracks.length - 1
+                          color:
+                              _currentAudioSection != null &&
+                                  _currentAudioSection != 'interlude' &&
+                                  currentTrackIndex < tracks.length - 1
                               ? const Color(0xFF4A5085)
                               : Colors.grey.shade400,
-                          onPressed: currentTrackIndex < tracks.length - 1
-                              ? _playNextTrack
+                          onPressed:
+                              _currentAudioSection != null &&
+                                  _currentAudioSection != 'interlude' &&
+                                  currentTrackIndex < tracks.length - 1
+                              ? () async {
+                                  // Manuálne preskočenie - zastaviť aktuálne audio a prehrať ďalšie
+                                  debugPrint('🎮 Skip Next button pressed');
+                                  final nextIndex = currentTrackIndex + 1;
+                                  if (nextIndex < tracks.length) {
+                                    final nextTrack = tracks[nextIndex];
+                                    await _playAudio(
+                                      nextTrack['url'],
+                                      nextTrack['key'],
+                                    );
+                                  }
+                                }
                               : null,
                         ),
                       ],
@@ -2038,15 +2448,62 @@ class _LectioScreenState extends State<LectioScreen> {
                               ),
                             ),
                             child: Slider(
-                              value: _currentPosition.inSeconds.toDouble(),
-                              max: _totalDuration.inSeconds.toDouble() > 0
-                                  ? _totalDuration.inSeconds.toDouble()
+                              value: _totalDuration.inMilliseconds > 0
+                                  ? _currentPosition.inMilliseconds
+                                        .toDouble()
+                                        .clamp(
+                                          0.0,
+                                          _totalDuration.inMilliseconds
+                                              .toDouble(),
+                                        )
+                                  : 0.0,
+                              min: 0.0,
+                              max: _totalDuration.inMilliseconds > 0
+                                  ? _totalDuration.inMilliseconds.toDouble()
                                   : 1.0,
-                              onChanged: (value) {
-                                _audioPlayer.seek(
-                                  Duration(seconds: value.toInt()),
-                                );
-                              },
+                              onChangeStart: _currentAudioSection != null
+                                  ? (value) {
+                                      _isSeeking = true;
+                                      debugPrint('🎚️ Seek started');
+                                    }
+                                  : null,
+                              onChangeEnd: _currentAudioSection != null
+                                  ? (value) async {
+                                      final position = Duration(
+                                        milliseconds: value.toInt(),
+                                      );
+                                      debugPrint(
+                                        '🎚️ Seek ended at ${position.inSeconds}s',
+                                      );
+                                      // Seekni na playeri
+                                      if (_currentAudioSection == 'interlude' ||
+                                          _usingFallbackPlayer) {
+                                        await _audioPlayer.seek(position);
+                                      } else if (_backgroundAudioManager
+                                          .isInitialized) {
+                                        await _backgroundAudioManager.seek(
+                                          position,
+                                        );
+                                      }
+                                      // Počkaj trochu a potom reset flag
+                                      await Future.delayed(
+                                        const Duration(milliseconds: 300),
+                                      );
+                                      _isSeeking = false;
+                                      debugPrint('🎚️ Seek flag reset');
+                                    }
+                                  : null,
+                              onChanged: _currentAudioSection != null
+                                  ? (value) {
+                                      final position = Duration(
+                                        milliseconds: value.toInt(),
+                                      );
+                                      // Okamžite aktualizuj lokálny stav (len vizuálne)
+                                      setState(() {
+                                        _currentPosition = position;
+                                      });
+                                    }
+                                  : null,
                             ),
                           ),
                         ),

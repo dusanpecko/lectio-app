@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'intro_translations.dart';
+import 'package:flutter/material.dart';
+
 import 'intro_step_screen.dart';
+import 'intro_translations.dart';
 
 class IntroScreen extends StatefulWidget {
   const IntroScreen({super.key});
@@ -442,7 +443,9 @@ class _IntroScreenState extends State<IntroScreen> {
           margin: const EdgeInsets.only(bottom: 12),
           child: Card(
             elevation: 1,
-            color: theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.3,
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(

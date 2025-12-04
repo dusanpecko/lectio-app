@@ -1,7 +1,8 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'note_detail_screen.dart';
-import 'package:easy_localization/easy_localization.dart';
 
 class NotesListScreen extends StatefulWidget {
   const NotesListScreen({super.key});
@@ -150,13 +151,17 @@ class _NotesListScreenState extends State<NotesListScreen>
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(50),
               ),
               child: Icon(
                 Icons.note_alt_outlined,
                 size: 64,
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.6),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 24),
@@ -167,7 +172,7 @@ class _NotesListScreenState extends State<NotesListScreen>
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 color: Theme.of(
                   context,
-                ).colorScheme.onBackground.withOpacity(0.6),
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
               textAlign: TextAlign.center,
             ),
@@ -178,7 +183,7 @@ class _NotesListScreenState extends State<NotesListScreen>
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Theme.of(
                     context,
-                  ).colorScheme.onBackground.withOpacity(0.5),
+                  ).colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -196,7 +201,7 @@ class _NotesListScreenState extends State<NotesListScreen>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).shadowColor.withOpacity(0.1),
+            color: Theme.of(context).shadowColor.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -288,7 +293,7 @@ class _NotesListScreenState extends State<NotesListScreen>
                         Icons.more_vert_rounded,
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withOpacity(0.6),
+                        ).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                       onSelected: (value) async {
                         if (value == 'delete') {
@@ -360,7 +365,7 @@ class _NotesListScreenState extends State<NotesListScreen>
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(
                         context,
-                      ).colorScheme.onSurface.withOpacity(0.8),
+                      ).colorScheme.onSurface.withValues(alpha: 0.8),
                       height: 1.4,
                     ),
                     maxLines: 3,
@@ -377,12 +382,12 @@ class _NotesListScreenState extends State<NotesListScreen>
                     decoration: BoxDecoration(
                       color: Theme.of(
                         context,
-                      ).colorScheme.primary.withOpacity(0.1),
+                      ).colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: Theme.of(
                           context,
-                        ).colorScheme.primary.withOpacity(0.3),
+                        ).colorScheme.primary.withValues(alpha: 0.3),
                         width: 1,
                       ),
                     ),
@@ -419,7 +424,7 @@ class _NotesListScreenState extends State<NotesListScreen>
                         size: 14,
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withOpacity(0.5),
+                        ).colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -427,7 +432,7 @@ class _NotesListScreenState extends State<NotesListScreen>
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withOpacity(0.6),
+                          ).colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                     ],

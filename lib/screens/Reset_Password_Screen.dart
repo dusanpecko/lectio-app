@@ -1,10 +1,12 @@
-// lib/screens/Reset_Password_Screen.dart
+// lib/screens/reset_password_screen.dart
 import 'dart:async';
+
+import 'package:app_links/app_links.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:easy_localization/easy_localization.dart';
+
 import 'home_screen.dart';
-import 'package:app_links/app_links.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -43,7 +45,7 @@ class _AuthScreenState extends State<AuthScreen> {
         _handleDeepLink(initialLink);
       }
     } catch (e) {
-      print('Error getting initial app link: $e');
+      // Error getting initial app link
     }
 
     // Počúvaj na nové linky (ak aplikácia už beží)
@@ -52,13 +54,13 @@ class _AuthScreenState extends State<AuthScreen> {
         _handleDeepLink(uri);
       },
       onError: (Object err) {
-        print('Error listening to app links: $err');
+        // Error listening to app links
       },
     );
   }
 
   void _handleDeepLink(Uri uri) {
-    print('Received deep link: $uri');
+    // Handle deep link
 
     if (uri.scheme == 'lectio_divina' && uri.host == 'reset-password') {
       final accessToken = uri.queryParameters['access_token'];
@@ -69,7 +71,6 @@ class _AuthScreenState extends State<AuthScreen> {
         //     builder: (_) => ResetPasswordScreen(accessToken: accessToken),
         //   ),
         // );
-        print('Reset password token: $accessToken'); // Pre debugging
       }
     }
   }
@@ -217,8 +218,6 @@ class _AuthScreenState extends State<AuthScreen> {
 
       const webResetUrl = 'https://lectio.one/auth/reset-password';
 
-      print('Sending reset email to: $email with redirect: $webResetUrl');
-
       await Supabase.instance.client.auth.resetPasswordForEmail(
         email,
         redirectTo: webResetUrl,
@@ -230,13 +229,11 @@ class _AuthScreenState extends State<AuthScreen> {
       });
     } on AuthApiException catch (e) {
       if (!mounted) return;
-      print('Reset password error: ${e.message}');
       setState(() {
         _resetInfo = e.message;
       });
     } catch (e) {
       if (!mounted) return;
-      print('General reset error: $e');
       setState(() {
         _resetInfo = tr('something_went_wrong');
       });

@@ -126,6 +126,9 @@ class ThemeProvider with ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('languageCode', code);
 
+    // Check if context is still mounted before using it
+    if (!context.mounted) return;
+
     // Aplikuj zmenu jazyka okamžite
     if (code != 'system') {
       await context.setLocale(Locale(code));

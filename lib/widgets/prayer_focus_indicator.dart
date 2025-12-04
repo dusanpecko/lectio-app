@@ -86,11 +86,13 @@ class _PrayerFocusIndicatorState extends State<PrayerFocusIndicator>
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _getIndicatorColor().withOpacity(_fadeAnimation.value),
+                  color: _getIndicatorColor().withValues(
+                    alpha: _fadeAnimation.value,
+                  ),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: _getIndicatorColor().withOpacity(0.3),
+                      color: _getIndicatorColor().withValues(alpha: 0.3),
                       blurRadius: 8,
                       spreadRadius: 2,
                     ),

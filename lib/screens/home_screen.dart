@@ -210,8 +210,6 @@ class _HomeScreenState extends State<HomeScreen> {
       final locale = context.locale.languageCode;
       final now = DateTime.now().toIso8601String();
 
-      print('DEBUG: Home fetching news for lang=$locale, published_at <= $now');
-
       final newsRes = await supabase
           .from('news')
           .select()
@@ -220,21 +218,13 @@ class _HomeScreenState extends State<HomeScreen> {
           .order('published_at', ascending: false)
           .limit(5);
 
-      print('DEBUG: Home Supabase response: $newsRes');
-
       if (!mounted) return;
 
       setState(() {
         newsArticles = List<Map<String, dynamic>>.from(newsRes);
         isLoadingNews = false;
       });
-
-      print('DEBUG: Home news loaded: ${newsArticles.length} articles');
-      if (newsArticles.isNotEmpty) {
-        print('DEBUG: Home first article: ${newsArticles[0]['title']}');
-      }
     } catch (e) {
-      print('ERROR: Home loading news: $e');
       if (!mounted) return;
       setState(() {
         isLoadingNews = false;

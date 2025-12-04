@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+
 import 'intro_step_translations.dart';
 
 class IntroStepScreen extends StatefulWidget {
@@ -215,7 +216,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceVariant
+                              color: theme.colorScheme.surfaceContainerHighest
                                   .withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -550,7 +551,9 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
           margin: const EdgeInsets.only(bottom: 16),
           child: Card(
             elevation: 1,
-            color: theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.3,
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -618,7 +621,9 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.3,
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(

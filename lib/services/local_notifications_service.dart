@@ -111,15 +111,11 @@ class LocalNotificationsService {
       }
 
       // iOS nastavenia
-      final DarwinInitializationSettings initializationSettingsDarwin =
+      const DarwinInitializationSettings initializationSettingsDarwin =
           DarwinInitializationSettings(
             requestAlertPermission: true,
             requestBadgePermission: true,
             requestSoundPermission: true,
-            onDidReceiveLocalNotification: (id, title, body, payload) async {
-              // Handle iOS foreground notification
-              _logger.i('📱 iOS foreground notification received: $title');
-            },
           );
 
       final InitializationSettings initializationSettings =
@@ -371,8 +367,6 @@ class LocalNotificationsService {
           ),
         ),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
         payload: payload,
       );
 
@@ -502,8 +496,6 @@ class LocalNotificationsService {
             ),
           ),
           androidScheduleMode: scheduleMode,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
           payload: payload,
         );
       }
@@ -695,8 +687,6 @@ class LocalNotificationsService {
             ),
           ),
           androidScheduleMode: scheduleMode,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
           payload: payload,
         );
       }
