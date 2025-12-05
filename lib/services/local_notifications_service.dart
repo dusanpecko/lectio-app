@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../main.dart' show navigatorKey;
+import '../shared/audio_constants.dart';
 
 class LocalNotificationsService {
   static LocalNotificationsService? _instance;
@@ -24,6 +26,9 @@ class LocalNotificationsService {
       FlutterLocalNotificationsPlugin();
 
   bool _isInitialized = false;
+
+  // Cached timezone location for scheduling
+  tz.Location? _localTimezone;
 
   // Callback pre navigation handling
   Function(String?)? _notificationCallback;
@@ -42,15 +47,180 @@ class LocalNotificationsService {
   static const String _cachedLectioData = 'cached_lectio_data';
   static const String _lastCacheUpdate = 'last_cache_update';
 
+  /// Detekcia a inicializácia lokálnej timezone
+  Future<void> _initializeLocalTimezone() async {
+    try {
+      // Získaj timezone name z OS
+      final String timezoneName = await _getNativeTimezoneName();
+      _logger.i('🌍 Detected native timezone: $timezoneName');
+
+      // Skús nájsť timezone v databáze
+      try {
+        _localTimezone = tz.getLocation(timezoneName);
+        tz.setLocalLocation(_localTimezone!);
+        _logger.i('✅ Timezone initialized: $timezoneName');
+      } catch (e) {
+        // Ak timezone nie je v databáze, použij fallback
+        _logger.w(
+          '⚠️ Timezone "$timezoneName" not found in database, using fallback',
+        );
+        _localTimezone = _getFallbackTimezone(timezoneName);
+        tz.setLocalLocation(_localTimezone!);
+        _logger.i('✅ Timezone fallback initialized: ${_localTimezone!.name}');
+      }
+    } catch (e) {
+      // Ak natívna detekcia zlyhá, použij UTC ako posledná možnosť
+      _logger.e('❌ Failed to detect native timezone: $e');
+      _localTimezone = tz.UTC;
+      tz.setLocalLocation(_localTimezone!);
+      _logger.w('⚠️ Using UTC as fallback timezone');
+    }
+  }
+
+  /// Získa názov timezone z operačného systému
+  Future<String> _getNativeTimezoneName() async {
+    try {
+      if (Platform.isAndroid || Platform.isIOS) {
+        // Na mobile získame timezone cez symlink alebo system property
+        if (Platform.isAndroid) {
+          // Android: skúsime prečítať /etc/localtime symlink alebo property
+          try {
+            final link = await Link('/etc/localtime').target();
+            // Link je typicky /usr/share/zoneinfo/Europe/Bratislava
+            final parts = link.split('/zoneinfo/');
+            if (parts.length > 1) {
+              return parts.last;
+            }
+          } catch (_) {
+            // Fallback - použijeme DateTime info
+          }
+        }
+
+        // iOS a Android fallback: odhadneme timezone z offsetu a DST
+        return _guessTimezoneFromOffset();
+      } else {
+        // Desktop/Web - použijeme DateTime.now().timeZoneName
+        final tzName = DateTime.now().timeZoneName;
+        // Preložíme skratky na plné názvy
+        return _resolveTimezoneAbbreviation(tzName);
+      }
+    } catch (e) {
+      _logger.w('⚠️ Could not get native timezone name: $e');
+      return _guessTimezoneFromOffset();
+    }
+  }
+
+  /// Odhadne timezone na základe aktuálneho offsetu a DST
+  String _guessTimezoneFromOffset() {
+    final now = DateTime.now();
+    final offsetHours = now.timeZoneOffset.inHours;
+    final offsetMinutes = now.timeZoneOffset.inMinutes % 60;
+
+    _logger.i('🕐 Current offset: ${offsetHours}h ${offsetMinutes}m');
+
+    // Mapa offsetov na bežné timezone (priorita pre európske kvôli cieľovej skupine)
+    // Formát: offset v hodinách -> timezone name
+    final Map<int, String> offsetToTimezone = {
+      -12: 'Pacific/Fiji',
+      -11: 'Pacific/Midway',
+      -10: 'Pacific/Honolulu',
+      -9: 'America/Anchorage',
+      -8: 'America/Los_Angeles',
+      -7: 'America/Denver',
+      -6: 'America/Chicago',
+      -5: 'America/New_York',
+      -4: 'America/Halifax',
+      -3: 'America/Sao_Paulo',
+      -2: 'Atlantic/South_Georgia',
+      -1: 'Atlantic/Azores',
+      0: 'Europe/London',
+      1: 'Europe/Paris', // CET - Stredná Európa (SK, CZ, DE, AT, PL...)
+      2: 'Europe/Kyiv', // EET - Východná Európa
+      3: 'Europe/Moscow',
+      4: 'Asia/Dubai',
+      5: 'Asia/Karachi',
+      6: 'Asia/Dhaka',
+      7: 'Asia/Bangkok',
+      8: 'Asia/Singapore',
+      9: 'Asia/Tokyo',
+      10: 'Australia/Sydney',
+      11: 'Pacific/Noumea',
+      12: 'Pacific/Auckland',
+    };
+
+    return offsetToTimezone[offsetHours] ?? 'Europe/Paris';
+  }
+
+  /// Preloží skratku timezone na plný IANA názov
+  String _resolveTimezoneAbbreviation(String abbreviation) {
+    final Map<String, String> abbreviationToTimezone = {
+      // Stredoeurópsky čas
+      'CET': 'Europe/Paris',
+      'CEST': 'Europe/Paris',
+      'Central European Time': 'Europe/Paris',
+      'Central European Summer Time': 'Europe/Paris',
+      // Východoeurópsky čas
+      'EET': 'Europe/Kyiv',
+      'EEST': 'Europe/Kyiv',
+      // Západoeurópsky čas
+      'WET': 'Europe/London',
+      'WEST': 'Europe/London',
+      'GMT': 'Europe/London',
+      'BST': 'Europe/London',
+      // Americké timezone
+      'EST': 'America/New_York',
+      'EDT': 'America/New_York',
+      'CST': 'America/Chicago',
+      'CDT': 'America/Chicago',
+      'MST': 'America/Denver',
+      'MDT': 'America/Denver',
+      'PST': 'America/Los_Angeles',
+      'PDT': 'America/Los_Angeles',
+      // Ázijské
+      'JST': 'Asia/Tokyo',
+      'KST': 'Asia/Seoul',
+      'IST': 'Asia/Kolkata',
+      'CST China': 'Asia/Shanghai',
+    };
+
+    // Ak je to už IANA formát (obsahuje /), vráť ako je
+    if (abbreviation.contains('/')) {
+      return abbreviation;
+    }
+
+    return abbreviationToTimezone[abbreviation] ?? _guessTimezoneFromOffset();
+  }
+
+  /// Získa fallback timezone na základe názvu alebo offsetu
+  tz.Location _getFallbackTimezone(String timezoneName) {
+    // Skús preložiť skratku na IANA názov
+    final resolvedName = _resolveTimezoneAbbreviation(timezoneName);
+
+    try {
+      return tz.getLocation(resolvedName);
+    } catch (_) {
+      // Fallback na základe offsetu
+      final guessedName = _guessTimezoneFromOffset();
+      try {
+        return tz.getLocation(guessedName);
+      } catch (_) {
+        _logger.w('⚠️ Could not find suitable timezone, using UTC');
+        return tz.UTC;
+      }
+    }
+  }
+
+  /// Získa aktuálnu timezone location (cached)
+  tz.Location get _currentTimezone => _localTimezone ?? tz.UTC;
+
   /// Inicializácia lokálnych notifikácií
   Future<bool> initialize() async {
     if (_isInitialized) return true;
 
     try {
-      // Inicializuj timezone a nastav lokálnu timezone
+      // Inicializuj timezone a nastav lokálnu timezone dynamicky
       tz.initializeTimeZones();
-      tz.setLocalLocation(tz.getLocation('Europe/Bratislava'));
-      _logger.i('✅ Timezone initialized: Europe/Bratislava');
+      await _initializeLocalTimezone();
 
       // Android nastavenia - VYTVOR NOTIFICATION CHANNELS!
       const AndroidInitializationSettings initializationSettingsAndroid =
@@ -175,8 +345,15 @@ class LocalNotificationsService {
         case 'daily_lectio':
           final dateStr = payload['date'] as String?;
           if (dateStr != null) {
-            final date = DateTime.parse(dateStr);
-            _navigateToLectio(date);
+            try {
+              final date = DateTime.parse(dateStr);
+              _navigateToLectio(date);
+            } catch (e) {
+              _logger.e(
+                '❌ Invalid date format in daily_lectio payload: $dateStr',
+              );
+              _navigateToLectio(DateTime.now()); // Fallback na dnešný dátum
+            }
           } else {
             _logger.w('⚠️ Missing date in daily_lectio payload.');
             _navigateToHome();
@@ -320,15 +497,26 @@ class LocalNotificationsService {
 
       if (registrationDateStr == null) return;
 
-      final registrationDate = DateTime.parse(registrationDateStr);
-      final welcomeDate = registrationDate.add(const Duration(days: 3));
+      DateTime registrationDate;
+      try {
+        registrationDate = DateTime.parse(registrationDateStr);
+      } catch (e) {
+        _logger.e('❌ Invalid registration date format: $registrationDateStr');
+        // Fallback: použijeme dnešný dátum
+        registrationDate = DateTime.now();
+      }
+      final welcomeDate = registrationDate.add(
+        const Duration(
+          days: NotificationConstants.welcomeNotificationDaysAfterRegistration,
+        ),
+      );
 
-      // Nastav na 10:00 ráno
+      // Nastav na predvolený čas
       final scheduledDate = DateTime(
         welcomeDate.year,
         welcomeDate.month,
         welcomeDate.day,
-        10, // 10:00
+        NotificationConstants.welcomeNotificationHour,
         0,
       );
 
@@ -344,12 +532,11 @@ class LocalNotificationsService {
         'date': DateTime.now().toIso8601String(),
       });
 
-      final location = tz.getLocation('Europe/Bratislava');
       await _notifications.zonedSchedule(
         welcomeNotificationId,
         'Vitajte v Lectio Divina! 🙏',
         'Objavte krásu modlitbového čítania Písma. Ste pripravení na duchovnú cestu?',
-        tz.TZDateTime.from(scheduledDate, location),
+        tz.TZDateTime.from(scheduledDate, _currentTimezone),
         const NotificationDetails(
           android: AndroidNotificationDetails(
             'welcome_channel',
@@ -439,14 +626,14 @@ class LocalNotificationsService {
       // Načítaj cached dáta alebo stiahni nové
       final lectioData = await _getCachedLectioData();
 
-      for (int i = 0; i < 7; i++) {
+      for (int i = 0; i < NotificationConstants.scheduleDaysAhead; i++) {
         final notificationDate = DateTime.now().add(Duration(days: i));
         final scheduledTime = DateTime(
           notificationDate.year,
           notificationDate.month,
           notificationDate.day,
-          9, // Správny čas 9:00
-          0,
+          NotificationConstants.dailyLectioHour,
+          NotificationConstants.dailyLectioMinute,
         );
 
         // Preskočíme ak je čas v minulosti
@@ -473,12 +660,11 @@ class LocalNotificationsService {
             ? AndroidScheduleMode.exactAllowWhileIdle
             : AndroidScheduleMode.inexactAllowWhileIdle;
 
-        final location = tz.getLocation('Europe/Bratislava');
         await _notifications.zonedSchedule(
           dailyLectioBaseId + i,
           title,
           body,
-          tz.TZDateTime.from(scheduledTime, location),
+          tz.TZDateTime.from(scheduledTime, _currentTimezone),
           const NotificationDetails(
             android: AndroidNotificationDetails(
               'daily_lectio_channel',
@@ -508,7 +694,7 @@ class LocalNotificationsService {
 
   /// Zrušenie denných lectio notifikácií
   Future<void> _cancelDailyLectioNotifications() async {
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < NotificationConstants.scheduleDaysAhead; i++) {
       await _notifications.cancel(dailyLectioBaseId + i);
     }
     _logger.i('🗑️ Cancelled daily lectio notifications');
@@ -523,10 +709,19 @@ class LocalNotificationsService {
 
     // Kontrola či cache nie je starý (viac ako 12 hodín)
     if (lastUpdateStr != null && cachedDataStr != null) {
-      final lastUpdate = DateTime.parse(lastUpdateStr);
+      DateTime? lastUpdate;
+      try {
+        lastUpdate = DateTime.parse(lastUpdateStr);
+      } catch (e) {
+        _logger.w(
+          '⚠️ Invalid cache timestamp format: $lastUpdateStr, refreshing cache',
+        );
+        // Neplatný timestamp - stiahneme nové dáta
+        return await _downloadAndCacheLectioData();
+      }
       final cacheAge = DateTime.now().difference(lastUpdate);
 
-      if (cacheAge.inHours < 12) {
+      if (cacheAge.inHours < NotificationConstants.cacheValidityHours) {
         _logger.i(
           '📦 Using cached lectio data for $currentLang (age: ${cacheAge.inHours}h)',
         );
@@ -547,7 +742,7 @@ class LocalNotificationsService {
 
       _logger.i('🌍 Downloading lectio data for language: $currentLang');
 
-      for (int i = 0; i < 7; i++) {
+      for (int i = 0; i < NotificationConstants.scheduleDaysAhead; i++) {
         final date = DateTime.now().add(Duration(days: i));
         final dateStr = DateFormat('yyyy-MM-dd').format(date);
 
@@ -576,7 +771,7 @@ class LocalNotificationsService {
                 'hlava': lectioSource['hlava'],
                 'actio_preview': _truncateText(
                   lectioSource['actio_text'] ?? '',
-                  100,
+                  NotificationConstants.maxNotificationTextLength,
                 ),
                 'reference': lectioSource['reference'],
               };
@@ -638,8 +833,8 @@ class LocalNotificationsService {
       // Zruš existujúce
       await _cancelPrayerReminder();
 
-      // Naplánuj na každý deň na najbližších 7 dní
-      for (int i = 0; i < 7; i++) {
+      // Naplánuj na každý deň na najbližších N dní
+      for (int i = 0; i < NotificationConstants.scheduleDaysAhead; i++) {
         final date = DateTime.now().add(Duration(days: i));
         var scheduledTime = DateTime(
           date.year,
@@ -664,12 +859,11 @@ class LocalNotificationsService {
             ? AndroidScheduleMode.exactAllowWhileIdle
             : AndroidScheduleMode.inexactAllowWhileIdle;
 
-        final location = tz.getLocation('Europe/Bratislava');
         await _notifications.zonedSchedule(
           prayerReminderBaseId + i,
           'Čas na modlitbu 🙏',
           'Pozvanie k chvíľke rozjímania s Bohom. Pripojiť sa?',
-          tz.TZDateTime.from(scheduledTime, location),
+          tz.TZDateTime.from(scheduledTime, _currentTimezone),
           const NotificationDetails(
             android: AndroidNotificationDetails(
               'prayer_reminder_channel',
@@ -699,7 +893,7 @@ class LocalNotificationsService {
 
   /// Zrušenie pripomenutia modlitby
   Future<void> _cancelPrayerReminder() async {
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < NotificationConstants.scheduleDaysAhead; i++) {
       await _notifications.cancel(prayerReminderBaseId + i);
     }
     _logger.i('🗑️ Cancelled prayer reminders');
@@ -746,6 +940,45 @@ class LocalNotificationsService {
       // Re-schedule notifikácie s novými dátami
       await _scheduleDailyLectioNotifications();
     }
+  }
+
+  /// Invaliduje cache a re-scheduluje notifikácie pri zmene jazyka
+  /// Volať z main.dart alebo settings pri zmene jazyka
+  Future<void> onLanguageChanged(String newLanguageCode) async {
+    _logger.i('🌍 Language changed to: $newLanguageCode');
+
+    final prefs = await SharedPreferences.getInstance();
+
+    // Invaliduj cache pre všetky jazyky (vymaž staré dáta)
+    final supportedLanguages = ['sk', 'en', 'cs', 'de', 'es'];
+    for (final lang in supportedLanguages) {
+      await prefs.remove('${_cachedLectioData}_$lang');
+      await prefs.remove('${_lastCacheUpdate}_$lang');
+    }
+    _logger.i('🗑️ Cache invalidated for all languages');
+
+    // Ak sú denné notifikácie zapnuté, stiahni nové dáta a re-scheduluj
+    final dailyEnabled = prefs.getBool(_dailyLectioEnabled) ?? false;
+    if (dailyEnabled) {
+      _logger.i('🔄 Re-scheduling daily notifications for new language');
+      await _downloadAndCacheLectioData();
+      await _scheduleDailyLectioNotifications();
+    }
+  }
+
+  /// Validuje či je cache konzistentná s aktuálnym jazykom
+  Future<bool> validateCacheLanguage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final currentLang = _getCurrentLanguage();
+    final cachedData = prefs.getString('${_cachedLectioData}_$currentLang');
+
+    if (cachedData == null) {
+      _logger.w('⚠️ No cache found for current language: $currentLang');
+      return false;
+    }
+
+    _logger.i('✅ Cache valid for language: $currentLang');
+    return true;
   }
 
   /// ⚡ Žiada vypnutie Battery Optimization (nutné pre scheduled notifications na Android 13+)

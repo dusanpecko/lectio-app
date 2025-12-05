@@ -12,7 +12,106 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../shared/app_colors.dart';
 import 'notification_settings_screen.dart';
+import 'spiritual_exercise_detail_screen.dart';
+
+// Data models
+class Subscription {
+  final String id;
+  final String tier;
+  final double amount;
+  final String status;
+  final String interval;
+  final DateTime currentPeriodEnd;
+  final bool cancelAtPeriodEnd;
+
+  Subscription({
+    required this.id,
+    required this.tier,
+    required this.amount,
+    required this.status,
+    required this.interval,
+    required this.currentPeriodEnd,
+    required this.cancelAtPeriodEnd,
+  });
+
+  factory Subscription.fromJson(Map<String, dynamic> json) {
+    return Subscription(
+      id: json['id'] ?? '',
+      tier: json['tier'] ?? '',
+      amount: (json['amount'] ?? 0).toDouble(),
+      status: json['status'] ?? '',
+      interval: json['interval'] ?? 'month',
+      currentPeriodEnd: DateTime.parse(
+        json['current_period_end'] ?? DateTime.now().toIso8601String(),
+      ),
+      cancelAtPeriodEnd: json['cancel_at_period_end'] ?? false,
+    );
+  }
+}
+
+class Donation {
+  final String id;
+  final double amount;
+  final DateTime createdAt;
+  final String? message;
+
+  Donation({
+    required this.id,
+    required this.amount,
+    required this.createdAt,
+    this.message,
+  });
+
+  factory Donation.fromJson(Map<String, dynamic> json) {
+    return Donation(
+      id: json['id'] ?? '',
+      amount: (json['amount'] ?? 0).toDouble(),
+      createdAt: DateTime.parse(
+        json['created_at'] ?? DateTime.now().toIso8601String(),
+      ),
+      message: json['message'],
+    );
+  }
+}
+
+class SpiritualExerciseRegistration {
+  final int id;
+  final DateTime createdAt;
+  final String roomType;
+  final String paymentStatus;
+  final String status;
+  final String firstName;
+  final String lastName;
+  final Map<String, dynamic> spiritualExercise;
+
+  SpiritualExerciseRegistration({
+    required this.id,
+    required this.createdAt,
+    required this.roomType,
+    required this.paymentStatus,
+    required this.status,
+    required this.firstName,
+    required this.lastName,
+    required this.spiritualExercise,
+  });
+
+  factory SpiritualExerciseRegistration.fromJson(Map<String, dynamic> json) {
+    return SpiritualExerciseRegistration(
+      id: json['id'] ?? 0,
+      createdAt: DateTime.parse(
+        json['created_at'] ?? DateTime.now().toIso8601String(),
+      ),
+      roomType: json['room_type'] ?? '',
+      paymentStatus: json['payment_status'] ?? '',
+      status: json['status'] ?? '',
+      firstName: json['first_name'] ?? '',
+      lastName: json['last_name'] ?? '',
+      spiritualExercise: json['spiritual_exercise'] ?? {},
+    );
+  }
+}
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -28,9 +127,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _emailCtrl;
   String? _role;
   String? _avatarUrl;
+  String? _variableSymbol;
   DateTime? _registeredAt;
   bool _isSaving = false;
   bool _isUploading = false;
+
+  // New data
+  List<Subscription> _subscriptions = [];
+  List<Donation> _donations = [];
+  List<SpiritualExerciseRegistration> _exerciseRegistrations = [];
 
   @override
   void initState() {
@@ -38,9 +143,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = supabase.auth.currentUser;
     _nameCtrl = TextEditingController();
     _emailCtrl = TextEditingController(text: user?.email ?? '');
-    fetchFullName();
-    fetchRole();
-    fetchRegisteredAt();
+    _loadAllData();
+  }
+
+  Future<void> _loadAllData() async {
+    await Future.wait([
+      fetchFullName(),
+      fetchRole(),
+      fetchRegisteredAt(),
+      _fetchSubscriptions(),
+      _fetchDonations(),
+      _fetchExerciseRegistrations(),
+    ]);
   }
 
   Future<void> fetchFullName() async {
@@ -48,13 +162,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (user == null) return;
     final data = await supabase
         .from('users')
-        .select('full_name, avatar_url')
+        .select('full_name, avatar_url, variable_symbol')
         .eq('id', user.id)
         .maybeSingle();
-    if (data != null) {
+    if (data != null && mounted) {
       setState(() {
         _nameCtrl.text = data['full_name'] ?? '';
         _avatarUrl = data['avatar_url'];
+        _variableSymbol = data['variable_symbol'];
       });
     }
   }
@@ -81,9 +196,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
         .eq('id', user.id)
         .maybeSingle();
     if (data != null && data['created_at'] != null) {
-      setState(() {
-        _registeredAt = DateTime.parse(data['created_at']);
-      });
+      try {
+        setState(() {
+          _registeredAt = DateTime.parse(data['created_at']);
+        });
+      } catch (_) {
+        // Ignore invalid date format
+      }
+    }
+  }
+
+  Future<void> _fetchSubscriptions() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+    try {
+      final data = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .order('created_at', ascending: false);
+      if (mounted) {
+        setState(() {
+          _subscriptions = (data as List)
+              .map((e) => Subscription.fromJson(e))
+              .toList();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching subscriptions: $e');
+    }
+  }
+
+  Future<void> _fetchDonations() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+    try {
+      final data = await supabase
+          .from('donations')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', ascending: false)
+          .limit(10);
+      if (mounted) {
+        setState(() {
+          _donations = (data as List).map((e) => Donation.fromJson(e)).toList();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching donations: $e');
+    }
+  }
+
+  Future<void> _fetchExerciseRegistrations() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+    try {
+      final data = await supabase
+          .from('spiritual_exercises_registrations')
+          .select('''
+            *,
+            spiritual_exercise:spiritual_exercises(
+              id, title, slug, start_date, end_date, 
+              location_name, location_city, image_url
+            )
+          ''')
+          .eq('email', user.email!)
+          .order('created_at', ascending: false);
+      if (mounted) {
+        setState(() {
+          _exerciseRegistrations = (data as List)
+              .map((e) => SpiritualExerciseRegistration.fromJson(e))
+              .toList();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching exercise registrations: $e');
     }
   }
 
@@ -206,6 +394,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ? null
                       : () async {
                           if (!formKey.currentState!.validate()) return;
+                          final navigator = Navigator.of(context);
+                          final messenger = ScaffoldMessenger.of(context);
                           setState(() => isLoading = true);
                           try {
                             final email = supabase.auth.currentUser?.email;
@@ -226,9 +416,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             await supabase.auth.updateUser(
                               UserAttributes(password: newPassCtrl.text),
                             );
-                            if (mounted) Navigator.of(context).pop();
+                            if (mounted) navigator.pop();
                             if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              messenger.showSnackBar(
                                 SnackBar(
                                   content: Text(
                                     'profile.password2.changed'.tr(),
@@ -443,11 +633,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             : null;
 
         // Zobraz možnosti zdieľania
-        final result = await Share.shareXFiles(
-          [XFile(file.path)],
-          subject: 'profile.download.export_title'.tr(),
-          text: 'profile.download.export_description'.tr(),
-          sharePositionOrigin: sharePositionOrigin,
+        final result = await SharePlus.instance.share(
+          ShareParams(
+            files: [XFile(file.path)],
+            subject: 'profile.download.export_title'.tr(),
+            text: 'profile.download.export_description'.tr(),
+            sharePositionOrigin: sharePositionOrigin,
+          ),
         );
 
         if (result.status == ShareResultStatus.success && mounted) {
@@ -603,7 +795,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           CircleAvatar(
                             radius: 42,
-                            backgroundColor: theme.colorScheme.surfaceVariant,
+                            backgroundColor:
+                                theme.colorScheme.surfaceContainerHighest,
                             backgroundImage:
                                 (_avatarUrl != null && _avatarUrl!.isNotEmpty)
                                 ? NetworkImage(_avatarUrl!)
@@ -680,6 +873,181 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _role ?? 'profile.field.role_loading'.tr(),
                       ),
                     ),
+                    // Variable Symbol
+                    if (_variableSymbol != null &&
+                        _variableSymbol!.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Colors.cyan.shade50, Colors.blue.shade50],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.cyan.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.cyan.shade500,
+                                    Colors.blue.shade600,
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  'VS',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'profile.field.variable_symbol'.tr(),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.cyan.shade900,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _variableSymbol!,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontFamily: 'monospace',
+                                      color: Colors.grey.shade700,
+                                    ),
+                                  ),
+                                  Text(
+                                    'profile.field.variable_symbol_hint'.tr(),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    // Supporter Badge
+                    if (_subscriptions.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.amber.shade50,
+                              Colors.yellow.shade50,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.amber.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.amber.shade500,
+                                    Colors.yellow.shade600,
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  '⭐',
+                                  style: TextStyle(fontSize: 20),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'profile.support_status'.tr(),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.amber.shade900,
+                                    ),
+                                  ),
+                                  Text(
+                                    _subscriptions.any(
+                                          (s) => s.tier == 'founder',
+                                        )
+                                        ? '🏆 ${'profile.tier.founder'.tr()}'
+                                        : _subscriptions.any(
+                                            (s) => s.tier == 'patron',
+                                          )
+                                        ? '💎 ${'profile.tier.patron'.tr()}'
+                                        : '❤️ ${'profile.tier.friend'.tr()}',
+                                    style: TextStyle(
+                                      color: Colors.amber.shade700,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    _subscriptions.any(
+                                      (s) => s.tier == 'founder',
+                                    )
+                                    ? Colors.purple.shade600
+                                    : _subscriptions.any(
+                                        (s) => s.tier == 'patron',
+                                      )
+                                    ? Colors.blue.shade600
+                                    : Colors.red.shade500,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                _subscriptions.any((s) => s.tier == 'founder')
+                                    ? 'FOUNDER'
+                                    : _subscriptions.any(
+                                        (s) => s.tier == 'patron',
+                                      )
+                                    ? 'PATRON'
+                                    : 'FRIEND',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 10),
                     OutlinedButton.icon(
                       onPressed: changePassword,
@@ -756,6 +1124,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
+
+                    // Subscriptions Section
+                    if (_subscriptions.isNotEmpty) ...[
+                      _buildSectionHeader(
+                        theme,
+                        Icons.credit_card,
+                        'profile.section.subscriptions'.tr(),
+                        Colors.purple,
+                      ),
+                      const SizedBox(height: 12),
+                      ..._subscriptions.map(
+                        (sub) => _buildSubscriptionCard(theme, sub),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // Donations Section
+                    if (_donations.isNotEmpty) ...[
+                      _buildSectionHeader(
+                        theme,
+                        Icons.favorite,
+                        'profile.section.donations'.tr(),
+                        Colors.red,
+                      ),
+                      const SizedBox(height: 12),
+                      ..._donations.map(
+                        (donation) => _buildDonationCard(theme, donation),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // Spiritual Exercise Registrations Section
+                    if (_exerciseRegistrations.isNotEmpty) ...[
+                      _buildSectionHeader(
+                        theme,
+                        Icons.church,
+                        'profile.section.exercise_registrations'.tr(),
+                        AppColors.primary,
+                      ),
+                      const SizedBox(height: 12),
+                      ..._exerciseRegistrations.map(
+                        (reg) => _buildExerciseRegistrationCard(theme, reg),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // Delete Account Button
                     OutlinedButton.icon(
                       onPressed: _isSaving ? null : deleteAccount,
                       icon: const Icon(Icons.delete_forever, color: Colors.red),
@@ -765,10 +1180,329 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         foregroundColor: Colors.red,
                       ),
                     ),
+                    const SizedBox(height: 32),
                   ],
                 ),
               ),
             ),
+    );
+  }
+
+  Widget _buildSectionHeader(
+    ThemeData theme,
+    IconData icon,
+    String title,
+    Color color,
+  ) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubscriptionCard(ThemeData theme, Subscription sub) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.purple.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.purple.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${sub.tier.toUpperCase()} tier',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'profile.subscription.active'.tr(),
+                  style: TextStyle(
+                    color: Colors.green.shade800,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '€${sub.amount.toStringAsFixed(2)}/${sub.interval == 'month' ? 'profile.subscription.monthly'.tr() : 'profile.subscription.yearly'.tr()}',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.purple.shade600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${'profile.subscription.next_payment'.tr()}: ${DateFormat('dd.MM.yyyy').format(sub.currentPeriodEnd)}',
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+          ),
+          if (sub.cancelAtPeriodEnd) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.yellow.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.yellow.shade200),
+              ),
+              child: Text(
+                '${'profile.subscription.cancels_on'.tr()} ${DateFormat('dd.MM.yyyy').format(sub.currentPeriodEnd)}',
+                style: TextStyle(fontSize: 12, color: Colors.yellow.shade800),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDonationCard(ThemeData theme, Donation donation) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.shade200),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '€${donation.amount.toStringAsFixed(2)}',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  DateFormat('dd.MM.yyyy').format(donation.createdAt),
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                ),
+                if (donation.message != null &&
+                    donation.message!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '"${donation.message}"',
+                    style: TextStyle(
+                      fontStyle: FontStyle.italic,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Icon(Icons.favorite, color: Colors.red.shade500, size: 32),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExerciseRegistrationCard(
+    ThemeData theme,
+    SpiritualExerciseRegistration reg,
+  ) {
+    final exercise = reg.spiritualExercise;
+    final startDate = exercise['start_date'] != null
+        ? DateTime.parse(exercise['start_date'])
+        : null;
+    final endDate = exercise['end_date'] != null
+        ? DateTime.parse(exercise['end_date'])
+        : null;
+
+    Color statusColor;
+    String statusText;
+    switch (reg.paymentStatus) {
+      case 'paid':
+        statusColor = Colors.green;
+        statusText = 'profile.registration.paid'.tr();
+        break;
+      case 'pending':
+        statusColor = Colors.orange;
+        statusText = 'profile.registration.pending'.tr();
+        break;
+      case 'cancelled':
+        statusColor = Colors.red;
+        statusText = 'profile.registration.cancelled'.tr();
+        break;
+      default:
+        statusColor = Colors.grey;
+        statusText = reg.paymentStatus;
+    }
+
+    return GestureDetector(
+      onTap: () {
+        if (exercise['slug'] != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  SpiritualExerciseDetailScreen(slug: exercise['slug']),
+            ),
+          );
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image
+            if (exercise['image_url'] != null)
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(11),
+                ),
+                child: Image.network(
+                  exercise['image_url'],
+                  height: 120,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    height: 120,
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    child: const Center(
+                      child: Icon(
+                        Icons.church,
+                        size: 40,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          exercise['title'] ?? '',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          statusText,
+                          style: TextStyle(
+                            color: statusColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (startDate != null && endDate != null)
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${DateFormat('dd.MM.yyyy').format(startDate)} - ${DateFormat('dd.MM.yyyy').format(endDate)}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (exercise['location_name'] != null) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          size: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${exercise['location_name']}${exercise['location_city'] != null ? ', ${exercise['location_city']}' : ''}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Text(
+                    '${reg.firstName} ${reg.lastName} • ${reg.roomType}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

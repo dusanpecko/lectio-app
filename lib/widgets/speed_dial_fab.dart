@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:easy_localization/easy_localization.dart';
 
+import '../shared/app_colors.dart';
+
 class SpeedDialFAB extends StatefulWidget {
   final VoidCallback onPrimaryAction;
   final Function(String) onSecondaryAction;
@@ -80,7 +82,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
         'key': 'about',
         'icon': Icons.info_rounded,
         'label': tr('about.title'),
-        'color': const Color(0xFF4A5085),
+        'color': AppColors.primary,
       },
       {
         'key': 'support',
@@ -93,13 +95,13 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
           'key': 'notes',
           'icon': Icons.notes_rounded,
           'label': tr('notes_title'),
-          'color': const Color(0xFF4A5085),
+          'color': AppColors.primary,
         },
       {
         'key': 'settings',
         'icon': Icons.settings_rounded,
         'label': tr('settings'),
-        'color': const Color(0xFF4A5085),
+        'color': AppColors.primary,
       },
     ];
   }
@@ -207,7 +209,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: const Color(0xFF4A5085),
+                color: AppColors.primary,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(

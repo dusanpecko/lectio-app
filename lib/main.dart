@@ -21,6 +21,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'firebase_options.dart';
 import 'providers/theme_provider.dart';
+import 'shared/app_colors.dart';
 import 'services/background_audio_manager.dart';
 import 'services/fcm_service.dart';
 import 'services/local_notifications_service.dart';
@@ -210,7 +211,7 @@ void _showLocalNotificationDialog(BuildContext context, String? payload) async {
             children: [
               const Icon(
                 Icons.notifications_active,
-                color: Color(0xFF4A5085),
+                color: AppColors.primary,
                 size: 24,
               ),
               const SizedBox(width: 8),
@@ -254,7 +255,7 @@ void _showLocalNotificationDialog(BuildContext context, String? payload) async {
                   navigatorKey.currentState?.pushNamed(actionRoute!);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4A5085),
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                 ),
                 child: const Text(
@@ -305,7 +306,7 @@ void _showNotificationDialog(
             children: [
               const Icon(
                 Icons.notifications,
-                color: Color(0xFF4A5085),
+                color: AppColors.primary,
                 size: 24,
               ),
               const SizedBox(width: 8),
@@ -361,7 +362,7 @@ void _showNotificationDialog(
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
-                                  color: Color(0xFF4A5085),
+                                  color: AppColors.primary,
                                   strokeWidth: 2,
                                 ),
                               ),
@@ -393,7 +394,7 @@ void _showNotificationDialog(
               child: const Text(
                 'Zavrieť',
                 style: TextStyle(
-                  color: Color(0xFF4A5085),
+                  color: AppColors.primary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -465,6 +466,12 @@ Future<void> main() async {
 
     await LocalNotificationsService.instance.initialize();
     _logger.i('✅ LocalNotificationsService initialized successfully');
+
+    // 🔥 NOVÉ: Refresh notifikácií pri štarte aplikácie
+    // Toto zabezpečí, že ak používateľ neotvoril appku dlhšie ako 7 dní,
+    // notifikácie sa znova naplánujú
+    await LocalNotificationsService.instance.refreshCacheIfNeeded();
+    _logger.i('✅ Notifications cache refreshed on startup');
 
     // Inicializácia Background Audio Manager
     try {
@@ -590,6 +597,14 @@ class _FCMInitializerState extends State<FCMInitializer>
     if (state == AppLifecycleState.resumed) {
       _logger.i('✅ App RESUMED from background');
       _clearAppBadge();
+
+      // 🔥 KRITICKÉ: Re-scheduluj notifikácie pri každom resume
+      // Toto zabezpečí, že notifikácie budú vždy naplánované na najbližších 7 dní
+      LocalNotificationsService.instance.refreshCacheIfNeeded().then((_) {
+        _logger.i('✅ Notifications refreshed on app resume');
+      }).catchError((e) {
+        _logger.e('❌ Failed to refresh notifications: $e');
+      });
 
       // Kontrola pending notifikácie keď aplikácia prejde do popredia
       if (_pendingNotificationPayload != null) {

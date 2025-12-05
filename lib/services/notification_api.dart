@@ -493,6 +493,7 @@ class NotificationPreferencesCache {
   static const String _cacheTimeKey = 'notification_preferences_cache_time';
   // Cache je platná 5 minút - potom sa automaticky obnoví z API
   static const Duration _cacheValidDuration = Duration(minutes: 5);
+  static final Logger _logger = Logger();
 
   /// Uloží preferences do cache
   static Future<void> cachePreferences(
@@ -505,7 +506,7 @@ class NotificationPreferencesCache {
       await prefs.setString(_cacheKey, jsonString);
       await prefs.setInt(_cacheTimeKey, DateTime.now().millisecondsSinceEpoch);
     } catch (e) {
-      Logger().w('Failed to cache preferences: $e');
+      _logger.w('Failed to cache preferences: $e');
     }
   }
 
@@ -526,7 +527,7 @@ class NotificationPreferencesCache {
       final json = jsonDecode(jsonString);
       return NotificationPreferencesResponse.fromJson(json);
     } catch (e) {
-      Logger().w('Failed to get cached preferences: $e');
+      _logger.w('Failed to get cached preferences: $e');
       return null;
     }
   }
@@ -538,7 +539,7 @@ class NotificationPreferencesCache {
       await prefs.remove(_cacheKey);
       await prefs.remove(_cacheTimeKey);
     } catch (e) {
-      Logger().w('Failed to clear preferences cache: $e');
+      _logger.w('Failed to clear preferences cache: $e');
     }
   }
 
@@ -553,7 +554,7 @@ class NotificationPreferencesCache {
       final cacheAge = DateTime.now().millisecondsSinceEpoch - cacheTime;
       return cacheAge <= _cacheValidDuration.inMilliseconds;
     } catch (e) {
-      Logger().w('Failed to check cache validity: $e');
+      _logger.w('Failed to check cache validity: $e');
       return false;
     }
   }
@@ -569,7 +570,7 @@ class NotificationPreferencesCache {
       final ageInMs = DateTime.now().millisecondsSinceEpoch - cacheTime;
       return (ageInMs / 1000).round();
     } catch (e) {
-      Logger().w('Failed to get cache age: $e');
+      _logger.w('Failed to get cache age: $e');
       return null;
     }
   }

@@ -1,4 +1,5 @@
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:just_audio/just_audio.dart';
 
 class LectioAudioHandler extends BaseAudioHandler
@@ -26,7 +27,7 @@ class LectioAudioHandler extends BaseAudioHandler
       await _backgroundPlayer.setVolume(_backgroundVolume);
       await _backgroundPlayer.setLoopMode(LoopMode.one);
     } catch (e) {
-      print("Chyba pri nastavovaní audio source: $e");
+      debugPrint("Chyba pri nastavovaní audio source: $e");
     }
 
     _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
@@ -83,7 +84,7 @@ class LectioAudioHandler extends BaseAudioHandler
         );
         mediaItems.add(mediaItem);
         _playlist.add(AudioSource.uri(Uri.parse(url), tag: mediaItem));
-        print('Pridávam: ${mediaItem.title} - duration: $duration');
+        debugPrint('Pridávam: ${mediaItem.title} - duration: $duration');
       }
     }
 
@@ -120,7 +121,7 @@ class LectioAudioHandler extends BaseAudioHandler
         await _backgroundPlayer.play();
       }
     } catch (e) {
-      print("Chyba pri spúšťaní background audio: $e");
+      debugPrint("Chyba pri spúšťaní background audio: $e");
     }
   }
 

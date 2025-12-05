@@ -13,17 +13,18 @@ import '../models/notification_models.dart';
 import 'local_notifications_service.dart';
 import 'notification_api.dart';
 
-final Logger _logger = Logger();
-
-/// Global instance pre local notifications
+/// Global instance pre local notifications (potrebné pre background handler)
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
+
+/// Logger pre background handler (musí byť top-level kvôli izolovanému kontextu)
+final Logger _backgroundLogger = Logger();
 
 /// TOP-LEVEL background handler – musí byť mimo triedy.
 /// Zobrazuje lokálne notifikácie pre background messages
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  _logger.i('Background message received: ${message.data}');
+  _backgroundLogger.i('Background message received: ${message.data}');
 
   // Zobraz lokálnu notifikáciu pre background messages
   await _showLocalNotification(message);
@@ -66,13 +67,16 @@ Future<void> _showLocalNotification(RemoteMessage message) async {
       payload: jsonEncode(message.data),
     );
   } catch (e) {
-    _logger.e('Error showing local notification: $e');
+    _backgroundLogger.e('Error showing local notification: $e');
   }
 }
 
 class FcmService {
   FcmService._();
   static final FcmService instance = FcmService._();
+
+  /// Logger pre inštanciu služby
+  final Logger _logger = Logger();
 
   // Rate limiting pre APNS token retry
   int _apnsRetryCount = 0;

@@ -5,6 +5,7 @@ import 'package:logger/logger.dart';
 import '../models/notification_models.dart';
 import '../services/fcm_service.dart';
 import '../services/local_notifications_service.dart';
+import '../shared/app_colors.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -25,7 +26,7 @@ class _NotificationSettingsScreenState
   bool _hasPermission = false;
   String? _errorMessage;
   NotificationPreferencesResponse? _preferencesData;
-  Map<String, bool> _pendingChanges = {};
+  final Map<String, bool> _pendingChanges = {};
 
   // Lokálne notifikácie state
   bool _dailyLectioEnabled = false;
@@ -106,7 +107,7 @@ class _NotificationSettingsScreenState
         setState(() => _hasPermission = true);
         _initializeNotificationSettings();
       } else {
-        if (!context.mounted) return;
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('notifications.error.permission_denied'.tr()),
@@ -181,10 +182,19 @@ class _NotificationSettingsScreenState
   // Lokálne notifikácie handlers
   Future<void> _onDailyLectioChanged(bool enabled) async {
     try {
+      // 🔥 NOVÉ: Pri zapnutí notifikácií požiadaj o potrebné povolenia
+      if (enabled) {
+        _logger.i('🔔 Requesting battery optimization exemption...');
+        await _localNotifications.requestIgnoreBatteryOptimizations();
+        
+        _logger.i('🔔 Requesting exact alarm permission...');
+        await _localNotifications.requestExactAlarmPermission();
+      }
+      
       await _localNotifications.setDailyLectioEnabled(enabled);
       setState(() => _dailyLectioEnabled = enabled);
 
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -197,7 +207,7 @@ class _NotificationSettingsScreenState
       );
     } catch (e) {
       _logger.e('Error toggling daily lectio: $e');
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Chyba pri nastavovaní denných notifikácií'),
@@ -215,13 +225,22 @@ class _NotificationSettingsScreenState
 
     if (picked != null) {
       try {
+        // 🔥 NOVÉ: Pri zapnutí notifikácií požiadaj o potrebné povolenia
+        if (!_prayerReminderEnabled) {
+          _logger.i('🔔 Requesting battery optimization exemption...');
+          await _localNotifications.requestIgnoreBatteryOptimizations();
+          
+          _logger.i('🔔 Requesting exact alarm permission...');
+          await _localNotifications.requestExactAlarmPermission();
+        }
+        
         await _localNotifications.setPrayerReminderTime(picked);
         setState(() {
           _prayerReminderTime = picked;
           _prayerReminderEnabled = true;
         });
 
-        if (!context.mounted) return;
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -232,7 +251,7 @@ class _NotificationSettingsScreenState
         );
       } catch (e) {
         _logger.e('Error setting prayer reminder: $e');
-        if (!context.mounted) return;
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Chyba pri nastavovaní pripomenutia'),
@@ -251,7 +270,7 @@ class _NotificationSettingsScreenState
         _prayerReminderTime = null;
       });
 
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Pripomenutie modlitby vypnuté'),
@@ -413,7 +432,7 @@ class _NotificationSettingsScreenState
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: ListTile(
             leading: const CircleAvatar(
-              backgroundColor: Color(0xFF4A5085),
+              backgroundColor: AppColors.primary,
               child: Text('📖', style: TextStyle(fontSize: 20)),
             ),
             title: const Text('Denné zamyslenie'),
@@ -432,7 +451,7 @@ class _NotificationSettingsScreenState
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: ListTile(
             leading: const CircleAvatar(
-              backgroundColor: Color(0xFF4A5085),
+              backgroundColor: AppColors.primary,
               child: Text('🙏', style: TextStyle(fontSize: 20)),
             ),
             title: const Text('Pripomenutie modlitby'),

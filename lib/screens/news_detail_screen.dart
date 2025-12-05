@@ -249,6 +249,17 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
     }
   }
 
+  /// Bezpečné formátovanie dátumu komentára
+  String _formatCommentDate(dynamic dateValue) {
+    if (dateValue == null) return '';
+    try {
+      final date = DateTime.parse(dateValue.toString());
+      return DateFormat('d.M.y H:mm').format(date);
+    } catch (_) {
+      return '';
+    }
+  }
+
   bool _canDeleteComment(Map comment) {
     final currentUser = Supabase.instance.client.auth.currentUser;
     if (currentUser == null) return false;
@@ -522,9 +533,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              DateFormat(
-                                'd.M.y H:mm',
-                              ).format(DateTime.parse(comment['created_at'])),
+                              _formatCommentDate(comment['created_at']),
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey,

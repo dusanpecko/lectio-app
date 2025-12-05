@@ -6,6 +6,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../shared/audio_constants.dart';
 import 'background_audio_manager.dart';
 import 'do_not_disturb_service.dart';
 
@@ -48,9 +49,7 @@ class LectioAudioHandler extends BaseAudioHandler
           duration: Duration.zero,
           playable: true,
           // iOS lock screen artwork
-          artUri: Uri.parse(
-            'https://unnijykbupxguogrkolj.supabase.co/storage/v1/object/public/avatars/avatars/icon.png',
-          ),
+          artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
         ),
       );
 
@@ -253,9 +252,7 @@ class LectioAudioHandler extends BaseAudioHandler
         duration: null, // Will be set when audio loads
         playable: true,
         // iOS lock screen artwork - use hosted icon
-        artUri: Uri.parse(
-          'https://unnijykbupxguogrkolj.supabase.co/storage/v1/object/public/avatars/avatars/icon.png',
-        ),
+        artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
         extras: {
           'displayTitle': title ?? 'Lectio Divina Audio',
           'displaySubtitle': artist ?? 'Spiritual Audio',
@@ -357,8 +354,7 @@ class LectioAudioHandler extends BaseAudioHandler
       _logger.i('🎵 Playing Lectio audio: $title');
 
       // Default artwork URI for iOS lock screen
-      const defaultArtUri =
-          'https://unnijykbupxguogrkolj.supabase.co/storage/v1/object/public/avatars/avatars/icon.png';
+      final defaultArtUri = AudioConstants.defaultArtworkUrl;
 
       // Set media item for notification
       mediaItem.add(

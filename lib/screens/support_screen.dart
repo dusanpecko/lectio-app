@@ -40,19 +40,20 @@ class _SupportScreenState extends State<SupportScreen> {
     });
   }
 
-  Future<void> _tryOpenDonateUrl(BuildContext context) async {
+  Future<void> _tryOpenDonateUrl(BuildContext ctx) async {
     const donateUrl = 'https://dcza.24-pay.sk/darovat/lectio-divina';
     final uri = Uri.parse(donateUrl);
+    final messenger = ScaffoldMessenger.of(ctx);
 
     final canLaunchIt = await canLaunchUrl(uri);
     if (canLaunchIt) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
       // Xiaomi/MIUI notice + option to copy
-      if (!mounted) return;
+      if (!mounted || !ctx.mounted) return;
       showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
+        context: ctx,
+        builder: (dialogCtx) => AlertDialog(
           title: Text('support2.open_fail_title'.tr()),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -66,15 +67,15 @@ class _SupportScreenState extends State<SupportScreen> {
             TextButton(
               onPressed: () {
                 Clipboard.setData(const ClipboardData(text: donateUrl));
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
+                Navigator.pop(dialogCtx);
+                messenger.showSnackBar(
                   SnackBar(content: Text(tr('support2.copied_link'))),
                 );
               },
               child: Text(tr('support2.copy_link')),
             ),
             TextButton(
-              onPressed: () => Navigator.pop(ctx),
+              onPressed: () => Navigator.pop(dialogCtx),
               child: Text(tr('support2.close')),
             ),
           ],
@@ -96,9 +97,16 @@ class _SupportScreenState extends State<SupportScreen> {
     final target = (stats?['target_amount'] as num?)?.toDouble() ?? 1.0;
     final year = stats?['year'] ?? DateTime.now().year;
     final updatedAt = stats?['updated_at'];
-    final updatedDate = updatedAt != null
-        ? DateTime.parse(updatedAt).toLocal()
-        : DateTime.now();
+    DateTime updatedDate;
+    if (updatedAt != null) {
+      try {
+        updatedDate = DateTime.parse(updatedAt).toLocal();
+      } catch (_) {
+        updatedDate = DateTime.now();
+      }
+    } else {
+      updatedDate = DateTime.now();
+    }
     final lastUpdated =
         "${updatedDate.day.toString().padLeft(2, '0')}.${updatedDate.month.toString().padLeft(2, '0')}.${updatedDate.year}";
 
@@ -203,7 +211,7 @@ class _SupportScreenState extends State<SupportScreen> {
                             ),
                             style: {
                               "*": Style(
-                                color: onSurface.withOpacity(0.6),
+                                color: onSurface.withValues(alpha: 0.6),
                                 fontSize: FontSize(13),
                               ),
                             },

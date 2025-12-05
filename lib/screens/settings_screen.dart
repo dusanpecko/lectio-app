@@ -11,6 +11,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../shared/app_colors.dart';
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -229,7 +231,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              const Icon(Icons.login, size: 48, color: Color(0xFF4A5085)),
+              const Icon(Icons.login, size: 48, color: AppColors.primary),
               const SizedBox(height: 16),
               Text(
                 tr('not_logged_in'),
@@ -256,7 +258,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: const Icon(Icons.login),
                 label: Text(tr('sign_in')),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4A5085),
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,

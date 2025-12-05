@@ -320,12 +320,14 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
 
+        final navigator = Navigator.of(context);
+        
         if (!mounted) return;
         final shouldPop = await _onWillPop();
 
         if (!mounted) return;
         if (shouldPop) {
-          Navigator.of(context).pop();
+          navigator.pop();
         }
       },
       child: Scaffold(

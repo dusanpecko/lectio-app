@@ -63,9 +63,23 @@ class NotificationTopic {
       sortOrder:
           json['display_order'] as int? ?? 0, // Database uses 'display_order'
       isActive: json['is_active'] as bool? ?? true,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: _parseDateTime(json['created_at']),
+      updatedAt: _parseDateTime(json['updated_at']),
     );
+  }
+
+  /// Bezpečné parsovanie DateTime s fallback na aktuálny čas
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
+    return DateTime.now();
   }
 
   /// Konvertuje na JSON pre API calls
@@ -119,12 +133,26 @@ class NotificationPreference {
       userId: json['user_id'] as String,
       topicId: json['topic_id'] as String,
       isEnabled: json['is_enabled'] as bool,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: _parseDateTime(json['created_at']),
+      updatedAt: _parseDateTime(json['updated_at']),
       topic: json['topic'] != null
           ? NotificationTopic.fromJson(json['topic'] as Map<String, dynamic>)
           : null,
     );
+  }
+
+  /// Bezpečné parsovanie DateTime s fallback na aktuálny čas
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
+    return DateTime.now();
   }
 
   /// Konvertuje na JSON pre API calls

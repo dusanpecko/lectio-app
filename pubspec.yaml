@@ -54,11 +54,12 @@ dependencies:
   logger: ^2.4.0
   image_picker: ^1.1.2
   image: ^4.2.0
+  path_provider: ^2.1.4
   fluttermoji: ^1.0.2
   supabase_flutter: ^2.10.0
-  just_audio: any
-  audio_service: any
-  get_it: any
+  just_audio: ^0.10.5
+  audio_service: ^0.18.18
+  get_it: ^8.2.0
   timezone: ^0.10.1
   permission_handler: ^12.0.1
   device_info_plus: ^10.1.0

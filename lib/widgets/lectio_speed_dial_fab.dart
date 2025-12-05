@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../shared/app_colors.dart';
+
 class LectioSpeedDialFAB extends StatefulWidget {
   final VoidCallback? onAddNote;
   final VoidCallback? onDndToggle;
@@ -82,7 +84,7 @@ class _LectioSpeedDialFABState extends State<LectioSpeedDialFAB>
       'key': 'refresh',
       'icon': Icons.refresh,
       'label': 'Obnoviť',
-      'color': const Color(0xFF4A5085),
+      'color': AppColors.primary,
       'onTap': widget.onRefresh,
     });
 
@@ -94,7 +96,7 @@ class _LectioSpeedDialFABState extends State<LectioSpeedDialFAB>
             ? Icons.music_note
             : Icons.music_note_outlined,
         'label': 'Audio prehrávač',
-        'color': const Color(0xFF4A5085),
+        'color': AppColors.primary,
         'onTap': widget.onAudioToggle,
       });
     }
@@ -107,7 +109,7 @@ class _LectioSpeedDialFABState extends State<LectioSpeedDialFAB>
             ? Icons.do_not_disturb_on
             : Icons.do_not_disturb_off_outlined,
         'label': widget.isDndActive ? 'Zrušiť Nerušiť' : 'Aktivovať Nerušiť',
-        'color': widget.isDndActive ? Colors.orange : const Color(0xFF4A5085),
+        'color': widget.isDndActive ? Colors.orange : AppColors.primary,
         'onTap': widget.onDndToggle,
       });
     }
@@ -118,7 +120,7 @@ class _LectioSpeedDialFABState extends State<LectioSpeedDialFAB>
         'key': 'note',
         'icon': Icons.note_add_outlined,
         'label': 'Pridať poznámku',
-        'color': const Color(0xFF4A5085),
+        'color': AppColors.primary,
         'onTap': widget.onAddNote,
       });
     }
@@ -227,7 +229,7 @@ class _LectioSpeedDialFABState extends State<LectioSpeedDialFAB>
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: const Color(0xFF4A5085),
+                color: AppColors.primary,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(

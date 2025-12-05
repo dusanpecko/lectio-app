@@ -16,6 +16,7 @@
   "news": "News",
   "news_title": "News",
   "news_detail": "News detail",
+  "show_article": "Show article",
   "more": "MORE",
   "like": "Like",
   "likes": "Like ({count})",
@@ -260,6 +261,7 @@
   "enter_your_email": "Zadajte svoj email",
   "reset_password_description": "Zadajte svoj email a pošleme vám odkaz na obnovenie hesla",
   "rosary_title": "Rosary",
+  "spiritual_exercises": "Spiritual Exercises",
   "rosary_main_title": "Lectio Divina Rosary",
   "rosary_main_subtitle": "Combine traditional rosary prayer with spiritual reading of God's word",
   "rosary_joyful": "Joyful Mysteries",
@@ -331,10 +333,74 @@
   "error_deleting_intention": "Error deleting intention",
   
   "profile": {
+    "title": "My Profile",
+    "not_logged": "You are not logged in.",
+    "snackbar": {
+      "saved": "Profile has been saved.",
+      "save_failed": "Failed to save profile: {}",
+      "error": "Error: {}"
+    },
     "button": {
+      "logout": "Log Out",
+      "cancel": "Cancel",
+      "save": "Save",
+      "save_changes": "Save Changes",
+      "change_password": "Change Password",
       "notification_settings": "Notification Settings",
       "download_data": "Download My Data",
       "delete_account": "Delete Account"
+    },
+    "avatar": {
+      "change": "Change avatar",
+      "camera": "Take photo",
+      "gallery": "Choose from gallery",
+      "changed": "Avatar has been changed!",
+      "error": "Error changing avatar: {}"
+    },
+    "field": {
+      "fullname": "Full Name",
+      "fullname_required": "Enter your name",
+      "email": "E-mail",
+      "registered_at": "Registration Date:",
+      "role": "App Role:",
+      "role_loading": "loading...",
+      "variable_symbol": "Variable Symbol",
+      "variable_symbol_hint": "For bank standing orders"
+    },
+    "password2": {
+      "title": "Change Password",
+      "current": "Current Password",
+      "current_required": "Enter current password",
+      "new": "New Password",
+      "min_length": "Min. 6 characters",
+      "same_as_current": "New password must be different from current.",
+      "confirm": "Confirm New Password",
+      "not_match": "Passwords do not match",
+      "incorrect_current": "Current password is incorrect",
+      "changed": "Password has been changed"
+    },
+    "support_status": "Support Status",
+    "tier": {
+      "founder": "Founder",
+      "patron": "Patron",
+      "friend": "Friend"
+    },
+    "section": {
+      "subscriptions": "My Subscriptions",
+      "donations": "My Donations",
+      "exercise_registrations": "My Exercise Registrations"
+    },
+    "subscription": {
+      "active": "Active",
+      "monthly": "month",
+      "yearly": "year",
+      "next_payment": "Next payment",
+      "cancels_on": "Cancels on"
+    },
+    "registration": {
+      "paid": "Paid",
+      "pending": "Pending payment",
+      "cancelled": "Cancelled"
     },
     "download": {
       "export_title": "Data Export",
@@ -418,6 +484,60 @@
   "do_not_disturb_active": "Do Not Disturb",
   "interactive_form": "Interactive Form",
   "fill_form_below": "Fill out the form below",
-  "open_form": "Open Form"
+  "open_form": "Open Form",
+
+  "registration_title": "Registration for Spiritual Exercises",
+  "registration_contact_info": "Contact Information",
+  "registration_personal_info": "Personal Information",
+  "registration_address": "Address",
+  "registration_church_info": "Church Information",
+  "registration_accommodation": "Accommodation",
+  "registration_additional_info": "Additional Information",
+  "registration_consents": "Consents and Terms",
+
+  "first_name": "First Name",
+  "last_name": "Last Name",
+  "phone": "Phone",
+  "birth_date": "Date of Birth",
+  "id_card_number": "ID Card Number",
+  "street": "Street and Number",
+  "city": "City",
+  "postal_code": "Postal Code",
+  "parish": "Parish",
+  "diocese": "Diocese",
+  "dietary_restrictions": "Dietary Restrictions",
+  "dietary_restrictions_hint": "E.g. gluten-free diet, vegetarian, allergies...",
+  "notes_hint": "Additional information you want to share...",
+  "referral_source": "How did you hear about us?",
+  "price": "Room Price",
+  "deposit": "deposit",
+  "registration_deposit_info": "To confirm your registration, you need to pay a deposit. Payment instructions will be sent via email.",
+
+  "gdpr_consent_label": "I agree to the processing of personal data in accordance with GDPR.",
+  "responsibility_consent_label": "I acknowledge that spiritual exercises are not a substitute for medical or psychotherapeutic care. Participation is voluntary and I bear full responsibility for myself.",
+  "newsletter_consent_label": "I want to receive information about future spiritual exercises and activities.",
+
+  "registration_gdpr_required": "You must agree to the processing of personal data.",
+  "registration_responsibility_required": "You must confirm the responsibility statement.",
+
+  "field_required": "This field is required",
+  "invalid_email": "Invalid email format",
+  "invalid_phone": "Invalid phone format (e.g. +421901234567)",
+
+  "select_date": "Select date",
+  "select_option": "Select option",
+  "optional": "(optional)",
+
+  "submit_registration": "Submit Registration",
+  "registration_success_title": "Registration Submitted",
+  "registration_success_message": "Your registration has been successfully submitted. Payment instructions will be sent via email.",
+  "save_profile_title": "Save Profile?",
+  "save_profile_message": "Would you like to save your information to your profile for future registrations?",
+
+  "gdpr_info_title": "Personal Data Processing",
+  "gdpr_info_content": "Your personal data will be processed in accordance with GDPR for the purpose of organizing spiritual exercises. Data will be stored for the period necessary to fulfill the processing purpose.",
+  "close": "Close",
+
+  "register_for_exercise": "Register for Exercise"
 
 }

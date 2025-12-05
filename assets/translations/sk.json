@@ -16,6 +16,7 @@
   "news": "Aktuality",
   "news_title": "Aktuality",
   "news_detail": "Detail aktuality",
+  "show_article": "Zobraziť článok",
   "more": "VIAC",
   "like": "Páči sa mi",
   "likes": "{count}  Páči sa mi",
@@ -369,7 +370,32 @@
       "email": "E-mail",
       "registered_at": "Dátum registrácie:",
       "role": "Rola v aplikácii:",
-      "role_loading": "načítavam..."
+      "role_loading": "načítavam...",
+      "variable_symbol": "Variabilný symbol",
+      "variable_symbol_hint": "Pre trvalé príkazy v banke"
+    },
+    "support_status": "Stav podpory",
+    "tier": {
+      "founder": "Zakladateľ",
+      "patron": "Patrón",
+      "friend": "Priateľ"
+    },
+    "section": {
+      "subscriptions": "Moje predplatné",
+      "donations": "Moje príspevky",
+      "exercise_registrations": "Moje registrácie na DC"
+    },
+    "subscription": {
+      "active": "Aktívne",
+      "monthly": "mesiac",
+      "yearly": "rok",
+      "next_payment": "Ďalšia platba",
+      "cancels_on": "Zruší sa"
+    },
+    "registration": {
+      "paid": "Zaplatené",
+      "pending": "Čaká na platbu",
+      "cancelled": "Zrušené"
     },
     "password2": {
       "title": "Zmeniť heslo",
@@ -439,6 +465,7 @@
   "enter_your_email": "Zadajte svoj email",
   "reset_password_description": "Zadajte svoj email a pošleme vám odkaz na obnovenie hesla",
   "rosary_title": "Ruženec",
+  "spiritual_exercises": "Duchovné cvičenia",
   "rosary_main_title": "Lectio Divina Ruženec",
   "rosary_main_subtitle": "Spojte tradičnú modlitbu ruženeca s duchovným čítaním Božieho slova",
   "rosary_joyful": "Radostné tajomstvá",
@@ -603,6 +630,60 @@
   "do_not_disturb_active": "Nerušiť",
   "interactive_form": "Registracia",
   "fill_form_below": "Vyplňte registračný formulár",
-  "open_form": "Otvoriť registračný formulár"
+  "open_form": "Otvoriť registračný formulár",
+
+  "registration_title": "Registrácia na duchovné cvičenie",
+  "registration_contact_info": "Kontaktné údaje",
+  "registration_personal_info": "Osobné údaje",
+  "registration_address": "Adresa",
+  "registration_church_info": "Cirkevné údaje",
+  "registration_accommodation": "Ubytovanie",
+  "registration_additional_info": "Doplňujúce informácie",
+  "registration_consents": "Súhlasy a podmienky",
+
+  "first_name": "Meno",
+  "last_name": "Priezvisko",
+  "phone": "Telefón",
+  "birth_date": "Dátum narodenia",
+  "id_card_number": "Číslo občianskeho preukazu",
+  "street": "Ulica a číslo",
+  "city": "Mesto",
+  "postal_code": "PSČ",
+  "parish": "Farnosť",
+  "diocese": "Diecéza",
+  "dietary_restrictions": "Stravové obmedzenia",
+  "dietary_restrictions_hint": "Napr. bezlepková diéta, vegetariánska strava, alergie...",
+  "notes_hint": "Ďalšie informácie, ktoré chcete zdieľať...",
+  "referral_source": "Ako ste sa o nás dozvedeli?",
+  "price": "Cena za izbu",
+  "deposit": "záloha",
+  "registration_deposit_info": "Na potvrdenie registrácie je potrebné uhradiť zálohu. Platobné inštrukcie obdržíte emailom.",
+
+  "gdpr_consent_label": "Súhlasím so spracovaním osobných údajov v zmysle GDPR.",
+  "responsibility_consent_label": "Beriem na vedomie, že duchovné cvičenia nie sú náhradou lekárskej alebo psychoterapeutickej starostlivosti. Účasť je dobrovoľná a nesiem za seba plnú zodpovednosť.",
+  "newsletter_consent_label": "Chcem dostávať informácie o ďalších duchovných cvičeniach a aktivitách.",
+
+  "registration_gdpr_required": "Musíte súhlasiť so spracovaním osobných údajov.",
+  "registration_responsibility_required": "Musíte potvrdiť vyhlásenie o zodpovednosti.",
+
+  "field_required": "Toto pole je povinné",
+  "invalid_email": "Neplatný formát emailu",
+  "invalid_phone": "Neplatný formát telefónu (napr. +421901234567)",
+
+  "select_date": "Vyberte dátum",
+  "select_option": "Vyberte možnosť",
+  "optional": "(nepovinné)",
+
+  "submit_registration": "Odoslať registráciu",
+  "registration_success_title": "Registrácia odoslaná",
+  "registration_success_message": "Vaša registrácia bola úspešne odoslaná. Platobné inštrukcie obdržíte emailom.",
+  "save_profile_title": "Uložiť profil?",
+  "save_profile_message": "Chcete si uložiť vyplnené údaje do profilu pre budúce registrácie?",
+
+  "gdpr_info_title": "Spracovanie osobných údajov",
+  "gdpr_info_content": "Vaše osobné údaje budú spracované v súlade s GDPR za účelom organizácie duchovných cvičení. Údaje budú uchovávané po dobu nevyhnutnú na splnenie účelu spracovania.",
+  "close": "Zavrieť",
+
+  "register_for_exercise": "Prihlásiť sa na cvičenie"
 
 }

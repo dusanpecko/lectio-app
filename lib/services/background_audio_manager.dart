@@ -1,8 +1,9 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
-import 'package:flutter/material.dart' hide debugPrint;
 import 'package:get_it/get_it.dart';
 
+import '../shared/app_colors.dart';
+import '../shared/audio_constants.dart';
 import '../shared/globals.dart';
 import 'lectio_audio_service.dart';
 
@@ -18,7 +19,6 @@ class BackgroundAudioManager {
   // Playlist pre background playback
   List<Map<String, dynamic>> _playlist = [];
   int _currentTrackIndex = -1;
-  String _audioMode = 'short'; // 'none', 'short', 'long'
   bool _isPlayingInterlude = false;
 
   /// Initialize background audio service
@@ -38,7 +38,7 @@ class BackgroundAudioManager {
           androidStopForegroundOnPause:
               false, // Keep service alive for background play
           androidShowNotificationBadge: true,
-          notificationColor: Color(0xFF4A5085),
+          notificationColor: AppColors.primary,
           androidNotificationClickStartsActivity: true,
           androidNotificationIcon: 'mipmap/launcher_icon',
           // Enhanced settings for better MediaSession integration
@@ -63,7 +63,7 @@ class BackgroundAudioManager {
         GetIt.instance.registerSingleton<LectioAudioHandler>(_audioHandler!);
       }
     } catch (e) {
-      print('❌ Error initializing background audio: $e');
+      debugPrint('❌ Error initializing background audio: $e');
       rethrow;
     }
   }
@@ -77,7 +77,7 @@ class BackgroundAudioManager {
   /// Set playlist for background playback
   void setPlaylist(List<Map<String, dynamic>> tracks, String audioMode) {
     _playlist = List.from(tracks);
-    _audioMode = audioMode;
+    this.audioMode = audioMode;
     debugPrint(
       '🎵 BackgroundAudioManager: Playlist set with ${tracks.length} tracks, mode: $audioMode',
     );
@@ -105,13 +105,8 @@ class BackgroundAudioManager {
   /// Get current track index
   int get currentTrackIndex => _currentTrackIndex;
 
-  /// Get audio mode
-  String get audioMode => _audioMode;
-
-  /// Set audio mode
-  set audioMode(String mode) {
-    _audioMode = mode;
-  }
+  /// Audio mode - 'none', 'short', 'long'
+  String audioMode = 'short';
 
   /// Check if playing interlude
   bool get isPlayingInterlude => _isPlayingInterlude;
@@ -129,7 +124,7 @@ class BackgroundAudioManager {
         artist: artist ?? 'Spiritual Audio',
       );
     } catch (e) {
-      print('❌ Error playing audio: $e');
+      debugPrint('❌ Error playing audio: $e');
       rethrow;
     }
   }
@@ -161,14 +156,7 @@ class BackgroundAudioManager {
   }) async {
     _isPlayingInterlude = true;
 
-    String url;
-    if (isLong) {
-      url =
-          'https://unnijykbupxguogrkolj.supabase.co/storage/v1/object/public/audio-files/lectio/lectio_full.mp3';
-    } else {
-      url =
-          'https://unnijykbupxguogrkolj.supabase.co/storage/v1/object/public/audio-files/lectio/audio_null.mp3';
-    }
+    final url = AudioConstants.getInterludeUrl(isLong: isLong);
 
     debugPrint('🎵 Playing interlude (${isLong ? "long" : "short"})');
 
@@ -182,7 +170,7 @@ class BackgroundAudioManager {
     debugPrint('🎵 _isPlayingInterlude: $_isPlayingInterlude');
     debugPrint('🎵 _currentTrackIndex: $_currentTrackIndex');
     debugPrint('🎵 _playlist.length: ${_playlist.length}');
-    debugPrint('🎵 _audioMode: $_audioMode');
+    debugPrint('🎵 audioMode: $audioMode');
     debugPrint('🎵 ═══════════════════════════════════════════════════════');
 
     // Ak nemáme playlist alebo index, fallback na widget callback
@@ -218,7 +206,7 @@ class BackgroundAudioManager {
     // Regular track finished
     final hasNextTrack = _currentTrackIndex < _playlist.length - 1;
 
-    if (_audioMode == 'none') {
+    if (audioMode == 'none') {
       // No interlude, play next track directly
       if (hasNextTrack) {
         final nextIndex = _currentTrackIndex + 1;
@@ -231,7 +219,7 @@ class BackgroundAudioManager {
       }
     } else {
       // Play interlude
-      final isLong = _audioMode == 'long' || !hasNextTrack;
+      final isLong = audioMode == 'long' || !hasNextTrack;
       debugPrint(
         '🎵 Playing interlude before ${hasNextTrack ? "next track" : "end"}',
       );

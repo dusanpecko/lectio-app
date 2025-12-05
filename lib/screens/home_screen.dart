@@ -4,6 +4,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/spiritual_exercise.dart';
+import '../shared/app_colors.dart';
 import '../widgets/speed_dial_fab.dart';
 import 'about_screen.dart';
 import 'intentions_list_screen.dart';
@@ -14,6 +16,8 @@ import 'news_list_screen.dart';
 import 'notes_list_screen.dart';
 import 'rosary_screen.dart';
 import 'settings_screen.dart';
+import 'spiritual_exercise_detail_screen.dart';
+import 'spiritual_exercises_list_screen.dart';
 import 'support_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -64,6 +68,14 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> newsArticles = [];
   bool isLoadingNews = true;
 
+  // Spiritual exercise data (pre hero sekciu)
+  SpiritualExercise? _featuredExercise;
+  bool _isLoadingExercise = true;
+
+  // Featured carousel controller
+  final PageController _featuredCarouselController = PageController();
+  int _currentFeaturedPage = 0;
+
   @override
   void initState() {
     super.initState();
@@ -76,6 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!_dataLoaded) {
       _fetchQuoteData();
       _fetchNewsData();
+      _fetchFeaturedExercise();
       _dataLoaded = true;
     }
   }
@@ -84,6 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _timer?.cancel();
     _pageController.dispose();
+    _featuredCarouselController.dispose();
     super.dispose();
   }
 
@@ -232,9 +246,88 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Fetch featured spiritual exercise for current locale
+  Future<void> _fetchFeaturedExercise() async {
+    final supabase = Supabase.instance.client;
+
+    try {
+      final locale = context.locale.languageCode;
+      final now = DateTime.now().toIso8601String().substring(0, 10);
+
+      // Najprv nájdi locale_id pre aktuálny jazyk
+      final localeData = await supabase
+          .from('locales')
+          .select('id')
+          .eq('code', locale)
+          .maybeSingle();
+
+      if (localeData == null) {
+        debugPrint('🔍 Home: Locale $locale not found');
+        if (mounted) {
+          setState(() => _isLoadingExercise = false);
+        }
+        return;
+      }
+
+      // Nájdi najbližšie aktívne duchovné cvičenie pre daný jazyk
+      final response = await supabase
+          .from('spiritual_exercises')
+          .select('''
+            id,
+            title,
+            slug,
+            description,
+            image_url,
+            home_image_url,
+            start_date,
+            end_date,
+            location_name,
+            location_city,
+            location_country,
+            leader_name,
+            max_capacity,
+            locale:locales(id, code, native_name)
+          ''')
+          .eq('is_published', true)
+          .eq('is_active', true)
+          .eq('locale_id', localeData['id'])
+          .gte('end_date', now) // Len budúce alebo prebiehajúce
+          .order('start_date', ascending: true)
+          .limit(1)
+          .maybeSingle();
+
+      if (!mounted) return;
+
+      if (response != null) {
+        setState(() {
+          _featuredExercise = SpiritualExercise.fromJson(response);
+          _isLoadingExercise = false;
+        });
+        debugPrint(
+          '✅ Home: Featured exercise found: ${_featuredExercise?.title}',
+        );
+      } else {
+        setState(() {
+          _featuredExercise = null;
+          _isLoadingExercise = false;
+        });
+        debugPrint('🔍 Home: No featured exercise for locale $locale');
+      }
+    } catch (e) {
+      debugPrint('❌ Home: Error fetching featured exercise: $e');
+      if (mounted) {
+        setState(() => _isLoadingExercise = false);
+      }
+    }
+  }
+
   // Handle refresh
   Future<void> _onRefresh() async {
-    await Future.wait([_fetchQuoteData(), _fetchNewsData()]);
+    await Future.wait([
+      _fetchQuoteData(),
+      _fetchNewsData(),
+      _fetchFeaturedExercise(),
+    ]);
   }
 
   // Helper methods
@@ -260,7 +353,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return Theme(
           data: theme.copyWith(
             colorScheme: theme.colorScheme.copyWith(
-              primary: const Color(0xFF4A5085),
+              primary: AppColors.primary,
               onPrimary: Colors.white,
             ),
           ),
@@ -516,7 +609,7 @@ class _HomeScreenState extends State<HomeScreen> {
             height: isActive ? 12 : 8,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isActive ? const Color(0xFF4A5085) : Colors.grey.shade400,
+              color: isActive ? AppColors.primary : Colors.grey.shade400,
             ),
           );
         }),
@@ -541,7 +634,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 'Lectio divina',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF4A5085),
+                  color: AppColors.primary,
                 ),
               ),
               GestureDetector(
@@ -549,12 +642,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4A5085).withValues(alpha: 0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
                     Icons.calendar_today,
-                    color: Color(0xFF4A5085),
+                    color: AppColors.primary,
                     size: 20,
                   ),
                 ),
@@ -580,9 +673,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 70,
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     decoration: BoxDecoration(
-                      color: isToday
-                          ? const Color(0xFF4A5085)
-                          : Colors.grey.shade100,
+                      color: isToday ? AppColors.primary : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: isToday
                           ? [
@@ -660,8 +751,8 @@ class _HomeScreenState extends State<HomeScreen> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                const Color(0xFF4A5085).withValues(alpha: 0.03),
-                const Color(0xFF4A5085).withValues(alpha: 0.01),
+                AppColors.primary.withValues(alpha: 0.03),
+                AppColors.primary.withValues(alpha: 0.01),
               ],
             ),
           ),
@@ -678,7 +769,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                          color: Color(0xFF4A5085),
+                          color: AppColors.primary,
                           strokeWidth: 2,
                         ),
                       ),
@@ -690,7 +781,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const Icon(
                         Icons.format_quote,
                         size: 20,
-                        color: Color(0xFF4A5085),
+                        color: AppColors.primary,
                       ),
                       const SizedBox(width: 12),
 
@@ -720,7 +811,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF4A5085),
+                                  color: AppColors.primary,
                                   letterSpacing: 0.3,
                                 ),
                               ),
@@ -753,6 +844,11 @@ class _HomeScreenState extends State<HomeScreen> {
           _ModuleButton(
             labelKey: 'rosary_title',
             icon: Icons.auto_stories_rounded,
+          ),
+          const SizedBox(width: 12),
+          _ModuleButton(
+            labelKey: 'spiritual_exercises',
+            icon: Icons.self_improvement,
           ),
           const SizedBox(width: 12),
           _ModuleButton(labelKey: 'news', icon: Icons.campaign),
@@ -799,124 +895,360 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Build Rosary section
+  // Build Featured Section (Spiritual Exercise or Rosary)
   Widget _buildRosarySection() {
+    // Ak sa ešte načítava, zobraz loading
+    if (_isLoadingExercise) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        height: 300,
+        child: const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
+
+    // Vytvor zoznam kariet pre carousel
+    final List<Widget> carouselItems = [];
+
+    // 1. Pridaj duchovné cvičenie ak existuje
+    if (_featuredExercise != null) {
+      carouselItems.add(_buildSpiritualExerciseCardContent(_featuredExercise!));
+    }
+
+    // 2. Vždy pridaj Rosary
+    carouselItems.add(_buildRosaryCardContent());
+
+    // 3. Tu môžeš pridať ďalšie položky v budúcnosti
+    // carouselItems.add(_buildOtherCardContent());
+
+    // Ak je len jedna položka, nezobrazuj dots
+    if (carouselItems.length == 1) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        height: 300,
+        child: carouselItems.first,
+      );
+    }
+
+    // Carousel s viacerými položkami
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      height: 300,
-      child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const RosaryScreen()),
-          );
-        },
-        child: Card(
-          elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+      child: Column(
+        children: [
+          // Carousel
+          SizedBox(
+            height: 300,
+            child: PageView.builder(
+              controller: _featuredCarouselController,
+              itemCount: carouselItems.length,
+              onPageChanged: (index) {
+                if (!mounted) return;
+                setState(() {
+                  _currentFeaturedPage = index;
+                });
+              },
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: carouselItems[index],
+                );
+              },
+            ),
           ),
-          child: Container(
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
-            child: Stack(
-              children: [
-                // Background image
-                ClipRRect(
+
+          // Dots indicator
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(carouselItems.length, (index) {
+              final isActive = _currentFeaturedPage == index;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: isActive ? 12 : 8,
+                height: isActive ? 12 : 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isActive ? AppColors.primary : Colors.grey.shade400,
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Build Spiritual Exercise card content (bez margin pre carousel)
+  Widget _buildSpiritualExerciseCardContent(SpiritualExercise exercise) {
+    final dateFormat = DateFormat('d. MMM', context.locale.languageCode);
+    final dateRange =
+        '${dateFormat.format(exercise.startDate)} - ${dateFormat.format(exercise.endDate)}';
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                SpiritualExerciseDetailScreen(slug: exercise.slug),
+          ),
+        );
+      },
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+          child: Stack(
+            children: [
+              // Background image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child:
+                    exercise.homeImageUrl != null || exercise.imageUrl != null
+                    ? Image.network(
+                        exercise.homeImageUrl ?? exercise.imageUrl!,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _buildExerciseFallbackBackground();
+                        },
+                      )
+                    : _buildExerciseFallbackBackground(),
+              ),
+
+              // Gradient overlay
+              Container(
+                decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  child: Image.asset(
-                    'assets/images/rosary_bg.jpg',
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      // Fallback ak sa obrázok nenačíta
-                      return Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              const Color(0xFF4A5085).withValues(alpha: 0.8),
-                              const Color(0xFF4A5085),
-                            ],
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.3),
+                      Colors.black.withValues(alpha: 0.6),
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
+                  ),
+                ),
+              ),
+
+              // Bottom content
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.self_improvement,
+                            size: 16,
+                            color: AppColors.primary,
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-
-                // Gradient overlay pre lepšiu čitateľnosť textu
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.3),
-                        Colors.black.withValues(alpha: 0.6),
-                      ],
-                      stops: const [0.0, 0.5, 1.0],
-                    ),
-                  ),
-                ),
-
-                // Bottom content with radius
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(16),
-                        bottomRight: Radius.circular(16),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.auto_stories_rounded,
-                              size: 16,
-                              color: Color(0xFF4A5085),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              tr('rosary_title'),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              exercise.title,
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF2D3748),
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          tr('rosary_description'),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF718096),
-                            height: 1.4,
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.calendar_today,
+                            size: 14,
+                            color: Color(0xFF718096),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            dateRange,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF718096),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          const Icon(
+                            Icons.location_on,
+                            size: 14,
+                            color: Color(0xFF718096),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              exercise.locationDisplay,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF718096),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExerciseFallbackBackground() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [AppColors.primary.withValues(alpha: 0.8), AppColors.primary],
+        ),
+      ),
+    );
+  }
+
+  // Build Rosary card content (bez margin pre carousel)
+  Widget _buildRosaryCardContent() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const RosaryScreen()),
+        );
+      },
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+          child: Stack(
+            children: [
+              // Background image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.asset(
+                  'assets/images/rosary_bg.jpg',
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Fallback ak sa obrázok nenačíta
+                    return Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            AppColors.primary.withValues(alpha: 0.8),
+                            AppColors.primary,
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              // Gradient overlay pre lepšiu čitateľnosť textu
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.3),
+                      Colors.black.withValues(alpha: 0.6),
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
+                  ),
+                ),
+              ),
+
+              // Bottom content with radius
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.auto_stories_rounded,
+                            size: 16,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            tr('rosary_title'),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2D3748),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        tr('rosary_description'),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF718096),
+                          height: 1.4,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -955,7 +1287,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   tr('see_all'),
                   style: const TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF4A5085),
+                    color: AppColors.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -969,7 +1301,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ? const SizedBox(
                   height: 200,
                   child: Center(
-                    child: CircularProgressIndicator(color: Color(0xFF4A5085)),
+                    child: CircularProgressIndicator(color: AppColors.primary),
                   ),
                 )
               : newsArticles.isEmpty
@@ -991,14 +1323,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 )
               : SizedBox(
-                  height: 280,
+                  height: 320,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: newsArticles.length,
                     itemBuilder: (context, index) {
                       final article = newsArticles[index];
                       return Container(
-                        width: 300,
+                        width: 280,
                         margin: const EdgeInsets.only(right: 16),
                         child: GestureDetector(
                           onTap: () {
@@ -1010,130 +1342,84 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             );
                           },
-                          child: Container(
-                            decoration: BoxDecoration(
+                          child: Card(
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Large Image
-                                Expanded(
-                                  flex: 3,
-                                  child: Container(
+                                // Image section - fixed height
+                                ClipRRect(
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(16),
+                                    topRight: Radius.circular(16),
+                                  ),
+                                  child: SizedBox(
+                                    height: 160,
                                     width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(16),
-                                        topRight: Radius.circular(16),
-                                      ),
-                                      color: Colors.grey.shade200,
-                                    ),
-                                    child: Stack(
-                                      children: [
-                                        // Main image
-                                        ClipRRect(
-                                          borderRadius: const BorderRadius.only(
-                                            topLeft: Radius.circular(16),
-                                            topRight: Radius.circular(16),
+                                    child: article['image_url'] != null
+                                        ? Image.network(
+                                            article['image_url'],
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                                  return Container(
+                                                    color: Colors.grey.shade200,
+                                                    child: const Icon(
+                                                      Icons.image_not_supported,
+                                                      color: Colors.grey,
+                                                      size: 50,
+                                                    ),
+                                                  );
+                                                },
+                                          )
+                                        : Container(
+                                            color: Colors.grey.shade200,
+                                            child: const Icon(
+                                              Icons.article,
+                                              color: Colors.grey,
+                                              size: 50,
+                                            ),
                                           ),
-                                          child: article['image_url'] != null
-                                              ? Image.network(
-                                                  article['image_url'],
-                                                  width: double.infinity,
-                                                  height: double.infinity,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder:
-                                                      (
-                                                        context,
-                                                        error,
-                                                        stackTrace,
-                                                      ) {
-                                                        return Container(
-                                                          width:
-                                                              double.infinity,
-                                                          height:
-                                                              double.infinity,
-                                                          color: Colors
-                                                              .grey
-                                                              .shade200,
-                                                          child: const Icon(
-                                                            Icons
-                                                                .image_not_supported,
-                                                            color: Colors.grey,
-                                                            size: 50,
-                                                          ),
-                                                        );
-                                                      },
-                                                )
-                                              : Container(
-                                                  width: double.infinity,
-                                                  height: double.infinity,
-                                                  color: Colors.grey.shade200,
-                                                  child: const Icon(
-                                                    Icons.article,
-                                                    color: Colors.grey,
-                                                    size: 50,
-                                                  ),
-                                                ),
-                                        ),
-                                      ],
-                                    ),
                                   ),
                                 ),
 
                                 // Content section
                                 Expanded(
-                                  flex: 2,
                                   child: Container(
-                                    width: double.infinity,
                                     padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: const BorderRadius.only(
-                                        bottomLeft: Radius.circular(16),
-                                        bottomRight: Radius.circular(16),
-                                      ),
-                                    ),
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
                                         // Title
-                                        Expanded(
-                                          child: Text(
-                                            article['title'] ??
-                                                (tr('untitled_article')),
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: Color(0xFF2D3748),
-                                              height: 1.3,
-                                            ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
+                                        Text(
+                                          article['title'] ??
+                                              tr('untitled_article'),
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF2D3748),
+                                            height: 1.3,
                                           ),
+                                          maxLines: 3,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
 
-                                        const SizedBox(height: 12),
+                                        const Spacer(),
 
                                         // "Zobraziť článok" button
                                         Container(
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 8,
+                                            horizontal: 12,
+                                            vertical: 6,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: const Color(
-                                              0xFF4A5085,
-                                            ).withValues(alpha: 0.1),
+                                            color: AppColors.primary.withValues(
+                                              alpha: 0.1,
+                                            ),
                                             borderRadius: BorderRadius.circular(
                                               8,
                                             ),
@@ -1141,19 +1427,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              const Icon(
-                                                Icons.arrow_forward,
-                                                size: 16,
-                                                color: Color(0xFF4A5085),
-                                              ),
-                                              const SizedBox(width: 8),
                                               Text(
-                                                'Zobraziť článok',
+                                                tr('show_article'),
                                                 style: const TextStyle(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w600,
-                                                  color: Color(0xFF4A5085),
+                                                  color: AppColors.primary,
                                                 ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              const Icon(
+                                                Icons.arrow_forward,
+                                                size: 14,
+                                                color: AppColors.primary,
                                               ),
                                             ],
                                           ),
@@ -1192,7 +1478,7 @@ class _ModuleButton extends StatelessWidget {
         icon: Icon(icon, size: 23),
         label: Text(labelKey.tr()),
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF4A5085),
+          backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 12),
           shape: RoundedRectangleBorder(
@@ -1224,6 +1510,15 @@ class _ModuleButton extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const RosaryScreen()),
+        );
+        break;
+
+      case 'spiritual_exercises':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const SpiritualExercisesListScreen(),
+          ),
         );
         break;
 

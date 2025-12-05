@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/audio_player_service.dart';
+import '../shared/app_colors.dart';
 
 class FloatingAudioPlayer extends StatelessWidget {
   final AudioPlayerService audioService;
@@ -61,7 +62,7 @@ class FloatingAudioPlayer extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF4A5085).withValues(alpha: 0.1),
+        color: AppColors.primary.withValues(alpha: 0.1),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Row(
@@ -71,7 +72,7 @@ class FloatingAudioPlayer extends StatelessWidget {
             'Audio prehrávač',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF4A5085),
+              color: AppColors.primary,
             ),
           ),
           IconButton(
@@ -112,7 +113,7 @@ class FloatingAudioPlayer extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF4A5085).withValues(alpha: 0.05),
+        color: AppColors.primary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -121,7 +122,7 @@ class FloatingAudioPlayer extends StatelessWidget {
           Text(
             'Meditačná hudba',
             style: theme.textTheme.labelLarge?.copyWith(
-              color: const Color(0xFF4A5085),
+              color: AppColors.primary,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -174,10 +175,10 @@ class FloatingAudioPlayer extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF4A5085) : Colors.transparent,
+          color: isSelected ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? const Color(0xFF4A5085) : Colors.grey.shade300,
+            color: isSelected ? AppColors.primary : Colors.grey.shade300,
             width: 1.5,
           ),
         ),
@@ -215,7 +216,7 @@ class FloatingAudioPlayer extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF4A5085).withValues(alpha: 0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -246,7 +247,7 @@ class FloatingAudioPlayer extends StatelessWidget {
                           : (currentTrack?['label'] ?? ''),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF4A5085),
+                        color: AppColors.primary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -269,18 +270,18 @@ class FloatingAudioPlayer extends StatelessWidget {
         IconButton(
           icon: const Icon(Icons.skip_previous),
           color: currentTrackIndex > 0
-              ? const Color(0xFF4A5085)
+              ? AppColors.primary
               : Colors.grey.shade400,
           onPressed: currentTrackIndex > 0 ? onPreviousTrack : null,
         ),
         const SizedBox(width: 8),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF4A5085),
+            color: AppColors.primary,
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF4A5085).withValues(alpha: 0.3),
+                color: AppColors.primary.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -305,7 +306,7 @@ class FloatingAudioPlayer extends StatelessWidget {
         IconButton(
           icon: const Icon(Icons.skip_next),
           color: currentTrackIndex < tracks.length - 1
-              ? const Color(0xFF4A5085)
+              ? AppColors.primary
               : Colors.grey.shade400,
           onPressed: currentTrackIndex < tracks.length - 1 ? onNextTrack : null,
         ),
@@ -331,8 +332,8 @@ class FloatingAudioPlayer extends StatelessWidget {
                 max: audioService.totalDuration.inSeconds.toDouble() > 0
                     ? audioService.totalDuration.inSeconds.toDouble()
                     : 1.0,
-                activeColor: const Color(0xFF4A5085),
-                inactiveColor: const Color(0xFF4A5085).withValues(alpha: 0.2),
+                activeColor: AppColors.primary,
+                inactiveColor: AppColors.primary.withValues(alpha: 0.2),
                 onChanged: (value) {
                   audioService.seek(Duration(seconds: value.toInt()));
                 },
@@ -357,7 +358,7 @@ class FloatingAudioPlayer extends StatelessWidget {
           'Dostupné nahrávky',
           style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
-            color: const Color(0xFF4A5085),
+            color: AppColors.primary,
           ),
         ),
         const SizedBox(height: 12),
@@ -382,7 +383,7 @@ class FloatingAudioPlayer extends StatelessWidget {
                   margin: const EdgeInsets.only(bottom: 4),
                   decoration: BoxDecoration(
                     color: isCurrentTrack
-                        ? const Color(0xFF4A5085).withValues(alpha: 0.15)
+                        ? AppColors.primary.withValues(alpha: 0.15)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -391,7 +392,7 @@ class FloatingAudioPlayer extends StatelessWidget {
                       Icon(
                         track['icon'],
                         color: isCurrentTrack
-                            ? const Color(0xFF4A5085)
+                            ? AppColors.primary
                             : track['color'],
                         size: 20,
                       ),
@@ -401,7 +402,7 @@ class FloatingAudioPlayer extends StatelessWidget {
                           track['label'],
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: isCurrentTrack
-                                ? const Color(0xFF4A5085)
+                                ? AppColors.primary
                                 : theme.colorScheme.onSurface,
                             fontWeight: isCurrentTrack
                                 ? FontWeight.bold
@@ -418,7 +419,7 @@ class FloatingAudioPlayer extends StatelessWidget {
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              Color(0xFF4A5085),
+                              AppColors.primary,
                             ),
                           ),
                         ),
