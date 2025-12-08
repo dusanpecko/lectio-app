@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/prayer_focus_settings.dart';
+import '../utils/app_logger.dart';
 
 enum PrayerFocusStatus {
   inactive, // Nie je aktívny
@@ -24,7 +24,7 @@ class PrayerFocusService {
   factory PrayerFocusService() => _instance;
   PrayerFocusService._internal();
 
-  final Logger _logger = Logger();
+  final _logger = appLogger;
 
   // Settings
   PrayerFocusSettings _settings = const PrayerFocusSettings();

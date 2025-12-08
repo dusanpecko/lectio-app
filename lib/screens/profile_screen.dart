@@ -1031,12 +1031,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               child: Text(
                                 _subscriptions.any((s) => s.tier == 'founder')
-                                    ? 'FOUNDER'
+                                    ? 'profile.tier_badge.founder'.tr()
                                     : _subscriptions.any(
                                         (s) => s.tier == 'patron',
                                       )
-                                    ? 'PATRON'
-                                    : 'FRIEND',
+                                    ? 'profile.tier_badge.patron'.tr()
+                                    : 'profile.tier_badge.friend'.tr(),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -1231,7 +1231,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${sub.tier.toUpperCase()} tier',
+                'profile.subscription.tier'.tr(args: [sub.tier.toUpperCase()]),
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),

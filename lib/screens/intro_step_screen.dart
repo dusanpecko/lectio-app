@@ -22,9 +22,12 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
     final t = translations.getTranslations(lang, widget.step);
 
     if (t == null) {
+      final errorT = translations.getErrorTranslations(lang);
       return Scaffold(
-        appBar: AppBar(title: Text('Step not found')),
-        body: Center(child: Text('Step "${widget.step}" not implemented yet')),
+        appBar: AppBar(title: Text(errorT['notFoundTitle']!)),
+        body: Center(
+          child: Text('${errorT['notFoundMessage']}: "${widget.step}"'),
+        ),
       );
     }
 

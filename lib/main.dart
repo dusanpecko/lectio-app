@@ -13,7 +13,7 @@ import 'package:lectio_divina/screens/auth_screen.dart';
 import 'package:lectio_divina/screens/home_screen.dart';
 import 'package:lectio_divina/screens/lectio_screen.dart';
 import 'package:lectio_divina/shared/app_theme.dart';
-import 'package:logger/logger.dart';
+import 'package:lectio_divina/utils/app_logger.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -21,12 +21,12 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'firebase_options.dart';
 import 'providers/theme_provider.dart';
-import 'shared/app_colors.dart';
 import 'services/background_audio_manager.dart';
 import 'services/fcm_service.dart';
 import 'services/local_notifications_service.dart';
+import 'shared/app_colors.dart';
 
-final Logger _logger = Logger();
+final _logger = appLogger;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 AudioHandler? globalAudioHandler;
@@ -73,7 +73,7 @@ Future<Locale> _getStartLocale(String languageCode) async {
   if (languageCode == 'system') {
     // Pre 'system' použij systémový jazyk
     final systemLocale = WidgetsBinding.instance.platformDispatcher.locale;
-    final supportedLanguages = ['sk', 'en'];
+    final supportedLanguages = ['sk', 'en', 'es'];
     final systemLang = supportedLanguages.contains(systemLocale.languageCode)
         ? systemLocale.languageCode
         : 'sk';
@@ -166,8 +166,8 @@ void _showLocalNotificationDialog(BuildContext context, String? payload) async {
       return;
     }
 
-    String title = 'Notifikácia';
-    String body = 'Máte novú notifikáciu.';
+    String title = 'notifications.dialog.title'.tr();
+    String body = 'notifications.dialog.default_body'.tr();
     String? actionRoute;
 
     // Dekóduj payload a nastav obsah
@@ -179,20 +179,18 @@ void _showLocalNotificationDialog(BuildContext context, String? payload) async {
 
         switch (type) {
           case 'daily_lectio':
-            title = '📖 Denné zamyslenie';
-            body = 'Čas na dnešné lectio divina. Chcete ho otvoriť?';
+            title = 'notifications.dialog.daily_lectio.title'.tr();
+            body = 'notifications.dialog.daily_lectio.body'.tr();
             actionRoute = '/lectio';
             break;
           case 'prayer_reminder':
-            title = '🙏 Pripomenutie modlitby';
-            body =
-                'Čas na modlitbu a zamyslenie. Chcete otvoriť lectio divina?';
+            title = 'notifications.dialog.prayer_reminder.title'.tr();
+            body = 'notifications.dialog.prayer_reminder.body'.tr();
             actionRoute = '/lectio';
             break;
           case 'welcome':
-            title = '✨ Vitajte v aplikácii!';
-            body =
-                'Ďakujeme, že používate Lectio Divina. Preskúmajte naše denné zamyslenia.';
+            title = 'notifications.dialog.welcome.title'.tr();
+            body = 'notifications.dialog.welcome.body'.tr();
             break;
         }
       } catch (e) {
@@ -239,9 +237,9 @@ void _showLocalNotificationDialog(BuildContext context, String? payload) async {
               onPressed: () {
                 Navigator.of(dialogContext).pop();
               },
-              child: const Text(
-                'Zavrieť',
-                style: TextStyle(
+              child: Text(
+                'close'.tr(),
+                style: const TextStyle(
                   color: Colors.grey,
                   fontWeight: FontWeight.w500,
                 ),
@@ -258,9 +256,9 @@ void _showLocalNotificationDialog(BuildContext context, String? payload) async {
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                 ),
-                child: const Text(
-                  'Otvoriť',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                child: Text(
+                  'notifications.dialog.open'.tr(),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
           ],
@@ -391,9 +389,9 @@ void _showNotificationDialog(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
               },
-              child: const Text(
-                'Zavrieť',
-                style: TextStyle(
+              child: Text(
+                'close'.tr(),
+                style: const TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
                 ),
@@ -437,7 +435,7 @@ Future<void> main() async {
     _logger.e('Missing SUPABASE_URL or SUPABASE_ANON_KEY in .env.');
     runApp(
       EasyLocalization(
-        supportedLocales: const [Locale('sk'), Locale('en')],
+        supportedLocales: const [Locale('sk'), Locale('en'), Locale('es')],
         path: 'assets/translations',
         fallbackLocale: const Locale('sk'),
         child: const EnvErrorApp(),
@@ -497,7 +495,7 @@ Future<void> main() async {
     ChangeNotifierProvider.value(
       value: themeProvider,
       child: EasyLocalization(
-        supportedLocales: const [Locale('sk'), Locale('en')],
+        supportedLocales: const [Locale('sk'), Locale('en'), Locale('es')],
         path: 'assets/translations',
         fallbackLocale: const Locale('sk'),
         startLocale: startLocale,
@@ -600,11 +598,14 @@ class _FCMInitializerState extends State<FCMInitializer>
 
       // 🔥 KRITICKÉ: Re-scheduluj notifikácie pri každom resume
       // Toto zabezpečí, že notifikácie budú vždy naplánované na najbližších 7 dní
-      LocalNotificationsService.instance.refreshCacheIfNeeded().then((_) {
-        _logger.i('✅ Notifications refreshed on app resume');
-      }).catchError((e) {
-        _logger.e('❌ Failed to refresh notifications: $e');
-      });
+      LocalNotificationsService.instance
+          .refreshCacheIfNeeded()
+          .then((_) {
+            _logger.i('✅ Notifications refreshed on app resume');
+          })
+          .catchError((e) {
+            _logger.e('❌ Failed to refresh notifications: $e');
+          });
 
       // Kontrola pending notifikácie keď aplikácia prejde do popredia
       if (_pendingNotificationPayload != null) {
@@ -792,9 +793,9 @@ class EnvErrorApp extends StatelessWidget {
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 600),
-              child: Column(
+              child: const Column(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Icon(Icons.error_outline, size: 64),
                   SizedBox(height: 16),
                   Text(

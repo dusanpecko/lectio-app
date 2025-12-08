@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -23,37 +24,37 @@ class _DonationScreenState extends State<DonationScreen> {
     {
       'tier': 'friend',
       'interval': 'month',
-      'name': '💙 Priateľ Lectio',
-      'price': '€3/mesiac',
-      'description': 'Newsletter, e-book, 14 dní offline',
-      'yearlyPrice': '€30/rok',
-      'yearlySavings': 'Ušetríte €6',
+      'nameKey': 'donation.tiers.friend.name',
+      'priceKey': 'donation.tiers.friend.price',
+      'descriptionKey': 'donation.tiers.friend.description',
+      'yearlyPriceKey': 'donation.tiers.friend.yearly_price',
+      'yearlySavingsKey': 'donation.tiers.friend.yearly_savings',
     },
     {
       'tier': 'patron',
       'interval': 'month',
-      'name': '💜 Patron Lectio',
-      'price': '€20/mesiac',
-      'description': 'Všetky kurzy ZADARMO, premium audio, fyzické dary',
-      'yearlyPrice': '€200/rok',
-      'yearlySavings': 'Ušetríte €40',
+      'nameKey': 'donation.tiers.patron.name',
+      'priceKey': 'donation.tiers.patron.price',
+      'descriptionKey': 'donation.tiers.patron.description',
+      'yearlyPriceKey': 'donation.tiers.patron.yearly_price',
+      'yearlySavingsKey': 'donation.tiers.patron.yearly_savings',
       'popular': true,
     },
     {
       'tier': 'founder',
       'interval': 'month',
-      'name': '🌟 Zakladateľ Lectio',
-      'price': '€50/mesiac',
-      'description': 'LIFETIME ACCESS, hlas v rozvoji, VIP benefity',
-      'yearlyPrice': '€500/rok',
-      'yearlySavings': 'Ušetríte €100',
+      'nameKey': 'donation.tiers.founder.name',
+      'priceKey': 'donation.tiers.founder.price',
+      'descriptionKey': 'donation.tiers.founder.description',
+      'yearlyPriceKey': 'donation.tiers.founder.yearly_price',
+      'yearlySavingsKey': 'donation.tiers.founder.yearly_savings',
     },
   ];
 
   Future<void> _makeOneTimeDonation() async {
     final amount = double.tryParse(_amountController.text);
     if (amount == null || amount < 0.5) {
-      _showError('Minimálna suma je €0.50');
+      _showError(tr('donation.error_min_amount'));
       return;
     }
 
@@ -105,7 +106,7 @@ class _DonationScreenState extends State<DonationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        _showError('Chyba pri vytváraní platby: $e');
+        _showError(tr('donation.error_payment', args: ['$e']));
       }
     } finally {
       if (mounted) {
@@ -166,7 +167,7 @@ class _DonationScreenState extends State<DonationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        _showError('Chyba pri vytváraní predplatného: $e');
+        _showError(tr('donation.error_subscription', args: ['$e']));
       }
     } finally {
       if (mounted) {
@@ -179,15 +180,12 @@ class _DonationScreenState extends State<DonationScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Prihlásenie potrebné'),
-        content: const Text(
-          'Pre vytvorenie predplatného sa musíte najprv prihlásiť. '
-          'Jednorazový dar môžete poslať aj bez prihlásenia.',
-        ),
+        title: Text('donation.login_required_title'.tr()),
+        content: Text('donation.login_required_message'.tr()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Zrušiť'),
+            child: Text('donation.login_required_cancel'.tr()),
           ),
           ElevatedButton(
             onPressed: () {
@@ -196,7 +194,7 @@ class _DonationScreenState extends State<DonationScreen> {
               // Navigate to login/profile screen
               // You can add navigation to login screen here
             },
-            child: const Text('Prihlásiť sa'),
+            child: Text('donation.login_required_login'.tr()),
           ),
         ],
       ),
@@ -212,7 +210,7 @@ class _DonationScreenState extends State<DonationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Podporte Lectio Divina')),
+      appBar: AppBar(title: Text('donation.title'.tr())),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -221,16 +219,19 @@ class _DonationScreenState extends State<DonationScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Header
-                  const Text(
-                    '🙏 Nie predávame vieru, zdieľame ju.',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Text(
+                    'donation.header_title'.tr(),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Všetok obsah je ZADARMO. Vaše dary nám pomáhajú udržiavať aplikáciu a vytvárať nový obsah.',
+                  Text(
+                    'donation.header_description'.tr(),
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
                   ),
                   const SizedBox(height: 24),
 
@@ -241,9 +242,9 @@ class _DonationScreenState extends State<DonationScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            '💰 Jednorazový dar',
-                            style: TextStyle(
+                          Text(
+                            'donation.one_time_title'.tr(),
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -252,8 +253,8 @@ class _DonationScreenState extends State<DonationScreen> {
                           TextField(
                             controller: _amountController,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Suma (EUR)',
+                            decoration: InputDecoration(
+                              labelText: 'donation.amount_label'.tr(),
                               prefixText: '€ ',
                               border: OutlineInputBorder(),
                             ),
@@ -262,20 +263,20 @@ class _DonationScreenState extends State<DonationScreen> {
                           TextField(
                             controller: _messageController,
                             maxLines: 2,
-                            decoration: const InputDecoration(
-                              labelText: 'Správa (voliteľné)',
-                              border: OutlineInputBorder(),
+                            decoration: InputDecoration(
+                              labelText: 'donation.message_label'.tr(),
+                              border: const OutlineInputBorder(),
                             ),
                           ),
                           const SizedBox(height: 12),
                           CheckboxListTile(
-                            title: const Text(
-                              '🕶️ Anonymný dar (bez potvrdzovacieho e-mailu)',
-                              style: TextStyle(fontSize: 14),
+                            title: Text(
+                              'donation.anonymous_title'.tr(),
+                              style: const TextStyle(fontSize: 14),
                             ),
-                            subtitle: const Text(
-                              'Platba bude spracovaná, ale nedostanete potvrdenie.',
-                              style: TextStyle(
+                            subtitle: Text(
+                              'donation.anonymous_subtitle'.tr(),
+                              style: const TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey,
                               ),
@@ -296,7 +297,7 @@ class _DonationScreenState extends State<DonationScreen> {
                                   vertical: 16,
                                 ),
                               ),
-                              child: const Text('Darovať teraz'),
+                              child: Text('donation.one_time_button'.tr()),
                             ),
                           ),
                         ],
@@ -306,9 +307,12 @@ class _DonationScreenState extends State<DonationScreen> {
                   const SizedBox(height: 24),
 
                   // Subscription section
-                  const Text(
-                    '⭐ Mesačná podpora',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Text(
+                    'donation.subscription_title'.tr(),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 12),
 
@@ -340,7 +344,7 @@ class _DonationScreenState extends State<DonationScreen> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
-                                    'Najpopulárnejšie',
+                                    'donation.popular_label'.tr(),
                                     style: TextStyle(
                                       color: Theme.of(
                                         context,
@@ -352,7 +356,7 @@ class _DonationScreenState extends State<DonationScreen> {
                                 ),
                               if (isPopular) const SizedBox(height: 8),
                               Text(
-                                tierData['name'],
+                                tr(tierData['nameKey'] as String),
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -360,7 +364,7 @@ class _DonationScreenState extends State<DonationScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                tierData['price'],
+                                tr(tierData['priceKey'] as String),
                                 style: TextStyle(
                                   fontSize: 24,
                                   color: Theme.of(context).colorScheme.primary,
@@ -369,7 +373,7 @@ class _DonationScreenState extends State<DonationScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                tierData['description'],
+                                tr(tierData['descriptionKey'] as String),
                                 style: const TextStyle(fontSize: 14),
                               ),
                               const SizedBox(height: 12),
@@ -381,7 +385,9 @@ class _DonationScreenState extends State<DonationScreen> {
                                         tierData['tier'],
                                         'month',
                                       ),
-                                      child: const Text('Mesačne'),
+                                      child: Text(
+                                        'donation.monthly_button'.tr(),
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -394,9 +400,17 @@ class _DonationScreenState extends State<DonationScreen> {
                                       child: Column(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Text(tierData['yearlyPrice']),
                                           Text(
-                                            tierData['yearlySavings'],
+                                            tr(
+                                              tierData['yearlyPriceKey']
+                                                  as String,
+                                            ),
+                                          ),
+                                          Text(
+                                            tr(
+                                              tierData['yearlySavingsKey']
+                                                  as String,
+                                            ),
                                             style: const TextStyle(
                                               fontSize: 10,
                                             ),
@@ -415,10 +429,10 @@ class _DonationScreenState extends State<DonationScreen> {
                   }),
 
                   const SizedBox(height: 24),
-                  const Text(
-                    '💳 Platba je zabezpečená cez Stripe',
+                  Text(
+                    'donation.stripe_disclaimer'.tr(),
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ],
               ),

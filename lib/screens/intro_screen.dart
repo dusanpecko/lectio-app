@@ -373,7 +373,7 @@ class _IntroScreenState extends State<IntroScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Krok ${stepData['number']} • ${stepData['duration']}',
+                            '${t['stepLabel']} ${stepData['number']} • ${stepData['duration']}',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w500,

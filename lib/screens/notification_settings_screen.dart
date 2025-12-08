@@ -1,11 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
 
 import '../models/notification_models.dart';
 import '../services/fcm_service.dart';
 import '../services/local_notifications_service.dart';
 import '../shared/app_colors.dart';
+import '../utils/app_logger.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -17,7 +17,7 @@ class NotificationSettingsScreen extends StatefulWidget {
 
 class _NotificationSettingsScreenState
     extends State<NotificationSettingsScreen> {
-  final Logger _logger = Logger();
+  final _logger = appLogger;
   final FcmService _fcmService = FcmService.instance;
   final LocalNotificationsService _localNotifications =
       LocalNotificationsService.instance;
@@ -186,11 +186,11 @@ class _NotificationSettingsScreenState
       if (enabled) {
         _logger.i('🔔 Requesting battery optimization exemption...');
         await _localNotifications.requestIgnoreBatteryOptimizations();
-        
+
         _logger.i('🔔 Requesting exact alarm permission...');
         await _localNotifications.requestExactAlarmPermission();
       }
-      
+
       await _localNotifications.setDailyLectioEnabled(enabled);
       setState(() => _dailyLectioEnabled = enabled);
 
@@ -229,11 +229,11 @@ class _NotificationSettingsScreenState
         if (!_prayerReminderEnabled) {
           _logger.i('🔔 Requesting battery optimization exemption...');
           await _localNotifications.requestIgnoreBatteryOptimizations();
-          
+
           _logger.i('🔔 Requesting exact alarm permission...');
           await _localNotifications.requestExactAlarmPermission();
         }
-        
+
         await _localNotifications.setPrayerReminderTime(picked);
         setState(() {
           _prayerReminderTime = picked;

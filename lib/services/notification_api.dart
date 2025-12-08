@@ -1,8 +1,10 @@
 import 'dart:convert';
-import 'package:logger/logger.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../models/notification_models.dart';
+import '../utils/app_logger.dart';
 
 /// API služba pre komunikáciu s backend endpoints pre notifications
 class NotificationAPI {
@@ -13,7 +15,7 @@ class NotificationAPI {
   // Public getter for singleton instance
   static NotificationAPI get instance => _instance;
 
-  final _logger = Logger();
+  final _logger = appLogger;
 
   // Get Supabase client
   SupabaseClient get _supabase => Supabase.instance.client;
@@ -493,7 +495,7 @@ class NotificationPreferencesCache {
   static const String _cacheTimeKey = 'notification_preferences_cache_time';
   // Cache je platná 5 minút - potom sa automaticky obnoví z API
   static const Duration _cacheValidDuration = Duration(minutes: 5);
-  static final Logger _logger = Logger();
+  static final _logger = appLogger;
 
   /// Uloží preferences do cache
   static Future<void> cachePreferences(

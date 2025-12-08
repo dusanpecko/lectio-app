@@ -3,18 +3,20 @@ import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../shared/audio_constants.dart';
+import '../utils/app_logger.dart';
 import 'background_audio_manager.dart';
-import 'do_not_disturb_service.dart';
+// TODO: DND funkcia dočasne deaktivovaná
+// import 'do_not_disturb_service.dart';
 
 class LectioAudioHandler extends BaseAudioHandler
     with QueueHandler, SeekHandler {
-  final Logger _logger = Logger();
+  final _logger = appLogger;
   final AudioPlayer _audioPlayer = AudioPlayer();
-  final DoNotDisturbService _dndService = DoNotDisturbService();
+  // TODO: DND dočasne deaktivované
+  // final DoNotDisturbService _dndService = DoNotDisturbService();
 
   bool _backgroundPlayEnabled = true;
 
@@ -274,9 +276,10 @@ class LectioAudioHandler extends BaseAudioHandler
       _logger.i('🎵 Audio source loaded successfully');
       _logger.i('🎵 Duration: ${_audioPlayer.duration}');
 
+      // TODO: DND dočasne deaktivované
       // Start Do Not Disturb session when audio starts playing
-      await _dndService.startReadingSession();
-      _logger.i('🔕 Do Not Disturb session started for audio playback');
+      // await _dndService.startReadingSession();
+      // _logger.i('🔕 Do Not Disturb session started for audio playback');
 
       // Start playing immediately to trigger media session
       _logger.i('🎵 Calling play()...');
@@ -316,9 +319,10 @@ class LectioAudioHandler extends BaseAudioHandler
     _logger.i('⏹️ Stopping audio');
     await _audioPlayer.stop();
 
+    // TODO: DND dočasne deaktivované
     // End Do Not Disturb session when audio stops
-    await _dndService.endReadingSession();
-    _logger.i('🔕 Do Not Disturb session ended');
+    // await _dndService.endReadingSession();
+    // _logger.i('🔕 Do Not Disturb session ended');
 
     await super.stop();
   }

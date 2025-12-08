@@ -69,6 +69,9 @@
   "translation_ecumenical": "Ekumenický preklad",
   "save": "Uložiť",
   "cancel": "Zrušiť",
+  "user_not_authenticated": "Používateľ nie je prihlásený.",
+  "submit_error": "Chyba pri odosielaní.",
+  "delete_error": "Chyba pri mazaní.",
   "unauthorized": "Prístup odmietnutý",
   "wrong_credentials": "Nesprávne meno alebo heslo.",
   "register_success": "Registrácia úspešná!",
@@ -155,6 +158,73 @@
   "actio": "Actio",
   "error_loading_data": "Chyba pri načítaní dát.",
   "play_audio": "Prehrať zvuk",
+  
+  "section_title_bible": "Biblický text",
+  "section_title_lectio": "LECTIO - Čítanie",
+  "section_title_meditatio": "MEDITATIO - Rozjímanie",
+  "section_title_oratio": "ORATIO - Modlitba",
+  "section_title_contemplatio": "CONTEMPLATIO - Kontemplácia",
+  "section_title_actio": "ACTIO - Konanie",
+  "section_title_default": "Lectio Divina Audio",
+  
+  "error_audio_playback": "Nepodarilo sa prehrať audio",
+  "error_dnd_toggle": "Chyba pri prepínaní režimu Nerušiť",
+  "ios_dnd_shortcuts_title": "iOS Shortcuts pre DND",
+  "ios_dnd_focus_mode": "Focus režim",
+  "ios_dnd_focus_path": "Nastavenia → Focus → Do Not Disturb",
+  
+  "dnd": {
+    "title": "Režim Nerušiť",
+    "description": "Automatické stlmenie notifikácií počas čítania a modlitby",
+    "permissions_required": "Potrebné povolenia",
+    "permissions_description": "Pre funkciu \"Nerušiť\" je potrebné povoliť prístup k notifikáciám a systémovým nastaveniam.",
+    "grant_access": "Povoliť prístup",
+    "enable_auto": "Zapnúť automaticky",
+    "enable_auto_subtitle": "Aktivuje sa po {seconds} sekundách čítania",
+    "activation_settings": "Nastavenia aktivácie:",
+    "auto_activation": "Automatická aktivácia",
+    "auto_activation_subtitle": "Aktivuje sa automaticky pri čítaní",
+    "activation_delay": "Oneskorenie aktivácie: {seconds} sekúnd",
+    "urgent_calls_allowed": "Urgentné hovory sú vždy povolené",
+    "ios_shortcuts_title": "iOS Shortcuts pre DND",
+    "ios_shortcuts_description": "Pre najlepšiu skúsenosť si vytvorte iOS Shortcuts pre automatické zapínanie/vypínanie Focus režimu.",
+    "shortcuts_btn": "Shortcuts",
+    "guide_button": "Návod",
+    "shortcuts_opened": "Shortcuts app otvorená. Vytvorte si Shortcuts pre Lectio Divina DND.",
+    "shortcuts_error": "Chyba pri otváraní Shortcuts",
+    "android_system_info": "Používa systémový \"Nerušiť\" režim pre automatické stlmenie notifikácií",
+    "manual_control": "Manuálne ovládanie",
+    "control_in_lectio": "Ovládanie v Lectio screen",
+    "control_description": "V Lectio obrazovke môžete režim \"Nerušiť\" zapnúť/vypnúť manuálne pomocou FAB menu (floating action button). Ikona \"Nerušiť\" sa zobrazí v navigation bare keď je aktívny.",
+    "status_active": "Režim Nerušiť je AKTÍVNY",
+    "status_inactive": "Režim Nerušiť je neaktívny",
+    "activated": "Režim Nerušiť aktivovaný",
+    "deactivated": "Režim Nerušiť deaktivovaný",
+    "toggle_error": "Chyba pri prepínaní DND",
+    "turn_on": "Zapnúť Nerušiť",
+    "turn_off": "Vypnúť Nerušiť",
+    "toggle_btn": "Prepnúť Nerušiť",
+    "ios_instructions_title": "iOS Shortcuts pre Lectio Divina",
+    "ios_instructions_intro": "Vytvorte si vlastné Shortcuts pre automatické ovládanie DND počas Lectio Divina:",
+    "ios_step1_title": "Vytvorte nový Shortcut",
+    "ios_step1_content": "• Otvorte Shortcuts app\n• Kliknite na \"+\" pre nový shortcut\n• Pomenujte ho \"Lectio Divina DND On\"",
+    "ios_step2_title": "Pridajte akcie",
+    "ios_step2_content": "• Vyhľadajte \"Set Focus\"\n• Vyberte Focus režim (napr. \"Do Not Disturb\")\n• Nastavte zapnutie Focus\n• Uložte shortcut",
+    "ios_step3_title": "Vytvorte druhý Shortcut",
+    "ios_step3_content": "• Vytvorte \"Lectio Divina DND Off\"\n• Pridajte \"Set Focus\" akciu\n• Nastavte vypnutie Focus\n• Uložte shortcut",
+    "ios_tip": "Po vytvorení sa Shortcuts automaticky spustia keď použijete DND tlačidlo v aplikácii.",
+    "close": "Zavrieť",
+    "open_shortcuts": "Otvoriť Shortcuts"
+  },
+  
+  "background_play": {
+    "title": "Background Play",
+    "description": "Pokračovanie prehrávania aj keď je aplikácia minimalizovaná",
+    "enable": "Povoliť background play",
+    "subtitle": "Audio pokračuje aj v pozadí",
+    "notification_info": "Zobrazí sa notifikácia s ovládacími prvkami pre audio"
+  },
+  
   "prayer_intro": "Úvodná modlitba",
   "intro": "Vitajte pri Lectio divin.",
   "l_commenter": "Naslúchaj tomuto textu tak, že budeš čítať pomaly a nahlas a opakuj si ho trikrát.",
@@ -378,7 +448,12 @@
     "tier": {
       "founder": "Zakladateľ",
       "patron": "Patrón",
-      "friend": "Priateľ"
+      "friend": "Priатеľ"
+    },
+    "tier_badge": {
+      "founder": "ZAKLADATEĽ",
+      "patron": "MECENÁŠ",
+      "friend": "PRIАТЕĽ"
     },
     "section": {
       "subscriptions": "Moje predplatné",
@@ -386,6 +461,7 @@
       "exercise_registrations": "Moje registrácie na DC"
     },
     "subscription": {
+      "tier": "{} úroveň",
       "active": "Aktívne",
       "monthly": "mesiac",
       "yearly": "rok",
@@ -452,6 +528,51 @@
     "contact_us": "Kontaktujte nás:",
     "copy": "Skopírovať",
     "copied": "{label} {value} skopírované"
+  },
+  "donation": {
+    "title": "Podporte Lectio Divina",
+    "header_title": "🙏 Nie predávame vieru, zdieľame ju.",
+    "header_description": "Všetok obsah je ZADARMO. Vaše dary nám pomáhajú udržiavať aplikáciu a vytvárať nový obsah.",
+    "one_time_title": "💰 Jednorazový dar",
+    "amount_label": "Suma (EUR)",
+    "message_label": "Správa (voliteľné)",
+    "anonymous_title": "🕶️ Anonymný dar (bez potvrdzovacieho e-mailu)",
+    "anonymous_subtitle": "Platba bude spracovaná, ale nedostanete potvrdenie.",
+    "one_time_button": "Darovať teraz",
+    "subscription_title": "⭐ Mesačná podpora",
+    "popular_label": "Najpopulárnejšie",
+    "monthly_button": "Mesačne",
+    "stripe_disclaimer": "💳 Platba je zabezpečená cez Stripe",
+    "login_required_title": "Prihlásenie potrebné",
+    "login_required_message": "Pre vytvorenie predplatného sa musíte najprv prihlásiť.\nJednorazový dar môžete poslať aj bez prihlásenia.",
+    "login_required_cancel": "Zrušiť",
+    "login_required_login": "Prihlásiť sa",
+    "error_min_amount": "Minimálna suma je €0.50",
+    "error_payment": "Chyba pri vytváraní platby: {0}",
+    "error_subscription": "Chyba pri vytváraní predplatného: {0}",
+    "tiers": {
+      "friend": {
+        "name": "💙 Priateľ Lectio",
+        "price": "€3/mesiac",
+        "description": "Newsletter, e-book, 14 dní offline",
+        "yearly_price": "€30/rok",
+        "yearly_savings": "Ušetríte €6"
+      },
+      "patron": {
+        "name": "💜 Patron Lectio",
+        "price": "€20/mesiac",
+        "description": "Všetky kurzy ZADARMO, premium audio, fyzické dary",
+        "yearly_price": "€200/rok",
+        "yearly_savings": "Ušetríte €40"
+      },
+      "founder": {
+        "name": "🌟 Zakladateľ Lectio",
+        "price": "€50/mesiac",
+        "description": "LIFETIME ACCESS, hlas v rozvoji, VIP benefity",
+        "yearly_price": "€500/rok",
+        "yearly_savings": "Ušetríte €100"
+      }
+    }
   },
   "password_too_short": "Heslo musí mať aspoň 6 znakov",
   "confirm_password_required": "Potvrdenie hesla je povinné",
@@ -596,6 +717,23 @@
     "action": {
       "retry": "Skúsiť znova",
       "save_changes": "Uložiť zmeny"
+    },
+    "dialog": {
+      "title": "Notifikácia",
+      "default_body": "Máte novú notifikáciu.",
+      "open": "Otvoriť",
+      "daily_lectio": {
+        "title": "📖 Denné zamyslenie",
+        "body": "Čas na dnešné lectio divina. Chcete ho otvoriť?"
+      },
+      "prayer_reminder": {
+        "title": "🙏 Pripomenutie modlitby",
+        "body": "Čas na modlitbu a zamyslenie. Chcete otvoriť lectio divina?"
+      },
+      "welcome": {
+        "title": "✨ Vitajte v aplikácii!",
+        "body": "Ďakujeme, že používate Lectio Divina. Preskúmajte naše denné zamyslenia."
+      }
     }
   },
 
@@ -622,7 +760,8 @@
       "title": "Jazyk aplikácie",
       "system": "Systémový jazyk",
       "slovak": "Slovenčina",
-      "english": "Angličtina"
+      "english": "Angličtina",
+      "spanish": "Španielčina"
     },
     "theme_changed": "Téma bola zmenená. Reštartujte aplikáciu pre úplnú aplikáciu zmeny."
   },

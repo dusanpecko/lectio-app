@@ -131,10 +131,53 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final locale = context.locale.languageCode;
 
-      // 1. Nájdi dnešný liturgický deň
+      // 1. NAJPRV nájdeme správny liturgický rok na základe DÁTUMOVÉHO ROZSAHU
+      // (nie z calendar entry, ale priamo podľa date range)
+      final liturgicalYearsResponse = await supabase
+          .from('liturgical_years')
+          .select()
+          .eq('locale_code', locale)
+          .lte('start_date', today)
+          .gte('end_date', today);
+
+      Map<String, dynamic>? correctLiturgicalYear;
+      final liturgicalYearsList = liturgicalYearsResponse as List;
+      if (liturgicalYearsList.isNotEmpty) {
+        final yearData = liturgicalYearsList[0] as Map<String, dynamic>;
+        correctLiturgicalYear = yearData;
+        debugPrint(
+          '✅ Home: Nájdený liturgický rok: ${yearData['year']} '
+          '(${yearData['start_date']} - ${yearData['end_date']}), '
+          'cyklus: ${yearData['lectionary_cycle']}',
+        );
+      } else {
+        // Fallback na slovenčinu ak aktuálny jazyk nemá liturgický rok
+        if (locale != 'sk') {
+          debugPrint('🔄 Home: Hľadám liturgický rok v slovenčine...');
+          final skYearsResponse = await supabase
+              .from('liturgical_years')
+              .select()
+              .eq('locale_code', 'sk')
+              .lte('start_date', today)
+              .gte('end_date', today);
+
+          final skYearsList = skYearsResponse as List;
+          if (skYearsList.isNotEmpty) {
+            final skYearData = skYearsList[0] as Map<String, dynamic>;
+            correctLiturgicalYear = skYearData;
+            debugPrint(
+              '✅ Home: Nájdený SK liturgický rok: ${skYearData['year']} '
+              '(${skYearData['start_date']} - ${skYearData['end_date']}), '
+              'cyklus: ${skYearData['lectionary_cycle']}',
+            );
+          }
+        }
+      }
+
+      // 2. Nájdi dnešný liturgický deň v kalendári
       final calendarResponse = await supabase
           .from('liturgical_calendar')
-          .select('*, liturgical_years(*)')
+          .select()
           .eq('datum', today)
           .eq('locale_code', locale)
           .maybeSingle();
@@ -154,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final celebrationTitle = calendarResponse['celebration_title'] ?? '';
       final celebrationRankNum = calendarResponse['celebration_rank_num'];
 
-      // 2. Určíme či použiť cyklus (A/B/C) alebo 'N' pre všedné dni
+      // 3. Určíme či použiť cyklus (A/B/C) alebo 'N' pre všedné dni
       final isWeekday = RegExp(
         r'(Pondelok|Utorok|Streda|Štvrtok|Piatok|Sobota|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday).+(týždňa|Week)',
       ).hasMatch(celebrationTitle);
@@ -165,15 +208,16 @@ class _HomeScreenState extends State<HomeScreen> {
               celebrationTitle.toLowerCase().contains('sunday') ||
               (celebrationRankNum != null && celebrationRankNum > 1));
 
-      final liturgicalYear = calendarResponse['liturgical_years'];
-      final lectionaryCycle = liturgicalYear?['lectionary_cycle'] ?? 'A';
+      // POUŽIJEME správny liturgický rok (nájdený podľa dátumu, nie z calendar entry)
+      final lectionaryCycle = correctLiturgicalYear?['lectionary_cycle'] ?? 'A';
       final rokToSearch = isSpecialDay ? lectionaryCycle : 'N';
 
       debugPrint(
-        '🔍 Home: Hľadám actio pre rok: $rokToSearch, hlava: $lectioHlava, lang: $locale',
+        '🔍 Home: Hľadám actio pre rok: $rokToSearch, hlava: $lectioHlava, '
+        'lang: $locale, liturgický cyklus: $lectionaryCycle',
       );
 
-      // 3. Nájdi lectio source s actio textom
+      // 4. Nájdi lectio source s actio textom
       var lectioSource = await supabase
           .from('lectio_sources')
           .select()
@@ -336,8 +380,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String _getDayName(DateTime date) {
-    const dayNames = ['Po', 'Ut', 'St', 'Št', 'Pi', 'So', 'Ne'];
-    return dayNames[date.weekday - 1];
+    // Použijeme DateFormat pre lokalizáciu dní v týždni
+    return DateFormat.E(context.locale.languageCode).format(date);
   }
 
   // Show date picker for Lectio
@@ -631,7 +675,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Lectio divina',
+                tr('lectio_divina'),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,
@@ -844,11 +888,6 @@ class _HomeScreenState extends State<HomeScreen> {
           _ModuleButton(
             labelKey: 'rosary_title',
             icon: Icons.auto_stories_rounded,
-          ),
-          const SizedBox(width: 12),
-          _ModuleButton(
-            labelKey: 'spiritual_exercises',
-            icon: Icons.self_improvement,
           ),
           const SizedBox(width: 12),
           _ModuleButton(labelKey: 'news', icon: Icons.campaign),

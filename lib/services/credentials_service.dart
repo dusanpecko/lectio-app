@@ -1,5 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:logger/logger.dart';
+
+import '../utils/app_logger.dart';
 
 class CredentialsService {
   static const _storage = FlutterSecureStorage();
@@ -7,7 +8,7 @@ class CredentialsService {
   static const _emailKey = 'user_email';
   static const _passwordKey = 'user_password';
 
-  final Logger _logger = Logger();
+  final _logger = appLogger;
 
   // Uloží prihlasovacie údaje
   Future<void> saveCredentials(String email, String password) async {

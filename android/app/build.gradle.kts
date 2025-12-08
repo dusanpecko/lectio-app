@@ -15,6 +15,14 @@ if (localPropertiesFile.exists()) {
     }
 }
 
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.reader().use { reader ->
+        keystoreProperties.load(reader)
+    }
+}
+
 val flutterVersionCode: String = localProperties.getProperty("flutter.versionCode") ?: "1"
 val flutterVersionName: String = localProperties.getProperty("flutter.versionName") ?: "1.0"
 
@@ -42,6 +50,12 @@ android {
 
     signingConfigs {
         getByName("debug") {}
+        create("release") {
+            keyAlias = keystoreProperties.getProperty("keyAlias")
+            keyPassword = keystoreProperties.getProperty("keyPassword")
+            storeFile = keystoreProperties.getProperty("storeFile")?.let { file(it) }
+            storePassword = keystoreProperties.getProperty("storePassword")
+        }
     }
 
     buildTypes {
@@ -50,7 +64,7 @@ android {
         }
         getByName("release") {
             isMinifyEnabled = true
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

@@ -3,6 +3,8 @@ class IntroTranslations {
     switch (languageCode) {
       case 'en':
         return _en;
+      case 'es':
+        return _es;
       case 'sk':
       default:
         return _sk;
@@ -10,6 +12,7 @@ class IntroTranslations {
   }
 
   static const Map<String, dynamic> _sk = {
+    'stepLabel': 'Krok',
     'heroTitle': 'Počúvaj, čo ti Boh chce povedať',
     'heroSubtitle': 'Objav modlitbu Lectio Divina',
     'heroDescription':
@@ -130,7 +133,131 @@ class IntroTranslations {
     ],
   };
 
+  static const Map<String, dynamic> _es = {
+    'stepLabel': 'Paso',
+    'heroTitle': 'Escucha lo que Dios quiere decirte',
+    'heroSubtitle': 'Descubre la oración de Lectio Divina',
+    'heroDescription':
+        'En un mundo acelerado, donde todos hablan pero pocos escuchan, el silencio parece inalcanzable. Sin embargo, es precisamente allí donde puede resonar la voz de Dios.',
+    'startLectio': 'Comienza con Lectio Divina',
+
+    'whatIs': '¿Qué es Lectio Divina?',
+    'whatIsText1':
+        'Lectio Divina es una forma antigua de orar con la Biblia. No es una clase ni un análisis. No se trata del rendimiento. Es un encuentro — silencioso, personal, real. Por medio de la Palabra de Dios entramos en diálogo con Aquel que nos conoce profundamente.',
+    'whatIsText2':
+        'Nació en los primeros monasterios y la desarrollaron san Benito, Orígenes, san Gregorio de Nisa y el cartujo Guigo II. Hoy la redescubren personas de todas las edades que buscan una relación con Dios incluso fuera de los muros monásticos.',
+
+    'fiveStepsTitle': 'Los cinco pasos de Lectio Divina',
+    'fiveStepsText':
+        'Cada paso te acerca a una relación más profunda con Dios. Avanza a tu ritmo y deja que el Espíritu Santo guíe tu corazón.',
+
+    'benefitsTitle': 'Lectura sagrada como encuentro',
+    'benefitsText':
+        'Practicar Lectio Divina con regularidad trae paz, claridad y crecimiento espiritual. Miles de cristianos en todo el mundo han experimentado su fuerza transformadora.',
+
+    'howToTitle': 'Lectio Divina es para todos',
+    'howToText':
+        'No necesitas conocimientos especiales. Abre el corazón, elige un pasaje y da el primer paso. Dios se encargará del resto.',
+    'startFirstStep': 'Iniciar el primer paso',
+
+    'closingQuote':
+        'La Palabra que llega hoy a ti te está buscando. Abre el corazón. Déjate encontrar.',
+    'closingText':
+        'Lectio Divina no es solo un método antiguo; es un camino vivo para el presente. La Palabra de Dios que toque tu corazón hoy puede cambiar tu día… y quizá tu vida entera.',
+
+    'steps': [
+      {
+        'number': 1,
+        'slug': 'lectio',
+        'title': 'Lectio – Lectura',
+        'subtitle': 'Lectura atenta de la Palabra',
+        'description':
+            'Escucha lenta y concentrada de la voz de Dios en la Escritura.',
+        'duration': '10 min',
+      },
+      {
+        'number': 2,
+        'slug': 'meditatio',
+        'title': 'Meditatio – Meditación',
+        'subtitle': 'Profundizar en el texto',
+        'description': 'Permitimos que la Palabra baje de la mente al corazón.',
+        'duration': '15 min',
+      },
+      {
+        'number': 3,
+        'slug': 'oratio',
+        'title': 'Oratio – Oración',
+        'subtitle': 'Conversar con Dios',
+        'description': 'Diálogo sincero con Dios inspirado en su Palabra.',
+        'duration': '10 min',
+      },
+      {
+        'number': 4,
+        'slug': 'contemplatio',
+        'title': 'Contemplatio – Contemplación',
+        'subtitle': 'Silencio con Dios',
+        'description': 'Reposo en la presencia de Dios sin palabras.',
+        'duration': '20 min',
+      },
+      {
+        'number': 5,
+        'slug': 'actio',
+        'title': 'Actio – Vivir la Palabra',
+        'subtitle': 'Llevar la Palabra a la vida',
+        'description': 'Aplicar el Evangelio en los gestos cotidianos.',
+        'duration': '5 min',
+      },
+    ],
+
+    'benefits': [
+      {
+        'title': 'Escuchar la voz de Dios',
+        'description':
+            'En el silencio de Lectio Divina aprendemos a reconocer la voz de Dios y abrirle el corazón.',
+      },
+      {
+        'title': 'Transformación del corazón',
+        'description':
+            'No es solo lectura: es un proceso de cambio interior guiado por la Palabra.',
+      },
+      {
+        'title': 'Renovación y paz',
+        'description':
+            'En medio del ruido diario, el alma encuentra descanso en este encuentro silencioso.',
+      },
+      {
+        'title': 'Para todos y en cualquier lugar',
+        'description':
+            'Puedes practicarla solo o en comunidad, sin preparación teológica previa.',
+      },
+    ],
+
+    'guide': [
+      {
+        'title': 'Elige tiempo y lugar',
+        'description':
+            'Basta con 10-15 minutos diarios en un ambiente tranquilo. La constancia importa más que la duración.',
+      },
+      {
+        'title': 'Selecciona un pasaje breve',
+        'description':
+            'No necesitas capítulos enteros. Unos versículos del Evangelio o de los salmos son suficientes.',
+      },
+      {
+        'title': 'Ábrete a Dios',
+        'description':
+            'Inicia con una breve oración: "Señor, quiero escucharte. Abre mi corazón a tu Palabra".',
+      },
+      {
+        'title': 'No tengas prisa',
+        'description':
+            'Lectio Divina no trata de velocidad ni de logros. Dios se encuentra contigo a tu propio ritmo.',
+      },
+    ],
+  };
+
   static const Map<String, dynamic> _en = {
+    'stepLabel': 'Step',
     'heroTitle': 'Listen to what God wants to tell you',
     'heroSubtitle': 'Discover the prayer of Lectio Divina',
     'heroDescription':

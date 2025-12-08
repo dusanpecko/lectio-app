@@ -2,9 +2,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../utils/app_logger.dart';
 
 /// Service pre správu Do Not Disturb (Nerušiť) funkcionality
 /// Automaticky aktivuje režim "Nerušiť" počas čítania a modlitby
@@ -13,7 +14,7 @@ class DoNotDisturbService {
   factory DoNotDisturbService() => _instance;
   DoNotDisturbService._internal();
 
-  final Logger _logger = Logger();
+  final _logger = appLogger;
   static const _platform = MethodChannel('sk.lectio.divina/do_not_disturb');
 
   bool _isEnabled = false;

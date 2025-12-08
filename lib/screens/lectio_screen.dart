@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:io';
+
+// dart:io removed - was only used for DND Platform.isIOS checks
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -10,10 +11,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/lectio_audio_state.dart';
 import '../models/lectio_audio_track.dart';
 import '../services/background_audio_manager.dart';
-import '../shared/audio_constants.dart';
-import '../services/do_not_disturb_service.dart';
+// TODO: DND funkcia dočasne deaktivovaná
+// import '../services/do_not_disturb_service.dart';
 import '../services/prayer_focus_service.dart';
 import '../shared/app_colors.dart';
+import '../shared/audio_constants.dart';
 import '../shared/date_limits_config.dart';
 import '../widgets/lectio_section_card.dart';
 import '../widgets/lectio_speed_dial_fab.dart';
@@ -39,7 +41,8 @@ class _LectioScreenState extends State<LectioScreen> {
   final PrayerFocusService _prayerFocusService = PrayerFocusService();
   final BackgroundAudioManager _backgroundAudioManager =
       BackgroundAudioManager();
-  final DoNotDisturbService _dndService = DoNotDisturbService();
+  // TODO: DND funkcia dočasne deaktivovaná
+  // final DoNotDisturbService _dndService = DoNotDisturbService();
 
   Map<String, dynamic>? lectioData;
   bool isLoading = true;
@@ -62,9 +65,10 @@ class _LectioScreenState extends State<LectioScreen> {
   bool _usingFallbackPlayer = false;
   StreamSubscription? _fallbackPlayerSubscription;
 
-  // Do Not Disturb state
-  bool _isDndActive = false;
-  bool _dndEnabled = false;
+  // TODO: DND funkcia dočasne deaktivovaná - vyžaduje viac testovania
+  // Do Not Disturb state - vždy false keďže DND je deaktivované
+  final bool _isDndActive = false;
+  final bool _dndEnabled = false; // Zmeniť na true keď bude DND opravené
 
   // Cache pre tracks
   List<Map<String, dynamic>>? _cachedTracks;
@@ -81,7 +85,8 @@ class _LectioScreenState extends State<LectioScreen> {
   void initState() {
     super.initState();
     _setupAudioListeners();
-    _initializeDndService();
+    // TODO: DND dočasne deaktivované
+    // _initializeDndService();
     _startPositionTimer();
 
     // Callback sa zaregistruje v _playBackgroundAudio po inicializácii
@@ -90,15 +95,16 @@ class _LectioScreenState extends State<LectioScreen> {
     _prayerFocusService.onSpiritualScreenEntered(SpiritualScreen.lectio);
   }
 
-  Future<void> _initializeDndService() async {
-    await _dndService.initialize();
-    if (mounted) {
-      setState(() {
-        _dndEnabled = _dndService.isEnabled;
-        _isDndActive = _dndService.isDndActive;
-      });
-    }
-  }
+  // TODO: DND funkcia dočasne deaktivovaná
+  // Future<void> _initializeDndService() async {
+  //   await _dndService.initialize();
+  //   if (mounted) {
+  //     setState(() {
+  //       _dndEnabled = _dndService.isEnabled;
+  //       _isDndActive = _dndService.isDndActive;
+  //     });
+  //   }
+  // }
 
   /// Aktualizuje hlavný playback stav
   void _setPlaybackState(LectioPlaybackState state) {
@@ -373,10 +379,11 @@ class _LectioScreenState extends State<LectioScreen> {
     // Notifikuj Prayer Focus Service o opustení Lectio screen
     _prayerFocusService.onSpiritualScreenExited(SpiritualScreen.lectio);
 
+    // TODO: DND funkcia dočasne deaktivovaná
     // End DND session ak je aktívne
-    if (_isDndActive) {
-      _dndService.endReadingSession();
-    }
+    // if (_isDndActive) {
+    //   _dndService.endReadingSession();
+    // }
 
     _audioPlayer.dispose();
     _playlistPageController.dispose();
@@ -1285,226 +1292,227 @@ class _LectioScreenState extends State<LectioScreen> {
     }
   }
 
-  Future<void> _handleDndToggle() async {
-    try {
-      if (_isDndActive) {
-        // Deaktivácia DND
-        await _dndService.deactivateDndManually();
-      } else {
-        // Aktivácia DND
-        final hasPermissions = await _dndService.checkPermissions();
+  // TODO: DND funkcia dočasne deaktivovaná
+  // Future<void> _handleDndToggle() async {
+  //   try {
+  //     if (_isDndActive) {
+  //       // Deaktivácia DND
+  //       await _dndService.deactivateDndManually();
+  //     } else {
+  //       // Aktivácia DND
+  //       final hasPermissions = await _dndService.checkPermissions();
+  //
+  //       if (!hasPermissions) {
+  //         // Požiadaj o povolenia
+  //         final granted = await _dndService.requestPermissions();
+  //         if (!granted) {
+  //           if (mounted) {
+  //             ScaffoldMessenger.of(context).showSnackBar(
+  //               const SnackBar(
+  //                 content: Text(
+  //                   'Pre aktiváciu Nerušiť je potrebné povoliť prístup k notifikáciám',
+  //                 ),
+  //                 backgroundColor: Colors.orange,
+  //               ),
+  //             );
+  //           }
+  //           return;
+  //         }
+  //       }
+  //
+  //       // Aktivuj DND manuálne
+  //       await _dndService.activateDndManually();
+  //     }
+  //
+  //     // Aktualizuj UI stav podľa skutočného stavu service
+  //     setState(() {
+  //       _isDndActive = _dndService.isDndActive;
+  //     });
+  //
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Row(
+  //             children: [
+  //               const Icon(Icons.do_not_disturb_on, color: Colors.white),
+  //               const SizedBox(width: 8),
+  //               Expanded(
+  //                 child: Text(
+  //                   Platform.isIOS
+  //                       ? 'Zapnite "Nerušiť" manuálne v Control Center'
+  //                       : 'Režim Nerušiť aktivovaný',
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         backgroundColor: Colors.green,
+  //         action: Platform.isIOS
+  //             ? SnackBarAction(
+  //                 label: 'Ako na to',
+  //                 textColor: Colors.white,
+  //                 onPressed: () => _showIOSDndInstructions(),
+  //               )
+  //             : null,
+  //       ),
+  //     );
+  //   }
+  // } catch (e) {
+  //   // Chyba pri toggle DND
+  //   if (mounted) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text('Chyba pri prepínaní režimu Nerušiť: $e'),
+  //         backgroundColor: Colors.red,
+  //       ),
+  //     );
+  //   }
+  // }
+  // }
 
-        if (!hasPermissions) {
-          // Požiadaj o povolenia
-          final granted = await _dndService.requestPermissions();
-          if (!granted) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Pre aktiváciu Nerušiť je potrebné povoliť prístup k notifikáciám',
-                  ),
-                  backgroundColor: Colors.orange,
-                ),
-              );
-            }
-            return;
-          }
-        }
-
-        // Aktivuj DND manuálne
-        await _dndService.activateDndManually();
-      }
-
-      // Aktualizuj UI stav podľa skutočného stavu service
-      setState(() {
-        _isDndActive = _dndService.isDndActive;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.do_not_disturb_on, color: Colors.white),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    Platform.isIOS
-                        ? 'Zapnite "Nerušiť" manuálne v Control Center'
-                        : 'Režim Nerušiť aktivovaný',
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            action: Platform.isIOS
-                ? SnackBarAction(
-                    label: 'Ako na to',
-                    textColor: Colors.white,
-                    onPressed: () => _showIOSDndInstructions(),
-                  )
-                : null,
-          ),
-        );
-      }
-    } catch (e) {
-      // Chyba pri toggle DND
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Chyba pri prepínaní režimu Nerušiť: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _showIOSDndInstructions() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.shortcut_outlined, color: Colors.blue),
-            SizedBox(width: 8),
-            Text('iOS Shortcuts pre DND'),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.auto_awesome,
-                          color: Colors.blue,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Automatické riešenie',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.blue[800],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Vytvorte si iOS Shortcuts pre automatické zapínanie/vypínanie Focus režimu pri používaní DND tlačidla.',
-                      style: TextStyle(fontSize: 13, color: Colors.blue[700]),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              _buildInstructionStep(
-                '1',
-                'Vytvorte Shortcuts',
-                'Nastavenia → Vytvorte Shortcuts pre DND',
-              ),
-              const SizedBox(height: 8),
-              _buildInstructionStep(
-                '2',
-                'Použite DND tlačidlo',
-                'Shortcuts sa spustia automaticky',
-              ),
-              const SizedBox(height: 16),
-
-              const Divider(),
-              const SizedBox(height: 12),
-
-              Text(
-                'Manuálne riešenie:',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
-                ),
-              ),
-              const SizedBox(height: 8),
-              _buildInstructionStep(
-                'A',
-                'Control Center',
-                'Potiahnite zhora doprava → 🌙',
-              ),
-              const SizedBox(height: 8),
-              _buildInstructionStep(
-                'B',
-                'Focus režim',
-                'Nastavenia → Focus → Do Not Disturb',
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Zavrieť'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/settings');
-            },
-            child: const Text('Nastavenia'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInstructionStep(String number, String title, String subtitle) {
-    return Row(
-      children: [
-        Container(
-          width: 24,
-          height: 24,
-          decoration: const BoxDecoration(
-            color: Colors.orange,
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Text(
-              number,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-              Text(
-                subtitle,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  // void _showIOSDndInstructions() {
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       title: const Row(
+  //         children: [
+  //           Icon(Icons.shortcut_outlined, color: Colors.blue),
+  //           SizedBox(width: 8),
+  //           Text('iOS Shortcuts pre DND'),
+  //         ],
+  //       ),
+  //       content: SingleChildScrollView(
+  //         child: Column(
+  //           mainAxisSize: MainAxisSize.min,
+  //           crossAxisAlignment: CrossAxisAlignment.start,
+  //           children: [
+  //             Container(
+  //               padding: const EdgeInsets.all(12),
+  //               decoration: BoxDecoration(
+  //                 color: Colors.blue.withValues(alpha: 0.1),
+  //                 borderRadius: BorderRadius.circular(8),
+  //               ),
+  //               child: Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: [
+  //                   Row(
+  //                     children: [
+  //                       const Icon(
+  //                         Icons.auto_awesome,
+  //                         color: Colors.blue,
+  //                         size: 20,
+  //                       ),
+  //                       const SizedBox(width: 8),
+  //                       Text(
+  //                         'Automatické riešenie',
+  //                         style: TextStyle(
+  //                           fontWeight: FontWeight.w600,
+  //                           color: Colors.blue[800],
+  //                         ),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                   const SizedBox(height: 8),
+  //                   Text(
+  //                     'Vytvorte si iOS Shortcuts pre automatické zapínanie/vypínanie Focus režimu pri používaní DND tlačidla.',
+  //                     style: TextStyle(fontSize: 13, color: Colors.blue[700]),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //             const SizedBox(height: 16),
+  //
+  //             _buildInstructionStep(
+  //               '1',
+  //               'Vytvorte Shortcuts',
+  //               'Nastavenia → Vytvorte Shortcuts pre DND',
+  //             ),
+  //             const SizedBox(height: 8),
+  //             _buildInstructionStep(
+  //               '2',
+  //               'Použite DND tlačidlo',
+  //               'Shortcuts sa spustia automaticky',
+  //             ),
+  //             const SizedBox(height: 16),
+  //
+  //             const Divider(),
+  //             const SizedBox(height: 12),
+  //
+  //             Text(
+  //               'Manuálne riešenie:',
+  //               style: TextStyle(
+  //                 fontWeight: FontWeight.w600,
+  //                 color: Colors.grey[700],
+  //               ),
+  //             ),
+  //             const SizedBox(height: 8),
+  //             _buildInstructionStep(
+  //               'A',
+  //               'Control Center',
+  //               'Potiahnite zhora doprava → 🌙',
+  //             ),
+  //             const SizedBox(height: 8),
+  //             _buildInstructionStep(
+  //               'B',
+  //               'Focus režim',
+  //               'Nastavenia → Focus → Do Not Disturb',
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context),
+  //           child: const Text('Zavrieť'),
+  //         ),
+  //         ElevatedButton(
+  //           onPressed: () {
+  //             Navigator.pop(context);
+  //             Navigator.pushNamed(context, '/settings');
+  //           },
+  //           child: const Text('Nastavenia'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+  //
+  // Widget _buildInstructionStep(String number, String title, String subtitle) {
+  //   return Row(
+  //     children: [
+  //       Container(
+  //         width: 24,
+  //         height: 24,
+  //         decoration: const BoxDecoration(
+  //           color: Colors.orange,
+  //           shape: BoxShape.circle,
+  //         ),
+  //         child: Center(
+  //           child: Text(
+  //             number,
+  //             style: const TextStyle(
+  //               color: Colors.white,
+  //               fontSize: 12,
+  //               fontWeight: FontWeight.bold,
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //       const SizedBox(width: 12),
+  //       Expanded(
+  //         child: Column(
+  //           crossAxisAlignment: CrossAxisAlignment.start,
+  //           children: [
+  //             Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+  //             Text(
+  //               subtitle,
+  //               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   void _handleAddNote() {
     if (lectioData == null) return;
@@ -1572,57 +1580,8 @@ class _LectioScreenState extends State<LectioScreen> {
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     actions: [
-                      // DND Status Indicator
-                      StreamBuilder<bool>(
-                        stream: DoNotDisturbService().dndStateStream,
-                        initialData: DoNotDisturbService().isDndActive,
-                        builder: (context, snapshot) {
-                          final isDndActive = snapshot.data ?? false;
-
-                          return AnimatedOpacity(
-                            opacity: isDndActive ? 1.0 : 0.0,
-                            duration: const Duration(milliseconds: 300),
-                            child: Container(
-                              margin: const EdgeInsets.only(
-                                right: 16,
-                                top: 8,
-                                bottom: 8,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.do_not_disturb_on_rounded,
-                                    color: Colors.white,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    tr('do_not_disturb_active'),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                      // TODO: DND funkcia dočasne deaktivovaná
+                      // DND Status Indicator - skryté kým nebude DND opravené
                     ],
                     flexibleSpace: FlexibleSpaceBar(
                       titlePadding: const EdgeInsets.fromLTRB(
@@ -1890,21 +1849,18 @@ class _LectioScreenState extends State<LectioScreen> {
                                   ),
                                 ),
 
-                              // Biblický text podľa vybranej biblie (rovnako pre SK aj EN)
-                              if (_selectedBible == 'biblia1' ||
-                                  _selectedBible == 'bible_en_1')
+                              // Biblický text podľa vybranej biblie
+                              if (_selectedBible == 'biblia1')
                                 _buildSection(
                                   title: lectioData?['nazov_biblia_1'],
                                   text: lectioData?['biblia_1'] ?? '',
                                 ),
-                              if (_selectedBible == 'biblia2' ||
-                                  _selectedBible == 'bible_en_2')
+                              if (_selectedBible == 'biblia2')
                                 _buildSection(
                                   title: lectioData?['nazov_biblia_2'],
                                   text: lectioData?['biblia_2'] ?? '',
                                 ),
-                              if (_selectedBible == 'biblia3' ||
-                                  _selectedBible == 'bible_en_3')
+                              if (_selectedBible == 'biblia3')
                                 _buildSection(
                                   title: lectioData?['nazov_biblia_3'],
                                   text: lectioData?['biblia_3'] ?? '',
@@ -1961,7 +1917,8 @@ class _LectioScreenState extends State<LectioScreen> {
           onAddNote: Supabase.instance.client.auth.currentUser != null
               ? _handleAddNote
               : null,
-          onDndToggle: _dndEnabled ? _handleDndToggle : null,
+          // TODO: DND funkcia dočasne deaktivovaná
+          onDndToggle: null, // _dndEnabled ? _handleDndToggle : null,
           onAudioToggle: _getAvailableAudioTracks().isNotEmpty
               ? () {
                   setState(() {

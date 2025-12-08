@@ -1,7 +1,8 @@
 //lib/screens/intentions_list_screen.dart
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:easy_localization/easy_localization.dart';
+
 import 'intention_submit_screen.dart';
 
 class IntentionsListScreen extends StatefulWidget {
@@ -65,6 +66,7 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
               .order('created_at', ascending: false),
         );
       } else {
+        // Bežný používateľ vidí: schválené verejné + svoje vlastné (aj neschválené)
         res = List<Map<String, dynamic>>.from(
           await Supabase.instance.client
               .from('intentions')
@@ -72,8 +74,9 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
                 *,
                 intention_prayers(user_id)
               ''')
-              .eq('is_public', true)
-              .eq('approved', true)
+              .or(
+                'and(is_public.eq.true,approved.eq.true),user_id.eq.$currentUserId',
+              )
               .order('created_at', ascending: false),
         );
       }

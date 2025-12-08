@@ -4,12 +4,12 @@ import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:logger/logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/notification_models.dart';
+import '../utils/app_logger.dart';
 import 'local_notifications_service.dart';
 import 'notification_api.dart';
 
@@ -18,7 +18,7 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
 /// Logger pre background handler (musí byť top-level kvôli izolovanému kontextu)
-final Logger _backgroundLogger = Logger();
+final _backgroundLogger = appLogger;
 
 /// TOP-LEVEL background handler – musí byť mimo triedy.
 /// Zobrazuje lokálne notifikácie pre background messages
@@ -76,7 +76,7 @@ class FcmService {
   static final FcmService instance = FcmService._();
 
   /// Logger pre inštanciu služby
-  final Logger _logger = Logger();
+  final _logger = appLogger;
 
   // Rate limiting pre APNS token retry
   int _apnsRetryCount = 0;
