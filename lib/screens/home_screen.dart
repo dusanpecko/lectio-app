@@ -8,6 +8,7 @@ import '../models/spiritual_exercise.dart';
 import '../shared/app_colors.dart';
 import '../widgets/speed_dial_fab.dart';
 import 'about_screen.dart';
+import 'feedback_screen.dart';
 import 'intentions_list_screen.dart';
 import 'intro_screen.dart';
 import 'lectio_screen.dart';
@@ -202,8 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
         r'(Pondelok|Utorok|Streda|Štvrtok|Piatok|Sobota|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday).+(týždňa|Week)',
       ).hasMatch(celebrationTitle);
 
-      final isSpecialDay =
-          !isWeekday &&
+      final isSpecialDay = !isWeekday &&
           (celebrationTitle.toLowerCase().contains('nedeľa') ||
               celebrationTitle.toLowerCase().contains('sunday') ||
               (celebrationRankNum != null && celebrationRankNum > 1));
@@ -473,6 +473,13 @@ class _HomeScreenState extends State<HomeScreen> {
         );
         break;
 
+      case 'feedback':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const FeedbackScreen()),
+        );
+        break;
+
       default:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -677,9 +684,9 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(
                 tr('lectio_divina'),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
               ),
               GestureDetector(
                 onTap: _showDatePickerForLectio,
@@ -747,9 +754,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           _getDayName(date),
                           style: TextStyle(
                             fontSize: 12,
-                            color: isToday
-                                ? Colors.white70
-                                : Colors.grey.shade600,
+                            color:
+                                isToday ? Colors.white70 : Colors.grey.shade600,
                           ),
                         ),
                       ],
@@ -1047,16 +1053,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(16),
                 child:
                     exercise.homeImageUrl != null || exercise.imageUrl != null
-                    ? Image.network(
-                        exercise.homeImageUrl ?? exercise.imageUrl!,
-                        width: double.infinity,
-                        height: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildExerciseFallbackBackground();
-                        },
-                      )
-                    : _buildExerciseFallbackBackground(),
+                        ? Image.network(
+                            exercise.homeImageUrl ?? exercise.imageUrl!,
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildExerciseFallbackBackground();
+                            },
+                          )
+                        : _buildExerciseFallbackBackground(),
               ),
 
               // Gradient overlay
@@ -1344,66 +1350,66 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 )
               : newsArticles.isEmpty
-              ? Container(
-                  height: 200,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: Center(
-                    child: Text(
-                      tr('no_news_available'),
-                      style: const TextStyle(
-                        color: Color(0xFF718096),
-                        fontSize: 14,
+                  ? Container(
+                      height: 200,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade200),
                       ),
-                    ),
-                  ),
-                )
-              : SizedBox(
-                  height: 320,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: newsArticles.length,
-                    itemBuilder: (context, index) {
-                      final article = newsArticles[index];
-                      return Container(
-                        width: 280,
-                        margin: const EdgeInsets.only(right: 16),
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    NewsDetailScreen(newsData: article),
-                              ),
-                            );
-                          },
-                          child: Card(
-                            elevation: 4,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Image section - fixed height
-                                ClipRRect(
-                                  borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(16),
-                                    topRight: Radius.circular(16),
+                      child: Center(
+                        child: Text(
+                          tr('no_news_available'),
+                          style: const TextStyle(
+                            color: Color(0xFF718096),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    )
+                  : SizedBox(
+                      height: 320,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: newsArticles.length,
+                        itemBuilder: (context, index) {
+                          final article = newsArticles[index];
+                          return Container(
+                            width: 280,
+                            margin: const EdgeInsets.only(right: 16),
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        NewsDetailScreen(newsData: article),
                                   ),
-                                  child: SizedBox(
-                                    height: 160,
-                                    width: double.infinity,
-                                    child: article['image_url'] != null
-                                        ? Image.network(
-                                            article['image_url'],
-                                            fit: BoxFit.cover,
-                                            errorBuilder:
-                                                (context, error, stackTrace) {
+                                );
+                              },
+                              child: Card(
+                                elevation: 4,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Image section - fixed height
+                                    ClipRRect(
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(16),
+                                        topRight: Radius.circular(16),
+                                      ),
+                                      child: SizedBox(
+                                        height: 160,
+                                        width: double.infinity,
+                                        child: article['image_url'] != null
+                                            ? Image.network(
+                                                article['image_url'],
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error,
+                                                    stackTrace) {
                                                   return Container(
                                                     color: Colors.grey.shade200,
                                                     child: const Icon(
@@ -1413,88 +1419,92 @@ class _HomeScreenState extends State<HomeScreen> {
                                                     ),
                                                   );
                                                 },
-                                          )
-                                        : Container(
-                                            color: Colors.grey.shade200,
-                                            child: const Icon(
-                                              Icons.article,
-                                              color: Colors.grey,
-                                              size: 50,
-                                            ),
-                                          ),
-                                  ),
-                                ),
-
-                                // Content section
-                                Expanded(
-                                  child: Container(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // Title
-                                        Text(
-                                          article['title'] ??
-                                              tr('untitled_article'),
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF2D3748),
-                                            height: 1.3,
-                                          ),
-                                          maxLines: 3,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-
-                                        const Spacer(),
-
-                                        // "Zobraziť článok" button
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.primary.withValues(
-                                              alpha: 0.1,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                tr('show_article'),
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: AppColors.primary,
+                                              )
+                                            : Container(
+                                                color: Colors.grey.shade200,
+                                                child: const Icon(
+                                                  Icons.article,
+                                                  color: Colors.grey,
+                                                  size: 50,
                                                 ),
                                               ),
-                                              const SizedBox(width: 4),
-                                              const Icon(
-                                                Icons.arrow_forward,
-                                                size: 14,
-                                                color: AppColors.primary,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
+                                      ),
                                     ),
-                                  ),
+
+                                    // Content section
+                                    Expanded(
+                                      child: Container(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            // Title
+                                            Text(
+                                              article['title'] ??
+                                                  tr('untitled_article'),
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF2D3748),
+                                                height: 1.3,
+                                              ),
+                                              maxLines: 3,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+
+                                            const Spacer(),
+
+                                            // "Zobraziť článok" button
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 6,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.primary
+                                                    .withValues(
+                                                  alpha: 0.1,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                  8,
+                                                ),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    tr('show_article'),
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: AppColors.primary,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  const Icon(
+                                                    Icons.arrow_forward,
+                                                    size: 14,
+                                                    color: AppColors.primary,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                          );
+                        },
+                      ),
+                    ),
         ],
       ),
     );

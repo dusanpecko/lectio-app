@@ -98,6 +98,12 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
           'color': AppColors.primary,
         },
       {
+        'key': 'feedback',
+        'icon': Icons.feedback_outlined,
+        'label': tr('feedback.menu_label'),
+        'color': Colors.teal,
+      },
+      {
         'key': 'settings',
         'icon': Icons.settings_rounded,
         'label': tr('settings'),

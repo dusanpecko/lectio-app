@@ -160,7 +160,6 @@
   "actio": "Actio",
   "error_loading_data": "Error al cargar los datos.",
   "play_audio": "Reproducir audio",
-  
   "section_title_bible": "Texto bíblico",
   "section_title_lectio": "LECTIO - Lectura",
   "section_title_meditatio": "MEDITATIO - Meditación",
@@ -168,13 +167,11 @@
   "section_title_contemplatio": "CONTEMPLATIO - Contemplación",
   "section_title_actio": "ACTIO - Acción",
   "section_title_default": "Audio Lectio Divina",
-  
   "error_audio_playback": "No se pudo reproducir el audio",
   "error_dnd_toggle": "Error al cambiar el modo No molestar",
   "ios_dnd_shortcuts_title": "Atajos de iOS para DND",
   "ios_dnd_focus_mode": "Modo Enfoque",
   "ios_dnd_focus_path": "Ajustes → Enfoque → No molestar",
-  
   "dnd": {
     "title": "No molestar",
     "description": "Silenciar notificaciones automáticamente durante la lectura y oración",
@@ -218,7 +215,6 @@
     "close": "Cerrar",
     "open_shortcuts": "Abrir Atajos"
   },
-  
   "background_play": {
     "title": "Reproducción en segundo plano",
     "description": "Continúa la reproducción incluso cuando la app está minimizada",
@@ -226,7 +222,6 @@
     "subtitle": "El audio continúa en segundo plano",
     "notification_info": "Aparecerá una notificación con controles de audio"
   },
-  
   "prayer_intro": "Oración inicial",
   "intro": "Bienvenido a Lectio Divina.",
   "l_commenter": "Escucha este texto leyéndolo despacio y en voz alta, y repítelo tres veces.",
@@ -811,5 +806,25 @@
   "close": "Cerrar",
   "register_for_exercise": "Inscribirme al ejercicio",
   "see_all": "Ver todo",
-  "rosary_description": "Oración del rosario en formato Lectio divina"
+  "rosary_description": "Oración del rosario en formato Lectio divina",
+  "feedback": {
+    "menu_label": "Escríbenos",
+    "title": "Comentarios",
+    "header": "Tu opinión es importante para nosotros",
+    "subtitle": "Ayúdanos a mejorar la aplicación Lectio Divina",
+    "type_label": "Tipo de mensaje",
+    "type_suggestion": "Sugerencia",
+    "type_bug": "Error",
+    "type_content": "Contenido",
+    "type_other": "Otro",
+    "message_label": "Tu mensaje",
+    "message_hint": "Describe tu sugerencia, problema o comentario...",
+    "message_required": "Por favor, escribe un mensaje",
+    "message_too_short": "El mensaje es demasiado corto (mín. 10 caracteres)",
+    "app_version": "Versión de la app: {}",
+    "submit": "Enviar",
+    "sending": "Enviando...",
+    "success": "¡Gracias por tu comentario!",
+    "error": "Error al enviar: {}"
+  }
 }

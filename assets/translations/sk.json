@@ -133,7 +133,7 @@
   "bible_reference_hint": "Biblická citácia (napr. Jn 3,16)",
   "bible_quote_hint": "Biblický verš",
   "note_content": "Poznámka",
-   "fab_menu_left": "Vľavo dole",
+  "fab_menu_left": "Vľavo dole",
   "fab_menu_right": "Vpravo dole",
   "fab_menu_center": "Dole v strede",
   "fab_menu_top_left": "Vľavo hore",
@@ -158,7 +158,6 @@
   "actio": "Actio",
   "error_loading_data": "Chyba pri načítaní dát.",
   "play_audio": "Prehrať zvuk",
-  
   "section_title_bible": "Biblický text",
   "section_title_lectio": "LECTIO - Čítanie",
   "section_title_meditatio": "MEDITATIO - Rozjímanie",
@@ -166,13 +165,11 @@
   "section_title_contemplatio": "CONTEMPLATIO - Kontemplácia",
   "section_title_actio": "ACTIO - Konanie",
   "section_title_default": "Lectio Divina Audio",
-  
   "error_audio_playback": "Nepodarilo sa prehrať audio",
   "error_dnd_toggle": "Chyba pri prepínaní režimu Nerušiť",
   "ios_dnd_shortcuts_title": "iOS Shortcuts pre DND",
   "ios_dnd_focus_mode": "Focus režim",
   "ios_dnd_focus_path": "Nastavenia → Focus → Do Not Disturb",
-  
   "dnd": {
     "title": "Režim Nerušiť",
     "description": "Automatické stlmenie notifikácií počas čítania a modlitby",
@@ -216,7 +213,6 @@
     "close": "Zavrieť",
     "open_shortcuts": "Otvoriť Shortcuts"
   },
-  
   "background_play": {
     "title": "Background Play",
     "description": "Pokračovanie prehrávania aj keď je aplikácia minimalizovaná",
@@ -224,7 +220,6 @@
     "subtitle": "Audio pokračuje aj v pozadí",
     "notification_info": "Zobrazí sa notifikácia s ovládacími prvkami pre audio"
   },
-  
   "prayer_intro": "Úvodná modlitba",
   "intro": "Vitajte pri Lectio divin.",
   "l_commenter": "Naslúchaj tomuto textu tak, že budeš čítať pomaly a nahlas a opakuj si ho trikrát.",
@@ -307,31 +302,31 @@
   "audio_bible_select_no_text": "Žiadny biblický text nie je dostupný",
   "audio_bible_select_no_text_desc": "Momentálne nie sú k dispozícii žiadne biblické texty pre audio prehrávanie.",
   "audio_nothing_playing": "Momentálne nič nehrá.",
- "about": {
-  "title": "O aplikácii",
-  "headline": "Informácie o aplikácii Lectio Divina",
-  "rights": "Lectio Divina © Dušan Pecko 2022–2025. Všetky práva vyhradené.",
-  "collaborators_title": "Spolupracovali",
-  "collaborators": "Kristína Krchová, Daniel Balej, Jakub Melo, Adam Čižmárik, Andrej Krekáč, Sestry Panny Márie Útechy.",
-  "bible_title": "Texty Svätého písma",
-  "bible_copyright": "© Spolok svätého Vojtecha, Trnava 2022\n© Slovenská biblická spoločnosť, Banská Bystrica, 2010\n© Biblické texty: Biblia – slovenský ekumenický preklad, 2008\n© Text je prevzatý z 10. vydania Jeruzalemskej Biblie (ed. Ján Ďurica), Dobrá kniha, Trnava 2022.",
-  "lectio_title": "Texty Lectio Divina",
-  "lectio_texts": "© Biblická spoločnosť\n© Monika Durkačová 2022–2024\n© Dušan Pecko 2022–2025",
-  "meditatio_title": "Texty Meditatio",
-  "meditatio_texts": "© Nakladateľstvo PAULÍNKY, 2016–2019 – Evangelium na každý den 2016–2021\n© Zachej.sk, 2022 – Päť minút s Bohom – Denné zamyslenia nad evanjeliom 2023",
-  "greek_catholic_title": "Gréckokatolícke texty",
-  "greek_catholic": "„Meditatio“ © Slovo – oficiálny časopis Gréckokatolíckej cirkvi na Slovensku.",
-  "projects_title": "Ďalšie projekty",
-  "other_projects": "© 2024 Odrobiny – jedným Slovom je projekt neziskovej organizácie Cor Sancti Martini, n.o.\n© 2024 Timothy – slovenská worshipová kapela.",
-  "supported_by_title": "Podporili nás",
-  "supported_by": "4IGV s.r.o., SysTech Group s.r.o., Žilinská diecéza, KROK – Pastoračný fond Žilinskej diecézy",
-  "version": "Verzia"
-},
-"pray_intentions_title": "Modlitbové úmysly",
-"pray_intentions": "Modlitby",
-"pray_submit": "Odoslať úmysel",
-"pray_submit_title": "Odoslať modlitbový úmysel",
-"edit_intention_title": "Upraviť úmysel",
+  "about": {
+    "title": "O aplikácii",
+    "headline": "Informácie o aplikácii Lectio Divina",
+    "rights": "Lectio Divina © Dušan Pecko 2022–2025. Všetky práva vyhradené.",
+    "collaborators_title": "Spolupracovali",
+    "collaborators": "Kristína Krchová, Daniel Balej, Jakub Melo, Adam Čižmárik, Andrej Krekáč, Sestry Panny Márie Útechy.",
+    "bible_title": "Texty Svätého písma",
+    "bible_copyright": "© Spolok svätého Vojtecha, Trnava 2022\n© Slovenská biblická spoločnosť, Banská Bystrica, 2010\n© Biblické texty: Biblia – slovenský ekumenický preklad, 2008\n© Text je prevzatý z 10. vydania Jeruzalemskej Biblie (ed. Ján Ďurica), Dobrá kniha, Trnava 2022.",
+    "lectio_title": "Texty Lectio Divina",
+    "lectio_texts": "© Biblická spoločnosť\n© Monika Durkačová 2022–2024\n© Dušan Pecko 2022–2025",
+    "meditatio_title": "Texty Meditatio",
+    "meditatio_texts": "© Nakladateľstvo PAULÍNKY, 2016–2019 – Evangelium na každý den 2016–2021\n© Zachej.sk, 2022 – Päť minút s Bohom – Denné zamyslenia nad evanjeliom 2023",
+    "greek_catholic_title": "Gréckokatolícke texty",
+    "greek_catholic": "„Meditatio“ © Slovo – oficiálny časopis Gréckokatolíckej cirkvi na Slovensku.",
+    "projects_title": "Ďalšie projekty",
+    "other_projects": "© 2024 Odrobiny – jedným Slovom je projekt neziskovej organizácie Cor Sancti Martini, n.o.\n© 2024 Timothy – slovenská worshipová kapela.",
+    "supported_by_title": "Podporili nás",
+    "supported_by": "4IGV s.r.o., SysTech Group s.r.o., Žilinská diecéza, KROK – Pastoračný fond Žilinskej diecézy",
+    "version": "Verzia"
+  },
+  "pray_intentions_title": "Modlitbové úmysly",
+  "pray_intentions": "Modlitby",
+  "pray_submit": "Odoslať úmysel",
+  "pray_submit_title": "Odoslať modlitbový úmysel",
+  "edit_intention_title": "Upraviť úmysel",
   "new_intention_title": "Pridať úmysel",
   "delete_intention": "Vymazať úmysel",
   "intention_delete_title": "Vymazať úmysel",
@@ -591,7 +586,7 @@
   "rosary_main_subtitle": "Spojte tradičnú modlitbu ruženeca s duchovným čítaním Božieho slova",
   "rosary_joyful": "Radostné tajomstvá",
   "rosary_joyful_desc": "Radostné udalosti z Ježišovho a Máriiného života",
-  "rosary_luminous": "Tajomstvá svetla", 
+  "rosary_luminous": "Tajomstvá svetla",
   "rosary_luminous_desc": "Svetlo Kristovho verejného pôsobenia",
   "rosary_sorrowful": "Bolestné tajomstvá",
   "rosary_sorrowful_desc": "Kristove utrpenie a smrť na kríži",
@@ -609,13 +604,13 @@
   "select_mystery_category": "Vyberte si tajomstvo ruženca",
   "spiritual_benefits": "Duchovné prínosy",
   "deeper_understanding": "Hlbšie pochopenie Božieho slova",
-  "peaceful_prayer": "Pokojná a sústredená modlitba", 
+  "peaceful_prayer": "Pokojná a sústredená modlitba",
   "practical_application": "Praktické uplatnenie v každodennom živote",
   "spiritual_growth": "Duchovný rast a zrenie",
   "app_features": "Funkcie aplikácie",
   "audio_recordings": "Audio nahrávky pre lepšie sústredenie",
   "time_guidance": "Časové vedenie pre každý krok",
-  "complete_texts": "Kompletné texty a vysvetlenia", 
+  "complete_texts": "Kompletné texty a vysvetlenia",
   "step_by_step": "Postupné vedenie krok za krokom",
   "loading_rosary": "Načítavam ruženec...",
   "error_loading_rosary": "Chyba pri načítavaní ruženeca",
@@ -650,7 +645,7 @@
   "requested_mystery_not_found": "Požadované tajomstvo ruženeca sa nenašlo.",
   "back_to_category": "Späť na kategóriu",
   "play": "Prehrať",
-  "pause": "Pozastaviť", 
+  "pause": "Pozastaviť",
   "bookmark": "Záložka",
   "share": "Zdieľať",
   "added_to_bookmarks": "Pridané do záložiek",
@@ -660,12 +655,12 @@
   "gods_word": "Božie slovo",
   "mystery_introduction": "Úvod do tajomstva",
   "reading": "Čítanie",
-  "meditation": "Rozjímanie", 
+  "meditation": "Rozjímanie",
   "prayer": "Modlitba",
   "contemplation": "Kontemplácia",
   "action": "Actio - Konanie",
   "previous": "Predchádzajúce",
-  "next": "Ďalšie", 
+  "next": "Ďalšie",
   "all_mysteries": "Všetky tajomstvá",
   "tap_to_start": "Začať",
   "view_complete_guide": "Zobraz kompletný návod",
@@ -677,13 +672,12 @@
   "error_loading_intentions": "Chyba pri načítavaní úmyslov",
   "retry": "Opakovať",
   "intention_approved": "Úmysel bol schválený",
-  "intention_rejected": "Úmysel bol zamietnutý", 
+  "intention_rejected": "Úmysel bol zamietnutý",
   "error_updating_intention": "Chyba pri aktualizácii úmyslu",
   "prayer_recorded": "Modlitba bola zaznamenaná",
   "error_recording_prayer": "Chyba pri zaznamenaní modlitby",
   "intention_deleted": "Úmysel bol odstránený",
   "error_deleting_intention": "Chyba pri odstraňovaní úmyslu",
-  
   "notifications": {
     "title": "Notifikácie",
     "permission": {
@@ -697,7 +691,7 @@
     },
     "category": {
       "spiritual": "Duchovné",
-      "educational": "Vzdelávacie", 
+      "educational": "Vzdelávacie",
       "news": "Novinky",
       "reminders": "Pripomienky",
       "special": "Špeciálne"
@@ -736,7 +730,6 @@
       }
     }
   },
-
   "settings_screen": {
     "theme": {
       "title": "Téma aplikácie",
@@ -765,12 +758,10 @@
     },
     "theme_changed": "Téma bola zmenená. Reštartujte aplikáciu pre úplnú aplikáciu zmeny."
   },
-
   "do_not_disturb_active": "Nerušiť",
   "interactive_form": "Registracia",
   "fill_form_below": "Vyplňte registračný formulár",
   "open_form": "Otvoriť registračný formulár",
-
   "registration_title": "Registrácia na duchovné cvičenie",
   "registration_contact_info": "Kontaktné údaje",
   "registration_personal_info": "Osobné údaje",
@@ -779,7 +770,6 @@
   "registration_accommodation": "Ubytovanie",
   "registration_additional_info": "Doplňujúce informácie",
   "registration_consents": "Súhlasy a podmienky",
-
   "first_name": "Meno",
   "last_name": "Priezvisko",
   "phone": "Telefón",
@@ -797,32 +787,44 @@
   "price": "Cena za izbu",
   "deposit": "záloha",
   "registration_deposit_info": "Na potvrdenie registrácie je potrebné uhradiť zálohu. Platobné inštrukcie obdržíte emailom.",
-
   "gdpr_consent_label": "Súhlasím so spracovaním osobných údajov v zmysle GDPR.",
   "responsibility_consent_label": "Beriem na vedomie, že duchovné cvičenia nie sú náhradou lekárskej alebo psychoterapeutickej starostlivosti. Účasť je dobrovoľná a nesiem za seba plnú zodpovednosť.",
   "newsletter_consent_label": "Chcem dostávať informácie o ďalších duchovných cvičeniach a aktivitách.",
-
   "registration_gdpr_required": "Musíte súhlasiť so spracovaním osobných údajov.",
   "registration_responsibility_required": "Musíte potvrdiť vyhlásenie o zodpovednosti.",
-
   "field_required": "Toto pole je povinné",
   "invalid_email": "Neplatný formát emailu",
   "invalid_phone": "Neplatný formát telefónu (napr. +421901234567)",
-
   "select_date": "Vyberte dátum",
   "select_option": "Vyberte možnosť",
   "optional": "(nepovinné)",
-
   "submit_registration": "Odoslať registráciu",
   "registration_success_title": "Registrácia odoslaná",
   "registration_success_message": "Vaša registrácia bola úspešne odoslaná. Platobné inštrukcie obdržíte emailom.",
   "save_profile_title": "Uložiť profil?",
   "save_profile_message": "Chcete si uložiť vyplnené údaje do profilu pre budúce registrácie?",
-
   "gdpr_info_title": "Spracovanie osobných údajov",
   "gdpr_info_content": "Vaše osobné údaje budú spracované v súlade s GDPR za účelom organizácie duchovných cvičení. Údaje budú uchovávané po dobu nevyhnutnú na splnenie účelu spracovania.",
   "close": "Zavrieť",
-
-  "register_for_exercise": "Prihlásiť sa na cvičenie"
-
+  "register_for_exercise": "Prihlásiť sa na cvičenie",
+  "feedback": {
+    "menu_label": "Napíšte nám",
+    "title": "Spätná väzba",
+    "header": "Vaša spätná väzba je pre nás dôležitá",
+    "subtitle": "Pomôžte nám vylepšiť aplikáciu Lectio Divina",
+    "type_label": "Typ správy",
+    "type_suggestion": "Návrh",
+    "type_bug": "Chyba",
+    "type_content": "Obsah",
+    "type_other": "Iné",
+    "message_label": "Vaša správa",
+    "message_hint": "Popíšte váš návrh, problém alebo spätnú väzbu...",
+    "message_required": "Prosím, napíšte správu",
+    "message_too_short": "Správa je príliš krátka (min. 10 znakov)",
+    "app_version": "Verzia aplikácie: {}",
+    "submit": "Odoslať",
+    "sending": "Odosielam...",
+    "success": "Ďakujeme za vašu spätnú väzbu!",
+    "error": "Chyba pri odosielaní: {}"
+  }
 }
