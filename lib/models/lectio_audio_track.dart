@@ -18,12 +18,12 @@ class LectioAudioTrack {
 
   /// Konverzia na Map pre spätnú kompatibilitu
   Map<String, dynamic> toMap() => {
-        'key': key,
-        'label': label,
-        'url': url,
-        'icon': icon,
-        'color': color,
-      };
+    'key': key,
+    'label': label,
+    'url': url,
+    'icon': icon,
+    'color': color,
+  };
 
   /// Vytvorenie z Map
   factory LectioAudioTrack.fromMap(Map<String, dynamic> map) {
@@ -70,7 +70,8 @@ class LectioAudioTracksBuilder {
     _addTrackIfExists(
       tracks: tracks,
       dataKey: bibleAudioKey,
-      label: lectioData[nazovKey] as String? ??
+      label:
+          lectioData[nazovKey] as String? ??
           (languageCode == 'sk' ? 'Biblický text' : 'Biblical text'),
       icon: Icons.menu_book,
       color: Colors.purple,
@@ -142,14 +143,15 @@ class LectioAudioTracksBuilder {
   }) {
     final url = lectioData[dataKey];
     if (url != null && url.toString().isNotEmpty) {
-      tracks.add(LectioAudioTrack(
-        key: dataKey,
-        label: label,
-        url: url.toString(),
-        icon: icon,
-        color: color,
-      ));
+      tracks.add(
+        LectioAudioTrack(
+          key: dataKey,
+          label: label,
+          url: url.toString(),
+          icon: icon,
+          color: color,
+        ),
+      );
     }
   }
 }
-

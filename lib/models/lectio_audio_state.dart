@@ -134,9 +134,7 @@ class LectioAudioModel {
 
   /// Reset na počiatočný stav ale zachová audioMode
   LectioAudioModel reset() {
-    return LectioAudioModel(
-      audioMode: audioMode,
-    );
+    return LectioAudioModel(audioMode: audioMode);
   }
 
   /// Či môžeme reagovať na completion event
@@ -196,4 +194,3 @@ class LectioAudioModel {
     );
   }
 }
-

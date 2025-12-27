@@ -109,9 +109,11 @@ class _SpiritualExerciseRegistrationScreenState
             .maybeSingle();
 
         if (profile != null && mounted) {
-          final shippingAddr = profile['shipping_address'] as Map<String, dynamic>?;
+          final shippingAddr =
+              profile['shipping_address'] as Map<String, dynamic>?;
 
-          final hasData = shippingAddr != null &&
+          final hasData =
+              shippingAddr != null &&
               (shippingAddr['phone'] != null ||
                   shippingAddr['street'] != null ||
                   shippingAddr['city'] != null);
@@ -204,7 +206,9 @@ class _SpiritualExerciseRegistrationScreenState
       );
 
       if (response.status != 200) {
-        throw Exception(response.data?['error'] ?? 'Nepodarilo sa odoslať registráciu');
+        throw Exception(
+          response.data?['error'] ?? 'Nepodarilo sa odoslať registráciu',
+        );
       }
 
       if (!mounted) return;
@@ -228,10 +232,7 @@ class _SpiritualExerciseRegistrationScreenState
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -286,9 +287,7 @@ class _SpiritualExerciseRegistrationScreenState
                 parentNavigator.pop();
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
             child: Text(tr('yes')),
           ),
         ],
@@ -301,18 +300,21 @@ class _SpiritualExerciseRegistrationScreenState
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return;
 
-      await Supabase.instance.client.from('users').update({
-        'full_name': '$_firstName $_lastName'.trim(),
-        'shipping_address': {
-          'name': '$_firstName $_lastName'.trim(),
-          'email': _email,
-          'phone': _phone,
-          'street': _street,
-          'city': _city,
-          'postal_code': _postalCode,
-          'country': 'Slovensko',
-        },
-      }).eq('id', user.id);
+      await Supabase.instance.client
+          .from('users')
+          .update({
+            'full_name': '$_firstName $_lastName'.trim(),
+            'shipping_address': {
+              'name': '$_firstName $_lastName'.trim(),
+              'email': _email,
+              'phone': _phone,
+              'street': _street,
+              'city': _city,
+              'postal_code': _postalCode,
+              'country': 'Slovensko',
+            },
+          })
+          .eq('id', user.id);
     } catch (e) {
       debugPrint('❌ Error saving profile: $e');
     }
@@ -759,19 +761,13 @@ class _SpiritualExerciseRegistrationScreenState
                     ),
                   ),
                   if (required)
-                    const Text(
-                      ' *',
-                      style: TextStyle(color: Colors.red),
-                    ),
+                    const Text(' *', style: TextStyle(color: Colors.red)),
                 ],
               ),
               if (subtitle != null)
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
             ],
           ),
@@ -806,10 +802,7 @@ class _SpiritualExerciseRegistrationScreenState
                 ),
               ),
               if (required)
-                const Text(
-                  ' *',
-                  style: TextStyle(color: Colors.red),
-                ),
+                const Text(' *', style: TextStyle(color: Colors.red)),
             ],
           ),
           const SizedBox(height: 8),
@@ -831,7 +824,10 @@ class _SpiritualExerciseRegistrationScreenState
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -871,10 +867,7 @@ class _SpiritualExerciseRegistrationScreenState
                 ),
               ),
               if (required)
-                const Text(
-                  ' *',
-                  style: TextStyle(color: Colors.red),
-                ),
+                const Text(' *', style: TextStyle(color: Colors.red)),
             ],
           ),
           const SizedBox(height: 8),
@@ -892,8 +885,10 @@ class _SpiritualExerciseRegistrationScreenState
                   Expanded(
                     child: Text(
                       value.isNotEmpty
-                          ? DateFormat('d. MMMM yyyy', context.locale.languageCode)
-                              .format(DateTime.parse(value))
+                          ? DateFormat(
+                              'd. MMMM yyyy',
+                              context.locale.languageCode,
+                            ).format(DateTime.parse(value))
                           : tr('select_date'),
                       style: TextStyle(
                         color: value.isNotEmpty
@@ -934,15 +929,12 @@ class _SpiritualExerciseRegistrationScreenState
                 ),
               ),
               if (required)
-                const Text(
-                  ' *',
-                  style: TextStyle(color: Colors.red),
-                ),
+                const Text(' *', style: TextStyle(color: Colors.red)),
             ],
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            value: value.isNotEmpty ? value : null,
+            initialValue: value.isNotEmpty ? value : null,
             decoration: InputDecoration(
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -953,7 +945,10 @@ class _SpiritualExerciseRegistrationScreenState
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -1046,10 +1041,7 @@ class _SpiritualExerciseRegistrationScreenState
                   ),
                   Text(
                     '${pricing.price.toStringAsFixed(0)} € + ${(pricing.deposit ?? 50).toStringAsFixed(0)} € ${tr("deposit")}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                   ),
                 ],
               ),
@@ -1124,9 +1116,7 @@ class _SpiritualExerciseRegistrationScreenState
       context: context,
       builder: (context) => AlertDialog(
         title: Text(tr('gdpr_info_title')),
-        content: SingleChildScrollView(
-          child: Text(tr('gdpr_info_content')),
-        ),
+        content: SingleChildScrollView(child: Text(tr('gdpr_info_content'))),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

@@ -244,7 +244,7 @@ class PrayerFocusService {
   Future<void> _restoreNotificationSettings() async {
     _logger.i('🔔 Restoring notification settings');
 
-    // TODO: Implementovať restoration podľa toho čo bolo aplikované
+    // Implementovať restoration podľa toho čo bolo aplikované
     await _restoreAllNotifications();
   }
 

@@ -11,8 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/lectio_audio_state.dart';
 import '../models/lectio_audio_track.dart';
 import '../services/background_audio_manager.dart';
-// TODO: DND funkcia dočasne deaktivovaná
-// import '../services/do_not_disturb_service.dart';
+import '../services/lectio_data_service.dart';
 import '../services/prayer_focus_service.dart';
 import '../shared/app_colors.dart';
 import '../shared/audio_constants.dart';
@@ -41,8 +40,6 @@ class _LectioScreenState extends State<LectioScreen> {
   final PrayerFocusService _prayerFocusService = PrayerFocusService();
   final BackgroundAudioManager _backgroundAudioManager =
       BackgroundAudioManager();
-  // TODO: DND funkcia dočasne deaktivovaná
-  // final DoNotDisturbService _dndService = DoNotDisturbService();
 
   Map<String, dynamic>? lectioData;
   bool isLoading = true;
@@ -65,11 +62,6 @@ class _LectioScreenState extends State<LectioScreen> {
   bool _usingFallbackPlayer = false;
   StreamSubscription? _fallbackPlayerSubscription;
 
-  // TODO: DND funkcia dočasne deaktivovaná - vyžaduje viac testovania
-  // Do Not Disturb state - vždy false keďže DND je deaktivované
-  final bool _isDndActive = false;
-  final bool _dndEnabled = false; // Zmeniť na true keď bude DND opravené
-
   // Cache pre tracks
   List<Map<String, dynamic>>? _cachedTracks;
   String? _lastCachedBible;
@@ -85,8 +77,7 @@ class _LectioScreenState extends State<LectioScreen> {
   void initState() {
     super.initState();
     _setupAudioListeners();
-    // TODO: DND dočasne deaktivované
-    // _initializeDndService();
+
     _startPositionTimer();
 
     // Callback sa zaregistruje v _playBackgroundAudio po inicializácii
@@ -94,17 +85,6 @@ class _LectioScreenState extends State<LectioScreen> {
     // Notifikuj Prayer Focus Service o vstupe do Lectio screen
     _prayerFocusService.onSpiritualScreenEntered(SpiritualScreen.lectio);
   }
-
-  // TODO: DND funkcia dočasne deaktivovaná
-  // Future<void> _initializeDndService() async {
-  //   await _dndService.initialize();
-  //   if (mounted) {
-  //     setState(() {
-  //       _dndEnabled = _dndService.isEnabled;
-  //       _isDndActive = _dndService.isDndActive;
-  //     });
-  //   }
-  // }
 
   /// Aktualizuje hlavný playback stav
   void _setPlaybackState(LectioPlaybackState state) {
@@ -379,12 +359,6 @@ class _LectioScreenState extends State<LectioScreen> {
     // Notifikuj Prayer Focus Service o opustení Lectio screen
     _prayerFocusService.onSpiritualScreenExited(SpiritualScreen.lectio);
 
-    // TODO: DND funkcia dočasne deaktivovaná
-    // End DND session ak je aktívne
-    // if (_isDndActive) {
-    //   _dndService.endReadingSession();
-    // }
-
     _audioPlayer.dispose();
     _playlistPageController.dispose();
     super.dispose();
@@ -558,219 +532,19 @@ class _LectioScreenState extends State<LectioScreen> {
 
   Future<void> fetchLectioData() async {
     setState(() => isLoading = true);
-    final supabase = Supabase.instance.client;
-    final today = DateFormat('yyyy-MM-dd').format(selectedDate);
     final lang = widget.selectedLang ?? context.locale.languageCode;
 
-    try {
-      debugPrint('🔍 Načítavam lectio pre dátum: $today, jazyk: $lang');
+    final data = await LectioDataService.instance.getDailyLectio(
+      date: selectedDate,
+      locale: lang,
+    );
 
-      // 1. NAJPRV nájdeme správny liturgický rok na základe dátumu
-      // (nie z calendar entry, ale priamo podľa date range)
-      final liturgicalYearsResponse = await supabase
-          .from('liturgical_years')
-          .select()
-          .eq('locale_code', lang)
-          .lte('start_date', today)
-          .gte('end_date', today);
-
-      Map<String, dynamic>? correctLiturgicalYear;
-      final liturgicalYearsList = liturgicalYearsResponse as List;
-      if (liturgicalYearsList.isNotEmpty) {
-        final yearData = liturgicalYearsList[0] as Map<String, dynamic>;
-        correctLiturgicalYear = yearData;
-        debugPrint(
-          '✅ Nájdený liturgický rok: ${yearData['year']} '
-          '(${yearData['start_date']} - ${yearData['end_date']}), '
-          'cyklus: ${yearData['lectionary_cycle']}',
-        );
-      } else {
-        // Fallback na slovenčinu ak aktuálny jazyk nemá liturgický rok
-        if (lang != 'sk') {
-          debugPrint('🔄 Hľadám liturgický rok v slovenčine...');
-          final skYearsResponse = await supabase
-              .from('liturgical_years')
-              .select()
-              .eq('locale_code', 'sk')
-              .lte('start_date', today)
-              .gte('end_date', today);
-
-          final skYearsList = skYearsResponse as List;
-          if (skYearsList.isNotEmpty) {
-            final skYearData = skYearsList[0] as Map<String, dynamic>;
-            correctLiturgicalYear = skYearData;
-            debugPrint(
-              '✅ Nájdený SK liturgický rok: ${skYearData['year']} '
-              '(${skYearData['start_date']} - ${skYearData['end_date']}), '
-              'cyklus: ${skYearData['lectionary_cycle']}',
-            );
-          }
-        }
-      }
-
-      // 2. Nájdi deň v liturgical_calendar
-      var calendarResponse = await supabase
-          .from('liturgical_calendar')
-          .select()
-          .eq('datum', today)
-          .eq('locale_code', lang)
-          .maybeSingle();
-
-      // Fallback na slovenčinu ak kalendár pre aktuálny jazyk neexistuje
-      if (calendarResponse == null && lang != 'sk') {
-        debugPrint('🔄 Skúšam načítať kalendár pre slovenčinu...');
-        calendarResponse = await supabase
-            .from('liturgical_calendar')
-            .select()
-            .eq('datum', today)
-            .eq('locale_code', 'sk')
-            .maybeSingle();
-      }
-
-      if (calendarResponse == null) {
-        debugPrint('❌ Liturgický kalendár nenájdený pre dátum $today');
-        if (mounted) {
-          setState(() {
-            lectioData = null;
-            isLoading = false;
-          });
-          _invalidateTracksCache();
-        }
-        return;
-      }
-
-      final lectioHlava = calendarResponse['lectio_hlava'];
-      if (lectioHlava == null) {
-        debugPrint('❌ Tento deň nemá priradenú lectio hlavičku');
-        if (mounted) {
-          setState(() {
-            lectioData = null;
-            isLoading = false;
-          });
-        }
-        return;
-      }
-
-      debugPrint(
-        '✅ Kalendárny deň nájdený: ${calendarResponse['celebration_title']}',
-      );
-      debugPrint(
-        '🔍 Debug kalendárny deň: datum=${calendarResponse['datum']}, '
-        'celebration_title=${calendarResponse['celebration_title']}, '
-        'celebration_rank_num=${calendarResponse['celebration_rank_num']}, '
-        'lectio_hlava=$lectioHlava',
-      );
-
-      // 3. Určíme či použiť cyklus (A/B/C) alebo 'N' pre všedné dni
-      final celebrationTitle = calendarResponse['celebration_title'] ?? '';
-      final celebrationRankNum = calendarResponse['celebration_rank_num'];
-
-      // Pre všedné dni (pondelok-sobota v cezročnom období) používame 'N'
-      final isWeekday = RegExp(
-        r'(Pondelok|Utorok|Streda|Štvrtok|Piatok|Sobota).+týždňa v Cezročnom období',
-      ).hasMatch(celebrationTitle);
-
-      // Pre nedele a sviatky používame A/B/C
-      final isSpecialDay =
-          !isWeekday &&
-          (celebrationTitle.toLowerCase().contains('nedeľa') ||
-              celebrationTitle.toLowerCase().contains('sunday') ||
-              (celebrationRankNum != null && celebrationRankNum > 1));
-
-      // POUŽIJEME správny liturgický rok (nájdený podľa dátumu, nie z calendar entry)
-      final lectionaryCycle = correctLiturgicalYear?['lectionary_cycle'] ?? 'A';
-      final rokToSearch = isSpecialDay ? lectionaryCycle : 'N';
-
-      debugPrint(
-        '🔍 Hľadám rok: "$rokToSearch" (všedný deň: ${isWeekday ? "ÁNO" : "NIE"}, '
-        'špeciálny deň: $isSpecialDay, liturgický cyklus: $lectionaryCycle)',
-      );
-
-      // 4. Nájdi zodpovedajúci záznam v lectio_sources
-      var lectioSource = await supabase
-          .from('lectio_sources')
-          .select()
-          .eq('hlava', lectioHlava)
-          .eq('lang', lang)
-          .eq('rok', rokToSearch)
-          .maybeSingle();
-
-      // Fallback logika
-      if (lectioSource == null) {
-        debugPrint('❌ Lectio source nenájdený pre $lang, rok $rokToSearch');
-
-        // Pre sviatky: skús rok 'N'
-        if (isSpecialDay && rokToSearch != 'N') {
-          debugPrint('🔄 Sviatok nenájdený s rokom A/B/C, skúšam rok N...');
-          lectioSource = await supabase
-              .from('lectio_sources')
-              .select()
-              .eq('hlava', lectioHlava)
-              .eq('lang', lang)
-              .eq('rok', 'N')
-              .maybeSingle();
-
-          if (lectioSource != null) {
-            debugPrint(
-              '✅ Lectio source nájdený s rokom N: ${lectioSource['hlava']}',
-            );
-          }
-        }
-
-        // Fallback na slovenčinu
-        if (lectioSource == null && lang != 'sk') {
-          debugPrint('🔄 Skúšam načítať lectio source pre slovenčinu...');
-          lectioSource = await supabase
-              .from('lectio_sources')
-              .select()
-              .eq('hlava', lectioHlava)
-              .eq('lang', 'sk')
-              .eq('rok', rokToSearch)
-              .maybeSingle();
-
-          // Pre sviatky v slovenčine: aj tu skús 'N'
-          if (lectioSource == null && isSpecialDay && rokToSearch != 'N') {
-            debugPrint('🔄 Skúšam slovenčinu s rokom N...');
-            lectioSource = await supabase
-                .from('lectio_sources')
-                .select()
-                .eq('hlava', lectioHlava)
-                .eq('lang', 'sk')
-                .eq('rok', 'N')
-                .maybeSingle();
-          }
-
-          if (lectioSource != null) {
-            debugPrint(
-              '✅ Lectio source nájdený v slovenčine: ${lectioSource['hlava']}',
-            );
-          }
-        }
-      }
-
-      if (lectioSource != null) {
-        debugPrint(
-          '✅ Lectio source nájdený: ${lectioSource['hlava']}, rok: ${lectioSource['rok']}',
-        );
-      } else {
-        debugPrint('❌ Lectio source neexistuje pre žiadny jazyk');
-      }
-
-      if (mounted) {
-        setState(() {
-          lectioData = lectioSource;
-          isLoading = false;
-        });
-        _invalidateTracksCache();
-      }
-    } catch (e) {
-      debugPrint('❌ Chyba pri načítavaní Lectio dát: $e');
-      if (mounted) {
-        setState(() {
-          lectioData = null;
-          isLoading = false;
-        });
-      }
+    if (mounted) {
+      setState(() {
+        lectioData = data;
+        isLoading = false;
+      });
+      _invalidateTracksCache();
     }
   }
 
@@ -1292,228 +1066,6 @@ class _LectioScreenState extends State<LectioScreen> {
     }
   }
 
-  // TODO: DND funkcia dočasne deaktivovaná
-  // Future<void> _handleDndToggle() async {
-  //   try {
-  //     if (_isDndActive) {
-  //       // Deaktivácia DND
-  //       await _dndService.deactivateDndManually();
-  //     } else {
-  //       // Aktivácia DND
-  //       final hasPermissions = await _dndService.checkPermissions();
-  //
-  //       if (!hasPermissions) {
-  //         // Požiadaj o povolenia
-  //         final granted = await _dndService.requestPermissions();
-  //         if (!granted) {
-  //           if (mounted) {
-  //             ScaffoldMessenger.of(context).showSnackBar(
-  //               const SnackBar(
-  //                 content: Text(
-  //                   'Pre aktiváciu Nerušiť je potrebné povoliť prístup k notifikáciám',
-  //                 ),
-  //                 backgroundColor: Colors.orange,
-  //               ),
-  //             );
-  //           }
-  //           return;
-  //         }
-  //       }
-  //
-  //       // Aktivuj DND manuálne
-  //       await _dndService.activateDndManually();
-  //     }
-  //
-  //     // Aktualizuj UI stav podľa skutočného stavu service
-  //     setState(() {
-  //       _isDndActive = _dndService.isDndActive;
-  //     });
-  //
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //           content: Row(
-  //             children: [
-  //               const Icon(Icons.do_not_disturb_on, color: Colors.white),
-  //               const SizedBox(width: 8),
-  //               Expanded(
-  //                 child: Text(
-  //                   Platform.isIOS
-  //                       ? 'Zapnite "Nerušiť" manuálne v Control Center'
-  //                       : 'Režim Nerušiť aktivovaný',
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //         backgroundColor: Colors.green,
-  //         action: Platform.isIOS
-  //             ? SnackBarAction(
-  //                 label: 'Ako na to',
-  //                 textColor: Colors.white,
-  //                 onPressed: () => _showIOSDndInstructions(),
-  //               )
-  //             : null,
-  //       ),
-  //     );
-  //   }
-  // } catch (e) {
-  //   // Chyba pri toggle DND
-  //   if (mounted) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text('Chyba pri prepínaní režimu Nerušiť: $e'),
-  //         backgroundColor: Colors.red,
-  //       ),
-  //     );
-  //   }
-  // }
-  // }
-
-  // void _showIOSDndInstructions() {
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) => AlertDialog(
-  //       title: const Row(
-  //         children: [
-  //           Icon(Icons.shortcut_outlined, color: Colors.blue),
-  //           SizedBox(width: 8),
-  //           Text('iOS Shortcuts pre DND'),
-  //         ],
-  //       ),
-  //       content: SingleChildScrollView(
-  //         child: Column(
-  //           mainAxisSize: MainAxisSize.min,
-  //           crossAxisAlignment: CrossAxisAlignment.start,
-  //           children: [
-  //             Container(
-  //               padding: const EdgeInsets.all(12),
-  //               decoration: BoxDecoration(
-  //                 color: Colors.blue.withValues(alpha: 0.1),
-  //                 borderRadius: BorderRadius.circular(8),
-  //               ),
-  //               child: Column(
-  //                 crossAxisAlignment: CrossAxisAlignment.start,
-  //                 children: [
-  //                   Row(
-  //                     children: [
-  //                       const Icon(
-  //                         Icons.auto_awesome,
-  //                         color: Colors.blue,
-  //                         size: 20,
-  //                       ),
-  //                       const SizedBox(width: 8),
-  //                       Text(
-  //                         'Automatické riešenie',
-  //                         style: TextStyle(
-  //                           fontWeight: FontWeight.w600,
-  //                           color: Colors.blue[800],
-  //                         ),
-  //                       ),
-  //                     ],
-  //                   ),
-  //                   const SizedBox(height: 8),
-  //                   Text(
-  //                     'Vytvorte si iOS Shortcuts pre automatické zapínanie/vypínanie Focus režimu pri používaní DND tlačidla.',
-  //                     style: TextStyle(fontSize: 13, color: Colors.blue[700]),
-  //                   ),
-  //                 ],
-  //               ),
-  //             ),
-  //             const SizedBox(height: 16),
-  //
-  //             _buildInstructionStep(
-  //               '1',
-  //               'Vytvorte Shortcuts',
-  //               'Nastavenia → Vytvorte Shortcuts pre DND',
-  //             ),
-  //             const SizedBox(height: 8),
-  //             _buildInstructionStep(
-  //               '2',
-  //               'Použite DND tlačidlo',
-  //               'Shortcuts sa spustia automaticky',
-  //             ),
-  //             const SizedBox(height: 16),
-  //
-  //             const Divider(),
-  //             const SizedBox(height: 12),
-  //
-  //             Text(
-  //               'Manuálne riešenie:',
-  //               style: TextStyle(
-  //                 fontWeight: FontWeight.w600,
-  //                 color: Colors.grey[700],
-  //               ),
-  //             ),
-  //             const SizedBox(height: 8),
-  //             _buildInstructionStep(
-  //               'A',
-  //               'Control Center',
-  //               'Potiahnite zhora doprava → 🌙',
-  //             ),
-  //             const SizedBox(height: 8),
-  //             _buildInstructionStep(
-  //               'B',
-  //               'Focus režim',
-  //               'Nastavenia → Focus → Do Not Disturb',
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () => Navigator.pop(context),
-  //           child: const Text('Zavrieť'),
-  //         ),
-  //         ElevatedButton(
-  //           onPressed: () {
-  //             Navigator.pop(context);
-  //             Navigator.pushNamed(context, '/settings');
-  //           },
-  //           child: const Text('Nastavenia'),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-  //
-  // Widget _buildInstructionStep(String number, String title, String subtitle) {
-  //   return Row(
-  //     children: [
-  //       Container(
-  //         width: 24,
-  //         height: 24,
-  //         decoration: const BoxDecoration(
-  //           color: Colors.orange,
-  //           shape: BoxShape.circle,
-  //         ),
-  //         child: Center(
-  //           child: Text(
-  //             number,
-  //             style: const TextStyle(
-  //               color: Colors.white,
-  //               fontSize: 12,
-  //               fontWeight: FontWeight.bold,
-  //             ),
-  //           ),
-  //         ),
-  //       ),
-  //       const SizedBox(width: 12),
-  //       Expanded(
-  //         child: Column(
-  //           crossAxisAlignment: CrossAxisAlignment.start,
-  //           children: [
-  //             Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-  //             Text(
-  //               subtitle,
-  //               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
-
   void _handleAddNote() {
     if (lectioData == null) return;
     String bibleReference = '';
@@ -1536,9 +1088,12 @@ class _LectioScreenState extends State<LectioScreen> {
       'bible_quote': bibleReference,
     };
 
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => NoteDetailScreen(note: noteData)));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => NoteDetailScreen(note: noteData),
+        settings: const RouteSettings(name: '/note-detail/new'),
+      ),
+    );
   }
 
   @override
@@ -1579,10 +1134,7 @@ class _LectioScreenState extends State<LectioScreen> {
                         true, // Vycentruje títul na všetkých platformách
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
-                    actions: [
-                      // TODO: DND funkcia dočasne deaktivovaná
-                      // DND Status Indicator - skryté kým nebude DND opravené
-                    ],
+                    actions: [],
                     flexibleSpace: FlexibleSpaceBar(
                       titlePadding: const EdgeInsets.fromLTRB(
                         72,
@@ -1917,8 +1469,7 @@ class _LectioScreenState extends State<LectioScreen> {
           onAddNote: Supabase.instance.client.auth.currentUser != null
               ? _handleAddNote
               : null,
-          // TODO: DND funkcia dočasne deaktivovaná
-          onDndToggle: null, // _dndEnabled ? _handleDndToggle : null,
+          onDndToggle: null,
           onAudioToggle: _getAvailableAudioTracks().isNotEmpty
               ? () {
                   setState(() {
@@ -1927,10 +1478,10 @@ class _LectioScreenState extends State<LectioScreen> {
                 }
               : null,
           onRefresh: fetchLectioData,
-          isDndActive: _isDndActive,
+          isDndActive: false,
           hasAudio: _getAvailableAudioTracks().isNotEmpty,
           showAudioPlayer: _showAudioPlayer,
-          dndEnabled: _dndEnabled,
+          dndEnabled: false,
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,

@@ -198,7 +198,7 @@ class _SpiritualExerciseDetailScreenState
                     Image.network(
                       exercise.imageUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      errorBuilder: (context, error, stackTrace) => Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
                             colors: [AppColors.primary, Color(0xFF6B73A8)],
@@ -425,10 +425,15 @@ class _SpiritualExerciseDetailScreenState
                                   child: Image.network(
                                     image.imageUrl,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Container(
-                                      color: Colors.grey.shade200,
-                                      child: const Icon(Icons.image, size: 48),
-                                    ),
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            Container(
+                                              color: Colors.grey.shade200,
+                                              child: const Icon(
+                                                Icons.image,
+                                                size: 48,
+                                              ),
+                                            ),
                                   ),
                                 );
                               },

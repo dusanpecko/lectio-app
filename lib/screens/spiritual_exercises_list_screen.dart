@@ -162,7 +162,8 @@ class _SpiritualExercisesListScreenState
                         child: Image.asset(
                           'assets/images/lectio_header.png',
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const SizedBox(),
+                          errorBuilder: (context, error, stackTrace) =>
+                              const SizedBox(),
                         ),
                       ),
                     ),
@@ -243,14 +244,18 @@ class _SpiritualExercisesListScreenState
                               value: '',
                               child: Text('Všetky jazyky'),
                             ),
-                            ..._locales.map((locale) => DropdownMenuItem(
-                                  value: locale['code'] as String,
-                                  child: Text(locale['native_name'] as String),
-                                )),
+                            ..._locales.map(
+                              (locale) => DropdownMenuItem(
+                                value: locale['code'] as String,
+                                child: Text(locale['native_name'] as String),
+                              ),
+                            ),
                           ],
                           onChanged: (value) {
                             setState(() {
-                              _selectedLocale = value?.isEmpty == true ? null : value;
+                              _selectedLocale = value?.isEmpty == true
+                                  ? null
+                                  : value;
                             });
                             _fetchExercises();
                           },
@@ -332,24 +337,20 @@ class _SpiritualExercisesListScreenState
             SliverPadding(
               padding: const EdgeInsets.all(16),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final exercise = _exercises[index];
-                    return _ExerciseCard(
-                      exercise: exercise,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => SpiritualExerciseDetailScreen(
-                            slug: exercise.slug,
-                          ),
-                        ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final exercise = _exercises[index];
+                  return _ExerciseCard(
+                    exercise: exercise,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            SpiritualExerciseDetailScreen(slug: exercise.slug),
                       ),
-                      formatDate: _formatDate,
-                    );
-                  },
-                  childCount: _exercises.length,
-                ),
+                    ),
+                    formatDate: _formatDate,
+                  );
+                }, childCount: _exercises.length),
               ),
             ),
         ],
@@ -393,7 +394,8 @@ class _ExerciseCard extends StatelessWidget {
                       ? Image.network(
                           exercise.homeImageUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildPlaceholder(),
                         )
                       : _buildPlaceholder(),
                 ),
@@ -438,7 +440,7 @@ class _ExerciseCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  
+
                   if (exercise.description != null) ...[
                     const SizedBox(height: 8),
                     Text(
@@ -460,16 +462,10 @@ class _ExerciseCard extends StatelessWidget {
                     '${formatDate(exercise.startDate)} - ${formatDate(exercise.endDate)}',
                   ),
                   const SizedBox(height: 8),
-                  _buildMetaRow(
-                    Icons.location_on,
-                    exercise.locationDisplay,
-                  ),
+                  _buildMetaRow(Icons.location_on, exercise.locationDisplay),
                   if (exercise.leaderName != null) ...[
                     const SizedBox(height: 8),
-                    _buildMetaRow(
-                      Icons.person,
-                      exercise.leaderName!,
-                    ),
+                    _buildMetaRow(Icons.person, exercise.leaderName!),
                   ],
 
                   const SizedBox(height: 16),
@@ -507,11 +503,7 @@ class _ExerciseCard extends StatelessWidget {
     return Container(
       color: Colors.grey.shade200,
       child: Center(
-        child: Icon(
-          Icons.image,
-          size: 48,
-          color: Colors.grey.shade400,
-        ),
+        child: Icon(Icons.image, size: 48, color: Colors.grey.shade400),
       ),
     );
   }
@@ -524,10 +516,7 @@ class _ExerciseCard extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -536,4 +525,3 @@ class _ExerciseCard extends StatelessWidget {
     );
   }
 }
-

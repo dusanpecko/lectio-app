@@ -14,6 +14,7 @@ import 'package:lectio_divina/screens/home_screen.dart';
 import 'package:lectio_divina/screens/lectio_screen.dart';
 import 'package:lectio_divina/shared/app_theme.dart';
 import 'package:lectio_divina/utils/app_logger.dart';
+import 'package:lectio_divina/utils/umami_navigation_observer.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -24,6 +25,7 @@ import 'providers/theme_provider.dart';
 import 'services/background_audio_manager.dart';
 import 'services/fcm_service.dart';
 import 'services/local_notifications_service.dart';
+import 'services/umami_analytics_service.dart';
 import 'shared/app_colors.dart';
 
 final _logger = appLogger;
@@ -479,6 +481,14 @@ Future<void> main() async {
       _logger.e('❌ Error initializing BackgroundAudioManager: $e');
     }
 
+    // Inicializácia Umami Analytics
+    try {
+      await UmamiAnalyticsService().initialize();
+      _logger.i('✅ UmamiAnalyticsService initialized successfully');
+    } catch (e) {
+      _logger.e('❌ Error initializing UmamiAnalyticsService: $e');
+    }
+
     _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   } catch (e) {
     _logger.e('❌ Error initializing LocalNotificationsService: $e');
@@ -529,6 +539,7 @@ class MyApp extends StatelessWidget {
       darkTheme: darkTheme,
       themeMode: themeProvider.themeMode,
       initialRoute: '/',
+      navigatorObservers: [UmamiNavigationObserver()],
       localizationsDelegates: [...context.localizationDelegates],
       supportedLocales: context.supportedLocales,
       locale: context.locale,

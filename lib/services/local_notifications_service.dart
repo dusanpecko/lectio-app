@@ -19,11 +19,25 @@ class LocalNotificationsService {
   static LocalNotificationsService get instance =>
       _instance ??= LocalNotificationsService._internal();
 
-  LocalNotificationsService._internal();
+  static void setInstanceForTesting(LocalNotificationsService instance) {
+    _instance = instance;
+  }
+
+  factory LocalNotificationsService() => instance;
+
+  final FlutterLocalNotificationsPlugin _notifications;
+
+  // Private constructor
+  LocalNotificationsService._internal()
+    : _notifications = FlutterLocalNotificationsPlugin();
+
+  // Internal constructor for testing
+  @visibleForTesting
+  LocalNotificationsService.internal({
+    required FlutterLocalNotificationsPlugin notifications,
+  }) : _notifications = notifications;
 
   final _logger = appLogger;
-  final FlutterLocalNotificationsPlugin _notifications =
-      FlutterLocalNotificationsPlugin();
 
   bool _isInitialized = false;
 

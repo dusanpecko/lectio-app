@@ -1,0 +1,50 @@
+00:00 +0: loading /Users/dusanpecko/lectiodivina/mobile/test/integration_test.dart                                                                                                                     00:01 +0: loading /Users/dusanpecko/lectiodivina/mobile/test/integration_test.dart                                                                                                                     00:02 +0: loading /Users/dusanpecko/lectiodivina/mobile/test/integration_test.dart                                                                                                                     00:02 +0: (setUpAll)                                                                                                                                                                                   00:02 +0: (setUpAll)                                                                                                                                                                                   
+supabase.supabase_flutter: INFO: ***** Supabase init completed ***** 
+[90m[🌎 Easy Localization] [DEBUG] Localization initialized[0m
+00:02 +0: Happy Path: Guest Login -> Home                                                                                                                                                              00:02 +0: Happy Path: Guest Login -> Home                                                                                                                                                              
+[90m[🌎 Easy Localization] [DEBUG] Start[0m
+[90m[🌎 Easy Localization] [DEBUG] Init state[0m
+[32m[🌎 Easy Localization] [INFO] Start locale loaded sk[0m
+[90m[🌎 Easy Localization] [DEBUG] Build[0m
+[90m[🌎 Easy Localization] [DEBUG] Init Localization Delegate[0m
+[90m[🌎 Easy Localization] [DEBUG] Init provider[0m
+[90m[🌎 Easy Localization] [DEBUG] Load Localization Delegate[0m
+[90m[🌎 Easy Localization] [DEBUG] Load asset from assets/translations[0m
+[90m[🌎 Easy Localization] [DEBUG] Build[0m
+[90m[🌎 Easy Localization] [DEBUG] Init Localization Delegate[0m
+[90m[🌎 Easy Localization] [DEBUG] Init provider[0m
+📊 Umami Tracking Screen: /
+[38;5;12m┌───────────────────────────────────────────────────────────────────────────────[0m
+[38;5;12m│ 💡 🔐 SessionHandler init - Session: NONE[0m
+[38;5;12m└───────────────────────────────────────────────────────────────────────────────[0m
+[38;5;12m┌───────────────────────────────────────────────────────────────────────────────[0m
+[38;5;12m│ 💡 ✅ FCM Service initialized[0m
+[38;5;12m└───────────────────────────────────────────────────────────────────────────────[0m
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: at least one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "login": []>
+   Which: means none were found but some were expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/dusanpecko/lectiodivina/mobile/test/integration_test.dart:208:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1059:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/dusanpecko/lectiodivina/mobile/test/integration_test.dart line 208
+The test description was:
+  Happy Path: Guest Login -> Home
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:03 +0 -1: Happy Path: Guest Login -> Home [E]                                                                                                                                                       
+  Test failed. See exception logs above.
+  The test description was: Happy Path: Guest Login -> Home
+  
+
+To run this test again: /opt/homebrew/Caskroom/flutter/3.32.5/flutter/bin/cache/dart-sdk/bin/dart test /Users/dusanpecko/lectiodivina/mobile/test/integration_test.dart -p vm --plain-name 'Happy Path: Guest Login -> Home'
+00:03 +0 -1: (tearDownAll)                                                                                                                                                                             00:03 +0 -1: Some tests failed.                                                                                                                                                                        

@@ -23,8 +23,29 @@ import '../shared/audio_constants.dart';
 /// await controller.playTrack(0);
 /// ```
 class LectioAudioController extends ChangeNotifier {
-  final BackgroundAudioManager _backgroundManager = BackgroundAudioManager();
-  final AudioPlayer _fallbackPlayer = AudioPlayer();
+  static LectioAudioController? _instance;
+  static LectioAudioController get instance =>
+      _instance ??= LectioAudioController._internal();
+
+  static void setInstanceForTesting(LectioAudioController instance) {
+    _instance = instance;
+  }
+
+  factory LectioAudioController() => instance;
+
+  final BackgroundAudioManager _backgroundManager;
+  final AudioPlayer _fallbackPlayer;
+
+  LectioAudioController._internal()
+    : _backgroundManager = BackgroundAudioManager(),
+      _fallbackPlayer = AudioPlayer();
+
+  @visibleForTesting
+  LectioAudioController.internal({
+    required BackgroundAudioManager manager,
+    AudioPlayer? fallbackPlayer,
+  }) : _backgroundManager = manager,
+       _fallbackPlayer = fallbackPlayer ?? AudioPlayer();
 
   // State
   LectioPlaybackState _state = LectioPlaybackState.idle;
@@ -46,6 +67,11 @@ class LectioAudioController extends ChangeNotifier {
 
   // Getters
   LectioPlaybackState get state => _state;
+  // Pre testovanie a kompatibilitu
+  @visibleForTesting
+  BackgroundAudioManager get backgroundAudioManager => _backgroundManager;
+  LectioPlaybackState get playbackState => _state;
+
   List<LectioAudioTrack> get playlist => _playlist;
   int get currentTrackIndex => _currentTrackIndex;
   String get audioMode => _audioMode;
@@ -56,8 +82,53 @@ class LectioAudioController extends ChangeNotifier {
   bool get isPlayingInterlude => _isPlayingInterlude;
   LectioAudioTrack? get currentTrack =>
       _currentTrackIndex >= 0 && _currentTrackIndex < _playlist.length
-          ? _playlist[_currentTrackIndex]
-          : null;
+      ? _playlist[_currentTrackIndex]
+      : null;
+
+  // UI State properties
+  bool _isPlayerVisible = false;
+  bool _isPlayerMinimized = false;
+
+  bool get isPlayerVisible => _isPlayerVisible;
+  bool get isPlayerMinimized => _isPlayerMinimized;
+
+  String? get currentAudioSection {
+    if (_isPlayingInterlude) return 'interlude';
+    if (_currentTrackIndex >= 0 && _currentTrackIndex < _playlist.length) {
+      return _playlist[_currentTrackIndex].key;
+    }
+    return null;
+  }
+
+  String get currentTitle {
+    if (_isPlayingInterlude) return 'Meditačná hudba';
+    if (_currentTrackIndex >= 0 && _currentTrackIndex < _playlist.length) {
+      return _playlist[_currentTrackIndex].label;
+    }
+    return '';
+  }
+
+  void setPlayerVisible(bool visible) {
+    if (_isPlayerVisible != visible) {
+      _isPlayerVisible = visible;
+      notifyListeners();
+    }
+  }
+
+  void setPlayerMinimized(bool minimized) {
+    if (_isPlayerMinimized != minimized) {
+      _isPlayerMinimized = minimized;
+      notifyListeners();
+    }
+  }
+
+  Future<void> playPause() async {
+    if (isPlaying) {
+      await pause();
+    } else {
+      await resume();
+    }
+  }
 
   /// Inicializuje controller
   Future<void> initialize() async {
@@ -247,9 +318,28 @@ class LectioAudioController extends ChangeNotifier {
 
     // Delay pre UI update
     await Future.delayed(
-        Duration(milliseconds: AudioTimingConstants.seekCompletionDelay));
+      Duration(milliseconds: AudioTimingConstants.seekCompletionDelay),
+    );
     if (state == LectioPlaybackState.seeking) {
       _setState(LectioPlaybackState.playing);
+    }
+  }
+
+  /// Helper pre prehranie zoznamu trackov (pre testy a kompatibilitu)
+  Future<void> playTracks(
+    List<Map<String, dynamic>> tracks, {
+    String? startKey,
+  }) async {
+    final audioTracks = tracks.map((m) => LectioAudioTrack.fromMap(m)).toList();
+    setPlaylist(
+      audioTracks,
+      'short',
+    ); // Default 'short' ak nie je špecifikované
+
+    if (startKey != null) {
+      await playTrackByKey(startKey);
+    } else if (audioTracks.isNotEmpty) {
+      await playTrack(0);
     }
   }
 
@@ -273,10 +363,8 @@ class LectioAudioController extends ChangeNotifier {
       _currentPosition = _fallbackPlayer.position;
       _totalDuration = _fallbackPlayer.duration ?? Duration.zero;
     } else {
-      _currentPosition =
-          _backgroundManager.currentPosition;
-      _totalDuration =
-          _backgroundManager.totalDuration ?? Duration.zero;
+      _currentPosition = _backgroundManager.currentPosition;
+      _totalDuration = _backgroundManager.totalDuration ?? Duration.zero;
     }
     notifyListeners();
   }
@@ -330,4 +418,3 @@ class LectioAudioController extends ChangeNotifier {
     super.dispose();
   }
 }
-

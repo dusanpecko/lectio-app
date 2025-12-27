@@ -6,8 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lectio_divina/providers/theme_provider.dart';
 import 'package:lectio_divina/screens/auth_screen.dart';
 import 'package:lectio_divina/screens/profile_screen.dart';
-// TODO: DND funkcia dočasne odstránená - vyžaduje viac testovania
-// import 'package:lectio_divina/services/do_not_disturb_service.dart';
+
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -25,19 +24,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _selectedBible = 'biblia1';
   bool _isLoadingBible = true;
 
-  // TODO: DND funkcia dočasne odstránená - vyžaduje viac testovania
-  // Do Not Disturb Service
-  // final DoNotDisturbService _dndService = DoNotDisturbService();
-  // bool _dndEnabled = false;
-  // bool _dndAutoActivate = true;
-  // int _dndActivationDelay = 30;
-  // bool _dndPermissionsGranted = false;
-
   @override
   void initState() {
     super.initState();
     _initSettings();
-    // _initDoNotDisturbSettings();
   }
 
   // Výber biblie je teraz jednotný pre všetky jazyky - biblia1, biblia2, biblia3
@@ -66,22 +56,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Jeden kľúč pre výber biblie - rovnaký pre všetky jazyky
     await prefs.setString('selectedBible', value);
   }
-
-  // TODO: DND funkcia dočasne odstránená - vyžaduje viac testovania
-  // /// Inicializácia Do Not Disturb nastavení
-  // Future<void> _initDoNotDisturbSettings() async {
-  //   await _dndService.initialize();
-  //   if (!mounted) return;
-  //
-  //   final permissionsGranted = await _dndService.checkPermissions();
-  //
-  //   setState(() {
-  //     _dndEnabled = _dndService.isEnabled;
-  //     _dndAutoActivate = _dndService.autoActivate;
-  //     _dndActivationDelay = _dndService.activationDelaySeconds;
-  //     _dndPermissionsGranted = permissionsGranted;
-  //   });
-  // }
 
   Future<void> _onThemeModeChanged(ThemeMode? mode) async {
     if (mode == null) return;
@@ -152,11 +126,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // 5. Téma (systém/svetlá/tmavá)
           _buildThemeCard(themeProvider),
           const SizedBox(height: 16),
-
-          // TODO: DND funkcia dočasne odstránená - vyžaduje viac testovania
-          // Prayer Focus Mode
-          // _buildPrayerFocusCard(),
-          // const SizedBox(height: 16),
         ],
       ),
     );
@@ -579,9 +548,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     ];
   }
-
-  // TODO: Background Play nastavenia - budú implementované neskôr
-  // Widget _buildBackgroundPlayCard() - dočasne odstránené
 
   Widget _buildBibleCard() {
     return Card(

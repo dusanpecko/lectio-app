@@ -1405,7 +1405,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   height: 120,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (context, error, stackTrace) => Container(
                     height: 120,
                     color: AppColors.primary.withValues(alpha: 0.1),
                     child: const Center(

@@ -265,6 +265,7 @@ class _NotesListScreenState extends State<NotesListScreen>
               context,
               MaterialPageRoute(
                 builder: (context) => NoteDetailScreen(note: note),
+                settings: const RouteSettings(name: '/note-detail/edit'),
               ),
             );
             fetchNotes();
@@ -489,7 +490,10 @@ class _NotesListScreenState extends State<NotesListScreen>
         onPressed: () async {
           await Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const NoteDetailScreen()),
+            MaterialPageRoute(
+              builder: (context) => const NoteDetailScreen(),
+              settings: const RouteSettings(name: '/note-detail/new'),
+            ),
           );
           fetchNotes();
         },

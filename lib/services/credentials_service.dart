@@ -3,6 +3,18 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../utils/app_logger.dart';
 
 class CredentialsService {
+  static CredentialsService? _instance;
+  static CredentialsService get instance =>
+      _instance ??= CredentialsService._internal();
+
+  static void setInstanceForTesting(CredentialsService service) {
+    _instance = service;
+  }
+
+  CredentialsService._internal();
+
+  factory CredentialsService() => instance;
+
   static const _storage = FlutterSecureStorage();
 
   static const _emailKey = 'user_email';

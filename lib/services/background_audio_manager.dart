@@ -305,7 +305,7 @@ class BackgroundAudioManager {
 
   /// Get playback state stream
   Stream<PlaybackState> get playbackStateStream =>
-      AudioService.playbackStateStream;
+      _audioHandler?.playbackState ?? const Stream.empty();
 
   /// Get current media item
   MediaItem? get currentMediaItem => _audioHandler?.mediaItem.value;

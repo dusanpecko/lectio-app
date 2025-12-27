@@ -131,20 +131,23 @@ class SettingsRadioOption<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RadioListTile<T>(
-      title: Row(
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 20),
-            const SizedBox(width: AppSpacing.sm),
-          ],
-          Text(title),
-        ],
-      ),
-      subtitle: subtitle != null ? Text(subtitle!) : null,
-      value: value,
+    return RadioGroup<T>(
       groupValue: groupValue,
-      onChanged: onChanged,
+      onChanged: onChanged ?? (_) {},
+      child: RadioListTile<T>(
+        title: Row(
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 20),
+              const SizedBox(width: AppSpacing.sm),
+            ],
+            Text(title),
+          ],
+        ),
+        subtitle: subtitle != null ? Text(subtitle!) : null,
+        value: value,
+        enabled: onChanged != null,
+      ),
     );
   }
 }

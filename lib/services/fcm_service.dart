@@ -73,7 +73,12 @@ Future<void> _showLocalNotification(RemoteMessage message) async {
 
 class FcmService {
   FcmService._();
-  static final FcmService instance = FcmService._();
+  static FcmService? _instance;
+  static FcmService get instance => _instance ??= FcmService._();
+
+  static void setInstanceForTesting(FcmService instance) {
+    _instance = instance;
+  }
 
   /// Logger pre inštanciu služby
   final _logger = appLogger;
@@ -340,7 +345,7 @@ class FcmService {
           'is_active': true,
           'last_used_at': DateTime.now().toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),
-        });
+        }, onConflict: 'token');
 
         _logger.i(
           '✅ Token successfully registered in Supabase (user_fcm_tokens)',

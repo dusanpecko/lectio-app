@@ -110,6 +110,7 @@ class _NewsListScreenState extends State<NewsListScreen> {
                           MaterialPageRoute(
                             builder: (context) =>
                                 NewsDetailScreen(newsData: article),
+                            settings: const RouteSettings(name: '/news-detail'),
                           ),
                         );
                         if (result == true) {
@@ -209,6 +210,9 @@ class _NewsListScreenState extends State<NewsListScreen> {
                                                 NewsDetailScreen(
                                                   newsData: article,
                                                 ),
+                                            settings: const RouteSettings(
+                                              name: '/news-detail',
+                                            ),
                                           ),
                                         );
                                         if (result == true) {

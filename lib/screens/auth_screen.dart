@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:app_links/app_links.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -574,18 +575,19 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Apple Sign-In tlačidlo
-                    SizedBox(
-                      width: double.infinity,
-                      child: SignInWithAppleButton(
-                        onPressed: _isLoading
-                            ? () {}
-                            : () => _signInWithApple(),
-                        text: tr('sign_in_with_apple'),
-                        height: 48,
+                    // Apple Sign-In tlačidlo (Only show on non-Android platforms, mainly iOS)
+                    if (!Platform.isAndroid)
+                      SizedBox(
+                        width: double.infinity,
+                        child: SignInWithAppleButton(
+                          onPressed: _isLoading
+                              ? () {}
+                              : () => _signInWithApple(),
+                          text: tr('sign_in_with_apple'),
+                          height: 48,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
+                    if (!Platform.isAndroid) const SizedBox(height: 16),
                     const Divider(),
                     const SizedBox(height: 16),
                     SizedBox(

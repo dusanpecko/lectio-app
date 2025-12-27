@@ -6,7 +6,7 @@ class LectioAudioHandler extends BaseAudioHandler
     with QueueHandler, SeekHandler {
   final _player = AudioPlayer();
   final _backgroundPlayer = AudioPlayer();
-  final _playlist = ConcatenatingAudioSource(children: []);
+
   List<MediaItem> _currentItems = [];
 
   bool _backgroundEnabled = false;
@@ -23,7 +23,6 @@ class LectioAudioHandler extends BaseAudioHandler
 
   Future<void> _init() async {
     try {
-      await _player.setAudioSource(_playlist);
       await _backgroundPlayer.setVolume(_backgroundVolume);
       await _backgroundPlayer.setLoopMode(LoopMode.one);
     } catch (e) {
@@ -59,7 +58,7 @@ class LectioAudioHandler extends BaseAudioHandler
     String? backgroundAudioUrl,
   }) async {
     await _player.stop();
-    await _playlist.clear();
+    final audioSources = <AudioSource>[];
     final mediaItems = <MediaItem>[];
 
     // Store background URL
@@ -83,7 +82,7 @@ class LectioAudioHandler extends BaseAudioHandler
           artUri: Uri.parse('https://images.sk/images/NwM1i.png'),
         );
         mediaItems.add(mediaItem);
-        _playlist.add(AudioSource.uri(Uri.parse(url), tag: mediaItem));
+        audioSources.add(AudioSource.uri(Uri.parse(url), tag: mediaItem));
         debugPrint('Pridávam: ${mediaItem.title} - duration: $duration');
       }
     }
@@ -93,6 +92,11 @@ class LectioAudioHandler extends BaseAudioHandler
 
     if (mediaItems.isNotEmpty) {
       mediaItem.add(mediaItems.first);
+      try {
+        await _player.setAudioSources(audioSources);
+      } catch (e) {
+        debugPrint("Error setting audio sources: $e");
+      }
     }
   }
 

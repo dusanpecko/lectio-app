@@ -1,5 +1,6 @@
 /// Model pre Duchovné cvičenia
 /// Zodpovedá štruktúre z backend/src/app/api/spiritual-exercises
+library;
 
 class SpiritualExerciseLocale {
   final int id;
@@ -146,16 +147,24 @@ class SpiritualExercise {
       description: json['description'],
       imageUrl: json['image_url'],
       homeImageUrl: json['home_image_url'],
-      startDate: DateTime.parse(json['start_date'] ?? DateTime.now().toIso8601String()),
-      endDate: DateTime.parse(json['end_date'] ?? DateTime.now().toIso8601String()),
+      startDate: DateTime.parse(
+        json['start_date'] ?? DateTime.now().toIso8601String(),
+      ),
+      endDate: DateTime.parse(
+        json['end_date'] ?? DateTime.now().toIso8601String(),
+      ),
       locationName: json['location_name'] ?? '',
       locationCity: json['location_city'],
       locationCountry: json['location_country'] ?? '',
       leaderName: json['leader_name'],
       maxCapacity: json['max_capacity'],
-      locale: json['locale'] != null 
+      locale: json['locale'] != null
           ? SpiritualExerciseLocale.fromJson(json['locale'])
-          : SpiritualExerciseLocale(id: 0, code: 'sk', nativeName: 'Slovenčina'),
+          : SpiritualExerciseLocale(
+              id: 0,
+              code: 'sk',
+              nativeName: 'Slovenčina',
+            ),
     );
   }
 
@@ -206,19 +215,25 @@ class SpiritualExerciseDetail extends SpiritualExercise {
   });
 
   factory SpiritualExerciseDetail.fromJson(Map<String, dynamic> json) {
-    final pricingList = (json['pricing'] as List<dynamic>?)
-        ?.map((p) => SpiritualExercisePricing.fromJson(p))
-        .toList() ?? [];
+    final pricingList =
+        (json['pricing'] as List<dynamic>?)
+            ?.map((p) => SpiritualExercisePricing.fromJson(p))
+            .toList() ??
+        [];
     pricingList.sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
 
-    final testimonialsList = (json['testimonials'] as List<dynamic>?)
-        ?.map((t) => SpiritualExerciseTestimonial.fromJson(t))
-        .toList() ?? [];
+    final testimonialsList =
+        (json['testimonials'] as List<dynamic>?)
+            ?.map((t) => SpiritualExerciseTestimonial.fromJson(t))
+            .toList() ??
+        [];
     testimonialsList.sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
 
-    final galleryList = (json['gallery'] as List<dynamic>?)
-        ?.map((g) => SpiritualExerciseGallery.fromJson(g))
-        .toList() ?? [];
+    final galleryList =
+        (json['gallery'] as List<dynamic>?)
+            ?.map((g) => SpiritualExerciseGallery.fromJson(g))
+            .toList() ??
+        [];
     galleryList.sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
 
     return SpiritualExerciseDetail(
@@ -229,8 +244,12 @@ class SpiritualExerciseDetail extends SpiritualExercise {
       fullDescription: json['full_description'],
       imageUrl: json['image_url'],
       homeImageUrl: json['home_image_url'],
-      startDate: DateTime.parse(json['start_date'] ?? DateTime.now().toIso8601String()),
-      endDate: DateTime.parse(json['end_date'] ?? DateTime.now().toIso8601String()),
+      startDate: DateTime.parse(
+        json['start_date'] ?? DateTime.now().toIso8601String(),
+      ),
+      endDate: DateTime.parse(
+        json['end_date'] ?? DateTime.now().toIso8601String(),
+      ),
       locationName: json['location_name'] ?? '',
       locationCity: json['location_city'],
       locationCountry: json['location_country'] ?? '',
@@ -239,9 +258,13 @@ class SpiritualExerciseDetail extends SpiritualExercise {
       leaderBio: json['leader_bio'],
       leaderPhoto: json['leader_photo'],
       maxCapacity: json['max_capacity'],
-      locale: json['locale'] != null 
+      locale: json['locale'] != null
           ? SpiritualExerciseLocale.fromJson(json['locale'])
-          : SpiritualExerciseLocale(id: 0, code: 'sk', nativeName: 'Slovenčina'),
+          : SpiritualExerciseLocale(
+              id: 0,
+              code: 'sk',
+              nativeName: 'Slovenčina',
+            ),
       pricing: pricingList,
       testimonials: testimonialsList,
       gallery: galleryList,
@@ -255,4 +278,3 @@ class SpiritualExerciseDetail extends SpiritualExercise {
     return '$currentRegistrations / $maxCapacity miest';
   }
 }
-
