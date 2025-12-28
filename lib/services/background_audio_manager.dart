@@ -1,11 +1,13 @@
-import 'package:audio_service/audio_service.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
-import 'package:get_it/get_it.dart';
+// Compatibility layer - redirects to new LectioAudioPlayer
+// This file exists for backwards compatibility with lectio_screen.dart
 
-import '../shared/app_colors.dart';
-import '../shared/audio_constants.dart';
-import '../shared/globals.dart';
-import 'lectio_audio_service.dart';
+import 'package:audio_service/audio_service.dart';
+import 'package:flutter/foundation.dart';
+
+import 'lectio_audio_player.dart';
+
+// Global audio handler for compatibility
+AudioHandler? globalAudioHandler;
 
 class BackgroundAudioManager {
   static final BackgroundAudioManager _instance =
@@ -13,140 +15,144 @@ class BackgroundAudioManager {
   factory BackgroundAudioManager() => _instance;
   BackgroundAudioManager._internal();
 
-  LectioAudioHandler? _audioHandler;
+  final LectioAudioPlayer _player = LectioAudioPlayer();
   bool _isInitialized = false;
 
-  // Playlist pre background playback
-  List<Map<String, dynamic>> _playlist = [];
-  int _currentTrackIndex = -1;
-  bool _isPlayingInterlude = false;
+  // Callbacks
+  void Function(String trackKey, int index)? _onTrackChanged;
+  VoidCallback? _onPlaylistCompleted;
+  VoidCallback? _onSectionCompleted;
 
   /// Initialize background audio service
   Future<void> initialize() async {
     if (_isInitialized) return;
 
     try {
-      _audioHandler = await AudioService.init(
-        builder: () => LectioAudioHandler(),
-        config: AudioServiceConfig(
-          androidNotificationChannelId: 'sk.lectio.divina.audio',
-          androidNotificationChannelName: 'Lectio Divina Audio',
-          androidNotificationChannelDescription:
-              'Audio prehrávanie pre Lectio Divina - background playback s lock screen controls',
-          androidNotificationOngoing:
-              false, // Allow dismissible with media controls
-          androidStopForegroundOnPause:
-              false, // Keep service alive for background play
-          androidShowNotificationBadge: true,
-          notificationColor: AppColors.primary,
-          androidNotificationClickStartsActivity: true,
-          androidNotificationIcon: 'mipmap/launcher_icon',
-          // Enhanced settings for better MediaSession integration
-          preloadArtwork: true,
-          androidResumeOnClick: true,
-          // Force media session activation
-          artDownscaleWidth: 144,
-          artDownscaleHeight: 144,
-          fastForwardInterval: Duration(seconds: 10),
-          rewindInterval: Duration(seconds: 10),
-        ),
-      );
+      await _player.initialize();
 
-      await _audioHandler?.initializeAudioHandler();
+      _player.onTrackChanged = (key, index) {
+        _onTrackChanged?.call(key, index);
+      };
+
+      _player.onPlaylistCompleted = () {
+        _onPlaylistCompleted?.call();
+      };
+
+      // Listen for track completion to trigger section callback
+      _player.addListener(() {
+        // This is handled internally by LectioAudioPlayer now
+      });
+
       _isInitialized = true;
-
-      // Set global reference
-      globalAudioHandler = _audioHandler;
-
-      // Register in GetIt for easy access
-      if (!GetIt.instance.isRegistered<LectioAudioHandler>()) {
-        GetIt.instance.registerSingleton<LectioAudioHandler>(_audioHandler!);
-      }
+      debugPrint('✅ BackgroundAudioManager (compatibility) initialized');
     } catch (e) {
       debugPrint('❌ Error initializing background audio: $e');
       rethrow;
     }
   }
 
-  /// Get audio handler instance
-  LectioAudioHandler? get audioHandler => _audioHandler;
+  /// Get audio handler instance (null - no longer using audio_service directly)
+  dynamic get audioHandler => null;
 
   /// Check if service is initialized
   bool get isInitialized => _isInitialized;
 
   /// Set playlist for background playback
   void setPlaylist(List<Map<String, dynamic>> tracks, String audioMode) {
-    _playlist = List.from(tracks);
-    this.audioMode = audioMode;
-    debugPrint(
-      '🎵 BackgroundAudioManager: Playlist set with ${tracks.length} tracks, mode: $audioMode',
-    );
+    _player.setPlaylist(tracks, audioMode);
   }
 
   /// Set current track by section key
   void setCurrentTrackByKey(String sectionKey) {
-    final index = _playlist.indexWhere((t) => t['key'] == sectionKey);
-    if (index >= 0) {
-      _currentTrackIndex = index;
-      _isPlayingInterlude = false;
-      debugPrint(
-        '🎵 BackgroundAudioManager: Current track set to index $index (key: $sectionKey)',
-      );
-    } else {
-      debugPrint(
-        '🎵 BackgroundAudioManager: Track key "$sectionKey" not found in playlist',
-      );
-    }
+    // This is handled when playTrack is called
   }
 
   /// Get current playlist
-  List<Map<String, dynamic>> get playlist => _playlist;
+  List<Map<String, dynamic>> get playlist => _player.playlist;
 
   /// Get current track index
-  int get currentTrackIndex => _currentTrackIndex;
+  int get currentTrackIndex => _player.currentTrackIndex;
 
   /// Audio mode - 'none', 'short', 'long'
   String audioMode = 'short';
 
   /// Check if playing interlude
-  bool get isPlayingInterlude => _isPlayingInterlude;
+  bool get isPlayingInterlude => _player.isPlayingInterlude;
 
-  /// Play audio with title and artist
+  /// Get current position
+  Duration get currentPosition => _player.position;
+
+  /// Get total duration
+  Duration? get totalDuration => _player.duration;
+
+  /// Check if playing
+  bool get isPlaying => _player.isPlaying;
+
+  /// Playback state stream (compatibility)
+  Stream<PlaybackState> get playbackStateStream => Stream.empty();
+
+  /// Play URL
   Future<void> play(String url, {String? title, String? artist}) async {
-    if (_audioHandler == null) {
-      throw Exception('Background audio not initialized');
+    // Find track by URL and play
+    final index = _player.playlist.indexWhere((t) => t['url'] == url);
+    if (index >= 0) {
+      await _player.playTrackByIndex(index);
+    } else {
+      // Direct play - but we need to add to playlist first
+      debugPrint('🎵 Direct play URL: $url');
+      // For now, just start playing from playlist
+      await _player.play();
     }
 
-    try {
-      await _audioHandler!.playFromUrl(
-        url,
-        title: title ?? 'Lectio Divina',
-        artist: artist ?? 'Spiritual Audio',
-      );
-    } catch (e) {
-      debugPrint('❌ Error playing audio: $e');
-      rethrow;
-    }
+    // Trigger section completed callback when track ends
+    // This is now handled by LectioAudioPlayer internally
+  }
+
+  /// Pause
+  Future<void> pause() async {
+    await _player.pause();
+  }
+
+  /// Resume
+  Future<void> resume() async {
+    await _player.play();
+  }
+
+  /// Stop
+  Future<void> stop() async {
+    await _player.stop();
+  }
+
+  /// Seek
+  Future<void> seek(Duration position) async {
+    await _player.seek(position);
+  }
+
+  /// Set callback for section completed
+  void setOnSectionCompleted(VoidCallback? callback) {
+    _onSectionCompleted = callback;
+  }
+
+  /// Clear on section completed callback
+  void clearOnSectionCompleted() {
+    _onSectionCompleted = null;
+  }
+
+  /// Set callback for track changed
+  void setOnTrackChanged(void Function(String trackKey, int index)? callback) {
+    _onTrackChanged = callback;
+    _player.onTrackChanged = callback;
+  }
+
+  /// Set callback for playlist completed
+  void setOnPlaylistCompleted(VoidCallback? callback) {
+    _onPlaylistCompleted = callback;
+    _player.onPlaylistCompleted = callback;
   }
 
   /// Play track by index
   Future<void> playTrackByIndex(int index, {String? artistOverride}) async {
-    if (index < 0 || index >= _playlist.length) {
-      debugPrint('❌ Invalid track index: $index');
-      return;
-    }
-
-    _currentTrackIndex = index;
-    _isPlayingInterlude = false;
-    final track = _playlist[index];
-
-    debugPrint('🎵 Playing track $index: ${track['label']}');
-
-    await play(
-      track['url'],
-      title: track['label'],
-      artist: artistOverride ?? 'Lectio Divina',
-    );
+    await _player.playTrackByIndex(index);
   }
 
   /// Play interlude music
@@ -154,178 +160,11 @@ class BackgroundAudioManager {
     required bool isLong,
     int? nextTrackIndex,
   }) async {
-    _isPlayingInterlude = true;
-
-    final url = AudioConstants.getInterludeUrl(isLong: isLong);
-
-    debugPrint('🎵 Playing interlude (${isLong ? "long" : "short"})');
-
-    await play(url, title: 'Meditačná hudba', artist: 'Lectio Divina');
+    // Interlude is handled internally by LectioAudioPlayer
   }
 
-  /// Handle track completion - called from audio handler
+  /// Handle track completion
   Future<void> onTrackCompleted() async {
-    debugPrint('🎵 ═══════════════════════════════════════════════════════');
-    debugPrint('🎵 BackgroundAudioManager.onTrackCompleted()');
-    debugPrint('🎵 _isPlayingInterlude: $_isPlayingInterlude');
-    debugPrint('🎵 _currentTrackIndex: $_currentTrackIndex');
-    debugPrint('🎵 _playlist.length: ${_playlist.length}');
-    debugPrint('🎵 audioMode: $audioMode');
-    debugPrint('🎵 ═══════════════════════════════════════════════════════');
-
-    // Ak nemáme playlist alebo index, fallback na widget callback
-    if (_playlist.isEmpty || _currentTrackIndex < 0) {
-      debugPrint(
-        '🎵 ⚠️ No valid playlist/index (_currentTrackIndex=$_currentTrackIndex), cannot auto-progress',
-      );
-      debugPrint(
-        '🎵 Widget callback should handle this via _onSectionCompleted in audio handler',
-      );
-      // Nevraciam sa - nech to spadne do else vetvy a zavolá interlude ak treba
-      // Ale ak nemáme index, nemôžeme pokračovať
-      return;
-    }
-
-    if (_isPlayingInterlude) {
-      // Interlude finished, play next track
-      _isPlayingInterlude = false;
-      final nextIndex = _currentTrackIndex + 1;
-
-      if (nextIndex < _playlist.length) {
-        debugPrint('🎵 Interlude finished, playing next track: $nextIndex');
-        await playTrackByIndex(nextIndex);
-        // Notify listener if set (for UI update)
-        _onTrackChanged?.call(_playlist[nextIndex]['key'], nextIndex);
-      } else {
-        debugPrint('🎵 Interlude finished, no more tracks');
-        _onPlaylistCompleted?.call();
-      }
-      return;
-    }
-
-    // Regular track finished
-    final hasNextTrack = _currentTrackIndex < _playlist.length - 1;
-
-    if (audioMode == 'none') {
-      // No interlude, play next track directly
-      if (hasNextTrack) {
-        final nextIndex = _currentTrackIndex + 1;
-        debugPrint('🎵 No interlude mode, playing next track: $nextIndex');
-        await playTrackByIndex(nextIndex);
-        _onTrackChanged?.call(_playlist[nextIndex]['key'], nextIndex);
-      } else {
-        debugPrint('🎵 Playlist completed');
-        _onPlaylistCompleted?.call();
-      }
-    } else {
-      // Play interlude
-      final isLong = audioMode == 'long' || !hasNextTrack;
-      debugPrint(
-        '🎵 Playing interlude before ${hasNextTrack ? "next track" : "end"}',
-      );
-      await playInterlude(isLong: isLong);
-      _onTrackChanged?.call('interlude', -1);
-    }
-  }
-
-  // Callbacks for UI updates
-  Function(String trackKey, int index)? _onTrackChanged;
-  Function()? _onPlaylistCompleted;
-
-  /// Set callback for track changes (for UI updates)
-  void setOnTrackChanged(Function(String trackKey, int index) callback) {
-    _onTrackChanged = callback;
-  }
-
-  /// Set callback for playlist completion
-  void setOnPlaylistCompleted(Function() callback) {
-    _onPlaylistCompleted = callback;
-  }
-
-  /// Resume current audio
-  Future<void> resume() async {
-    await _audioHandler?.play();
-  }
-
-  /// Pause audio
-  Future<void> pause() async {
-    await _audioHandler?.pause();
-  }
-
-  /// Stop audio
-  Future<void> stop() async {
-    await _audioHandler?.stop();
-    _currentTrackIndex = -1;
-    _isPlayingInterlude = false;
-  }
-
-  /// Seek to position
-  Future<void> seek(Duration position) async {
-    await _audioHandler?.seek(position);
-  }
-
-  /// Set background play enabled/disabled
-  Future<void> setBackgroundPlayEnabled(bool enabled) async {
-    await _audioHandler?.setBackgroundPlayEnabled(enabled);
-  }
-
-  /// Get current state - use playbackState stream for Android compatibility
-  bool get isPlaying {
-    // Use the handler's playbackState which is synced via audio_service
-    try {
-      final state = _audioHandler?.playbackState.value;
-      if (state != null && state.playing) return true;
-    } catch (_) {}
-    // Fallback to direct player access
-    return _audioHandler?.isPlaying ?? false;
-  }
-
-  Duration get currentPosition {
-    // Use the handler's playbackState which is synced via audio_service
-    try {
-      final state = _audioHandler?.playbackState.value;
-      if (state != null) return state.position;
-    } catch (_) {}
-    // Fallback to direct player access
-    return _audioHandler?.currentPosition ?? Duration.zero;
-  }
-
-  Duration? get totalDuration {
-    // Use mediaItem from handler
-    try {
-      final mediaItem = _audioHandler?.mediaItem.value;
-      if (mediaItem?.duration != null) return mediaItem!.duration;
-    } catch (_) {}
-    // Fallback to direct player access
-    return _audioHandler?.totalDuration;
-  }
-
-  bool get backgroundPlayEnabled =>
-      _audioHandler?.backgroundPlayEnabled ?? true;
-
-  /// Get playback state stream
-  Stream<PlaybackState> get playbackStateStream =>
-      _audioHandler?.playbackState ?? const Stream.empty();
-
-  /// Get current media item
-  MediaItem? get currentMediaItem => _audioHandler?.mediaItem.value;
-
-  /// Set callback for when a section completes (for automatic progression)
-  void setOnSectionCompleted(Function callback) {
-    if (_audioHandler != null) {
-      _audioHandler!.setOnSectionCompleted(callback);
-    }
-  }
-
-  /// Clear section completion callback
-  void clearOnSectionCompleted() {
-    if (_audioHandler != null) {
-      _audioHandler!.clearOnSectionCompleted();
-    }
-  }
-
-  /// Dispose resources
-  void dispose() {
-    _audioHandler?.dispose();
+    _onSectionCompleted?.call();
   }
 }

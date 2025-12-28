@@ -1,4 +1,2 @@
-import 'package:lectio_divina/services/lectio_audio_service.dart';
-
-// Audio handler will be initialized in BackgroundAudioManager
-LectioAudioHandler? globalAudioHandler;
+// Global state for Lectio Divina app
+// Audio is now managed by just_audio_background - no need for global handler

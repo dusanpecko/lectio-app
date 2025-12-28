@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:audio_service/audio_service.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +22,6 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'firebase_options.dart';
 import 'providers/theme_provider.dart';
-import 'services/background_audio_manager.dart';
 import 'services/fcm_service.dart';
 import 'services/local_notifications_service.dart';
 import 'services/umami_analytics_service.dart';
@@ -30,8 +29,6 @@ import 'shared/app_colors.dart';
 
 final _logger = appLogger;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
-AudioHandler? globalAudioHandler;
 
 // Globálna premenná pre čakajúcu notifikáciu
 String? _pendingNotificationPayload;
@@ -413,6 +410,23 @@ void _showNotificationDialog(
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize just_audio_background for lock screen controls
+  await JustAudioBackground.init(
+    androidNotificationChannelId: 'sk.lectio.divina.audio',
+    androidNotificationChannelName: 'Lectio Divina Audio',
+    androidNotificationOngoing: false,
+    androidShowNotificationBadge: true,
+    androidStopForegroundOnPause: false,
+    // Fast forward/rewind intervals
+    fastForwardInterval: const Duration(seconds: 10),
+    rewindInterval: const Duration(seconds: 10),
+    // Notification icon
+    notificationColor: const Color(0xFF8B5C2A),
+    preloadArtwork: true,
+  );
+  _logger.i('✅ JustAudioBackground initialized');
+
   tz.initializeTimeZones();
   tz.setLocalLocation(tz.getLocation('Europe/Bratislava'));
   _logger.i('✅ Timezone set to Europe/Bratislava');
@@ -473,13 +487,7 @@ Future<void> main() async {
     await LocalNotificationsService.instance.refreshCacheIfNeeded();
     _logger.i('✅ Notifications cache refreshed on startup');
 
-    // Inicializácia Background Audio Manager
-    try {
-      await BackgroundAudioManager().initialize();
-      _logger.i('✅ BackgroundAudioManager initialized successfully');
-    } catch (e) {
-      _logger.e('❌ Error initializing BackgroundAudioManager: $e');
-    }
+    // NOTE: Audio initialization moved to main() with JustAudioBackground.init()
 
     // Inicializácia Umami Analytics
     try {
