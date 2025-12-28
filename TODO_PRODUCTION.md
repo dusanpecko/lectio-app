@@ -31,17 +31,16 @@ Projekt je v excelentnom stave. Podarilo sa eliminovať všetok technický dlh, 
 Nasledujúce úlohy musia byť vyriešené pred spustením produkčnej verzie.
 
 ### Audio a Médiá
-- [x] **1. Doladiť audio v Lectio Divina** (rozpracované 28.12.2024):
-  - [x] Lock screen controls fungujú na Android aj iOS (`just_audio_background`)
-  - [x] Background playback - prehrávanie pokračuje na zamknutej obrazovke
-  - [x] Notifikácia s player controls na Android
-  - [ ] ⚠️ **ZOSTÁVA OPRAVIŤ**:
-    - [ ] Auto-progression medzi trackmi v pozadí nefunguje spoľahlivo
+- [ ] **1. Doladiť audio v Lectio Divina** (rozpracované 28.12.2024):
+  - [x] Lock screen controls zobrazujú sa na Android aj iOS (`just_audio_background`)
+  - [ ] ⚠️ **NEFUNGUJE - TREBA OPRAVIŤ**:
+    - [ ] Background playback - prehrávanie nepokračuje na zamknutej obrazovke
+    - [ ] Auto-progression medzi trackmi v pozadí nefunguje
     - [ ] Next/Previous tlačidlá na Android lock screene chýbajú
     - [ ] iOS: Next/Prev na lock screene nefungujú (nedajú sa kliknúť)
     - [ ] Seek slider nefunguje korektne
     - [ ] Niekedy neprehrá track keď sa vrátime späť
-  - **POZNÁMKA**: Kód je komplikovaný s dvoma audio pathami. Odporúčané zjednodušiť.
+  - **POZNÁMKA**: Kód je komplikovaný s dvoma audio pathami. Odporúčané zjednodušiť na jeden `just_audio` + `just_audio_background`.
 - [ ] **2. Doladiť audio v Ruženci**:
   - [ ] Skontrolovať plynulosť prehrávania.
   - [ ] Synchronizácia UI so zvukom (ak aplikovateľné).
