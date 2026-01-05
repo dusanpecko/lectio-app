@@ -98,29 +98,24 @@
             </intent-filter>
         </service>
 
-        <!-- Background Audio Service with enhanced media session support -->
-        <service
-            android:name="com.ryanheise.audioservice.AudioService"
+
+        <!-- AudioService for just_audio_background -->
+        <service android:name="com.ryanheise.audioservice.AudioService"
             android:foregroundServiceType="mediaPlayback"
-            android:exported="true"
-            android:enabled="true">
-            <intent-filter>
-                <action android:name="android.media.browse.MediaBrowserService" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.MEDIA_BUTTON" />
-            </intent-filter>
+            android:exported="true" tools:ignore="Instantiatable">
+          <intent-filter>
+            <action android:name="android.media.browse.MediaBrowserService" />
+          </intent-filter>
         </service>
 
-        <!-- Media Button Receiver for lock screen controls -->
-        <receiver 
-            android:name="com.ryanheise.audioservice.MediaButtonReceiver"
-            android:exported="true"
-            android:enabled="true">
-            <intent-filter android:priority="1000">
-                <action android:name="android.intent.action.MEDIA_BUTTON" />
-            </intent-filter>
+        <!-- MediaButtonReceiver for lock screen controls -->
+        <receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver"
+            android:exported="true" tools:ignore="Instantiatable">
+          <intent-filter>
+            <action android:name="android.intent.action.MEDIA_BUTTON" />
+          </intent-filter>
         </receiver>
+
 
         <!-- Povinné pre Flutter -->
         <meta-data

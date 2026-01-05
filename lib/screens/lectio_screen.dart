@@ -83,12 +83,22 @@ class _LectioScreenState extends State<LectioScreen> {
     super.initState();
     _setupAudioListeners();
     _initializeDndService();
+    _initializeBackgroundAudio();
     _startPositionTimer();
 
     // Callback sa zaregistruje v _playBackgroundAudio po inicializácii
 
     // Notifikuj Prayer Focus Service o vstupe do Lectio screen
     _prayerFocusService.onSpiritualScreenEntered(SpiritualScreen.lectio);
+  }
+
+  Future<void> _initializeBackgroundAudio() async {
+    try {
+      await _backgroundAudioManager.initialize();
+      debugPrint('✅ BackgroundAudioManager initialized in initState');
+    } catch (e) {
+      debugPrint('❌ Error initializing BackgroundAudioManager: $e');
+    }
   }
 
   Future<void> _initializeDndService() async {
@@ -148,8 +158,8 @@ class _LectioScreenState extends State<LectioScreen> {
       final tracks = _getAvailableAudioTracks();
       final currentIndex = tracks.indexWhere((t) => t['key'] == sectionKey);
 
-      // Nastaviť playlist a audio mode
-      _backgroundAudioManager.setPlaylist(tracks, _audioMode);
+      // Nastaviť playlist a audio mode (NOW ASYNC)
+      await _backgroundAudioManager.setPlaylist(tracks, _audioMode);
       if (currentIndex >= 0) {
         // Nastaviť current index manuálne (nie cez playTrackByIndex aby sa neprehral znova)
         debugPrint(
@@ -194,23 +204,20 @@ class _LectioScreenState extends State<LectioScreen> {
         }
       });
 
-      // ALWAYS register callback - not just on first initialization
-      // This ensures callback is set even if screen was previously opened
+      // Callback when track section completes (for UI update only)
+      // NOTE: Auto-progression is handled internally by LectioAudioPlayer
       _backgroundAudioManager.setOnSectionCompleted(() {
-        debugPrint(
-          '🎵 🚀 CALLBACK INVOKED from lectio_screen.dart _playBackgroundAudio',
-        );
+        debugPrint('🎵 🚀 Section completed callback from LectioAudioPlayer');
         debugPrint(
           '🎵 mounted=$mounted, _currentAudioSection=$_currentAudioSection',
         );
+        // Only update UI state, don't call _onAudioCompleted
+        // LectioAudioPlayer handles auto-progression internally
         if (mounted) {
-          debugPrint('🎵 ➡️ Calling _onAudioCompleted()...');
-          _onAudioCompleted();
-        } else {
-          debugPrint('🎵 ❌ Widget not mounted, skipping _onAudioCompleted()');
+          debugPrint('🎵 UI will be updated via stream listeners');
         }
       });
-      debugPrint('✅ Auto-progression callback registered');
+      debugPrint('✅ Section completed callback registered (UI only)');
 
       // Get section title for media notification
       String title = _getSectionTitle(sectionKey);
@@ -396,43 +403,11 @@ class _LectioScreenState extends State<LectioScreen> {
   }
 
   void _setupAudioListeners() {
-    // Setup listener for BackgroundAudioManager (will be used once initialized)
-    // We'll listen to the stream even before initialization
-    _backgroundAudioManager.playbackStateStream.listen((playbackState) {
-      if (!mounted || !_backgroundAudioManager.isInitialized) return;
+    // NOTE: Auto-progression is handled internally by LectioAudioPlayer
+    // These listeners are only for UI updates
 
-      final isPlaying = playbackState.playing;
-      final position = playbackState.position;
-
-      debugPrint(
-        '🎵 BackgroundAudioManager state: playing=$isPlaying, position=${position.inSeconds}s, processingState=${playbackState.processingState}',
-      );
-
-      // Only update if not playing interlude
-      if (_currentAudioSection != 'interlude') {
-        setState(() {
-          _isPlaying = isPlaying;
-          _currentPosition = position;
-
-          // Update duration if available
-          if (_backgroundAudioManager.totalDuration != null) {
-            _totalDuration = _backgroundAudioManager.totalDuration!;
-          }
-        });
-        debugPrint(
-          '🎵 ✅ State updated from BackgroundAudioManager: _isPlaying=$_isPlaying',
-        );
-      }
-
-      // Completion is handled by callback, not by stream listener
-      // This prevents double completion calls
-    });
-
-    // Listen to media item changes for duration updates (once initialized)
-    // This will be called after initialization in _playBackgroundAudio
-
-    // Listen to regular player state (for interlude music or fallback)
-    _audioPlayer.playerStateStream.listen((state) {
+    // Listen to player state changes from BackgroundAudioManager
+    _backgroundAudioManager.playerStateStream.listen((state) {
       if (!mounted) return;
 
       debugPrint(
@@ -440,24 +415,18 @@ class _LectioScreenState extends State<LectioScreen> {
       );
       debugPrint('🎵 Current _currentAudioSection: $_currentAudioSection');
 
-      // Update state for all tracks
+      // Update playing state
       setState(() {
         _isPlaying = state.playing;
       });
-      debugPrint('🎵 ✅ State updated from AudioPlayer: _isPlaying=$_isPlaying');
+      debugPrint('🎵 ✅ State updated: _isPlaying=$_isPlaying');
 
-      // Auto-play next track when current ends
-      // Call for ALL tracks including interlude
-      if (state.processingState == ProcessingState.completed &&
-          _currentAudioSection != null) {
-        debugPrint('🎵 Track completed: $_currentAudioSection');
-        debugPrint('🎵 Volám _onAudioCompleted() z AudioPlayer');
-        _onAudioCompleted();
-      }
+      // NOTE: Don't call _onAudioCompleted here!
+      // Auto-progression is handled by LectioAudioPlayer._onTrackCompletedAsync
     });
 
     // Listen to position changes
-    _audioPlayer.positionStream.listen((position) {
+    _backgroundAudioManager.positionStream.listen((position) {
       if (mounted) {
         setState(() {
           _currentPosition = position;
@@ -466,10 +435,24 @@ class _LectioScreenState extends State<LectioScreen> {
     });
 
     // Listen to duration changes
-    _audioPlayer.durationStream.listen((duration) {
+    _backgroundAudioManager.durationStream.listen((duration) {
       if (mounted && duration != null) {
         setState(() {
           _totalDuration = duration;
+        });
+      }
+    });
+
+    // Also listen to the fallback player for when BAM is not initialized
+    _audioPlayer.playerStateStream.listen((state) {
+      if (!mounted) return;
+      // Only process if we're using fallback player
+      if (_usingFallbackPlayer) {
+        debugPrint(
+          '🎵 Fallback AudioPlayer state: playing=${state.playing}, processingState=${state.processingState}',
+        );
+        setState(() {
+          _isPlaying = state.playing;
         });
       }
     });
@@ -834,6 +817,12 @@ class _LectioScreenState extends State<LectioScreen> {
     try {
       debugPrint('▶️ Prehrávam: $sectionKey');
 
+      // Don't play if user closed the player
+      if (_audioPlayerClosed) {
+        debugPrint('🛑 Player was closed by user - skipping playback');
+        return;
+      }
+
       // Zrušiť fallback subscription PRED zastavením audio
       // aby sa nezachytil "completed" stav pri stop()
       await _fallbackPlayerSubscription?.cancel();
@@ -940,38 +929,14 @@ class _LectioScreenState extends State<LectioScreen> {
     }
   }
 
-  /// Určí, či má byť použitý fallback player (priamy AudioPlayer)
-  /// namiesto BackgroundAudioManager
-  bool get _shouldUseFallbackPlayer =>
-      _currentAudioSection == 'interlude' || _usingFallbackPlayer;
-
-  /// Vykoná audio operáciu na správnom playeri
-  Future<void> _executeAudioOperation({
-    required String operationName,
-    required Future<void> Function() fallbackOperation,
-    required Future<void> Function() backgroundOperation,
-  }) async {
-    debugPrint(
-      '🎵 $operationName: section=$_currentAudioSection, fallback=$_usingFallbackPlayer',
-    );
-    try {
-      if (_shouldUseFallbackPlayer) {
-        await fallbackOperation();
-        debugPrint('✅ AudioPlayer $operationName (fallback)');
-      } else if (_backgroundAudioManager.isInitialized) {
-        await backgroundOperation();
-        debugPrint('✅ BackgroundAudioManager $operationName');
-      }
-      // State sa aktualizuje cez listener, nie tu
-    } catch (e) {
-      debugPrint('❌ Error in $operationName: $e');
-    }
-  }
-
   Future<void> _pauseAudio() async {
     debugPrint('⏸️ Pausing audio');
     try {
-      await _audioPlayer.pause();
+      if (_backgroundAudioManager.isInitialized) {
+        await _backgroundAudioManager.pause();
+      } else {
+        await _audioPlayer.pause();
+      }
       debugPrint('✅ Pause complete');
     } catch (e) {
       debugPrint('❌ Error pausing: $e');
@@ -981,7 +946,11 @@ class _LectioScreenState extends State<LectioScreen> {
   Future<void> _resumeAudio() async {
     debugPrint('▶️ Resuming audio');
     try {
-      await _audioPlayer.play();
+      if (_backgroundAudioManager.isInitialized) {
+        await _backgroundAudioManager.resume();
+      } else {
+        await _audioPlayer.play();
+      }
       debugPrint('✅ Resume complete');
     } catch (e) {
       debugPrint('❌ Error resuming: $e');
@@ -991,7 +960,11 @@ class _LectioScreenState extends State<LectioScreen> {
   Future<void> _seekAudio(Duration position) async {
     debugPrint('🎚️ Seeking to ${position.inSeconds}s');
     try {
-      await _audioPlayer.seek(position);
+      if (_backgroundAudioManager.isInitialized) {
+        await _backgroundAudioManager.seek(position);
+      } else {
+        await _audioPlayer.seek(position);
+      }
       debugPrint('✅ Seek complete');
     } catch (e) {
       debugPrint('❌ Error seeking: $e');
@@ -1157,7 +1130,11 @@ class _LectioScreenState extends State<LectioScreen> {
     // Ak je interlude, vráť sa na aktuálnu nahrávku (nie predchádzajúcu)
     if (_currentAudioSection == 'interlude') {
       _nextTrackAfterInterlude = null;
-      await _audioPlayer.stop();
+      if (_backgroundAudioManager.isInitialized) {
+        await _backgroundAudioManager.stop();
+      } else {
+        await _audioPlayer.stop();
+      }
       // Nájdi posledne hraný track pred interlude
       // Keďže nevieme presne ktorý to bol, vrátime sa na začiatok playlistu
       debugPrint('🎵 Interlude stopped, returning to first track');
@@ -2324,6 +2301,8 @@ class _LectioScreenState extends State<LectioScreen> {
                               _resumeAudio();
                             } else {
                               debugPrint('🎮 -> Spúšťam prvú nahrávku');
+                              // Reset closed flag - user wants to play again
+                              _audioPlayerClosed = false;
                               final tracks = _getAvailableAudioTracks();
                               debugPrint(
                                 '🎮 -> Počet dostupných tracks: ${tracks.length}',
@@ -2511,11 +2490,15 @@ class _LectioScreenState extends State<LectioScreen> {
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: GestureDetector(
-                            onTap: () => _playAudio(
-                              track['url'],
-                              track['key'],
-                              // Priame kliknutie používateľa = animovať hneď (skipAnimation: false)
-                            ),
+                            onTap: () {
+                              // Reset closed flag - user wants to play
+                              _audioPlayerClosed = false;
+                              _playAudio(
+                                track['url'],
+                                track['key'],
+                                // Priame kliknutie používateľa = animovať hneď (skipAnimation: false)
+                              );
+                            },
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
                               curve: Curves.easeInOut,

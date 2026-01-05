@@ -8,7 +8,7 @@ import 'package:just_audio/just_audio.dart';
 import '../shared/audio_constants.dart';
 
 /// Simple, clean audio player for Lectio Divina
-/// Based on working just_audio + audio_session example
+/// Uses setAudioSources() with MediaItem tags for proper iOS lock screen controls
 class LectioAudioPlayer extends ChangeNotifier {
   static final LectioAudioPlayer _instance = LectioAudioPlayer._internal();
   factory LectioAudioPlayer() => _instance;
@@ -23,10 +23,12 @@ class LectioAudioPlayer extends ChangeNotifier {
   String _audioMode = 'short'; // none, short, long
   bool _isPlayingInterlude = false;
   Map<String, dynamic>? _nextTrackAfterInterlude;
+  bool _isStopped = false; // Flag to prevent auto-progression after stop
 
   // Callbacks
   VoidCallback? onPlaylistCompleted;
   void Function(String trackKey, int index)? onTrackChanged;
+  VoidCallback? onSectionCompleted;
 
   // Getters
   AudioPlayer get player => _player;
@@ -48,11 +50,10 @@ class LectioAudioPlayer extends ChangeNotifier {
     if (_isInitialized) return;
 
     try {
-      // Configure audio session - CRITICAL for Android
+      // Configure audio session - use predefined music() configuration like official example
       final session = await AudioSession.instance;
       await session.configure(const AudioSessionConfiguration.music());
-      await session.setActive(true);
-      debugPrint('🎵 AudioSession configured');
+      debugPrint('🎵 AudioSession configured for music playback');
 
       // Setup player listeners
       _setupListeners();
@@ -76,15 +77,64 @@ class LectioAudioPlayer extends ChangeNotifier {
       notifyListeners();
     });
 
-    // Player state changes
+    // Track index changes (for lock screen next/prev AND auto-progression)
+    int? _lastCompletedIndex;
+    _player.currentIndexStream.listen((index) {
+      if (index == null) return;
+
+      debugPrint(
+        '🎵 currentIndexStream: index=$index, _currentTrackIndex=$_currentTrackIndex, _lastCompletedIndex=$_lastCompletedIndex',
+      );
+
+      // Detect automatic track progression (not manual skip)
+      if (index != _currentTrackIndex && !_isPlayingInterlude) {
+        // Check if this is auto-progression (previous track completed)
+        if (_lastCompletedIndex != null &&
+            index == (_lastCompletedIndex! + 1)) {
+          debugPrint(
+            '🎵 🎯 AUTO-PROGRESSION detected: $_lastCompletedIndex -> $index',
+          );
+          // Previous track completed, trigger interlude logic
+          final previousIndex = _lastCompletedIndex!;
+          _lastCompletedIndex = index;
+
+          // Update current index BEFORE triggering completion
+          _currentTrackIndex = index;
+
+          // Trigger track completion for the PREVIOUS track
+          debugPrint('🎵 Triggering completion for track $previousIndex');
+          _handleTrackCompleted();
+
+          // Notify UI of new track (will be called again after interlude)
+          if (index >= 0 && index < _playlist.length) {
+            onTrackChanged?.call(_playlist[index]['key'], index);
+          }
+        } else {
+          // Manual skip or first track
+          debugPrint('🎵 Manual skip or first track: $index');
+          _lastCompletedIndex = index;
+          _currentTrackIndex = index;
+          if (index >= 0 && index < _playlist.length) {
+            onTrackChanged?.call(_playlist[index]['key'], index);
+          }
+        }
+        notifyListeners();
+      } else if (index == _currentTrackIndex && _lastCompletedIndex == null) {
+        // First track started
+        _lastCompletedIndex = index;
+      }
+    });
+
+    // Player state changes (for final playlist completion)
     _player.playerStateStream.listen((state) {
       debugPrint(
         '🎵 Player state: playing=${state.playing}, processingState=${state.processingState}',
       );
 
-      // Track completed
+      // Only handle final playlist completion
       if (state.processingState == ProcessingState.completed) {
-        _onTrackCompleted();
+        debugPrint('🎵 🏁 FINAL playlist completion detected');
+        _handleTrackCompleted();
       }
 
       notifyListeners();
@@ -99,11 +149,46 @@ class LectioAudioPlayer extends ChangeNotifier {
     );
   }
 
-  /// Set playlist
-  void setPlaylist(List<Map<String, dynamic>> tracks, String mode) {
+  /// Set playlist and audio mode
+  Future<void> setPlaylist(
+    List<Map<String, dynamic>> tracks,
+    String mode,
+  ) async {
     _playlist = List.from(tracks);
     _audioMode = mode;
-    debugPrint('🎵 Playlist set: ${tracks.length} tracks, mode: $mode');
+    _isStopped = false; // Reset stopped flag for new playlist
+    debugPrint('🎵 Setting playlist: ${tracks.length} tracks, mode: $mode');
+
+    // Build list of AudioSources with MediaItem tags (like in official example)
+    final sources = <AudioSource>[];
+    for (int i = 0; i < tracks.length; i++) {
+      final track = tracks[i];
+      final url = track['url'] as String;
+      final title = track['label'] as String? ?? 'Audio';
+      final key = track['key'] as String? ?? 'track_$i';
+
+      sources.add(
+        AudioSource.uri(
+          Uri.parse(url),
+          tag: MediaItem(
+            id: key,
+            album: 'Lectio Divina',
+            title: title,
+            artist: 'Lectio Divina',
+            artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
+          ),
+        ),
+      );
+    }
+
+    // Use setAudioSources (plural) like in official example
+    // This automatically creates ConcatenatingAudioSource and enables lock screen controls
+    try {
+      await _player.setAudioSources(sources, preload: true);
+      debugPrint('🎵 ✅ Audio sources set with ${sources.length} tracks');
+    } catch (e) {
+      debugPrint('❌ Error setting audio sources: $e');
+    }
   }
 
   /// Set audio mode
@@ -132,37 +217,27 @@ class LectioAudioPlayer extends ChangeNotifier {
     _currentTrackIndex = index;
     _isPlayingInterlude = false;
     final track = _playlist[index];
-    final url = track['url'] as String;
     final title = track['label'] as String? ?? 'Audio';
     final key = track['key'] as String? ?? 'track_$index';
 
     debugPrint('🎵 Playing track $index: $title');
-    debugPrint('🎵 URL: $url');
 
     try {
-      // Use AudioSource with MediaItem tag for lock screen controls
-      await _player.setAudioSource(
-        AudioSource.uri(
-          Uri.parse(url),
-          tag: MediaItem(
-            id: key,
-            album: 'Lectio Divina',
-            title: title,
-            artist: 'Lectio Divina',
-            artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
-          ),
-        ),
-      );
-      await _player.play();
+      // Use seek() to navigate to track in concatenated playlist (like official example)
+      await _player.seek(Duration.zero, index: index);
+      if (!_player.playing) {
+        await _player.play();
+      }
+      debugPrint('🎵 ✅ Seeked to track $index and started playback');
 
-      onTrackChanged?.call(track['key'], index);
+      onTrackChanged?.call(key, index);
       notifyListeners();
     } catch (e) {
       debugPrint('❌ Error playing track: $e');
     }
   }
 
-  /// Play interlude music
+  /// Play interlude music (outside of playlist)
   Future<void> _playInterlude(Map<String, dynamic>? nextTrack) async {
     _isPlayingInterlude = true;
     _nextTrackAfterInterlude = nextTrack;
@@ -174,6 +249,14 @@ class LectioAudioPlayer extends ChangeNotifier {
     debugPrint('🎵 Playing ${isLong ? "long" : "short"} interlude');
 
     try {
+      // CRITICAL: Keep audio session active during interlude
+      final session = await AudioSession.instance;
+      await session.setActive(
+        true,
+        avAudioSessionSetActiveOptions:
+            AVAudioSessionSetActiveOptions.notifyOthersOnDeactivation,
+      );
+
       await _player.setAudioSource(
         AudioSource.uri(
           Uri.parse(url),
@@ -199,38 +282,102 @@ class LectioAudioPlayer extends ChangeNotifier {
     }
   }
 
-  /// Handle track completion
-  void _onTrackCompleted() {
-    debugPrint(
-      '🎵 Track completed: currentIndex=$_currentTrackIndex, isInterlude=$_isPlayingInterlude',
-    );
+  /// Handle track completion - wrapper to run async code
+  void _handleTrackCompleted() {
+    // Run async code without awaiting (fire and forget)
+    // This is safe because _onTrackCompletedAsync handles all errors internally
+    _onTrackCompletedAsync();
+  }
 
-    // If interlude finished, play next track
-    if (_isPlayingInterlude) {
-      _isPlayingInterlude = false;
-      if (_nextTrackAfterInterlude != null) {
-        final next = _nextTrackAfterInterlude!;
-        _nextTrackAfterInterlude = null;
-        playTrack(next['key']);
-      } else {
-        // Playlist completed
-        onPlaylistCompleted?.call();
+  /// Handle track completion - async implementation
+  Future<void> _onTrackCompletedAsync() async {
+    try {
+      debugPrint('🎵 ═══════════════════════════════════════════════');
+      debugPrint('🎵 _onTrackCompletedAsync CALLED');
+      debugPrint('🎵 currentIndex=$_currentTrackIndex');
+      debugPrint('🎵 isInterlude=$_isPlayingInterlude');
+      debugPrint('🎵 audioMode=$_audioMode');
+      debugPrint('🎵 playlist length=${_playlist.length}');
+      debugPrint('🎵 isStopped=$_isStopped');
+      debugPrint('🎵 ═══════════════════════════════════════════════');
+
+      // Don't continue if user stopped playback
+      if (_isStopped) {
+        debugPrint('🛑 Playback was stopped - skipping auto-progression');
+        return;
       }
-      return;
+
+      // Notify section completed for UI callback
+      onSectionCompleted?.call();
+
+      // If interlude finished, play next track
+      if (_isPlayingInterlude) {
+        _isPlayingInterlude = false;
+        if (_nextTrackAfterInterlude != null) {
+          final next = _nextTrackAfterInterlude!;
+          _nextTrackAfterInterlude = null;
+          debugPrint(
+            '🎵 Interlude completed, playing next track: ${next['key']}',
+          );
+          // Need to restore playlist and play next track
+          await _restorePlaylistAndPlayTrack(next);
+        } else {
+          debugPrint('🎵 Interlude completed, playlist finished');
+          // Playlist completed
+          onPlaylistCompleted?.call();
+        }
+        return;
+      }
+
+      // Normal track finished - play interlude then next (if audio mode != none)
+      debugPrint('🎵 Checking if should play interlude: audioMode=$_audioMode');
+      if (_audioMode != 'none' && _currentTrackIndex >= 0) {
+        final hasNext = _currentTrackIndex < _playlist.length - 1;
+        final nextTrack = hasNext ? _playlist[_currentTrackIndex + 1] : null;
+        debugPrint(
+          '🎵 ✅ Will play interlude. hasNext=$hasNext, nextTrack=${nextTrack?['key']}',
+        );
+
+        // CRITICAL: Pause player before interlude to prevent auto-progression
+        await _player.pause();
+        debugPrint('🎵 ⏸️ Player paused before interlude');
+
+        await _playInterlude(nextTrack);
+      } else {
+        debugPrint(
+          '🎵 ❌ Skipping interlude: audioMode=$_audioMode, currentIndex=$_currentTrackIndex',
+        );
+        // No interlude mode - check if we need to advance
+        if (_currentTrackIndex >= _playlist.length - 1) {
+          debugPrint('🎵 Playlist completed (no interlude mode)');
+          onPlaylistCompleted?.call();
+        } else {
+          // Auto-advance to next track
+          debugPrint('🎵 Auto-advancing to next track (no interlude mode)');
+          await playTrackByIndex(_currentTrackIndex + 1);
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error in _onTrackCompletedAsync: $e');
     }
+  }
 
-    // Normal track finished - play interlude then next
-    if (_audioMode != 'none') {
-      final hasNext = _currentTrackIndex < _playlist.length - 1;
-      final nextTrack = hasNext ? _playlist[_currentTrackIndex + 1] : null;
-      _playInterlude(nextTrack);
+  /// Restore playlist after interlude and play specific track
+  Future<void> _restorePlaylistAndPlayTrack(Map<String, dynamic> track) async {
+    _isPlayingInterlude = false;
+
+    // Find track index
+    final index = _playlist.indexWhere((t) => t['key'] == track['key']);
+    if (index >= 0) {
+      debugPrint('🎵 Resuming playlist at track $index after interlude');
+      // Just seek to the track - playlist is already set
+      await _player.seek(Duration.zero, index: index);
+      await _player.play();
+      _currentTrackIndex = index;
+      onTrackChanged?.call(track['key'], index);
+      notifyListeners();
     } else {
-      // No interlude mode - go directly to next
-      if (_currentTrackIndex < _playlist.length - 1) {
-        playTrackByIndex(_currentTrackIndex + 1);
-      } else {
-        onPlaylistCompleted?.call();
-      }
+      debugPrint('❌ Track not found in playlist: ${track['key']}');
     }
   }
 
@@ -250,6 +397,7 @@ class LectioAudioPlayer extends ChangeNotifier {
 
   /// Stop
   Future<void> stop() async {
+    _isStopped = true; // Prevent auto-progression
     await _player.stop();
     _currentTrackIndex = -1;
     _isPlayingInterlude = false;
@@ -264,26 +412,37 @@ class LectioAudioPlayer extends ChangeNotifier {
 
   /// Skip to next track
   Future<void> skipNext() async {
+    debugPrint(
+      '🎵 skipNext called, isInterlude=$_isPlayingInterlude, currentIndex=$_currentTrackIndex',
+    );
+
     if (_isPlayingInterlude) {
       // Skip interlude, go to next track
       _isPlayingInterlude = false;
       if (_nextTrackAfterInterlude != null) {
         final next = _nextTrackAfterInterlude!;
         _nextTrackAfterInterlude = null;
-        await playTrack(next['key']);
+        await _restorePlaylistAndPlayTrack(next);
       }
       return;
     }
 
-    if (_currentTrackIndex < _playlist.length - 1) {
+    // Use just_audio's built-in next for playlist
+    if (_player.hasNext) {
+      await _player.seekToNext();
+    } else if (_currentTrackIndex < _playlist.length - 1) {
       await playTrackByIndex(_currentTrackIndex + 1);
     }
   }
 
   /// Skip to previous track
   Future<void> skipPrevious() async {
+    debugPrint(
+      '🎵 skipPrevious called, isInterlude=$_isPlayingInterlude, currentIndex=$_currentTrackIndex',
+    );
+
     if (_isPlayingInterlude) {
-      // Cancel interlude, go back to current
+      // Cancel interlude, restart current track
       _isPlayingInterlude = false;
       _nextTrackAfterInterlude = null;
       if (_currentTrackIndex >= 0) {
@@ -293,16 +452,21 @@ class LectioAudioPlayer extends ChangeNotifier {
     }
 
     // If more than 3 seconds in, restart current track
-    if (_player.position.inSeconds > 3 || _currentTrackIndex <= 0) {
+    if (_player.position.inSeconds > 3) {
       await seek(Duration.zero);
-    } else {
+    } else if (_player.hasPrevious) {
+      await _player.seekToPrevious();
+    } else if (_currentTrackIndex > 0) {
       await playTrackByIndex(_currentTrackIndex - 1);
+    } else {
+      await seek(Duration.zero);
     }
   }
 
   /// Dispose
   @override
   void dispose() {
+    // Dispose player (audio session will be deactivated automatically)
     _player.dispose();
     super.dispose();
   }

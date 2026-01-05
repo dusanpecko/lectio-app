@@ -3,6 +3,7 @@
 
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:just_audio/just_audio.dart';
 
 import 'lectio_audio_player.dart';
 
@@ -31,20 +32,23 @@ class BackgroundAudioManager {
       await _player.initialize();
 
       _player.onTrackChanged = (key, index) {
+        debugPrint('🎵 BAM: onTrackChanged $key at $index');
         _onTrackChanged?.call(key, index);
       };
 
       _player.onPlaylistCompleted = () {
+        debugPrint('🎵 BAM: onPlaylistCompleted');
         _onPlaylistCompleted?.call();
       };
 
-      // Listen for track completion to trigger section callback
-      _player.addListener(() {
-        // This is handled internally by LectioAudioPlayer now
-      });
+      // Connect section completed callback
+      _player.onSectionCompleted = () {
+        debugPrint('🎵 BAM: onSectionCompleted');
+        _onSectionCompleted?.call();
+      };
 
       _isInitialized = true;
-      debugPrint('✅ BackgroundAudioManager (compatibility) initialized');
+      debugPrint('✅ BackgroundAudioManager initialized');
     } catch (e) {
       debugPrint('❌ Error initializing background audio: $e');
       rethrow;
@@ -57,9 +61,12 @@ class BackgroundAudioManager {
   /// Check if service is initialized
   bool get isInitialized => _isInitialized;
 
-  /// Set playlist for background playback
-  void setPlaylist(List<Map<String, dynamic>> tracks, String audioMode) {
-    _player.setPlaylist(tracks, audioMode);
+  /// Set playlist for background playback - NOW ASYNC
+  Future<void> setPlaylist(
+    List<Map<String, dynamic>> tracks,
+    String audioMode,
+  ) async {
+    await _player.setPlaylist(tracks, audioMode);
   }
 
   /// Set current track by section key
@@ -88,24 +95,31 @@ class BackgroundAudioManager {
   /// Check if playing
   bool get isPlaying => _player.isPlaying;
 
-  /// Playback state stream (compatibility)
+  /// Get underlying LectioAudioPlayer for listeners
+  LectioAudioPlayer get lectioPlayer => _player;
+
+  /// Get player state stream for UI updates
+  Stream<PlayerState> get playerStateStream => _player.player.playerStateStream;
+
+  /// Get position stream for UI updates
+  Stream<Duration> get positionStream => _player.player.positionStream;
+
+  /// Get duration stream for UI updates
+  Stream<Duration?> get durationStream => _player.player.durationStream;
+
+  /// Playback state stream (compatibility - empty for now)
   Stream<PlaybackState> get playbackStateStream => Stream.empty();
 
-  /// Play URL
+  /// Play URL (find track by URL and play)
   Future<void> play(String url, {String? title, String? artist}) async {
     // Find track by URL and play
     final index = _player.playlist.indexWhere((t) => t['url'] == url);
     if (index >= 0) {
       await _player.playTrackByIndex(index);
     } else {
-      // Direct play - but we need to add to playlist first
-      debugPrint('🎵 Direct play URL: $url');
-      // For now, just start playing from playlist
+      debugPrint('⚠️ Track not found by URL, playing from start');
       await _player.play();
     }
-
-    // Trigger section completed callback when track ends
-    // This is now handled by LectioAudioPlayer internally
   }
 
   /// Pause
@@ -131,11 +145,13 @@ class BackgroundAudioManager {
   /// Set callback for section completed
   void setOnSectionCompleted(VoidCallback? callback) {
     _onSectionCompleted = callback;
+    _player.onSectionCompleted = callback;
   }
 
   /// Clear on section completed callback
   void clearOnSectionCompleted() {
     _onSectionCompleted = null;
+    _player.onSectionCompleted = null;
   }
 
   /// Set callback for track changed
@@ -155,7 +171,17 @@ class BackgroundAudioManager {
     await _player.playTrackByIndex(index);
   }
 
-  /// Play interlude music
+  /// Skip to next track
+  Future<void> skipNext() async {
+    await _player.skipNext();
+  }
+
+  /// Skip to previous track
+  Future<void> skipPrevious() async {
+    await _player.skipPrevious();
+  }
+
+  /// Play interlude music (handled internally by LectioAudioPlayer)
   Future<void> playInterlude({
     required bool isLong,
     int? nextTrackIndex,
