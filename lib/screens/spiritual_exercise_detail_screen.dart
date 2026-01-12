@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
@@ -5,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/spiritual_exercise.dart';
 import '../shared/app_colors.dart';
+import '../utils/app_logger.dart';
 import 'spiritual_exercise_registration_screen.dart';
 
 class SpiritualExerciseDetailScreen extends StatefulWidget {
@@ -100,7 +102,7 @@ class _SpiritualExerciseDetailScreenState
         });
       }
     } catch (e) {
-      debugPrint('❌ Error fetching exercise: $e');
+      appLogger.e('❌ Error fetching exercise: $e');
       if (mounted) {
         setState(() {
           _error = 'Nastala chyba pri načítaní';
@@ -195,10 +197,12 @@ class _SpiritualExerciseDetailScreenState
                 children: [
                   // Background image
                   if (exercise.imageUrl != null)
-                    Image.network(
-                      exercise.imageUrl!,
+                    CachedNetworkImage(
+                      imageUrl: exercise.imageUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
+                      placeholder: (context, url) =>
+                          const Center(child: CircularProgressIndicator()),
+                      errorWidget: (context, url, error) => Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
                             colors: [AppColors.primary, Color(0xFF6B73A8)],
@@ -422,18 +426,20 @@ class _SpiritualExerciseDetailScreenState
                                 final image = exercise.gallery[index];
                                 return ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: Image.network(
-                                    image.imageUrl,
+                                  child: CachedNetworkImage(
+                                    imageUrl: image.imageUrl,
                                     fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            Container(
-                                              color: Colors.grey.shade200,
-                                              child: const Icon(
-                                                Icons.image,
-                                                size: 48,
-                                              ),
-                                            ),
+                                    placeholder: (context, url) => const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        Container(
+                                          color: Colors.grey.shade200,
+                                          child: const Icon(
+                                            Icons.image,
+                                            size: 48,
+                                          ),
+                                        ),
                                   ),
                                 );
                               },

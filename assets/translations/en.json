@@ -1,5 +1,27 @@
 {
   "app_title": "Lectio Divina",
+  "offline": {
+    "no_connection": "You are offline",
+    "reconnected": "Connection restored",
+    "cached_data": "Using cached data",
+    "title": "No connection",
+    "message": "Connect to the internet to load new data.",
+    "retry": "Try again",
+    "no_data_title": "Data not available",
+    "no_data_message": "No data downloaded for today. Please connect to the internet.",
+    "connect": "Connect",
+    "download_title": "Download offline data",
+    "download_7_days": "Download for 7 days",
+    "download_progress": "Downloading data...",
+    "download_success": "Data downloaded successfully",
+    "download_error": "Download error",
+    "last_sync": "Last sync: {date}",
+    "data_available": "Data available until: {date}",
+    "download_for_offline": "Download for offline",
+    "download_description": "Download Lectio Divina for the next 7 days to use without internet.",
+    "download_days": "Download {0} days",
+    "download_complete": "Downloaded {0} days"
+  },
   "login": "Sign in",
   "register": "Register",
   "logout": "Sign out",
@@ -572,7 +594,10 @@
     "section": {
       "subscriptions": "My Subscriptions",
       "donations": "My Donations",
-      "exercise_registrations": "My Exercise Registrations"
+      "exercise_registrations": "My Exercise Registrations",
+      "bank_payments": "Bank Payments",
+      "billing_info": "Billing Information",
+      "payment_history": "Payment History"
     },
     "subscription": {
       "tier": "{} tier",
@@ -581,6 +606,16 @@
       "yearly": "year",
       "next_payment": "Next payment",
       "cancels_on": "Cancels on"
+    },
+    "payment": {
+      "monthly": "monthly",
+      "yearly": "yearly",
+      "one_time": "one-time",
+      "type": {
+        "subscription": "Subscription",
+        "donation": "Donation",
+        "bank": "Bank transfer"
+      }
     },
     "registration": {
       "paid": "Paid",
@@ -599,6 +634,17 @@
       "confirm_button": "Delete Account",
       "success": "Account successfully deleted",
       "error": "Error deleting account: {}"
+    },
+    "billing": {
+      "shipping_address": "Shipping Address",
+      "billing_address": "Billing Address",
+      "company_name": "Company Name",
+      "ico": "Company ID",
+      "dic": "Tax ID",
+      "iban": "IBAN"
+    },
+    "bank_payment": {
+      "unknown_type": "Bank Transfer"
     }
   },
   "support2": {
@@ -826,5 +872,17 @@
     "sending": "Sending...",
     "success": "Thank you for your feedback!",
     "error": "Error sending: {}"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "empty_hint": "When you receive new notifications, they will appear here.",
+    "load_error": "Failed to load notifications.",
+    "yesterday": "Yesterday"
+  },
+  "common": {
+    "refresh": "Refresh",
+    "try_again": "Try again",
+    "close": "Close"
   }
 }

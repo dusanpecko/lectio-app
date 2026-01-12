@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../utils/app_logger.dart';
+
 /// Audio Player Service pre Lectio Divina
 /// Spravuje prehrávanie audio nahrávok s podporou meditačnej hudby
 class AudioPlayerService extends ChangeNotifier {
@@ -42,7 +44,7 @@ class AudioPlayerService extends ChangeNotifier {
 
       // Auto-play next track when current ends
       if (state.processingState == ProcessingState.completed) {
-        debugPrint(
+        appLogger.d(
           '🎵 Audio dokončené. Current section: $_currentAudioSection',
         );
 
@@ -51,7 +53,7 @@ class AudioPlayerService extends ChangeNotifier {
             _nextTrackAfterInterlude != null) {
           final nextTrack = _nextTrackAfterInterlude!;
           _nextTrackAfterInterlude = null;
-          debugPrint(
+          appLogger.i(
             '✅ Meditačná hudba skončila, prehrávam: ${nextTrack['key']}',
           );
           playAudio(nextTrack['url'], nextTrack['key']);
@@ -97,7 +99,7 @@ class AudioPlayerService extends ChangeNotifier {
       _isPlaying = true;
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Chyba pri prehrávaní audia: $e');
+      appLogger.e('❌ Chyba pri prehrávaní audia: $e');
       rethrow;
     }
   }
@@ -132,7 +134,7 @@ class AudioPlayerService extends ChangeNotifier {
       _isPlaying = true;
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Chyba pri prehrávaní meditačnej hudby: $e');
+      appLogger.e('❌ Chyba pri prehrávaní meditačnej hudby: $e');
       // Ak zlyhá, prehraj priamo ďalšiu nahrávku
       _nextTrackAfterInterlude = null;
       await playAudio(nextTrack['url'], nextTrack['key']);

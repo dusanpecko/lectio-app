@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -391,10 +392,12 @@ class _ExerciseCard extends StatelessWidget {
                 AspectRatio(
                   aspectRatio: 16 / 9,
                   child: exercise.homeImageUrl != null
-                      ? Image.network(
-                          exercise.homeImageUrl!,
+                      ? CachedNetworkImage(
+                          imageUrl: exercise.homeImageUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
+                          placeholder: (context, url) =>
+                              const Center(child: CircularProgressIndicator()),
+                          errorWidget: (context, url, error) =>
                               _buildPlaceholder(),
                         )
                       : _buildPlaceholder(),

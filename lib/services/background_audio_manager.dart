@@ -5,6 +5,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 
+import '../utils/app_logger.dart';
 import 'lectio_audio_player.dart';
 
 // Global audio handler for compatibility
@@ -32,25 +33,25 @@ class BackgroundAudioManager {
       await _player.initialize();
 
       _player.onTrackChanged = (key, index) {
-        debugPrint('🎵 BAM: onTrackChanged $key at $index');
+        appLogger.d('🎵 BAM: onTrackChanged $key at $index');
         _onTrackChanged?.call(key, index);
       };
 
       _player.onPlaylistCompleted = () {
-        debugPrint('🎵 BAM: onPlaylistCompleted');
+        appLogger.d('🎵 BAM: onPlaylistCompleted');
         _onPlaylistCompleted?.call();
       };
 
       // Connect section completed callback
       _player.onSectionCompleted = () {
-        debugPrint('🎵 BAM: onSectionCompleted');
+        appLogger.d('🎵 BAM: onSectionCompleted');
         _onSectionCompleted?.call();
       };
 
       _isInitialized = true;
-      debugPrint('✅ BackgroundAudioManager initialized');
+      appLogger.i('✅ BackgroundAudioManager initialized');
     } catch (e) {
-      debugPrint('❌ Error initializing background audio: $e');
+      appLogger.e('❌ Error initializing background audio: $e');
       rethrow;
     }
   }
@@ -117,7 +118,7 @@ class BackgroundAudioManager {
     if (index >= 0) {
       await _player.playTrackByIndex(index);
     } else {
-      debugPrint('⚠️ Track not found by URL, playing from start');
+      appLogger.w('⚠️ Track not found by URL, playing from start');
       await _player.play();
     }
   }

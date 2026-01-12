@@ -1,8 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../utils/app_logger.dart';
 
 class NewsDetailScreen extends StatefulWidget {
   final Map<String, dynamic> newsData;
@@ -51,7 +54,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
         setState(() {
           _formUrl = match.group(1);
         });
-        debugPrint('Extracted form URL: $_formUrl');
+        appLogger.d('Extracted form URL: $_formUrl');
       }
     }
   }
@@ -72,7 +75,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
           browserConfiguration: const BrowserConfiguration(showTitle: true),
         );
       } catch (e) {
-        debugPrint('inAppBrowserView failed: $e');
+        appLogger.d('inAppBrowserView failed: $e');
       }
 
       // Ak nefungovalo, skús externalApplication (otvorí Chrome/Safari)
@@ -80,12 +83,12 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
         try {
           launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
         } catch (e) {
-          debugPrint('externalApplication failed: $e');
+          appLogger.d('externalApplication failed: $e');
         }
       }
 
       if (!launched) {
-        debugPrint('Cannot launch URL: $_formUrl');
+        appLogger.d('Cannot launch URL: $_formUrl');
         if (mounted) {
           ScaffoldMessenger.of(
             context,
@@ -93,7 +96,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Error launching URL: $e');
+      appLogger.e('Error launching URL: $e');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -171,7 +174,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
         liked = false;
         likes -= 1;
       });
-      debugPrint('Error liking news: $e');
+      appLogger.e('Error liking news: $e');
     } finally {
       setState(() {
         loading = false;
@@ -243,7 +246,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
       commentController.clear();
       await loadComments();
     } catch (e) {
-      debugPrint('Error sending comment: $e');
+      appLogger.e('Error sending comment: $e');
     } finally {
       setState(() => sendingComment = false);
     }
@@ -301,7 +304,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
       await supabase.from('news_comments').delete().eq('id', commentId);
       await loadComments();
     } catch (e) {
-      debugPrint('Error deleting comment: $e');
+      appLogger.e('Error deleting comment: $e');
     }
   }
 
@@ -332,11 +335,15 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                     if (imageUrl.isNotEmpty)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(14),
-                        child: Image.network(
-                          imageUrl,
+                        child: CachedNetworkImage(
+                          imageUrl: imageUrl,
                           fit: BoxFit.cover,
                           width: double.infinity,
                           height: 220,
+                          placeholder: (context, url) =>
+                              const Center(child: CircularProgressIndicator()),
+                          errorWidget: (context, url, error) =>
+                              const Icon(Icons.error),
                         ),
                       ),
                     const SizedBox(height: 16),

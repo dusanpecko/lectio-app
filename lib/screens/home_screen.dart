@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/spiritual_exercise.dart';
 import '../shared/app_colors.dart';
+import '../utils/app_logger.dart';
 import '../widgets/speed_dial_fab.dart';
 import 'about_screen.dart';
 import 'feedback_screen.dart';
@@ -15,6 +17,7 @@ import 'lectio_screen.dart';
 import 'news_detail_screen.dart';
 import 'news_list_screen.dart';
 import 'notes_list_screen.dart';
+import 'notifications_screen.dart';
 import 'rosary_screen.dart';
 import 'settings_screen.dart';
 import 'spiritual_exercise_detail_screen.dart';
@@ -146,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (liturgicalYearsList.isNotEmpty) {
         final yearData = liturgicalYearsList[0] as Map<String, dynamic>;
         correctLiturgicalYear = yearData;
-        debugPrint(
+        appLogger.i(
           '✅ Home: Nájdený liturgický rok: ${yearData['year']} '
           '(${yearData['start_date']} - ${yearData['end_date']}), '
           'cyklus: ${yearData['lectionary_cycle']}',
@@ -154,7 +157,7 @@ class _HomeScreenState extends State<HomeScreen> {
       } else {
         // Fallback na slovenčinu ak aktuálny jazyk nemá liturgický rok
         if (locale != 'sk') {
-          debugPrint('🔄 Home: Hľadám liturgický rok v slovenčine...');
+          appLogger.d('🔄 Home: Hľadám liturgický rok v slovenčine...');
           final skYearsResponse = await supabase
               .from('liturgical_years')
               .select()
@@ -166,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (skYearsList.isNotEmpty) {
             final skYearData = skYearsList[0] as Map<String, dynamic>;
             correctLiturgicalYear = skYearData;
-            debugPrint(
+            appLogger.i(
               '✅ Home: Nájdený SK liturgický rok: ${skYearData['year']} '
               '(${skYearData['start_date']} - ${skYearData['end_date']}), '
               'cyklus: ${skYearData['lectionary_cycle']}',
@@ -213,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final lectionaryCycle = correctLiturgicalYear?['lectionary_cycle'] ?? 'A';
       final rokToSearch = isSpecialDay ? lectionaryCycle : 'N';
 
-      debugPrint(
+      appLogger.d(
         '🔍 Home: Hľadám actio pre rok: $rokToSearch, hlava: $lectioHlava, '
         'lang: $locale, liturgický cyklus: $lectionaryCycle',
       );
@@ -229,7 +232,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Fallback logika
       if (lectioSource == null && isSpecialDay && rokToSearch != 'N') {
-        debugPrint('🔄 Home: Sviatok nenájdený s rokom A/B/C, skúšam rok N...');
+        appLogger.d(
+          '🔄 Home: Sviatok nenájdený s rokom A/B/C, skúšam rok N...',
+        );
         lectioSource = await supabase
             .from('lectio_sources')
             .select()
@@ -247,11 +252,11 @@ class _HomeScreenState extends State<HomeScreen> {
         isLoading = false;
       });
 
-      debugPrint(
-        '✅ Home: Actio načítané: ${actioText != null ? "áno" : "nie"}',
+      appLogger.i(
+        '✅ Home: Actio načítané: ${actioText != null ? "ano" : "nie"}',
       );
     } catch (e) {
-      debugPrint('❌ Home: Error fetching actio: $e');
+      appLogger.e('❌ Home: Error fetching actio: $e');
       if (!mounted) return;
       setState(() {
         actioText = null;
@@ -307,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
           .maybeSingle();
 
       if (localeData == null) {
-        debugPrint('🔍 Home: Locale $locale not found');
+        appLogger.d('🔍 Home: Locale $locale not found');
         if (mounted) {
           setState(() => _isLoadingExercise = false);
         }
@@ -348,7 +353,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _featuredExercise = SpiritualExercise.fromJson(response);
           _isLoadingExercise = false;
         });
-        debugPrint(
+        appLogger.i(
           '✅ Home: Featured exercise found: ${_featuredExercise?.title}',
         );
       } else {
@@ -356,10 +361,10 @@ class _HomeScreenState extends State<HomeScreen> {
           _featuredExercise = null;
           _isLoadingExercise = false;
         });
-        debugPrint('🔍 Home: No featured exercise for locale $locale');
+        appLogger.d('🔍 Home: No featured exercise for locale $locale');
       }
     } catch (e) {
-      debugPrint('❌ Home: Error fetching featured exercise: $e');
+      appLogger.e('❌ Home: Error fetching featured exercise: $e');
       if (mounted) {
         setState(() => _isLoadingExercise = false);
       }
@@ -496,6 +501,16 @@ class _HomeScreenState extends State<HomeScreen> {
           MaterialPageRoute(
             builder: (context) => const FeedbackScreen(),
             settings: const RouteSettings(name: '/feedback'),
+          ),
+        );
+        break;
+
+      case 'notifications':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const NotificationsScreen(),
+            settings: const RouteSettings(name: '/notifications'),
           ),
         );
         break;
@@ -1078,12 +1093,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(16),
                 child:
                     exercise.homeImageUrl != null || exercise.imageUrl != null
-                    ? Image.network(
-                        exercise.homeImageUrl ?? exercise.imageUrl!,
+                    ? CachedNetworkImage(
+                        imageUrl: exercise.homeImageUrl ?? exercise.imageUrl!,
                         width: double.infinity,
                         height: double.infinity,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
+                        placeholder: (context, url) =>
+                            const Center(child: CircularProgressIndicator()),
+                        errorWidget: (context, url, error) {
                           return _buildExerciseFallbackBackground();
                         },
                       )
@@ -1437,20 +1454,24 @@ class _HomeScreenState extends State<HomeScreen> {
                                     height: 160,
                                     width: double.infinity,
                                     child: article['image_url'] != null
-                                        ? Image.network(
-                                            article['image_url'],
+                                        ? CachedNetworkImage(
+                                            imageUrl: article['image_url'],
                                             fit: BoxFit.cover,
-                                            errorBuilder:
-                                                (context, error, stackTrace) {
-                                                  return Container(
-                                                    color: Colors.grey.shade200,
-                                                    child: const Icon(
-                                                      Icons.image_not_supported,
-                                                      color: Colors.grey,
-                                                      size: 50,
-                                                    ),
-                                                  );
-                                                },
+                                            placeholder: (context, url) =>
+                                                const Center(
+                                                  child:
+                                                      CircularProgressIndicator(),
+                                                ),
+                                            errorWidget: (context, url, error) {
+                                              return Container(
+                                                color: Colors.grey.shade200,
+                                                child: const Icon(
+                                                  Icons.image_not_supported,
+                                                  color: Colors.grey,
+                                                  size: 50,
+                                                ),
+                                              );
+                                            },
                                           )
                                         : Container(
                                             color: Colors.grey.shade200,

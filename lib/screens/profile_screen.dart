@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -13,6 +14,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../shared/app_colors.dart';
+import '../utils/app_logger.dart';
 import 'notification_settings_screen.dart';
 import 'spiritual_exercise_detail_screen.dart';
 
@@ -113,6 +115,95 @@ class SpiritualExerciseRegistration {
   }
 }
 
+// Bank Payment model
+class BankPayment {
+  final String id;
+  final DateTime transactionDate;
+  final double amount;
+  final String currency;
+  final String? paymentType;
+  final String? payerReference;
+
+  BankPayment({
+    required this.id,
+    required this.transactionDate,
+    required this.amount,
+    required this.currency,
+    this.paymentType,
+    this.payerReference,
+  });
+
+  factory BankPayment.fromJson(Map<String, dynamic> json) {
+    return BankPayment(
+      id: json['id'] ?? '',
+      transactionDate: DateTime.parse(
+        json['transaction_date'] ?? DateTime.now().toIso8601String(),
+      ),
+      amount: (json['amount'] ?? 0).toDouble(),
+      currency: json['currency'] ?? 'EUR',
+      paymentType: json['payment_type'],
+      payerReference: json['payer_reference'],
+    );
+  }
+}
+
+// Payment History Item (combined)
+class PaymentHistoryItem {
+  final String id;
+  final String type; // 'subscription', 'donation', 'bank_payment'
+  final double amount;
+  final DateTime date;
+  final String description;
+  final String? status;
+
+  PaymentHistoryItem({
+    required this.id,
+    required this.type,
+    required this.amount,
+    required this.date,
+    required this.description,
+    this.status,
+  });
+}
+
+// Billing Info model
+class BillingInfo {
+  final Map<String, dynamic>? shippingAddress;
+  final Map<String, dynamic>? billingAddress;
+  final String? companyName;
+  final String? ico;
+  final String? dic;
+  final String? iban;
+
+  BillingInfo({
+    this.shippingAddress,
+    this.billingAddress,
+    this.companyName,
+    this.ico,
+    this.dic,
+    this.iban,
+  });
+
+  factory BillingInfo.fromJson(Map<String, dynamic> json) {
+    return BillingInfo(
+      shippingAddress: json['shipping_address'],
+      billingAddress: json['billing_address'],
+      companyName: json['company_name'],
+      ico: json['ico'],
+      dic: json['dic'],
+      iban: json['iban'],
+    );
+  }
+
+  bool get hasAnyData =>
+      shippingAddress != null ||
+      billingAddress != null ||
+      companyName != null ||
+      ico != null ||
+      dic != null ||
+      iban != null;
+}
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -136,6 +227,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   List<Subscription> _subscriptions = [];
   List<Donation> _donations = [];
   List<SpiritualExerciseRegistration> _exerciseRegistrations = [];
+  List<BankPayment> _bankPayments = [];
+  List<PaymentHistoryItem> _paymentHistory = [];
+  BillingInfo? _billingInfo;
 
   @override
   void initState() {
@@ -154,7 +248,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _fetchSubscriptions(),
       _fetchDonations(),
       _fetchExerciseRegistrations(),
+      _fetchBankPayments(),
+      _fetchBillingInfo(),
     ]);
+    _buildPaymentHistory();
   }
 
   Future<void> fetchFullName() async {
@@ -224,7 +321,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error fetching subscriptions: $e');
+      appLogger.e('Error fetching subscriptions: $e');
     }
   }
 
@@ -244,7 +341,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error fetching donations: $e');
+      appLogger.e('Error fetching donations: $e');
     }
   }
 
@@ -271,7 +368,112 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error fetching exercise registrations: $e');
+      appLogger.e('Error fetching exercise registrations: $e');
+    }
+  }
+
+  Future<void> _fetchBankPayments() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+    try {
+      final data = await supabase
+          .from('bank_payments')
+          .select(
+            'id, transaction_date, amount, currency, payment_type, payer_reference',
+          )
+          .eq('user_id', user.id)
+          .eq('matched', true)
+          .order('transaction_date', ascending: false);
+      if (mounted) {
+        setState(() {
+          _bankPayments = (data as List)
+              .map((e) => BankPayment.fromJson(e))
+              .toList();
+        });
+      }
+    } catch (e) {
+      appLogger.e('Error fetching bank payments: $e');
+    }
+  }
+
+  Future<void> _fetchBillingInfo() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+    try {
+      final data = await supabase
+          .from('users')
+          .select(
+            'shipping_address, billing_address, company_name, ico, dic, iban',
+          )
+          .eq('id', user.id)
+          .maybeSingle();
+      if (data != null && mounted) {
+        setState(() {
+          _billingInfo = BillingInfo.fromJson(data);
+        });
+      }
+    } catch (e) {
+      appLogger.e('Error fetching billing info: $e');
+    }
+  }
+
+  void _buildPaymentHistory() {
+    final history = <PaymentHistoryItem>[];
+
+    // Add subscriptions
+    for (final sub in _subscriptions) {
+      history.add(
+        PaymentHistoryItem(
+          id: sub.id,
+          type: 'subscription',
+          amount: sub.amount,
+          date: sub.currentPeriodEnd,
+          description:
+              '${sub.tier} tier - ${sub.interval == 'month' ? 'profile.payment.monthly'.tr() : 'profile.payment.yearly'.tr()}',
+          status: sub.status,
+        ),
+      );
+    }
+
+    // Add donations
+    for (final donation in _donations) {
+      history.add(
+        PaymentHistoryItem(
+          id: donation.id,
+          type: 'donation',
+          amount: donation.amount,
+          date: donation.createdAt,
+          description: donation.message ?? 'profile.payment.one_time'.tr(),
+        ),
+      );
+    }
+
+    // Add bank payments
+    for (final payment in _bankPayments) {
+      final typeLabel = switch (payment.paymentType) {
+        'donation' => 'profile.payment.type.donation'.tr(),
+        'shop' => 'profile.payment.type.shop'.tr(),
+        'subscription' => 'profile.payment.type.subscription'.tr(),
+        _ => 'profile.payment.type.bank'.tr(),
+      };
+      history.add(
+        PaymentHistoryItem(
+          id: payment.id,
+          type: 'bank_payment',
+          amount: payment.amount,
+          date: payment.transactionDate,
+          description: '$typeLabel - VS: ${payment.payerReference ?? 'N/A'}',
+        ),
+      );
+    }
+
+    // Sort by date (newest first)
+    history.sort((a, b) => b.date.compareTo(a.date));
+
+    if (mounted) {
+      setState(() {
+        _paymentHistory = history;
+      });
     }
   }
 
@@ -793,6 +995,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
+                          // Gradient ring for supporters (Priateľ program)
+                          if (_subscriptions.isNotEmpty)
+                            Container(
+                              width: 96,
+                              height: 96,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors:
+                                      _subscriptions.any(
+                                        (s) => s.tier == 'founder',
+                                      )
+                                      ? [
+                                          Colors.purple.shade400,
+                                          Colors.purple.shade600,
+                                          Colors.deepPurple.shade700,
+                                        ]
+                                      : _subscriptions.any(
+                                          (s) => s.tier == 'patron',
+                                        )
+                                      ? [
+                                          Colors.blue.shade400,
+                                          Colors.blue.shade600,
+                                          Colors.indigo.shade700,
+                                        ]
+                                      : [
+                                          Colors.amber.shade400,
+                                          Colors.orange.shade500,
+                                          Colors.deepOrange.shade600,
+                                        ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(4),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: theme.colorScheme.surface,
+                                  ),
+                                ),
+                              ),
+                            ),
                           CircleAvatar(
                             radius: 42,
                             backgroundColor:
@@ -1170,6 +1416,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 24),
                     ],
 
+                    // Bank Payments Section
+                    _buildBankPaymentsSection(theme),
+
+                    // Billing Info Section
+                    _buildBillingInfoSection(theme),
+
+                    // Combined Payment History Section
+                    _buildPaymentHistorySection(theme),
+
                     // Delete Account Button
                     OutlinedButton.icon(
                       onPressed: _isSaving ? null : deleteAccount,
@@ -1400,12 +1655,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(11),
                 ),
-                child: Image.network(
-                  exercise['image_url'],
+                child: CachedNetworkImage(
+                  imageUrl: exercise['image_url'],
                   height: 120,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
+                  placeholder: (context, url) =>
+                      const Center(child: CircularProgressIndicator()),
+                  errorWidget: (context, url, error) => Container(
                     height: 120,
                     color: AppColors.primary.withValues(alpha: 0.1),
                     child: const Center(
@@ -1502,6 +1759,369 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Helper method to format address Map to String
+  String _formatAddress(Map<String, dynamic> address) {
+    final parts = <String>[];
+    if (address['street'] != null) parts.add(address['street']);
+    if (address['city'] != null) parts.add(address['city']);
+    if (address['postal_code'] != null) parts.add(address['postal_code']);
+    if (address['country'] != null) parts.add(address['country']);
+    return parts.join(', ');
+  }
+
+  // Billing Info Section Widget
+  Widget _buildBillingInfoSection(ThemeData theme) {
+    if (_billingInfo == null) return const SizedBox.shrink();
+
+    final hasAnyData =
+        _billingInfo!.shippingAddress != null ||
+        _billingInfo!.billingAddress != null ||
+        _billingInfo!.companyName != null ||
+        _billingInfo!.ico != null ||
+        _billingInfo!.dic != null ||
+        _billingInfo!.iban != null;
+
+    if (!hasAnyData) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(
+          theme,
+          Icons.receipt_long,
+          'profile.section.billing_info'.tr(),
+          Colors.teal,
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.teal.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.teal.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_billingInfo!.shippingAddress != null) ...[
+                _buildBillingInfoRow(
+                  theme,
+                  Icons.local_shipping,
+                  'profile.billing.shipping_address'.tr(),
+                  _formatAddress(_billingInfo!.shippingAddress!),
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (_billingInfo!.billingAddress != null) ...[
+                _buildBillingInfoRow(
+                  theme,
+                  Icons.business,
+                  'profile.billing.billing_address'.tr(),
+                  _formatAddress(_billingInfo!.billingAddress!),
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (_billingInfo!.companyName != null) ...[
+                _buildBillingInfoRow(
+                  theme,
+                  Icons.apartment,
+                  'profile.billing.company_name'.tr(),
+                  _billingInfo!.companyName!,
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (_billingInfo!.ico != null) ...[
+                _buildBillingInfoRow(
+                  theme,
+                  Icons.numbers,
+                  'profile.billing.ico'.tr(),
+                  _billingInfo!.ico!,
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (_billingInfo!.dic != null) ...[
+                _buildBillingInfoRow(
+                  theme,
+                  Icons.account_balance,
+                  'profile.billing.dic'.tr(),
+                  _billingInfo!.dic!,
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (_billingInfo!.iban != null) ...[
+                _buildBillingInfoRow(
+                  theme,
+                  Icons.credit_card,
+                  'profile.billing.iban'.tr(),
+                  _billingInfo!.iban!,
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildBillingInfoRow(
+    ThemeData theme,
+    IconData icon,
+    String label,
+    String value,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: Colors.teal.shade700),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                value,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Bank Payments Section Widget
+  Widget _buildBankPaymentsSection(ThemeData theme) {
+    if (_bankPayments.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(
+          theme,
+          Icons.account_balance,
+          'profile.section.bank_payments'.tr(),
+          Colors.cyan,
+        ),
+        const SizedBox(height: 12),
+        ..._bankPayments.map(
+          (payment) => _buildBankPaymentCard(theme, payment),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildBankPaymentCard(ThemeData theme, BankPayment payment) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.cyan.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.cyan.shade200),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.cyan.shade100,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              Icons.account_balance,
+              color: Colors.cyan.shade700,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  payment.paymentType ??
+                      'profile.bank_payment.unknown_type'.tr(),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  DateFormat('dd.MM.yyyy').format(payment.transactionDate),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+                if (payment.payerReference != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'VS: ${payment.payerReference}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade500,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Text(
+            '${payment.amount.toStringAsFixed(2)} ${payment.currency}',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.cyan.shade800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Combined Payment History Section Widget
+  Widget _buildPaymentHistorySection(ThemeData theme) {
+    if (_paymentHistory.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(
+          theme,
+          Icons.history,
+          'profile.section.payment_history'.tr(),
+          Colors.indigo,
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.indigo.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.indigo.shade200),
+          ),
+          child: Column(
+            children: _paymentHistory.asMap().entries.map((entry) {
+              final index = entry.key;
+              final payment = entry.value;
+              final isLast = index == _paymentHistory.length - 1;
+              return _buildPaymentHistoryRow(theme, payment, isLast);
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildPaymentHistoryRow(
+    ThemeData theme,
+    PaymentHistoryItem payment,
+    bool isLast,
+  ) {
+    IconData icon;
+    Color iconColor;
+
+    switch (payment.type) {
+      case 'subscription':
+        icon = Icons.credit_card;
+        iconColor = Colors.purple.shade600;
+        break;
+      case 'donation':
+        icon = Icons.favorite;
+        iconColor = Colors.red.shade600;
+        break;
+      case 'bank':
+        icon = Icons.account_balance;
+        iconColor = Colors.cyan.shade600;
+        break;
+      default:
+        icon = Icons.payment;
+        iconColor = Colors.grey.shade600;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border: isLast
+            ? null
+            : Border(
+                bottom: BorderSide(color: Colors.indigo.shade200, width: 1),
+              ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: iconColor),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  payment.description,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  DateFormat('dd.MM.yyyy').format(payment.date),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${payment.amount.toStringAsFixed(2)} €',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.indigo.shade800,
+                ),
+              ),
+              if (payment.status != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        payment.status == 'active' ||
+                            payment.status == 'succeeded'
+                        ? Colors.green.shade100
+                        : Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    payment.status!,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color:
+                          payment.status == 'active' ||
+                              payment.status == 'succeeded'
+                          ? Colors.green.shade800
+                          : Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

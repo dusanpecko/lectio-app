@@ -25,41 +25,50 @@ void main() {
     mockBackgroundAudioManager = MockBackgroundAudioManager();
     mockAudioHandler = MockLectioAudioHandler();
 
-    playbackStateSubject =
-        BehaviorSubject<PlaybackState>.seeded(PlaybackState());
+    playbackStateSubject = BehaviorSubject<PlaybackState>.seeded(
+      PlaybackState(),
+    );
     mediaItemSubject = BehaviorSubject<MediaItem?>.seeded(null);
 
     // Setup Mock BackgroundAudioManager
-    when(() => mockBackgroundAudioManager.initialize())
-        .thenAnswer((_) async {});
-    when(() => mockBackgroundAudioManager.audioHandler)
-        .thenReturn(mockAudioHandler);
+    when(
+      () => mockBackgroundAudioManager.initialize(),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockBackgroundAudioManager.audioHandler,
+    ).thenReturn(mockAudioHandler);
     when(() => mockBackgroundAudioManager.isInitialized).thenReturn(true);
 
     // Setup streams
     // Pozor: BackgroundAudioManager.playbackStateStream je Stream<PlaybackState>
-    when(() => mockBackgroundAudioManager.playbackStateStream)
-        .thenAnswer((_) => playbackStateSubject.stream);
+    when(
+      () => mockBackgroundAudioManager.playbackStateStream,
+    ).thenAnswer((_) => playbackStateSubject.stream);
 
     // Ale LectioAudioHandler.mediaItem je BehaviorSubject<MediaItem?>
     when(() => mockAudioHandler.mediaItem).thenAnswer((_) => mediaItemSubject);
 
     // Setup other properties
-    when(() => mockBackgroundAudioManager.currentPosition)
-        .thenReturn(Duration.zero);
+    when(
+      () => mockBackgroundAudioManager.currentPosition,
+    ).thenReturn(Duration.zero);
     when(() => mockBackgroundAudioManager.isPlaying).thenReturn(false);
-    when(() => mockBackgroundAudioManager.totalDuration)
-        .thenReturn(Duration.zero);
+    when(
+      () => mockBackgroundAudioManager.totalDuration,
+    ).thenReturn(Duration.zero);
 
     // Callbacks
-    when(() => mockBackgroundAudioManager.setOnTrackChanged(any()))
-        .thenReturn(null);
-    when(() => mockBackgroundAudioManager.setOnPlaylistCompleted(any()))
-        .thenReturn(null);
+    when(
+      () => mockBackgroundAudioManager.setOnTrackChanged(any()),
+    ).thenReturn(null);
+    when(
+      () => mockBackgroundAudioManager.setOnPlaylistCompleted(any()),
+    ).thenReturn(null);
 
     // Inject Mock into Controller
     LectioAudioController.setInstanceForTesting(
-        LectioAudioController.internal(manager: mockBackgroundAudioManager));
+      LectioAudioController.internal(manager: mockBackgroundAudioManager),
+    );
     audioController = LectioAudioController();
   });
 
@@ -82,19 +91,22 @@ void main() {
     await audioController.initialize();
 
     final playlist = [
-      {'key': 'track1', 'label': 'Title', 'url': 'http://test.com'}
+      {'key': 'track1', 'label': 'Title', 'url': 'http://test.com'},
     ];
-    when(() => mockBackgroundAudioManager.setPlaylist(any(), any()))
-        .thenReturn(null);
-    when(() => mockBackgroundAudioManager.playTrackByIndex(any()))
-        .thenAnswer((_) async {});
+    when(
+      () => mockBackgroundAudioManager.setPlaylist(any(), any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockBackgroundAudioManager.playTrackByIndex(any()),
+    ).thenAnswer((_) async {});
 
     // Act
     await audioController.playTracks(playlist, startKey: 'track1');
 
     // Assert
-    verify(() => mockBackgroundAudioManager.setPlaylist(playlist, any()))
-        .called(1);
+    verify(
+      () => mockBackgroundAudioManager.setPlaylist(playlist, any()),
+    ).called(1);
     verify(() => mockBackgroundAudioManager.playTrackByIndex(0)).called(1);
     expect(audioController.playlist, equals(playlist));
   });

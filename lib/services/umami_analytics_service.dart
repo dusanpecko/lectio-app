@@ -7,6 +7,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../utils/app_logger.dart';
+
 class UmamiAnalyticsService {
   static final UmamiAnalyticsService _instance =
       UmamiAnalyticsService._internal();
@@ -35,10 +37,10 @@ class UmamiAnalyticsService {
     _websiteId = dotenv.env['UMAMI_WEBSITE_ID'];
     _hostname = dotenv.env['UMAMI_HOSTNAME'] ?? 'lectio-app';
 
-    debugPrint('🔍 Umami Config - ID: $_websiteId, Host: $_hostname');
+    appLogger.d('🔍 Umami Config - ID: $_websiteId, Host: $_hostname');
 
     if (_apiUrl == null || _websiteId == null) {
-      debugPrint('⚠️ Umami Analytics not configured (missing env vars)');
+      appLogger.w('⚠️ Umami Analytics not configured (missing env vars)');
       return;
     }
 
@@ -47,11 +49,13 @@ class UmamiAnalyticsService {
     _loadScreenInfo();
 
     _isInitialized = true;
-    debugPrint('🚀 Umami Analytics Initialized: $_apiUrl');
+    appLogger.i('🚀 Umami Analytics Initialized: $_apiUrl');
 
     // Process pending events
     if (_pendingEvents.isNotEmpty) {
-      debugPrint('🚀 Processing ${_pendingEvents.length} pending Umami events');
+      appLogger.i(
+        '🚀 Processing ${_pendingEvents.length} pending Umami events',
+      );
       for (final event in _pendingEvents) {
         event();
       }
@@ -97,7 +101,7 @@ class UmamiAnalyticsService {
     String? referrer,
   }) async {
     if (!_isInitialized) {
-      debugPrint('⏳ Umami not initialized, queuing page view for: $path');
+      appLogger.d('⏳ Umami not initialized, queuing page view for: $path');
       _pendingEvents.add(
         () => trackPageView(path: path, title: title, referrer: referrer),
       );
@@ -122,7 +126,7 @@ class UmamiAnalyticsService {
     Map<String, dynamic>? eventData,
   }) async {
     if (!_isInitialized) {
-      debugPrint('⏳ Umami not initialized, queuing event: $eventName');
+      appLogger.d('⏳ Umami not initialized, queuing event: $eventName');
       _pendingEvents.add(() => trackEvent(eventName, eventData: eventData));
       return;
     }
@@ -158,17 +162,19 @@ class UmamiAnalyticsService {
         body: body,
       );
 
-      debugPrint('📤 Umami Request: $uri');
-      debugPrint('📤 Payload: $body');
-      debugPrint(
+      appLogger.d('📤 Umami Request: $uri');
+      appLogger.d('📤 Payload: $body');
+      appLogger.d(
         '📥 Umami Response: ${response.statusCode} - ${response.body}',
       );
 
       if (response.statusCode != 200) {
-        debugPrint('⚠️ Umami Error: ${response.statusCode} - ${response.body}');
+        appLogger.w(
+          '⚠️ Umami Error: ${response.statusCode} - ${response.body}',
+        );
       }
     } catch (e) {
-      debugPrint('⚠️ Umami Exception: $e');
+      appLogger.w('⚠️ Umami Exception: $e');
     }
   }
 }

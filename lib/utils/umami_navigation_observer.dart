@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:lectio_divina/services/umami_analytics_service.dart';
+import 'package:lectio_divina/utils/app_logger.dart';
 
 class UmamiNavigationObserver extends NavigatorObserver {
   @override
@@ -28,11 +29,12 @@ class UmamiNavigationObserver extends NavigatorObserver {
     final screenName = route.settings.name;
 
     if (screenName != null) {
-      debugPrint('📊 Umami Tracking Screen: $screenName');
+      appLogger.d('📊 Umami Tracking Screen: $screenName');
       UmamiAnalyticsService().trackPageView(path: screenName);
     } else {
-      debugPrint(
-          '⚠️ Umami Tracking: Route "${route.runtimeType}" has NO NAME. Add RouteSettings(name: "/...")');
+      appLogger.w(
+        '⚠️ Umami Tracking: Route "${route.runtimeType}" has NO NAME. Add RouteSettings(name: "/...")',
+      );
     }
   }
 }

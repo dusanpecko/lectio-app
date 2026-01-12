@@ -1,9 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/spiritual_exercise.dart';
 import '../shared/app_colors.dart';
+import '../utils/app_logger.dart';
 
 class SpiritualExerciseRegistrationScreen extends StatefulWidget {
   final String exerciseSlug;
@@ -144,7 +146,7 @@ class _SpiritualExerciseRegistrationScreenState
           });
         }
       } catch (e) {
-        debugPrint('❌ Error fetching profile: $e');
+        appLogger.e('❌ Error fetching profile: $e');
       }
     }
   }
@@ -316,7 +318,7 @@ class _SpiritualExerciseRegistrationScreenState
           })
           .eq('id', user.id);
     } catch (e) {
-      debugPrint('❌ Error saving profile: $e');
+      appLogger.e('❌ Error saving profile: $e');
     }
   }
 
@@ -382,13 +384,12 @@ class _SpiritualExerciseRegistrationScreenState
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (widget.homeImageUrl != null)
-                    Image.network(
-                      widget.homeImageUrl!,
+                    CachedNetworkImage(
+                      imageUrl: widget.homeImageUrl!,
                       height: 160,
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
+                      placeholder: (context, url) {
                         return Container(
                           height: 160,
                           color: AppColors.primary.withValues(alpha: 0.2),
@@ -397,7 +398,7 @@ class _SpiritualExerciseRegistrationScreenState
                           ),
                         );
                       },
-                      errorBuilder: (context, error, stackTrace) => Container(
+                      errorWidget: (context, url, error) => Container(
                         height: 160,
                         color: AppColors.primary.withValues(alpha: 0.2),
                         child: const Icon(

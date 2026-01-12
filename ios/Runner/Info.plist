@@ -49,6 +49,10 @@
 	<array>
 		<string>_dartobservatory._tcp</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Lectio Divina potrebuje prístup ku kamere pre vytvorenie profilovej fotky.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Lectio Divina potrebuje prístup k fotogalérii pre výber profilovej fotky.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app uses local network to communicate with development tools and debugging services.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

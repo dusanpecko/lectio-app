@@ -1,5 +1,27 @@
 {
   "app_title": "Lectio Divina",
+  "offline": {
+    "no_connection": "Ste offline",
+    "reconnected": "Pripojenie obnovené",
+    "cached_data": "Používate uložené dáta",
+    "title": "Nie ste pripojení",
+    "message": "Pripojte sa k internetu pre načítanie nových dát.",
+    "retry": "Skúsiť znova",
+    "no_data_title": "Dáta nie sú dostupné",
+    "no_data_message": "Pre dnešný deň nemáte stiahnuté dáta. Pripojte sa k internetu.",
+    "connect": "Pripojiť sa",
+    "download_title": "Stiahnuť offline dáta",
+    "download_7_days": "Stiahnuť na 7 dní",
+    "download_progress": "Sťahujem dáta...",
+    "download_success": "Dáta úspešne stiahnuté",
+    "download_error": "Chyba pri sťahovaní",
+    "last_sync": "Posledná synchronizácia: {date}",
+    "data_available": "Dáta dostupné do: {date}",
+    "download_for_offline": "Stiahnuť pre offline",
+    "download_description": "Stiahnite si Lectio Divina na nasledujúcich 7 dní pre používanie bez internetu.",
+    "download_days": "Stiahnuť {0} dní",
+    "download_complete": "Stiahnuté {0} dní"
+  },
   "login": "Prihlásiť sa",
   "register": "Registrovať sa",
   "logout": "Odhlásiť sa",
@@ -453,7 +475,10 @@
     "section": {
       "subscriptions": "Moje predplatné",
       "donations": "Moje príspevky",
-      "exercise_registrations": "Moje registrácie na DC"
+      "exercise_registrations": "Moje registrácie na DC",
+      "bank_payments": "Bankové platby",
+      "billing_info": "Fakturačné údaje",
+      "payment_history": "História platieb"
     },
     "subscription": {
       "tier": "{} úroveň",
@@ -462,6 +487,16 @@
       "yearly": "rok",
       "next_payment": "Ďalšia platba",
       "cancels_on": "Zruší sa"
+    },
+    "payment": {
+      "monthly": "mesačne",
+      "yearly": "ročne",
+      "one_time": "jednorazovo",
+      "type": {
+        "subscription": "Predplatné",
+        "donation": "Príspevok",
+        "bank": "Bankový prevod"
+      }
     },
     "registration": {
       "paid": "Zaplatené",
@@ -492,6 +527,17 @@
       "confirm_button": "Vymazať účet",
       "success": "Účet bol úspešne vymazaný",
       "error": "Chyba pri vymazávaní účtu: {}"
+    },
+    "billing": {
+      "shipping_address": "Doručovacia adresa",
+      "billing_address": "Fakturačná adresa",
+      "company_name": "Názov firmy",
+      "ico": "IČO",
+      "dic": "DIČ",
+      "iban": "IBAN"
+    },
+    "bank_payment": {
+      "unknown_type": "Bankový prevod"
     }
   },
   "support2": {
@@ -826,5 +872,17 @@
     "sending": "Odosielam...",
     "success": "Ďakujeme za vašu spätnú väzbu!",
     "error": "Chyba pri odosielaní: {}"
+  },
+  "notifications": {
+    "title": "Notifikácie",
+    "empty": "Žiadne notifikácie",
+    "empty_hint": "Keď dostanete nové notifikácie, zobrazia sa tu.",
+    "load_error": "Nepodarilo sa načítať notifikácie.",
+    "yesterday": "Včera"
+  },
+  "common": {
+    "refresh": "Obnoviť",
+    "try_again": "Skúsiť znova",
+    "close": "Zavrieť"
   }
 }

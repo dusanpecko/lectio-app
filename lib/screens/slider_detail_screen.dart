@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -49,11 +50,11 @@ class SliderDetailScreen extends StatelessWidget {
                   ],
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: Image.network(
-                  imageUrl,
+                child: CachedNetworkImage(
+                  imageUrl: imageUrl,
                   fit: BoxFit.cover,
                   width: double.infinity,
-                  errorBuilder: (context, error, stack) => Container(
+                  errorWidget: (context, url, error) => Container(
                     height: 200,
                     color: Colors.grey[300],
                     child: const Center(
@@ -64,8 +65,7 @@ class SliderDetailScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  loadingBuilder: (context, child, progress) {
-                    if (progress == null) return child;
+                  placeholder: (context, url) {
                     return Container(
                       height: 200,
                       color: Colors.grey[200],
@@ -104,7 +104,14 @@ class SliderDetailScreen extends StatelessWidget {
                           final src = context.attributes['src'] ?? '';
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: Image.network(src),
+                            child: CachedNetworkImage(
+                              imageUrl: src,
+                              placeholder: (context, url) => const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                              errorWidget: (context, url, error) =>
+                                  const Icon(Icons.error),
+                            ),
                           );
                         },
                       ),

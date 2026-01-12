@@ -7,6 +7,8 @@ import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../utils/app_logger.dart';
+
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
 
@@ -32,15 +34,16 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   Future<void> _loadAppVersion() async {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
-      debugPrint(
-          '📱 Package Info: ${packageInfo.version}+${packageInfo.buildNumber}');
+      appLogger.d(
+        '📱 Package Info: ${packageInfo.version}+${packageInfo.buildNumber}',
+      );
       if (mounted) {
         setState(() {
           _appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
         });
       }
     } catch (e) {
-      debugPrint('❌ Error loading app version: $e');
+      appLogger.e('❌ Error loading app version: $e');
       if (mounted) {
         setState(() {
           _appVersion = 'unknown';
@@ -67,8 +70,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       final backendUrl =
           dotenv.env['NEXT_PUBLIC_BACKEND_URL'] ?? 'https://lectio.one';
 
-      debugPrint('📤 Sending feedback to: $backendUrl/api/feedback');
-      debugPrint('📱 Type: $_feedbackType, Version: $_appVersion');
+      appLogger.d('📤 Sending feedback to: $backendUrl/api/feedback');
+      appLogger.d('📱 Type: $_feedbackType, Version: $_appVersion');
 
       final response = await http.post(
         Uri.parse('$backendUrl/api/feedback'),
@@ -87,7 +90,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         }),
       );
 
-      debugPrint('📥 Response: ${response.statusCode} - ${response.body}');
+      appLogger.d('📥 Response: ${response.statusCode} - ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (mounted) {
@@ -101,11 +104,11 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         }
       } else {
         final errorBody = response.body;
-        debugPrint('❌ Error response: $errorBody');
+        appLogger.e('❌ Error response: $errorBody');
         throw Exception('Server error: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('❌ Feedback error: $e');
+      appLogger.e('❌ Feedback error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -179,8 +182,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                           Text(
                             'feedback.subtitle'.tr(),
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.7),
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.7,
+                              ),
                             ),
                           ),
                         ],
@@ -334,11 +338,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 18,
-            color: isSelected ? Colors.white : color,
-          ),
+          Icon(icon, size: 18, color: isSelected ? Colors.white : color),
           const SizedBox(width: 6),
           Text(label),
         ],
@@ -350,18 +350,15 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         }
       },
       selectedColor: color,
-      backgroundColor:
-          theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(
+        alpha: 0.3,
+      ),
       labelStyle: TextStyle(
         color: isSelected ? Colors.white : theme.colorScheme.onSurface,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
       ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      side: BorderSide(
-        color: isSelected ? color : Colors.transparent,
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      side: BorderSide(color: isSelected ? color : Colors.transparent),
     );
   }
 }

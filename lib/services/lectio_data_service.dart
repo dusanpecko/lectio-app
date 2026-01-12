@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/spiritual_exercise.dart';
+import '../utils/app_logger.dart';
 
 class DailyQuote {
   final String? text;
@@ -113,7 +114,7 @@ class LectioDataService {
         reference: lectioSource?['reference'] ?? celebrationTitle,
       );
     } catch (e) {
-      debugPrint('❌ Service: Error fetching daily quote: $e');
+      appLogger.e('❌ Service: Error fetching daily quote: $e');
       return null;
     }
   }
@@ -136,7 +137,7 @@ class LectioDataService {
 
       return List<Map<String, dynamic>>.from(newsRes);
     } catch (e) {
-      debugPrint('❌ Service: Error fetching news: $e');
+      appLogger.e('❌ Service: Error fetching news: $e');
       return [];
     }
   }
@@ -191,7 +192,7 @@ class LectioDataService {
       }
       return null;
     } catch (e) {
-      debugPrint('❌ Service: Error fetching featured exercise: $e');
+      appLogger.e('❌ Service: Error fetching featured exercise: $e');
       return null;
     }
   }
@@ -204,7 +205,7 @@ class LectioDataService {
     final today = date.toIso8601String().substring(0, 10);
 
     try {
-      debugPrint(
+      appLogger.d(
         '🔍 Service: Načítavam lectio pre dátum: $today, jazyk: $locale',
       );
 
@@ -222,7 +223,7 @@ class LectioDataService {
       if (liturgicalYearsList.isNotEmpty) {
         final yearData = liturgicalYearsList[0] as Map<String, dynamic>;
         correctLiturgicalYear = yearData;
-        debugPrint(
+        appLogger.i(
           '✅ Service: Nájdený liturgický rok: ${yearData['year']} '
           '(${yearData['start_date']} - ${yearData['end_date']}), '
           'cyklus: ${yearData['lectionary_cycle']}',
@@ -230,7 +231,7 @@ class LectioDataService {
       } else {
         // Fallback na slovenčinu ak aktuálny jazyk nemá liturgický rok
         if (locale != 'sk') {
-          debugPrint('🔄 Service: Hľadám liturgický rok v slovenčine...');
+          appLogger.d('🔄 Service: Hľadám liturgický rok v slovenčine...');
           final skYearsResponse = await _supabase
               .from('liturgical_years')
               .select()
@@ -242,7 +243,7 @@ class LectioDataService {
           if (skYearsList.isNotEmpty) {
             final skYearData = skYearsList[0] as Map<String, dynamic>;
             correctLiturgicalYear = skYearData;
-            debugPrint(
+            appLogger.i(
               '✅ Service: Nájdený SK liturgický rok: ${skYearData['year']} '
               '(${skYearData['start_date']} - ${skYearData['end_date']}), '
               'cyklus: ${skYearData['lectionary_cycle']}',
@@ -261,7 +262,7 @@ class LectioDataService {
 
       // Fallback na slovenčinu ak kalendár pre aktuálny jazyk neexistuje
       if (calendarResponse == null && locale != 'sk') {
-        debugPrint('🔄 Service: Skúšam načítať kalendár pre slovenčinu...');
+        appLogger.d('🔄 Service: Skúšam načítať kalendár pre slovenčinu...');
         calendarResponse = await _supabase
             .from('liturgical_calendar')
             .select()
@@ -271,7 +272,9 @@ class LectioDataService {
       }
 
       if (calendarResponse == null) {
-        debugPrint('❌ Service: Liturgický kalendár nenájdený pre dátum $today');
+        appLogger.e(
+          '❌ Service: Liturgický kalendár nenájdený pre dátum $today',
+        );
         return null;
       }
 
@@ -312,7 +315,7 @@ class LectioDataService {
 
       // Fallback logika
       if (lectioSource == null) {
-        debugPrint(
+        appLogger.e(
           '❌ Service: Lectio source nenájdený pre $locale, rok $rokToSearch',
         );
 
@@ -329,7 +332,7 @@ class LectioDataService {
 
         // Fallback na slovenčinu
         if (lectioSource == null && locale != 'sk') {
-          debugPrint(
+          appLogger.d(
             '🔄 Service: Skúšam načítať lectio source pre slovenčinu...',
           );
           lectioSource = await _supabase
@@ -355,7 +358,7 @@ class LectioDataService {
 
       return lectioSource;
     } catch (e) {
-      debugPrint('❌ Service: Chyba pri načítavaní Lectio dát: $e');
+      appLogger.e('❌ Service: Chyba pri načítavaní Lectio dát: $e');
       return null;
     }
   }

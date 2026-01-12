@@ -1,5 +1,6 @@
 // lib/screens/rosary_decade_screen.dart
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -413,10 +414,12 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
             children: [
               if (_decade!.hasImage)
                 Positioned.fill(
-                  child: Image.network(
-                    _decade!.illustrationImage!,
+                  child: CachedNetworkImage(
+                    imageUrl: _decade!.illustrationImage!,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(),
+                    placeholder: (context, url) =>
+                        const Center(child: CircularProgressIndicator()),
+                    errorWidget: (context, url, error) => Container(),
                   ),
                 ),
               Positioned.fill(

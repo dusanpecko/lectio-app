@@ -7,6 +7,7 @@ import '../models/lectio_audio_state.dart';
 import '../models/lectio_audio_track.dart';
 import '../services/background_audio_manager.dart';
 import '../shared/audio_constants.dart';
+import '../utils/app_logger.dart';
 
 /// Jednotný controller pre audio playback v Lectio Divina
 ///
@@ -136,9 +137,9 @@ class LectioAudioController extends ChangeNotifier {
       await _backgroundManager.initialize();
       _setupBackgroundCallbacks();
       _setupFallbackListeners();
-      debugPrint('✅ LectioAudioController initialized');
+      appLogger.i('✅ LectioAudioController initialized');
     } catch (e) {
-      debugPrint('⚠️ Background audio failed, using fallback: $e');
+      appLogger.w('⚠️ Background audio failed, using fallback: $e');
       _useFallback = true;
     }
   }
@@ -196,7 +197,7 @@ class LectioAudioController extends ChangeNotifier {
     final trackMaps = tracks.map((t) => t.toMap()).toList();
     _backgroundManager.setPlaylist(trackMaps, audioMode);
 
-    debugPrint('🎵 Playlist set: ${tracks.length} tracks, mode: $audioMode');
+    appLogger.d('🎵 Playlist set: ${tracks.length} tracks, mode: $audioMode');
   }
 
   /// Nastaví audio mód (none, short, long)
@@ -208,7 +209,7 @@ class LectioAudioController extends ChangeNotifier {
   /// Prehrá stopu podľa indexu
   Future<void> playTrack(int index) async {
     if (index < 0 || index >= _playlist.length) {
-      debugPrint('❌ Invalid track index: $index');
+      appLogger.e('❌ Invalid track index: $index');
       return;
     }
 
@@ -232,7 +233,7 @@ class LectioAudioController extends ChangeNotifier {
       _setState(LectioPlaybackState.playing);
       onTrackChanged?.call(track.key, index);
     } catch (e) {
-      debugPrint('❌ Error playing track: $e');
+      appLogger.e('❌ Error playing track: $e');
       _setState(LectioPlaybackState.error);
     }
   }
@@ -262,7 +263,7 @@ class LectioAudioController extends ChangeNotifier {
       _setState(LectioPlaybackState.interlude);
       onTrackChanged?.call('interlude', -1);
     } catch (e) {
-      debugPrint('❌ Error playing interlude: $e');
+      appLogger.e('❌ Error playing interlude: $e');
       _setState(LectioPlaybackState.error);
     }
   }
@@ -370,7 +371,7 @@ class LectioAudioController extends ChangeNotifier {
   }
 
   void _onTrackCompleted() {
-    debugPrint('🏁 Track completed, mode: $_audioMode');
+    appLogger.d('🏁 Track completed, mode: $_audioMode');
 
     if (_isPlayingInterlude) {
       // Interlude skončil, hraj ďalšiu stopu
@@ -404,7 +405,7 @@ class LectioAudioController extends ChangeNotifier {
   void _setState(LectioPlaybackState newState) {
     if (_state != newState) {
       _state = newState;
-      debugPrint('🎵 State: $newState');
+      appLogger.d('🎵 State: $newState');
       notifyListeners();
     }
   }

@@ -11,11 +11,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/lectio_audio_state.dart';
 import '../models/lectio_audio_track.dart';
 import '../services/background_audio_manager.dart';
+import '../services/connectivity_service.dart';
+import '../services/lectio_cache_service.dart';
 import '../shared/audio_constants.dart';
 import '../services/do_not_disturb_service.dart';
 import '../services/prayer_focus_service.dart';
 import '../shared/app_colors.dart';
 import '../shared/date_limits_config.dart';
+import '../utils/app_logger.dart';
 import '../widgets/lectio_section_card.dart';
 import '../widgets/lectio_speed_dial_fab.dart';
 import '../widgets/prayer_focus_indicator.dart';
@@ -67,6 +70,13 @@ class _LectioScreenState extends State<LectioScreen> {
   bool _isDndActive = false;
   bool _dndEnabled = false;
 
+  // Offline mode state
+  bool _isDownloading = false;
+  int _downloadedDays = 0;
+  int _totalDaysToDownload = 7;
+  bool _isOffline = false;
+  StreamSubscription<bool>? _connectivitySubscription;
+
   // Cache pre tracks
   List<Map<String, dynamic>>? _cachedTracks;
   String? _lastCachedBible;
@@ -85,6 +95,7 @@ class _LectioScreenState extends State<LectioScreen> {
     _initializeDndService();
     _initializeBackgroundAudio();
     _startPositionTimer();
+    _initializeConnectivity();
 
     // Callback sa zaregistruje v _playBackgroundAudio po inicializácii
 
@@ -92,12 +103,37 @@ class _LectioScreenState extends State<LectioScreen> {
     _prayerFocusService.onSpiritualScreenEntered(SpiritualScreen.lectio);
   }
 
+  /// Inicializácia sledovania pripojenia
+  void _initializeConnectivity() {
+    _isOffline = !ConnectivityService.instance.isOnline;
+    _connectivitySubscription = ConnectivityService
+        .instance
+        .onConnectivityChanged
+        .listen((isOnline) {
+          if (mounted) {
+            setState(() {
+              _isOffline = !isOnline;
+            });
+            // Ak sa pripojíme, automaticky cache dnes + zajtra
+            if (isOnline) {
+              _autoCacheBackground();
+            }
+          }
+        });
+  }
+
+  /// Automatický cache dnes + zajtra na pozadí
+  Future<void> _autoCacheBackground() async {
+    final locale = context.locale.languageCode;
+    await LectioCacheService.instance.autoCache(locale);
+  }
+
   Future<void> _initializeBackgroundAudio() async {
     try {
       await _backgroundAudioManager.initialize();
-      debugPrint('✅ BackgroundAudioManager initialized in initState');
+      appLogger.i('✅ BackgroundAudioManager initialized in initState');
     } catch (e) {
-      debugPrint('❌ Error initializing BackgroundAudioManager: $e');
+      appLogger.e('❌ Error initializing BackgroundAudioManager: $e');
     }
   }
 
@@ -121,7 +157,7 @@ class _LectioScreenState extends State<LectioScreen> {
         _isProcessingInterludeCompletion =
             state == LectioPlaybackState.processingInterludeTransition;
       });
-      debugPrint('🎵 Playback state: $state');
+      appLogger.d('🎵 Playback state: $state');
     }
   }
 
@@ -133,7 +169,7 @@ class _LectioScreenState extends State<LectioScreen> {
       // Initialize if needed
       if (!_backgroundAudioManager.isInitialized) {
         await _backgroundAudioManager.initialize();
-        debugPrint('✅ BackgroundAudioManager initialized');
+        appLogger.i('✅ BackgroundAudioManager initialized');
 
         // Register media item listener for duration updates (only once)
         if (_backgroundAudioManager.audioHandler != null) {
@@ -144,12 +180,12 @@ class _LectioScreenState extends State<LectioScreen> {
               setState(() {
                 _totalDuration = item.duration!;
               });
-              debugPrint(
+              appLogger.d(
                 '🎵 Duration updated from mediaItem: ${item.duration}',
               );
             }
           });
-          debugPrint('✅ Media item listener registered');
+          appLogger.i('✅ Media item listener registered');
         }
       }
 
@@ -162,14 +198,14 @@ class _LectioScreenState extends State<LectioScreen> {
       await _backgroundAudioManager.setPlaylist(tracks, _audioMode);
       if (currentIndex >= 0) {
         // Nastaviť current index manuálne (nie cez playTrackByIndex aby sa neprehral znova)
-        debugPrint(
+        appLogger.d(
           '🎵 Setting playlist with ${tracks.length} tracks, current: $currentIndex',
         );
       }
 
       // Callback pre UI update keď sa zmení track (pre prípad keď je widget mounted)
       _backgroundAudioManager.setOnTrackChanged((trackKey, index) {
-        debugPrint('🎵 onTrackChanged: trackKey=$trackKey, index=$index');
+        appLogger.d('🎵 onTrackChanged: trackKey=$trackKey, index=$index');
         if (mounted) {
           // Poznámka: NERUŠÍME _fallbackPlayerSubscription tu,
           // lebo callback môže prísť aj keď BAM nefunguje (Android)
@@ -195,7 +231,7 @@ class _LectioScreenState extends State<LectioScreen> {
 
       // Callback keď sa playlist dokončí
       _backgroundAudioManager.setOnPlaylistCompleted(() {
-        debugPrint('🎵 Playlist completed');
+        appLogger.d('🎵 Playlist completed');
         if (mounted) {
           setState(() {
             _isPlaying = false;
@@ -207,17 +243,17 @@ class _LectioScreenState extends State<LectioScreen> {
       // Callback when track section completes (for UI update only)
       // NOTE: Auto-progression is handled internally by LectioAudioPlayer
       _backgroundAudioManager.setOnSectionCompleted(() {
-        debugPrint('🎵 🚀 Section completed callback from LectioAudioPlayer');
-        debugPrint(
+        appLogger.d('🎵 🚀 Section completed callback from LectioAudioPlayer');
+        appLogger.d(
           '🎵 mounted=$mounted, _currentAudioSection=$_currentAudioSection',
         );
         // Only update UI state, don't call _onAudioCompleted
         // LectioAudioPlayer handles auto-progression internally
         if (mounted) {
-          debugPrint('🎵 UI will be updated via stream listeners');
+          appLogger.d('🎵 UI will be updated via stream listeners');
         }
       });
-      debugPrint('✅ Section completed callback registered (UI only)');
+      appLogger.i('✅ Section completed callback registered (UI only)');
 
       // Get section title for media notification
       String title = _getSectionTitle(sectionKey);
@@ -232,19 +268,19 @@ class _LectioScreenState extends State<LectioScreen> {
 
       await _backgroundAudioManager.play(url, title: title, artist: subtitle);
 
-      debugPrint('🎵 Background audio started: $title');
+      appLogger.d('🎵 Background audio started: $title');
     } catch (e) {
-      debugPrint('❌ Error playing background audio: $e');
+      appLogger.e('❌ Error playing background audio: $e');
       // Fallback to regular audio player
       _usingFallbackPlayer = true;
-      debugPrint(
+      appLogger.d(
         '🎵 🔄 Using fallback player, _usingFallbackPlayer=$_usingFallbackPlayer',
       );
 
       // Zrušiť predchádzajúcu subscription ak existuje
       await _fallbackPlayerSubscription?.cancel();
       _fallbackPlayerSubscription = null;
-      debugPrint('🎵 Previous fallback subscription cancelled');
+      appLogger.d('🎵 Previous fallback subscription cancelled');
 
       await _audioPlayer.setAudioSource(
         AudioSource.uri(
@@ -259,23 +295,23 @@ class _LectioScreenState extends State<LectioScreen> {
         ),
       );
       await _audioPlayer.play();
-      debugPrint('🎵 Fallback player started playing');
+      appLogger.d('🎵 Fallback player started playing');
 
       // Listen for completion on fallback player
       _fallbackPlayerSubscription = _audioPlayer.playerStateStream.listen((
         state,
       ) {
-        debugPrint(
+        appLogger.d(
           '🎵 📡 Fallback listener: processingState=${state.processingState}, _usingFallbackPlayer=$_usingFallbackPlayer, section=$_currentAudioSection',
         );
         if (state.processingState == ProcessingState.completed &&
             _usingFallbackPlayer &&
             _currentAudioSection != 'interlude') {
-          debugPrint('🎵 ✅ Fallback player completed, triggering next');
+          appLogger.d('🎵 ✅ Fallback player completed, triggering next');
           _onAudioCompleted();
         }
       });
-      debugPrint('🎵 ✅ New fallback subscription created');
+      appLogger.d('🎵 ✅ New fallback subscription created');
     }
   }
 
@@ -333,7 +369,7 @@ class _LectioScreenState extends State<LectioScreen> {
 
       // Debug výpis každú sekundu
       if (position.inMilliseconds % 1000 < 250) {
-        debugPrint(
+        appLogger.d(
           '🎵 Fallback timer: pos=${position.inSeconds}s, dur=${duration?.inSeconds}s, playing=$isPlaying',
         );
       }
@@ -358,7 +394,7 @@ class _LectioScreenState extends State<LectioScreen> {
 
       // Debug výpis každú sekundu
       if (position.inMilliseconds % 1000 < 250) {
-        debugPrint(
+        appLogger.d(
           '🎵 Timer update: pos=${position.inSeconds}s, dur=${duration?.inSeconds}s, playing=$isPlaying, _isPlaying=$_isPlaying',
         );
       }
@@ -378,10 +414,150 @@ class _LectioScreenState extends State<LectioScreen> {
     }
   }
 
+  /// Zobrazí dialóg pre stiahnutie Lectio na offline použitie
+  void _showDownloadDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Icon(Icons.download_rounded, size: 48, color: AppColors.primary),
+            const SizedBox(height: 16),
+            Text(
+              tr('offline.download_for_offline'),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              tr('offline.download_description'),
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _downloadLectioForDays(7);
+                },
+                icon: const Icon(Icons.download_rounded),
+                label: Text(tr('offline.download_days', args: ['7'])),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(tr('common.cancel')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Stiahne Lectio pre zadaný počet dní
+  Future<void> _downloadLectioForDays(int days) async {
+    if (_isDownloading) return;
+
+    setState(() {
+      _isDownloading = true;
+      _downloadedDays = 0;
+      _totalDaysToDownload = days;
+    });
+
+    try {
+      final locale = context.locale.languageCode;
+      final result = await LectioCacheService.instance.downloadLectioForDays(
+        locale: locale,
+        days: days,
+        onProgress: (current, total) {
+          if (mounted) {
+            setState(() {
+              _downloadedDays = current;
+              _totalDaysToDownload = total;
+            });
+          }
+        },
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              tr(
+                'offline.download_complete',
+                args: ['${result.downloadedDays}'],
+              ),
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      appLogger.e('❌ Download failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(tr('offline.download_error')),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDownloading = false;
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
     // Zrušiť position timer
     _positionUpdateTimer?.cancel();
+
+    // Zrušiť connectivity subscription
+    _connectivitySubscription?.cancel();
 
     // Zrušiť fallback player subscription
     _fallbackPlayerSubscription?.cancel();
@@ -410,16 +586,16 @@ class _LectioScreenState extends State<LectioScreen> {
     _backgroundAudioManager.playerStateStream.listen((state) {
       if (!mounted) return;
 
-      debugPrint(
+      appLogger.d(
         '🎵 AudioPlayer state changed: playing=${state.playing}, processingState=${state.processingState}',
       );
-      debugPrint('🎵 Current _currentAudioSection: $_currentAudioSection');
+      appLogger.d('🎵 Current _currentAudioSection: $_currentAudioSection');
 
       // Update playing state
       setState(() {
         _isPlaying = state.playing;
       });
-      debugPrint('🎵 ✅ State updated: _isPlaying=$_isPlaying');
+      appLogger.d('🎵 ✅ State updated: _isPlaying=$_isPlaying');
 
       // NOTE: Don't call _onAudioCompleted here!
       // Auto-progression is handled by LectioAudioPlayer._onTrackCompletedAsync
@@ -448,7 +624,7 @@ class _LectioScreenState extends State<LectioScreen> {
       if (!mounted) return;
       // Only process if we're using fallback player
       if (_usingFallbackPlayer) {
-        debugPrint(
+        appLogger.d(
           '🎵 Fallback AudioPlayer state: playing=${state.playing}, processingState=${state.processingState}',
         );
         setState(() {
@@ -459,29 +635,29 @@ class _LectioScreenState extends State<LectioScreen> {
   }
 
   Future<void> _onAudioCompleted() async {
-    debugPrint('🎵 ═══════════════════════════════════════════════════════');
-    debugPrint('🎵 🟢 _onAudioCompleted() STARTED');
-    debugPrint('🎵 ═══════════════════════════════════════════════════════');
-    debugPrint('🎵 Audio dokončené: $_currentAudioSection');
-    debugPrint('🎵 Playback state: $_playbackState');
-    debugPrint('🎵 _isPlaying: $_isPlaying');
+    appLogger.d('🎵 ═══════════════════════════════════════════════════════');
+    appLogger.d('🎵 🟢 _onAudioCompleted() STARTED');
+    appLogger.d('🎵 ═══════════════════════════════════════════════════════');
+    appLogger.d('🎵 Audio dokončené: $_currentAudioSection');
+    appLogger.d('🎵 Playback state: $_playbackState');
+    appLogger.d('🎵 _isPlaying: $_isPlaying');
 
     // Ignoruj completed stav ak nie sme v stave keď môžeme reagovať
     if (_playbackState == LectioPlaybackState.seeking) {
-      debugPrint('🛑 Prebieha seeking, ignorujem completed stav');
+      appLogger.d('🛑 Prebieha seeking, ignorujem completed stav');
       return;
     }
 
     // Ak bol prehrávač zatvorený (stopped), nič nerob
     if (_playbackState == LectioPlaybackState.stopped ||
         _playbackState == LectioPlaybackState.idle) {
-      debugPrint('🛑 Prehrávač bol zatvorený, zastavujem playback');
+      appLogger.d('🛑 Prehrávač bol zatvorený, zastavujem playback');
       return;
     }
 
     // Ak nie je nastavená sekcia, nič nerob
     if (_currentAudioSection == null) {
-      debugPrint('🛑 _currentAudioSection je null, zastavujem');
+      appLogger.d('🛑 _currentAudioSection je null, zastavujem');
       return;
     }
 
@@ -497,8 +673,8 @@ class _LectioScreenState extends State<LectioScreen> {
         });
         final next = _nextTrackAfterInterlude!;
         _nextTrackAfterInterlude = null;
-        debugPrint('✅ Meditácia skončila → ${next['key']}');
-        debugPrint('🔄 Zavolám _playAudio pre ďalší track po interlude');
+        appLogger.i('✅ Meditácia skončila → ${next['key']}');
+        appLogger.d('🔄 Zavolam _playAudio pre ďalší track po interlude');
 
         // Spustíme ďalší track - animácia sa spustí hneď
         await _playAudio(next['url'], next['key']);
@@ -508,20 +684,20 @@ class _LectioScreenState extends State<LectioScreen> {
       } else if (_currentAudioSection == 'interlude' &&
           _nextTrackAfterInterlude == null) {
         // Už spracované alebo žiadna ďalšia nahrávka
-        debugPrint(
+        appLogger.d(
           '🛑 Interlude completion: _nextTrackAfterInterlude=null, _isProcessingInterludeCompletion=$_isProcessingInterludeCompletion',
         );
         if (!_isProcessingInterludeCompletion) {
-          debugPrint('🛑 Zastavujem audio - žiadna ďalšia nahrávka');
+          appLogger.d('🛑 Zastavujem audio - žiadna ďalšia nahrávka');
           _stopAudio();
         } else {
-          debugPrint(
+          appLogger.d(
             '🛑 Preskakujem stop audio - práve sa spracováva interlude completion',
           );
         }
       } else {
         // Žiadna ďalšia nahrávka
-        debugPrint(
+        appLogger.d(
           '🛑 Iný prípad: _currentAudioSection=$_currentAudioSection, _nextTrackAfterInterlude=$_nextTrackAfterInterlude',
         );
         if (!_isProcessingInterludeCompletion) {
@@ -537,12 +713,42 @@ class _LectioScreenState extends State<LectioScreen> {
 
   Future<void> fetchLectioData() async {
     setState(() => isLoading = true);
-    final supabase = Supabase.instance.client;
     final today = DateFormat('yyyy-MM-dd').format(selectedDate);
     final lang = widget.selectedLang ?? context.locale.languageCode;
 
+    // Cache-first logika: ak sme offline, načítaj z cache
+    if (_isOffline) {
+      appLogger.d('📦 Offline mód - načítavam z cache pre dátum: $today');
+      final cachedData = await LectioCacheService.instance.getCachedLectio(
+        today,
+        lang,
+      );
+      if (cachedData != null) {
+        appLogger.i('✅ Lectio načítané z cache');
+        if (mounted) {
+          setState(() {
+            lectioData = cachedData.rawData;
+            isLoading = false;
+          });
+          _invalidateTracksCache();
+        }
+        return;
+      } else {
+        appLogger.w('⚠️ Cache prázdny pre dátum $today');
+        if (mounted) {
+          setState(() {
+            lectioData = null;
+            isLoading = false;
+          });
+        }
+        return;
+      }
+    }
+
+    final supabase = Supabase.instance.client;
+
     try {
-      debugPrint('🔍 Načítavam lectio pre dátum: $today, jazyk: $lang');
+      appLogger.d('🔍 Načítavam lectio pre dátum: $today, jazyk: $lang');
 
       // 1. NAJPRV nájdeme správny liturgický rok na základe dátumu
       // (nie z calendar entry, ale priamo podľa date range)
@@ -558,7 +764,7 @@ class _LectioScreenState extends State<LectioScreen> {
       if (liturgicalYearsList.isNotEmpty) {
         final yearData = liturgicalYearsList[0] as Map<String, dynamic>;
         correctLiturgicalYear = yearData;
-        debugPrint(
+        appLogger.i(
           '✅ Nájdený liturgický rok: ${yearData['year']} '
           '(${yearData['start_date']} - ${yearData['end_date']}), '
           'cyklus: ${yearData['lectionary_cycle']}',
@@ -566,7 +772,7 @@ class _LectioScreenState extends State<LectioScreen> {
       } else {
         // Fallback na slovenčinu ak aktuálny jazyk nemá liturgický rok
         if (lang != 'sk') {
-          debugPrint('🔄 Hľadám liturgický rok v slovenčine...');
+          appLogger.d('🔄 Hľadám liturgický rok v slovenčine...');
           final skYearsResponse = await supabase
               .from('liturgical_years')
               .select()
@@ -578,7 +784,7 @@ class _LectioScreenState extends State<LectioScreen> {
           if (skYearsList.isNotEmpty) {
             final skYearData = skYearsList[0] as Map<String, dynamic>;
             correctLiturgicalYear = skYearData;
-            debugPrint(
+            appLogger.i(
               '✅ Nájdený SK liturgický rok: ${skYearData['year']} '
               '(${skYearData['start_date']} - ${skYearData['end_date']}), '
               'cyklus: ${skYearData['lectionary_cycle']}',
@@ -597,7 +803,7 @@ class _LectioScreenState extends State<LectioScreen> {
 
       // Fallback na slovenčinu ak kalendár pre aktuálny jazyk neexistuje
       if (calendarResponse == null && lang != 'sk') {
-        debugPrint('🔄 Skúšam načítať kalendár pre slovenčinu...');
+        appLogger.d('🔄 Skúšam načítať kalendár pre slovenčinu...');
         calendarResponse = await supabase
             .from('liturgical_calendar')
             .select()
@@ -607,7 +813,7 @@ class _LectioScreenState extends State<LectioScreen> {
       }
 
       if (calendarResponse == null) {
-        debugPrint('❌ Liturgický kalendár nenájdený pre dátum $today');
+        appLogger.e('❌ Liturgický kalendár nenájdený pre dátum $today');
         if (mounted) {
           setState(() {
             lectioData = null;
@@ -620,7 +826,7 @@ class _LectioScreenState extends State<LectioScreen> {
 
       final lectioHlava = calendarResponse['lectio_hlava'];
       if (lectioHlava == null) {
-        debugPrint('❌ Tento deň nemá priradenú lectio hlavičku');
+        appLogger.e('❌ Tento deň nemá priradenú lectio hlavičku');
         if (mounted) {
           setState(() {
             lectioData = null;
@@ -630,10 +836,10 @@ class _LectioScreenState extends State<LectioScreen> {
         return;
       }
 
-      debugPrint(
+      appLogger.i(
         '✅ Kalendárny deň nájdený: ${calendarResponse['celebration_title']}',
       );
-      debugPrint(
+      appLogger.d(
         '🔍 Debug kalendárny deň: datum=${calendarResponse['datum']}, '
         'celebration_title=${calendarResponse['celebration_title']}, '
         'celebration_rank_num=${calendarResponse['celebration_rank_num']}, '
@@ -660,7 +866,7 @@ class _LectioScreenState extends State<LectioScreen> {
       final lectionaryCycle = correctLiturgicalYear?['lectionary_cycle'] ?? 'A';
       final rokToSearch = isSpecialDay ? lectionaryCycle : 'N';
 
-      debugPrint(
+      appLogger.d(
         '🔍 Hľadám rok: "$rokToSearch" (všedný deň: ${isWeekday ? "ÁNO" : "NIE"}, '
         'špeciálny deň: $isSpecialDay, liturgický cyklus: $lectionaryCycle)',
       );
@@ -676,11 +882,11 @@ class _LectioScreenState extends State<LectioScreen> {
 
       // Fallback logika
       if (lectioSource == null) {
-        debugPrint('❌ Lectio source nenájdený pre $lang, rok $rokToSearch');
+        appLogger.e('❌ Lectio source nenájdený pre $lang, rok $rokToSearch');
 
         // Pre sviatky: skús rok 'N'
         if (isSpecialDay && rokToSearch != 'N') {
-          debugPrint('🔄 Sviatok nenájdený s rokom A/B/C, skúšam rok N...');
+          appLogger.d('🔄 Sviatok nenájdený s rokom A/B/C, skúšam rok N...');
           lectioSource = await supabase
               .from('lectio_sources')
               .select()
@@ -690,7 +896,7 @@ class _LectioScreenState extends State<LectioScreen> {
               .maybeSingle();
 
           if (lectioSource != null) {
-            debugPrint(
+            appLogger.i(
               '✅ Lectio source nájdený s rokom N: ${lectioSource['hlava']}',
             );
           }
@@ -698,7 +904,7 @@ class _LectioScreenState extends State<LectioScreen> {
 
         // Fallback na slovenčinu
         if (lectioSource == null && lang != 'sk') {
-          debugPrint('🔄 Skúšam načítať lectio source pre slovenčinu...');
+          appLogger.d('🔄 Skúšam načítať lectio source pre slovenčinu...');
           lectioSource = await supabase
               .from('lectio_sources')
               .select()
@@ -709,7 +915,7 @@ class _LectioScreenState extends State<LectioScreen> {
 
           // Pre sviatky v slovenčine: aj tu skús 'N'
           if (lectioSource == null && isSpecialDay && rokToSearch != 'N') {
-            debugPrint('🔄 Skúšam slovenčinu s rokom N...');
+            appLogger.d('🔄 Skúšam slovenčinu s rokom N...');
             lectioSource = await supabase
                 .from('lectio_sources')
                 .select()
@@ -720,7 +926,7 @@ class _LectioScreenState extends State<LectioScreen> {
           }
 
           if (lectioSource != null) {
-            debugPrint(
+            appLogger.i(
               '✅ Lectio source nájdený v slovenčine: ${lectioSource['hlava']}',
             );
           }
@@ -728,11 +934,27 @@ class _LectioScreenState extends State<LectioScreen> {
       }
 
       if (lectioSource != null) {
-        debugPrint(
+        appLogger.i(
           '✅ Lectio source nájdený: ${lectioSource['hlava']}, rok: ${lectioSource['rok']}',
         );
+        // Ulož do cache pre offline použitie
+        final cachedData = CachedLectioData(
+          date: today,
+          locale: lang,
+          celebrationTitle: calendarResponse['celebration_title'],
+          lectioHlava: lectioSource['hlava'],
+          actioText: lectioSource['actio_text'],
+          lectioText: lectioSource['lectio_text'],
+          meditatioText: lectioSource['meditatio_text'],
+          oratioText: lectioSource['oratio_text'],
+          contemplatioText: lectioSource['contemplatio_text'],
+          reference: lectioSource['reference'],
+          audioUrl: lectioSource['audio_url'],
+          cachedAt: DateTime.now(),
+        );
+        await LectioCacheService.instance.cacheLectio(cachedData);
       } else {
-        debugPrint('❌ Lectio source neexistuje pre žiadny jazyk');
+        appLogger.e('❌ Lectio source neexistuje pre žiadny jazyk');
       }
 
       if (mounted) {
@@ -743,7 +965,21 @@ class _LectioScreenState extends State<LectioScreen> {
         _invalidateTracksCache();
       }
     } catch (e) {
-      debugPrint('❌ Chyba pri načítavaní Lectio dát: $e');
+      appLogger.e('❌ Chyba pri načítavaní Lectio dát: $e');
+      // Pri chybe skús načítať z cache
+      final cachedData = await LectioCacheService.instance.getCachedLectio(
+        today,
+        lang,
+      );
+      if (cachedData != null && mounted) {
+        appLogger.i('📦 Fallback na cache po chybe');
+        setState(() {
+          lectioData = cachedData.rawData;
+          isLoading = false;
+        });
+        _invalidateTracksCache();
+        return;
+      }
       if (mounted) {
         setState(() {
           lectioData = null;
@@ -815,11 +1051,11 @@ class _LectioScreenState extends State<LectioScreen> {
     bool skipAnimation = false,
   }) async {
     try {
-      debugPrint('▶️ Prehrávam: $sectionKey');
+      appLogger.d('▶️ Prehrávam: $sectionKey');
 
       // Don't play if user closed the player
       if (_audioPlayerClosed) {
-        debugPrint('🛑 Player was closed by user - skipping playback');
+        appLogger.d('🛑 Player was closed by user - skipping playback');
         return;
       }
 
@@ -830,7 +1066,9 @@ class _LectioScreenState extends State<LectioScreen> {
 
       // Zastaviť aktuálne audio ak beží (oba playery)
       if (_currentAudioSection != null && _currentAudioSection != sectionKey) {
-        debugPrint('🛑 Zastavujem predchádzajúce audio: $_currentAudioSection');
+        appLogger.d(
+          '🛑 Zastavujem predchádzajúce audio: $_currentAudioSection',
+        );
         if (_backgroundAudioManager.isInitialized) {
           await _backgroundAudioManager.stop();
         }
@@ -838,7 +1076,7 @@ class _LectioScreenState extends State<LectioScreen> {
       }
 
       if (mounted) {
-        debugPrint('🎵 Nastavujem state pre $sectionKey PRED setUrl');
+        appLogger.d('🎵 Nastavujem state pre $sectionKey PRED setUrl');
         setState(() {
           _playbackState = LectioPlaybackState.loading;
           _currentAudioSection = sectionKey;
@@ -851,22 +1089,22 @@ class _LectioScreenState extends State<LectioScreen> {
           // Vždy otvor prehrávač pri novom tracku
           _showAudioPlayer = true;
         });
-        debugPrint(
+        appLogger.d(
           '🎵 State nastavený: _currentAudioSection=$_currentAudioSection',
         );
       }
 
       // 🎯 NOVÁ LOGIKA: Animovať HNEĎ pri spustení normálnej nahrávky (nie interlude)
       if (mounted && sectionKey != 'interlude' && !skipAnimation) {
-        debugPrint('🎵 🚀 Animujem HNEĎ pri spustení nahrávky: $sectionKey');
+        appLogger.d('🎵 🚀 Animujem HNEĎ pri spustení nahrávky: $sectionKey');
         await Future.delayed(const Duration(milliseconds: 50));
 
         final tracks = _getAvailableAudioTracks();
         final trackIndex = tracks.indexWhere((t) => t['key'] == sectionKey);
-        debugPrint('🎵 Posúvam na track index: $trackIndex pre $sectionKey');
+        appLogger.d('🎵 Posúvam na track index: $trackIndex pre $sectionKey');
 
         if (trackIndex >= 0 && _playlistPageController.hasClients) {
-          debugPrint(
+          appLogger.d(
             '🎵 🎯 ANIMUJEM na stránku $trackIndex PRED načítaním audio',
           );
           await _playlistPageController.animateToPage(
@@ -874,12 +1112,12 @@ class _LectioScreenState extends State<LectioScreen> {
             duration: const Duration(milliseconds: 400),
             curve: Curves.easeInOut,
           );
-          debugPrint('🎵 ✅ Animácia dokončená na stránku $trackIndex');
+          appLogger.d('🎵 ✅ Animácia dokončená na stránku $trackIndex');
 
           // Krátka stabilizácia
           await Future.delayed(const Duration(milliseconds: 100));
         } else {
-          debugPrint(
+          appLogger.d(
             '🎵 ❌ Nemôžem animovať: trackIndex=$trackIndex, hasClients=${_playlistPageController.hasClients}',
           );
         }
@@ -890,7 +1128,7 @@ class _LectioScreenState extends State<LectioScreen> {
         // Zastaviť aj regular audio player pre istotu
         await _audioPlayer.stop();
         await _playBackgroundAudio(url, sectionKey);
-        debugPrint('🎵 Background audio started successfully');
+        appLogger.d('🎵 Background audio started successfully');
       } else {
         // Zastaviť background audio ak beží
         if (_backgroundAudioManager.isInitialized) {
@@ -909,15 +1147,15 @@ class _LectioScreenState extends State<LectioScreen> {
           ),
         );
         await _audioPlayer.play();
-        debugPrint('🎵 Regular audio player started successfully');
+        appLogger.d('🎵 Regular audio player started successfully');
       }
 
       // State updates will come through listeners
       if (!mounted) {
-        debugPrint('🎵 ❌ Widget not mounted after audio start!');
+        appLogger.w('🎵 ❌ Widget not mounted after audio start!');
       }
     } catch (e) {
-      debugPrint('❌ Chyba pri prehrávaní: $e');
+      appLogger.e('❌ Chyba pri prehrávaní: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -930,49 +1168,49 @@ class _LectioScreenState extends State<LectioScreen> {
   }
 
   Future<void> _pauseAudio() async {
-    debugPrint('⏸️ Pausing audio');
+    appLogger.d('⏸️ Pausing audio');
     try {
       if (_backgroundAudioManager.isInitialized) {
         await _backgroundAudioManager.pause();
       } else {
         await _audioPlayer.pause();
       }
-      debugPrint('✅ Pause complete');
+      appLogger.d('✅ Pause complete');
     } catch (e) {
-      debugPrint('❌ Error pausing: $e');
+      appLogger.e('❌ Error pausing: $e');
     }
   }
 
   Future<void> _resumeAudio() async {
-    debugPrint('▶️ Resuming audio');
+    appLogger.d('▶️ Resuming audio');
     try {
       if (_backgroundAudioManager.isInitialized) {
         await _backgroundAudioManager.resume();
       } else {
         await _audioPlayer.play();
       }
-      debugPrint('✅ Resume complete');
+      appLogger.d('✅ Resume complete');
     } catch (e) {
-      debugPrint('❌ Error resuming: $e');
+      appLogger.e('❌ Error resuming: $e');
     }
   }
 
   Future<void> _seekAudio(Duration position) async {
-    debugPrint('🎚️ Seeking to ${position.inSeconds}s');
+    appLogger.d('🎚️ Seeking to ${position.inSeconds}s');
     try {
       if (_backgroundAudioManager.isInitialized) {
         await _backgroundAudioManager.seek(position);
       } else {
         await _audioPlayer.seek(position);
       }
-      debugPrint('✅ Seek complete');
+      appLogger.d('✅ Seek complete');
     } catch (e) {
-      debugPrint('❌ Error seeking: $e');
+      appLogger.e('❌ Error seeking: $e');
     }
   }
 
   Future<void> _stopAudio() async {
-    debugPrint('🛑 Zastavujem audio, _audioPlayerClosed=$_audioPlayerClosed');
+    appLogger.d('🛑 Zastavujem audio, _audioPlayerClosed=$_audioPlayerClosed');
 
     // Stop both audio players
     if (_backgroundAudioManager.isInitialized) {
@@ -996,42 +1234,42 @@ class _LectioScreenState extends State<LectioScreen> {
   }
 
   Future<void> _playNextTrack() async {
-    debugPrint('🎵 === _playNextTrack START ===');
-    debugPrint('🎵 _currentAudioSection: $_currentAudioSection');
-    debugPrint('🎵 _audioPlayerClosed: $_audioPlayerClosed');
+    appLogger.d('🎵 === _playNextTrack START ===');
+    appLogger.d('🎵 _currentAudioSection: $_currentAudioSection');
+    appLogger.d('🎵 _audioPlayerClosed: $_audioPlayerClosed');
 
     if (_currentAudioSection == null || _currentAudioSection == 'interlude') {
-      debugPrint('🛑 Skipping _playNextTrack - invalid section');
+      appLogger.d('🛑 Skipping _playNextTrack - invalid section');
       return;
     }
 
     final tracks = _getAvailableAudioTracks();
-    debugPrint('🎵 Total tracks available: ${tracks.length}');
+    appLogger.d('🎵 Total tracks available: ${tracks.length}');
 
     final currentIndex = tracks.indexWhere(
       (t) => t['key'] == _currentAudioSection,
     );
-    debugPrint('🎵 Current track index: $currentIndex');
+    appLogger.d('🎵 Current track index: $currentIndex');
 
     if (currentIndex == -1) {
-      debugPrint('⚠️ Track not found in list');
+      appLogger.w('⚠️ Track not found in list');
       return;
     }
 
     // Is there a next track?
     final hasNext = currentIndex < tracks.length - 1;
-    debugPrint('🎵 Has next track: $hasNext');
+    appLogger.d('🎵 Has next track: $hasNext');
 
     if (!hasNext) {
       // Last track - wait before final meditation
-      debugPrint('🎵 ⏳ Last track - waiting 500ms before final meditation');
+      appLogger.d('🎵 ⏳ Last track - waiting 500ms before final meditation');
       await Future.delayed(const Duration(milliseconds: 500));
 
       if (_audioMode != 'none') {
-        debugPrint('🎵 Starting final meditation music (no next track)');
+        appLogger.d('🎵 Starting final meditation music (no next track)');
         _playMeditationMusic(null); // No next track
       } else {
-        debugPrint('🛑 Audio mode is none - stopping playback');
+        appLogger.d('🛑 Audio mode is none - stopping playback');
         _stopAudio();
       }
       return;
@@ -1039,21 +1277,21 @@ class _LectioScreenState extends State<LectioScreen> {
 
     // We have next track - wait before interlude
     final nextTrack = tracks[currentIndex + 1];
-    debugPrint('🎵 Next track: ${nextTrack['key']} - ${nextTrack['label']}');
-    debugPrint('🎵 ⏳ Waiting 500ms before interlude');
+    appLogger.d('🎵 Next track: ${nextTrack['key']} - ${nextTrack['label']}');
+    appLogger.d('🎵 ⏳ Waiting 500ms before interlude');
     await Future.delayed(const Duration(milliseconds: 500));
 
     if (_audioMode != 'none') {
       // Play meditation → then nextTrack
-      debugPrint('🎵 Starting interlude music before next track');
+      appLogger.d('🎵 Starting interlude music before next track');
       _playMeditationMusic(nextTrack);
     } else {
       // Play nextTrack directly - WITHOUT animation (automatic transition)
-      debugPrint('🎵 Playing next track directly (no interlude)');
+      appLogger.d('🎵 Playing next track directly (no interlude)');
       _playAudio(nextTrack['url'], nextTrack['key'], skipAnimation: true);
     }
 
-    debugPrint('🎵 === _playNextTrack END ===');
+    appLogger.d('🎵 === _playNextTrack END ===');
   }
 
   Future<void> _playMeditationMusic(Map<String, dynamic>? nextTrack) async {
@@ -1077,7 +1315,7 @@ class _LectioScreenState extends State<LectioScreen> {
           ? AudioTimingConstants.longInterludeDelay
           : AudioTimingConstants.shortInterludeDelay;
 
-      debugPrint(
+      appLogger.d(
         '🎵 ⏳ Čakám ${delay}ms pred spustením ${useLongInterlude ? "DLHÉHO" : "KRÁTKEHO"} interlude',
       );
       await Future.delayed(Duration(milliseconds: delay));
@@ -1089,7 +1327,7 @@ class _LectioScreenState extends State<LectioScreen> {
           _currentAudioSection = 'interlude';
           _isPlaying = true;
         });
-        debugPrint(
+        appLogger.d(
           '🎵 🎸 Interlude state nastavený PRED spustením (${useLongInterlude ? "DLHÉ" : "KRÁTKE"})',
         );
       }
@@ -1111,9 +1349,9 @@ class _LectioScreenState extends State<LectioScreen> {
       );
       await _audioPlayer.play();
 
-      debugPrint('🎵 ✅ Interlude audio spustené');
+      appLogger.d('🎵 ✅ Interlude audio spustené');
     } catch (e) {
-      debugPrint('❌ Meditácia zlyhala: $e');
+      appLogger.e('❌ Meditácia zlyhala: $e');
       _nextTrackAfterInterlude = null;
       if (nextTrack != null) {
         _playAudio(nextTrack['url'], nextTrack['key'], skipAnimation: true);
@@ -1137,7 +1375,7 @@ class _LectioScreenState extends State<LectioScreen> {
       }
       // Nájdi posledne hraný track pred interlude
       // Keďže nevieme presne ktorý to bol, vrátime sa na začiatok playlistu
-      debugPrint('🎵 Interlude stopped, returning to first track');
+      appLogger.d('🎵 Interlude stopped, returning to first track');
       if (tracks.isNotEmpty) {
         await _playAudio(tracks[0]['url'], tracks[0]['key']);
       }
@@ -1158,7 +1396,7 @@ class _LectioScreenState extends State<LectioScreen> {
 
     // Ak sme na začiatku alebo pozícia > 3 sekundy, seekni na začiatok
     if (currentIndex <= 0 || _currentPosition.inSeconds > 3) {
-      debugPrint('🎵 Seeking to beginning of current track');
+      appLogger.d('🎵 Seeking to beginning of current track');
       await _seekAudio(Duration.zero);
       setState(() {
         _currentPosition = Duration.zero;
@@ -1168,7 +1406,7 @@ class _LectioScreenState extends State<LectioScreen> {
 
     // Inak prehraj predchádzajúcu stopu
     final previousTrack = tracks[currentIndex - 1];
-    debugPrint('🎵 Playing previous track: ${previousTrack['key']}');
+    appLogger.d('🎵 Playing previous track: ${previousTrack['key']}');
     await _playAudio(previousTrack['url'], previousTrack['key']);
   }
 
@@ -1583,6 +1821,29 @@ class _LectioScreenState extends State<LectioScreen> {
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     actions: [
+                      // Download button pre offline mód (zobrazí sa len keď sme online)
+                      if (!_isOffline)
+                        IconButton(
+                          icon: _isDownloading
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                    value: _totalDaysToDownload > 0
+                                        ? _downloadedDays / _totalDaysToDownload
+                                        : null,
+                                  ),
+                                )
+                              : const Icon(Icons.download_rounded),
+                          tooltip: tr('offline.download_days', args: ['7']),
+                          onPressed: _isDownloading
+                              ? null
+                              : _showDownloadDialog,
+                        ),
                       // DND Status Indicator
                       StreamBuilder<bool>(
                         stream: DoNotDisturbService().dndStateStream,
@@ -2137,7 +2398,7 @@ class _LectioScreenState extends State<LectioScreen> {
                         constraints: const BoxConstraints(),
                         tooltip: 'Zatvoriť a zastaviť',
                         onPressed: () async {
-                          debugPrint('🔒 Zatváram prehrávač');
+                          appLogger.d('🔒 Zatváram prehrávač');
                           _audioPlayerClosed = true;
                           await _fallbackPlayerSubscription?.cancel();
                           _fallbackPlayerSubscription = null;
@@ -2284,44 +2545,44 @@ class _LectioScreenState extends State<LectioScreen> {
                           ),
                           color: Colors.white,
                           onPressed: () {
-                            debugPrint('🎮 HLAVNÉ PLAY tlačidlo stlačené');
-                            debugPrint('🎮 _isPlaying: $_isPlaying');
-                            debugPrint(
+                            appLogger.d('🎮 HLAVNÉ PLAY tlačidlo stlačené');
+                            appLogger.d('🎮 _isPlaying: $_isPlaying');
+                            appLogger.d(
                               '🎮 _currentAudioSection: $_currentAudioSection',
                             );
-                            debugPrint(
+                            appLogger.d(
                               '🎮 _showAudioPlayer: $_showAudioPlayer',
                             );
 
                             if (_isPlaying) {
-                              debugPrint('🎮 -> Pozastavujem audio');
+                              appLogger.d('🎮 -> Pozastavujem audio');
                               _pauseAudio();
                             } else if (_currentAudioSection != null) {
-                              debugPrint('🎮 -> Obnovujem pozastavené audio');
+                              appLogger.d('🎮 -> Obnovujem pozastavené audio');
                               _resumeAudio();
                             } else {
-                              debugPrint('🎮 -> Spúšťam prvú nahrávku');
+                              appLogger.d('🎮 -> Spúšťam prvú nahrávku');
                               // Reset closed flag - user wants to play again
                               _audioPlayerClosed = false;
                               final tracks = _getAvailableAudioTracks();
-                              debugPrint(
+                              appLogger.d(
                                 '🎮 -> Počet dostupných tracks: ${tracks.length}',
                               );
                               final firstTrack = tracks.isNotEmpty
                                   ? tracks[0]
                                   : null;
                               if (firstTrack != null) {
-                                debugPrint(
-                                  '� -> Prvý track: ${firstTrack['key']} - ${firstTrack['label']}',
+                                appLogger.d(
+                                  '🎮 -> Prvý track: ${firstTrack['key']} - ${firstTrack['label']}',
                                 );
-                                debugPrint('🎮 -> URL: ${firstTrack['url']}');
+                                appLogger.d('🎮 -> URL: ${firstTrack['url']}');
                                 _playAudio(
                                   firstTrack['url'],
                                   firstTrack['key'],
                                   // Manuálne spustenie = animovať hneď
                                 );
                               } else {
-                                debugPrint(
+                                appLogger.e(
                                   '🎮 -> CHYBA: Žiaden track k dispozícii!',
                                 );
                               }
@@ -2344,7 +2605,7 @@ class _LectioScreenState extends State<LectioScreen> {
                                 currentTrackIndex < tracks.length - 1
                             ? () async {
                                 // Manuálne preskočenie - zastaviť aktuálne audio a prehrať ďalšie
-                                debugPrint('🎮 Skip Next button pressed');
+                                appLogger.d('🎮 Skip Next button pressed');
                                 final nextIndex = currentTrackIndex + 1;
                                 if (nextIndex < tracks.length) {
                                   final nextTrack = tracks[nextIndex];
@@ -2408,7 +2669,7 @@ class _LectioScreenState extends State<LectioScreen> {
                                     _setPlaybackState(
                                       LectioPlaybackState.seeking,
                                     );
-                                    debugPrint('🎚️ Seek started');
+                                    appLogger.d('🎚️ Seek started');
                                   }
                                 : null,
                             onChangeEnd: _currentAudioSection != null
@@ -2416,7 +2677,7 @@ class _LectioScreenState extends State<LectioScreen> {
                                     final position = Duration(
                                       milliseconds: value.toInt(),
                                     );
-                                    debugPrint(
+                                    appLogger.d(
                                       '🎚️ Seek ended at ${position.inSeconds}s',
                                     );
                                     // Seekni na playeri
@@ -2430,7 +2691,7 @@ class _LectioScreenState extends State<LectioScreen> {
                                           ? LectioPlaybackState.playing
                                           : LectioPlaybackState.paused,
                                     );
-                                    debugPrint('🎚️ Seek flag reset');
+                                    appLogger.d('🎚️ Seek flag reset');
                                   }
                                 : null,
                             onChanged: _currentAudioSection != null

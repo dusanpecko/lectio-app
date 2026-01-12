@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 import '../shared/app_colors.dart';
+import '../utils/app_logger.dart';
 
 class SpeedDialFAB extends StatefulWidget {
   final VoidCallback onPrimaryAction;
@@ -64,12 +65,12 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
   }
 
   void _handleSecondaryAction(String action) {
-    debugPrint('🎯 Secondary action triggered: $action');
+    appLogger.d('🎯 Secondary action triggered: $action');
     _close();
 
     // Malé oneskorenie pre smooth animáciu
     Future.delayed(const Duration(milliseconds: 200), () {
-      debugPrint('🚀 Executing action: $action');
+      appLogger.i('🚀 Executing action: $action');
       widget.onSecondaryAction(action);
     });
   }
@@ -97,6 +98,12 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
           'label': tr('notes_title'),
           'color': AppColors.primary,
         },
+      {
+        'key': 'notifications',
+        'icon': Icons.notifications_outlined,
+        'label': tr('notifications.title'),
+        'color': Colors.amber,
+      },
       {
         'key': 'feedback',
         'icon': Icons.feedback_outlined,

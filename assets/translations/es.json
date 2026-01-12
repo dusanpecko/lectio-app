@@ -1,5 +1,27 @@
 {
   "app_title": "Lectio Divina",
+  "offline": {
+    "no_connection": "Estás sin conexión",
+    "reconnected": "Conexión restablecida",
+    "cached_data": "Usando datos guardados",
+    "title": "Sin conexión",
+    "message": "Conéctate a internet para cargar nuevos datos.",
+    "retry": "Reintentar",
+    "no_data_title": "Datos no disponibles",
+    "no_data_message": "No hay datos descargados para hoy. Por favor, conéctate a internet.",
+    "connect": "Conectar",
+    "download_title": "Descargar datos sin conexión",
+    "download_7_days": "Descargar para 7 días",
+    "download_progress": "Descargando datos...",
+    "download_success": "Datos descargados correctamente",
+    "download_error": "Error de descarga",
+    "last_sync": "Última sincronización: {date}",
+    "data_available": "Datos disponibles hasta: {date}",
+    "download_for_offline": "Descargar para sin conexión",
+    "download_description": "Descarga Lectio Divina para los próximos 7 días para usar sin internet.",
+    "download_days": "Descargar {0} días",
+    "download_complete": "Descargados {0} días"
+  },
   "login": "Iniciar sesión",
   "register": "Registrarse",
   "logout": "Cerrar sesión",
@@ -572,7 +594,10 @@
     "section": {
       "subscriptions": "Mis suscripciones",
       "donations": "Mis donaciones",
-      "exercise_registrations": "Mis inscripciones a ejercicios"
+      "exercise_registrations": "Mis inscripciones a ejercicios",
+      "bank_payments": "Pagos bancarios",
+      "billing_info": "Información de facturación",
+      "payment_history": "Historial de pagos"
     },
     "subscription": {
       "tier": "Nivel {}",
@@ -581,6 +606,16 @@
       "yearly": "año",
       "next_payment": "Próximo pago",
       "cancels_on": "Finaliza el"
+    },
+    "payment": {
+      "monthly": "mensual",
+      "yearly": "anual",
+      "one_time": "único",
+      "type": {
+        "subscription": "Suscripción",
+        "donation": "Donación",
+        "bank": "Transferencia bancaria"
+      }
     },
     "registration": {
       "paid": "Pagado",
@@ -599,6 +634,17 @@
       "confirm_button": "Eliminar cuenta",
       "success": "Cuenta eliminada correctamente",
       "error": "Error al eliminar la cuenta: {}"
+    },
+    "billing": {
+      "shipping_address": "Dirección de envío",
+      "billing_address": "Dirección de facturación",
+      "company_name": "Nombre de la empresa",
+      "ico": "ID de la empresa",
+      "dic": "ID fiscal",
+      "iban": "IBAN"
+    },
+    "bank_payment": {
+      "unknown_type": "Transferencia bancaria"
     }
   },
   "support2": {
@@ -826,5 +872,17 @@
     "sending": "Enviando...",
     "success": "¡Gracias por tu comentario!",
     "error": "Error al enviar: {}"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "empty": "Sin notificaciones",
+    "empty_hint": "Cuando recibas nuevas notificaciones, aparecerán aquí.",
+    "load_error": "No se pudieron cargar las notificaciones.",
+    "yesterday": "Ayer"
+  },
+  "common": {
+    "refresh": "Actualizar",
+    "try_again": "Intentar de nuevo",
+    "close": "Cerrar"
   }
 }

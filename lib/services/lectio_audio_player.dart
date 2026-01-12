@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 
 import '../shared/audio_constants.dart';
+import '../utils/app_logger.dart';
 
 /// Simple, clean audio player for Lectio Divina
 /// Uses setAudioSources() with MediaItem tags for proper iOS lock screen controls
@@ -53,15 +54,15 @@ class LectioAudioPlayer extends ChangeNotifier {
       // Configure audio session - use predefined music() configuration like official example
       final session = await AudioSession.instance;
       await session.configure(const AudioSessionConfiguration.music());
-      debugPrint('🎵 AudioSession configured for music playback');
+      appLogger.d('🎵 AudioSession configured for music playback');
 
       // Setup player listeners
       _setupListeners();
 
       _isInitialized = true;
-      debugPrint('🎵 LectioAudioPlayer initialized');
+      appLogger.d('🎵 LectioAudioPlayer initialized');
     } catch (e) {
-      debugPrint('❌ Error initializing LectioAudioPlayer: $e');
+      appLogger.e('❌ Error initializing LectioAudioPlayer: $e');
       rethrow;
     }
   }
@@ -78,31 +79,30 @@ class LectioAudioPlayer extends ChangeNotifier {
     });
 
     // Track index changes (for lock screen next/prev AND auto-progression)
-    int? _lastCompletedIndex;
+    int? lastCompletedIndex;
     _player.currentIndexStream.listen((index) {
       if (index == null) return;
 
-      debugPrint(
-        '🎵 currentIndexStream: index=$index, _currentTrackIndex=$_currentTrackIndex, _lastCompletedIndex=$_lastCompletedIndex',
+      appLogger.d(
+        '🎵 currentIndexStream: index=$index, _currentTrackIndex=$_currentTrackIndex, lastCompletedIndex=$lastCompletedIndex',
       );
 
       // Detect automatic track progression (not manual skip)
       if (index != _currentTrackIndex && !_isPlayingInterlude) {
         // Check if this is auto-progression (previous track completed)
-        if (_lastCompletedIndex != null &&
-            index == (_lastCompletedIndex! + 1)) {
-          debugPrint(
-            '🎵 🎯 AUTO-PROGRESSION detected: $_lastCompletedIndex -> $index',
+        if (lastCompletedIndex != null && index == (lastCompletedIndex! + 1)) {
+          appLogger.d(
+            '🎵 🎯 AUTO-PROGRESSION detected: $lastCompletedIndex -> $index',
           );
           // Previous track completed, trigger interlude logic
-          final previousIndex = _lastCompletedIndex!;
-          _lastCompletedIndex = index;
+          final previousIndex = lastCompletedIndex!;
+          lastCompletedIndex = index;
 
           // Update current index BEFORE triggering completion
           _currentTrackIndex = index;
 
           // Trigger track completion for the PREVIOUS track
-          debugPrint('🎵 Triggering completion for track $previousIndex');
+          appLogger.d('🎵 Triggering completion for track $previousIndex');
           _handleTrackCompleted();
 
           // Notify UI of new track (will be called again after interlude)
@@ -111,29 +111,29 @@ class LectioAudioPlayer extends ChangeNotifier {
           }
         } else {
           // Manual skip or first track
-          debugPrint('🎵 Manual skip or first track: $index');
-          _lastCompletedIndex = index;
+          appLogger.d('🎵 Manual skip or first track: $index');
+          lastCompletedIndex = index;
           _currentTrackIndex = index;
           if (index >= 0 && index < _playlist.length) {
             onTrackChanged?.call(_playlist[index]['key'], index);
           }
         }
         notifyListeners();
-      } else if (index == _currentTrackIndex && _lastCompletedIndex == null) {
+      } else if (index == _currentTrackIndex && lastCompletedIndex == null) {
         // First track started
-        _lastCompletedIndex = index;
+        lastCompletedIndex = index;
       }
     });
 
     // Player state changes (for final playlist completion)
     _player.playerStateStream.listen((state) {
-      debugPrint(
+      appLogger.d(
         '🎵 Player state: playing=${state.playing}, processingState=${state.processingState}',
       );
 
       // Only handle final playlist completion
       if (state.processingState == ProcessingState.completed) {
-        debugPrint('🎵 🏁 FINAL playlist completion detected');
+        appLogger.d('🎵 🏁 FINAL playlist completion detected');
         _handleTrackCompleted();
       }
 
@@ -144,7 +144,7 @@ class LectioAudioPlayer extends ChangeNotifier {
     _player.playbackEventStream.listen(
       (event) {},
       onError: (Object e, StackTrace st) {
-        debugPrint('❌ Playback error: $e');
+        appLogger.e('❌ Playback error: $e');
       },
     );
   }
@@ -157,7 +157,7 @@ class LectioAudioPlayer extends ChangeNotifier {
     _playlist = List.from(tracks);
     _audioMode = mode;
     _isStopped = false; // Reset stopped flag for new playlist
-    debugPrint('🎵 Setting playlist: ${tracks.length} tracks, mode: $mode');
+    appLogger.d('🎵 Setting playlist: ${tracks.length} tracks, mode: $mode');
 
     // Build list of AudioSources with MediaItem tags (like in official example)
     final sources = <AudioSource>[];
@@ -185,9 +185,9 @@ class LectioAudioPlayer extends ChangeNotifier {
     // This automatically creates ConcatenatingAudioSource and enables lock screen controls
     try {
       await _player.setAudioSources(sources, preload: true);
-      debugPrint('🎵 ✅ Audio sources set with ${sources.length} tracks');
+      appLogger.d('🎵 ✅ Audio sources set with ${sources.length} tracks');
     } catch (e) {
-      debugPrint('❌ Error setting audio sources: $e');
+      appLogger.e('❌ Error setting audio sources: $e');
     }
   }
 
@@ -201,7 +201,7 @@ class LectioAudioPlayer extends ChangeNotifier {
   Future<void> playTrack(String key) async {
     final index = _playlist.indexWhere((t) => t['key'] == key);
     if (index < 0) {
-      debugPrint('❌ Track not found: $key');
+      appLogger.e('❌ Track not found: $key');
       return;
     }
     await playTrackByIndex(index);
@@ -210,7 +210,7 @@ class LectioAudioPlayer extends ChangeNotifier {
   /// Play track by index
   Future<void> playTrackByIndex(int index) async {
     if (index < 0 || index >= _playlist.length) {
-      debugPrint('❌ Invalid track index: $index');
+      appLogger.e('❌ Invalid track index: $index');
       return;
     }
 
@@ -220,7 +220,7 @@ class LectioAudioPlayer extends ChangeNotifier {
     final title = track['label'] as String? ?? 'Audio';
     final key = track['key'] as String? ?? 'track_$index';
 
-    debugPrint('🎵 Playing track $index: $title');
+    appLogger.d('🎵 Playing track $index: $title');
 
     try {
       // Use seek() to navigate to track in concatenated playlist (like official example)
@@ -228,12 +228,12 @@ class LectioAudioPlayer extends ChangeNotifier {
       if (!_player.playing) {
         await _player.play();
       }
-      debugPrint('🎵 ✅ Seeked to track $index and started playback');
+      appLogger.d('🎵 ✅ Seeked to track $index and started playback');
 
       onTrackChanged?.call(key, index);
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Error playing track: $e');
+      appLogger.e('❌ Error playing track: $e');
     }
   }
 
@@ -246,7 +246,7 @@ class LectioAudioPlayer extends ChangeNotifier {
     final url = AudioConstants.getInterludeUrl(isLong: isLong);
     final title = isLong ? 'Meditačná hudba (dlhá)' : 'Meditačná hudba';
 
-    debugPrint('🎵 Playing ${isLong ? "long" : "short"} interlude');
+    appLogger.d('🎵 Playing ${isLong ? "long" : "short"} interlude');
 
     try {
       // CRITICAL: Keep audio session active during interlude
@@ -274,7 +274,7 @@ class LectioAudioPlayer extends ChangeNotifier {
       onTrackChanged?.call('interlude', -1);
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Error playing interlude: $e');
+      appLogger.e('❌ Error playing interlude: $e');
       // Skip to next track if interlude fails
       if (nextTrack != null) {
         await playTrack(nextTrack['key']);
@@ -292,18 +292,18 @@ class LectioAudioPlayer extends ChangeNotifier {
   /// Handle track completion - async implementation
   Future<void> _onTrackCompletedAsync() async {
     try {
-      debugPrint('🎵 ═══════════════════════════════════════════════');
-      debugPrint('🎵 _onTrackCompletedAsync CALLED');
-      debugPrint('🎵 currentIndex=$_currentTrackIndex');
-      debugPrint('🎵 isInterlude=$_isPlayingInterlude');
-      debugPrint('🎵 audioMode=$_audioMode');
-      debugPrint('🎵 playlist length=${_playlist.length}');
-      debugPrint('🎵 isStopped=$_isStopped');
-      debugPrint('🎵 ═══════════════════════════════════════════════');
+      appLogger.d('🎵 ═══════════════════════════════════════════════');
+      appLogger.d('🎵 _onTrackCompletedAsync CALLED');
+      appLogger.d('🎵 currentIndex=$_currentTrackIndex');
+      appLogger.d('🎵 isInterlude=$_isPlayingInterlude');
+      appLogger.d('🎵 audioMode=$_audioMode');
+      appLogger.d('🎵 playlist length=${_playlist.length}');
+      appLogger.d('🎵 isStopped=$_isStopped');
+      appLogger.d('🎵 ═══════════════════════════════════════════════');
 
       // Don't continue if user stopped playback
       if (_isStopped) {
-        debugPrint('🛑 Playback was stopped - skipping auto-progression');
+        appLogger.d('🛑 Playback was stopped - skipping auto-progression');
         return;
       }
 
@@ -316,13 +316,13 @@ class LectioAudioPlayer extends ChangeNotifier {
         if (_nextTrackAfterInterlude != null) {
           final next = _nextTrackAfterInterlude!;
           _nextTrackAfterInterlude = null;
-          debugPrint(
+          appLogger.d(
             '🎵 Interlude completed, playing next track: ${next['key']}',
           );
           // Need to restore playlist and play next track
           await _restorePlaylistAndPlayTrack(next);
         } else {
-          debugPrint('🎵 Interlude completed, playlist finished');
+          appLogger.d('🎵 Interlude completed, playlist finished');
           // Playlist completed
           onPlaylistCompleted?.call();
         }
@@ -330,35 +330,37 @@ class LectioAudioPlayer extends ChangeNotifier {
       }
 
       // Normal track finished - play interlude then next (if audio mode != none)
-      debugPrint('🎵 Checking if should play interlude: audioMode=$_audioMode');
+      appLogger.d(
+        '🎵 Checking if should play interlude: audioMode=$_audioMode',
+      );
       if (_audioMode != 'none' && _currentTrackIndex >= 0) {
         final hasNext = _currentTrackIndex < _playlist.length - 1;
         final nextTrack = hasNext ? _playlist[_currentTrackIndex + 1] : null;
-        debugPrint(
+        appLogger.d(
           '🎵 ✅ Will play interlude. hasNext=$hasNext, nextTrack=${nextTrack?['key']}',
         );
 
         // CRITICAL: Pause player before interlude to prevent auto-progression
         await _player.pause();
-        debugPrint('🎵 ⏸️ Player paused before interlude');
+        appLogger.d('🎵 ⏸️ Player paused before interlude');
 
         await _playInterlude(nextTrack);
       } else {
-        debugPrint(
+        appLogger.d(
           '🎵 ❌ Skipping interlude: audioMode=$_audioMode, currentIndex=$_currentTrackIndex',
         );
         // No interlude mode - check if we need to advance
         if (_currentTrackIndex >= _playlist.length - 1) {
-          debugPrint('🎵 Playlist completed (no interlude mode)');
+          appLogger.d('🎵 Playlist completed (no interlude mode)');
           onPlaylistCompleted?.call();
         } else {
           // Auto-advance to next track
-          debugPrint('🎵 Auto-advancing to next track (no interlude mode)');
+          appLogger.d('🎵 Auto-advancing to next track (no interlude mode)');
           await playTrackByIndex(_currentTrackIndex + 1);
         }
       }
     } catch (e) {
-      debugPrint('❌ Error in _onTrackCompletedAsync: $e');
+      appLogger.e('❌ Error in _onTrackCompletedAsync: $e');
     }
   }
 
@@ -369,7 +371,7 @@ class LectioAudioPlayer extends ChangeNotifier {
     // Find track index
     final index = _playlist.indexWhere((t) => t['key'] == track['key']);
     if (index >= 0) {
-      debugPrint('🎵 Resuming playlist at track $index after interlude');
+      appLogger.d('🎵 Resuming playlist at track $index after interlude');
       // Just seek to the track - playlist is already set
       await _player.seek(Duration.zero, index: index);
       await _player.play();
@@ -377,7 +379,7 @@ class LectioAudioPlayer extends ChangeNotifier {
       onTrackChanged?.call(track['key'], index);
       notifyListeners();
     } else {
-      debugPrint('❌ Track not found in playlist: ${track['key']}');
+      appLogger.e('❌ Track not found in playlist: ${track['key']}');
     }
   }
 
@@ -412,7 +414,7 @@ class LectioAudioPlayer extends ChangeNotifier {
 
   /// Skip to next track
   Future<void> skipNext() async {
-    debugPrint(
+    appLogger.d(
       '🎵 skipNext called, isInterlude=$_isPlayingInterlude, currentIndex=$_currentTrackIndex',
     );
 
@@ -437,7 +439,7 @@ class LectioAudioPlayer extends ChangeNotifier {
 
   /// Skip to previous track
   Future<void> skipPrevious() async {
-    debugPrint(
+    appLogger.d(
       '🎵 skipPrevious called, isInterlude=$_isPlayingInterlude, currentIndex=$_currentTrackIndex',
     );
 

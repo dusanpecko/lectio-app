@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -22,10 +23,12 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'firebase_options.dart';
 import 'providers/theme_provider.dart';
+import 'services/connectivity_service.dart';
 import 'services/fcm_service.dart';
 import 'services/local_notifications_service.dart';
 import 'services/umami_analytics_service.dart';
 import 'shared/app_colors.dart';
+import 'widgets/offline_banner.dart';
 
 final _logger = appLogger;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -335,10 +338,23 @@ void _showNotificationDialog(
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        imageUrl.toString(),
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl.toString(),
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
+                        placeholder: (context, url) => Container(
+                          color: Colors.grey.shade100,
+                          child: const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: AppColors.primary,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) {
                           return Container(
                             color: Colors.grey.shade200,
                             child: const Center(
@@ -346,22 +362,6 @@ void _showNotificationDialog(
                                 Icons.image_not_supported,
                                 color: Colors.grey,
                                 size: 40,
-                              ),
-                            ),
-                          );
-                        },
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            color: Colors.grey.shade100,
-                            child: const Center(
-                              child: SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: AppColors.primary,
-                                  strokeWidth: 2,
-                                ),
                               ),
                             ),
                           );
@@ -497,6 +497,14 @@ Future<void> main() async {
       _logger.e('❌ Error initializing UmamiAnalyticsService: $e');
     }
 
+    // Inicializácia Connectivity Service
+    try {
+      await ConnectivityService.instance.initialize();
+      _logger.i('✅ ConnectivityService initialized successfully');
+    } catch (e) {
+      _logger.e('❌ Error initializing ConnectivityService: $e');
+    }
+
     _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   } catch (e) {
     _logger.e('❌ Error initializing LocalNotificationsService: $e');
@@ -551,6 +559,9 @@ class MyApp extends StatelessWidget {
       localizationsDelegates: [...context.localizationDelegates],
       supportedLocales: context.supportedLocales,
       locale: context.locale,
+      builder: (context, child) {
+        return OfflineBanner(child: child ?? const SizedBox.shrink());
+      },
       home: const FCMInitializer(child: SessionHandler()),
       routes: {'/lectio': (context) => const LectioScreen()},
     );

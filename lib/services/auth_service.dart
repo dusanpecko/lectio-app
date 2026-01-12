@@ -1,5 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../utils/app_logger.dart';
 
 class AuthService {
   static AuthService? _instance;
@@ -12,7 +13,7 @@ class AuthService {
   final SupabaseClient _client;
 
   AuthService._internal({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   // Sign In with Email and Password
   Future<AuthResponse> signIn({
@@ -53,16 +54,11 @@ class AuthService {
     required String email,
     required String redirectTo,
   }) async {
-    await _client.auth.resetPasswordForEmail(
-      email,
-      redirectTo: redirectTo,
-    );
+    await _client.auth.resetPasswordForEmail(email, redirectTo: redirectTo);
   }
 
   // Sign In with Google
-  Future<bool> signInWithGoogle({
-    required String redirectTo,
-  }) async {
+  Future<bool> signInWithGoogle({required String redirectTo}) async {
     try {
       return await _client.auth.signInWithOAuth(
         OAuthProvider.google,
@@ -70,15 +66,13 @@ class AuthService {
         authScreenLaunchMode: LaunchMode.externalApplication,
       );
     } catch (e) {
-      debugPrint('Error signing in with Google: $e');
+      appLogger.e('Error signing in with Google: $e');
       rethrow;
     }
   }
 
   // Sign In with Apple
-  Future<bool> signInWithApple({
-    required String redirectTo,
-  }) async {
+  Future<bool> signInWithApple({required String redirectTo}) async {
     try {
       return await _client.auth.signInWithOAuth(
         OAuthProvider.apple,
@@ -86,7 +80,7 @@ class AuthService {
         authScreenLaunchMode: LaunchMode.externalApplication,
       );
     } catch (e) {
-      debugPrint('Error signing in with Apple: $e');
+      appLogger.e('Error signing in with Apple: $e');
       rethrow;
     }
   }

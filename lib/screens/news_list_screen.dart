@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -126,13 +127,12 @@ class _NewsListScreenState extends State<NewsListScreen> {
                                 topLeft: Radius.circular(16),
                                 topRight: Radius.circular(16),
                               ),
-                              child: Image.network(
-                                imageUrl,
+                              child: CachedNetworkImage(
+                                imageUrl: imageUrl,
                                 height: 230,
                                 width: double.infinity,
                                 fit: BoxFit.cover,
-                                loadingBuilder: (context, child, progress) {
-                                  if (progress == null) return child;
+                                placeholder: (context, url) {
                                   return Container(
                                     height: 230,
                                     color: Colors.grey[200],
@@ -141,7 +141,7 @@ class _NewsListScreenState extends State<NewsListScreen> {
                                     ),
                                   );
                                 },
-                                errorBuilder: (context, error, stackTrace) {
+                                errorWidget: (context, url, error) {
                                   return Container(
                                     height: 230,
                                     color: Colors.grey[300],
