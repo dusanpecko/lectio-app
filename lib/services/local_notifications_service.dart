@@ -10,7 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-import '../main.dart' show navigatorKey;
+import '../controllers/notification_controller.dart';
 import '../shared/audio_constants.dart';
 import '../utils/app_logger.dart';
 
@@ -456,7 +456,8 @@ class LocalNotificationsService {
   String _getCurrentLanguage() {
     try {
       // Pokús sa získať jazyk z EasyLocalization
-      final context = navigatorKey.currentContext;
+      final context =
+          NotificationController.instance.navigatorKey.currentContext;
       if (context != null) {
         return context.locale.languageCode;
       }

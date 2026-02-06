@@ -65,6 +65,7 @@ class _LectioScreenState extends State<LectioScreen> {
   bool _isProcessingInterludeCompletion = false;
   bool _usingFallbackPlayer = false;
   StreamSubscription? _fallbackPlayerSubscription;
+  bool _isPlayingInterlude = false; // Track if meditation music is playing
 
   // Do Not Disturb state
   bool _isDndActive = false;
@@ -176,7 +177,7 @@ class _LectioScreenState extends State<LectioScreen> {
           _backgroundAudioManager.audioHandler!.mediaItem.listen((item) {
             if (!mounted || item == null) return;
 
-            if (item.duration != null && _currentAudioSection != 'interlude') {
+            if (item.duration != null && !_isPlayingInterlude) {
               setState(() {
                 _totalDuration = item.duration!;
               });
@@ -213,8 +214,14 @@ class _LectioScreenState extends State<LectioScreen> {
 
           setState(() {
             if (trackKey == 'interlude') {
-              _currentAudioSection = 'interlude';
+              // During interlude, keep _currentAudioSection on previous track
+              // Only set the interlude flag
+              _isPlayingInterlude = true;
+              appLogger.d(
+                '🎵 Interlude started - keeping carousel on current track',
+              );
             } else if (index >= 0 && index < tracks.length) {
+              _isPlayingInterlude = false;
               _currentAudioSection = tracks[index]['key'];
               // Animovať na nový track
               if (_playlistPageController.hasClients) {
@@ -224,6 +231,7 @@ class _LectioScreenState extends State<LectioScreen> {
                   curve: Curves.easeInOut,
                 );
               }
+              appLogger.d('🎵 Track changed to: ${tracks[index]['key']}');
             }
           });
         }
@@ -306,7 +314,7 @@ class _LectioScreenState extends State<LectioScreen> {
         );
         if (state.processingState == ProcessingState.completed &&
             _usingFallbackPlayer &&
-            _currentAudioSection != 'interlude') {
+            !_isPlayingInterlude) {
           appLogger.d('🎵 ✅ Fallback player completed, triggering next');
           _onAudioCompleted();
         }
@@ -391,11 +399,22 @@ class _LectioScreenState extends State<LectioScreen> {
       final position = _backgroundAudioManager.currentPosition;
       final duration = _backgroundAudioManager.totalDuration;
       final isPlaying = _backgroundAudioManager.isPlaying;
+      final isInterlude = _backgroundAudioManager.isPlayingInterlude;
+
+      // Sync interlude state from BAM to UI
+      if (isInterlude != _isPlayingInterlude) {
+        appLogger.d(
+          '🎵 Timer: interlude state sync: BAM=$isInterlude, UI=$_isPlayingInterlude',
+        );
+        setState(() {
+          _isPlayingInterlude = isInterlude;
+        });
+      }
 
       // Debug výpis každú sekundu
       if (position.inMilliseconds % 1000 < 250) {
         appLogger.d(
-          '🎵 Timer update: pos=${position.inSeconds}s, dur=${duration?.inSeconds}s, playing=$isPlaying, _isPlaying=$_isPlaying',
+          '🎵 Timer update: pos=${position.inSeconds}s, dur=${duration?.inSeconds}s, playing=$isPlaying, _isPlaying=$_isPlaying, interlude=$_isPlayingInterlude',
         );
       }
 
@@ -663,7 +682,7 @@ class _LectioScreenState extends State<LectioScreen> {
 
     // Ak skončila meditačná hudba, prehraj uloženú nahrávku
     if (_playbackState == LectioPlaybackState.playingInterlude ||
-        _currentAudioSection == 'interlude') {
+        _isPlayingInterlude) {
       if (_nextTrackAfterInterlude != null &&
           _playbackState != LectioPlaybackState.processingInterludeTransition) {
         // Zabráň dvojitému volaniu
@@ -681,8 +700,7 @@ class _LectioScreenState extends State<LectioScreen> {
 
         // Reset flag po dokončení spracovania
         _isProcessingInterludeCompletion = false;
-      } else if (_currentAudioSection == 'interlude' &&
-          _nextTrackAfterInterlude == null) {
+      } else if (_isPlayingInterlude && _nextTrackAfterInterlude == null) {
         // Už spracované alebo žiadna ďalšia nahrávka
         appLogger.d(
           '🛑 Interlude completion: _nextTrackAfterInterlude=null, _isProcessingInterludeCompletion=$_isProcessingInterludeCompletion',
@@ -1083,6 +1101,8 @@ class _LectioScreenState extends State<LectioScreen> {
           _isPlaying = false; // Ešte sa nehraje
           _audioPlayerClosed = false; // Reset flag keď začína nové audio
           _isMinimized = false; // Reset minimalizácie pri novom tracku
+          _isPlayingInterlude =
+              false; // Reset interlude flag when playing normal track
           // Reset pozície a trvania pre nový track
           _currentPosition = Duration.zero;
           _totalDuration = Duration.zero;
@@ -1224,6 +1244,7 @@ class _LectioScreenState extends State<LectioScreen> {
         _currentAudioSection = null;
         _nextTrackAfterInterlude = null;
         _isPlaying = false;
+        _isPlayingInterlude = false; // Reset interlude flag
         _currentPosition = Duration.zero;
         _totalDuration = Duration.zero;
         // NERESET _audioPlayerClosed tu - to sa robí inde
@@ -1238,7 +1259,7 @@ class _LectioScreenState extends State<LectioScreen> {
     appLogger.d('🎵 _currentAudioSection: $_currentAudioSection');
     appLogger.d('🎵 _audioPlayerClosed: $_audioPlayerClosed');
 
-    if (_currentAudioSection == null || _currentAudioSection == 'interlude') {
+    if (_currentAudioSection == null) {
       appLogger.d('🛑 Skipping _playNextTrack - invalid section');
       return;
     }
@@ -1324,7 +1345,7 @@ class _LectioScreenState extends State<LectioScreen> {
       if (mounted) {
         setState(() {
           _playbackState = LectioPlaybackState.playingInterlude;
-          _currentAudioSection = 'interlude';
+          _isPlayingInterlude = true; // Set interlude flag for UI
           _isPlaying = true;
         });
         appLogger.d(
@@ -1366,7 +1387,7 @@ class _LectioScreenState extends State<LectioScreen> {
     if (tracks.isEmpty) return;
 
     // Ak je interlude, vráť sa na aktuálnu nahrávku (nie predchádzajúcu)
-    if (_currentAudioSection == 'interlude') {
+    if (_isPlayingInterlude) {
       _nextTrackAfterInterlude = null;
       if (_backgroundAudioManager.isInitialized) {
         await _backgroundAudioManager.stop();
@@ -1418,7 +1439,7 @@ class _LectioScreenState extends State<LectioScreen> {
   }
 
   String _getNowPlayingTitle() {
-    if (_currentAudioSection == 'interlude') {
+    if (_isPlayingInterlude) {
       return 'Meditačná hudba';
     }
 
@@ -2460,7 +2481,9 @@ class _LectioScreenState extends State<LectioScreen> {
                         },
                     child: _currentAudioSection != null
                         ? Container(
-                            key: ValueKey(_currentAudioSection),
+                            key: ValueKey(
+                              '${_currentAudioSection}_${_isPlayingInterlude ? 'interlude' : 'track'}',
+                            ),
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               color: AppColors.primary.withValues(alpha: 0.1),
@@ -2469,12 +2492,12 @@ class _LectioScreenState extends State<LectioScreen> {
                             child: Row(
                               children: [
                                 Icon(
-                                  _currentAudioSection == 'interlude'
+                                  _isPlayingInterlude
                                       ? Icons
                                             .spa // Ikona pre meditáciu
                                       : (currentTrack?['icon'] ??
                                             Icons.music_note),
-                                  color: _currentAudioSection == 'interlude'
+                                  color: _isPlayingInterlude
                                       ? Colors.blue.shade300
                                       : (currentTrack?['color'] ??
                                             AppColors.primary),

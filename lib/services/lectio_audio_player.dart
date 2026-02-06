@@ -25,6 +25,10 @@ class LectioAudioPlayer extends ChangeNotifier {
   bool _isPlayingInterlude = false;
   Map<String, dynamic>? _nextTrackAfterInterlude;
   bool _isStopped = false; // Flag to prevent auto-progression after stop
+  bool _completionHandledByIndexStream = false; // Prevent double handling
+  int? _lastKnownIndex; // Track last known index for auto-progression detection
+  bool _isRestoringPlaylist =
+      false; // Flag to ignore index changes during playlist restore
 
   // Callbacks
   VoidCallback? onPlaylistCompleted;
@@ -79,62 +83,78 @@ class LectioAudioPlayer extends ChangeNotifier {
     });
 
     // Track index changes (for lock screen next/prev AND auto-progression)
-    int? lastCompletedIndex;
     _player.currentIndexStream.listen((index) {
       if (index == null) return;
 
       appLogger.d(
-        '🎵 currentIndexStream: index=$index, _currentTrackIndex=$_currentTrackIndex, lastCompletedIndex=$lastCompletedIndex',
+        '🎵 currentIndexStream: index=$index, _currentTrackIndex=$_currentTrackIndex, isInterlude=$_isPlayingInterlude, restoring=$_isRestoringPlaylist',
       );
 
-      // Detect automatic track progression (not manual skip)
-      if (index != _currentTrackIndex && !_isPlayingInterlude) {
-        // Check if this is auto-progression (previous track completed)
-        if (lastCompletedIndex != null && index == (lastCompletedIndex! + 1)) {
-          appLogger.d(
-            '🎵 🎯 AUTO-PROGRESSION detected: $lastCompletedIndex -> $index',
-          );
-          // Previous track completed, trigger interlude logic
-          final previousIndex = lastCompletedIndex!;
-          lastCompletedIndex = index;
+      // Ignore index changes during interlude or playlist restore
+      if (_isPlayingInterlude || _isRestoringPlaylist) {
+        appLogger.d(
+          '🎵 Ignoring index change (interlude=$_isPlayingInterlude, restoring=$_isRestoringPlaylist)',
+        );
+        return;
+      }
 
-          // Update current index BEFORE triggering completion
-          _currentTrackIndex = index;
+      // Detect auto-progression: index moved forward by 1
+      if (_lastKnownIndex != null &&
+          index == _lastKnownIndex! + 1 &&
+          index != _currentTrackIndex) {
+        appLogger.d(
+          '🎵 🎯 AUTO-PROGRESSION detected: $_lastKnownIndex -> $index',
+        );
+        _lastKnownIndex = index;
 
-          // Trigger track completion for the PREVIOUS track
-          appLogger.d('🎵 Triggering completion for track $previousIndex');
-          _handleTrackCompleted();
+        // Pause immediately to prevent further auto-advancement
+        _player.pause();
 
-          // Notify UI of new track (will be called again after interlude)
-          if (index >= 0 && index < _playlist.length) {
-            onTrackChanged?.call(_playlist[index]['key'], index);
-          }
-        } else {
-          // Manual skip or first track
-          appLogger.d('🎵 Manual skip or first track: $index');
-          lastCompletedIndex = index;
-          _currentTrackIndex = index;
-          if (index >= 0 && index < _playlist.length) {
-            onTrackChanged?.call(_playlist[index]['key'], index);
-          }
-        }
+        // Mark that we're handling this completion via currentIndexStream
+        // so playerStateStream doesn't also handle it
+        _completionHandledByIndexStream = true;
+
+        // Don't update _currentTrackIndex yet - _onTrackCompletedAsync uses it
+        // to calculate the next track
+        _handleTrackCompleted();
+        return;
+      }
+
+      // Manual navigation or initial track
+      _lastKnownIndex = index;
+      if (index != _currentTrackIndex &&
+          index >= 0 &&
+          index < _playlist.length) {
+        _currentTrackIndex = index;
+        onTrackChanged?.call(_playlist[index]['key'], index);
         notifyListeners();
-      } else if (index == _currentTrackIndex && lastCompletedIndex == null) {
-        // First track started
-        lastCompletedIndex = index;
       }
     });
 
-    // Player state changes (for final playlist completion)
+    // Player state changes - handles interlude completion AND last track completion
     _player.playerStateStream.listen((state) {
       appLogger.d(
         '🎵 Player state: playing=${state.playing}, processingState=${state.processingState}',
       );
 
-      // Only handle final playlist completion
       if (state.processingState == ProcessingState.completed) {
-        appLogger.d('🎵 🏁 FINAL playlist completion detected');
-        _handleTrackCompleted();
+        appLogger.d(
+          '🎵 🏁 ProcessingState.completed - isInterlude=$_isPlayingInterlude, handledByIndex=$_completionHandledByIndexStream',
+        );
+
+        if (_isPlayingInterlude) {
+          // Interlude completed - always handle this
+          appLogger.d('🎵 ✅ Interlude completed, handling...');
+          _handleTrackCompleted();
+        } else if (_completionHandledByIndexStream) {
+          // Already handled by currentIndexStream auto-progression
+          appLogger.d('🎵 Skipping - already handled by currentIndexStream');
+          _completionHandledByIndexStream = false; // Reset for next time
+        } else if (_currentTrackIndex >= _playlist.length - 1) {
+          // Last track in playlist completed
+          appLogger.d('🎵 ✅ Last track completed, handling...');
+          _handleTrackCompleted();
+        }
       }
 
       notifyListeners();
@@ -157,6 +177,7 @@ class LectioAudioPlayer extends ChangeNotifier {
     _playlist = List.from(tracks);
     _audioMode = mode;
     _isStopped = false; // Reset stopped flag for new playlist
+    _completionHandledByIndexStream = false; // Reset completion flag
     appLogger.d('🎵 Setting playlist: ${tracks.length} tracks, mode: $mode');
 
     // Build list of AudioSources with MediaItem tags (like in official example)
@@ -334,6 +355,7 @@ class LectioAudioPlayer extends ChangeNotifier {
         '🎵 Checking if should play interlude: audioMode=$_audioMode',
       );
       if (_audioMode != 'none' && _currentTrackIndex >= 0) {
+        // Current track just completed, next track is currentIndex + 1
         final hasNext = _currentTrackIndex < _playlist.length - 1;
         final nextTrack = hasNext ? _playlist[_currentTrackIndex + 1] : null;
         appLogger.d(
@@ -372,12 +394,53 @@ class LectioAudioPlayer extends ChangeNotifier {
     final index = _playlist.indexWhere((t) => t['key'] == track['key']);
     if (index >= 0) {
       appLogger.d('🎵 Resuming playlist at track $index after interlude');
-      // Just seek to the track - playlist is already set
-      await _player.seek(Duration.zero, index: index);
-      await _player.play();
-      _currentTrackIndex = index;
-      onTrackChanged?.call(track['key'], index);
-      notifyListeners();
+
+      // CRITICAL FIX: Restore full playlist before seeking
+      // During interlude, setAudioSource() replaced the playlist with a single track
+      // We must restore the full playlist using setAudioSources() before seeking
+      appLogger.d('🎵 Restoring full playlist with ${_playlist.length} tracks');
+      final sources = <AudioSource>[];
+      for (int i = 0; i < _playlist.length; i++) {
+        final t = _playlist[i];
+        final url = t['url'] as String;
+        final title = t['label'] as String? ?? 'Audio';
+        final key = t['key'] as String? ?? 'track_$i';
+
+        sources.add(
+          AudioSource.uri(
+            Uri.parse(url),
+            tag: MediaItem(
+              id: key,
+              album: 'Lectio Divina',
+              title: title,
+              artist: 'Lectio Divina',
+              artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
+            ),
+          ),
+        );
+      }
+
+      try {
+        // Set flag to ignore currentIndexStream events during restore
+        _isRestoringPlaylist = true;
+
+        await _player.setAudioSources(sources, preload: true);
+        appLogger.d('🎵 ✅ Playlist restored with ${sources.length} tracks');
+
+        // Now we can seek to the specific track
+        await _player.seek(Duration.zero, index: index);
+        await _player.play();
+        _currentTrackIndex = index;
+        _lastKnownIndex =
+            index; // Sync so next auto-progression is detected correctly
+        _isRestoringPlaylist = false; // Re-enable index tracking
+
+        onTrackChanged?.call(track['key'], index);
+        notifyListeners();
+      } catch (e) {
+        _isRestoringPlaylist = false; // Always reset flag
+        appLogger.e('❌ Error restoring playlist: $e');
+      }
     } else {
       appLogger.e('❌ Track not found in playlist: ${track['key']}');
     }

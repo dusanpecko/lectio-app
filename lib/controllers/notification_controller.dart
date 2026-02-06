@@ -6,12 +6,14 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lectio_divina/main.dart';
 import 'package:lectio_divina/shared/app_colors.dart';
 
 import 'package:lectio_divina/utils/app_logger.dart';
 
 class NotificationController {
+  // Navigator Key - owned by the controller to avoid circular dependency with main.dart
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   static NotificationController? _instance;
   static NotificationController get instance =>
       _instance ??= NotificationController._internal();
@@ -36,6 +38,23 @@ class NotificationController {
     final payload = _pendingNotificationPayload;
     _pendingNotificationPayload = null; // Vymaž po prečítaní
     return payload;
+  }
+
+  /// Skontroluje a zobrazí čakajúcu notifikáciu (volané pri Resume alebo Session init)
+  void checkPendingNotification(bool mounted) {
+    if (_pendingNotificationPayload != null && mounted) {
+      _logger.i('🎯 Processing pending notification on resume/init');
+      final payload = _pendingNotificationPayload;
+      _pendingNotificationPayload = null;
+
+      if (navigatorKey.currentContext != null) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (navigatorKey.currentContext != null) {
+            _showLocalNotificationDialog(navigatorKey.currentContext!, payload);
+          }
+        });
+      }
+    }
   }
 
   /// Vyčistí badge na aplikačnej ikone (iOS)

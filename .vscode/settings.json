@@ -9,6 +9,16 @@
     "dart.flutterSdkPath": "/Users/dusanpecko/fvm/default",
     "dart.devToolsPort": 9100,
     
+    // Java settings - use Java 17 for Gradle/Android
+    "java.configuration.runtimes": [
+        {
+            "name": "JavaSE-17",
+            "path": "/opt/homebrew/Cellar/openjdk@17/17.0.18/libexec/openjdk.jdk/Contents/Home",
+            "default": true
+        }
+    ],
+    "java.jdt.ls.java.home": "/opt/homebrew/Cellar/openjdk@17/17.0.18/libexec/openjdk.jdk/Contents/Home",
+    
     // File exclusions for better performance
     "files.exclude": {
         "**/node_modules": true,

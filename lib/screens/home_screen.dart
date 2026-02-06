@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/spiritual_exercise.dart';
@@ -528,58 +529,65 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _onRefresh,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: 15), // Priestor pre FAB
-          child: Column(
-            children: [
-              // Hero Slider Section
-              _buildHeroSlider(),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        body: RefreshIndicator(
+          onRefresh: _onRefresh,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: 15), // Priestor pre FAB
+            child: Column(
+              children: [
+                // Hero Slider Section
+                _buildHeroSlider(),
 
-              // Main Content
-              SafeArea(
-                top: false,
-                child: Column(
-                  children: [
-                    // Slider dots
-                    _buildSliderDots(),
+                // Main Content
+                SafeArea(
+                  top: false,
+                  child: Column(
+                    children: [
+                      // Slider dots
+                      _buildSliderDots(),
 
-                    // Lectio Divina Calendar
-                    _buildLectioCalendar(),
-                    const SizedBox(height: 8),
-                    // Daily quote
-                    _buildQuoteCard(),
-                    const SizedBox(height: 8),
-                    // Navigation buttons
-                    _buildNavigationButtons(),
-                    const SizedBox(height: 15),
-                    // Rosary section
-                    _buildRosarySection(),
+                      // Lectio Divina Calendar
+                      _buildLectioCalendar(),
+                      const SizedBox(height: 8),
+                      // Daily quote
+                      _buildQuoteCard(),
+                      const SizedBox(height: 8),
+                      // Navigation buttons
+                      _buildNavigationButtons(),
+                      const SizedBox(height: 15),
+                      // Rosary section
+                      _buildRosarySection(),
 
-                    // Support button
-                    _buildSupportButton(),
+                      // Support button
+                      _buildSupportButton(),
 
-                    // News section
-                    _buildNewsSection(),
-                  ],
+                      // News section
+                      _buildNewsSection(),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
-      // SpeedDial FAB
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 20), // Mierne vyššie
-        child: SpeedDialFAB(
-          onPrimaryAction: _openTodaysLectio,
-          onSecondaryAction: _handleSpeedDialAction,
+        // SpeedDial FAB
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.only(bottom: 20), // Mierne vyššie
+          child: SpeedDialFAB(
+            onPrimaryAction: _openTodaysLectio,
+            onSecondaryAction: _handleSpeedDialAction,
+          ),
         ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 

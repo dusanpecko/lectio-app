@@ -1,12 +1,14 @@
 package sk.dpapp.app.android604688a88a394
 
 import androidx.annotation.NonNull
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import com.ryanheise.audioservice.AudioServiceActivity
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import android.os.Bundle
 import android.provider.Settings
 import android.content.Intent
 import android.net.Uri
@@ -14,6 +16,12 @@ import android.net.Uri
 class MainActivity: AudioServiceActivity() {
     private val CHANNEL = "sk.lectio.divina/do_not_disturb"
     private lateinit var notificationManager: NotificationManager
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // Install the splash screen before calling super.onCreate()
+        installSplashScreen()
+        super.onCreate(savedInstanceState)
+    }
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
