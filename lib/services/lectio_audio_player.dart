@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
@@ -7,6 +8,7 @@ import 'package:just_audio/just_audio.dart';
 
 import '../shared/audio_constants.dart';
 import '../utils/app_logger.dart';
+import 'audio_download_service.dart';
 
 /// Simple, clean audio player for Lectio Divina
 /// Uses setAudioSources() with MediaItem tags for proper iOS lock screen controls
@@ -16,6 +18,8 @@ class LectioAudioPlayer extends ChangeNotifier {
   LectioAudioPlayer._internal();
 
   final AudioPlayer _player = AudioPlayer();
+  final AudioDownloadService _audioDownloadService =
+      AudioDownloadService.instance;
 
   // State
   bool _isInitialized = false;
@@ -187,19 +191,17 @@ class LectioAudioPlayer extends ChangeNotifier {
       final url = track['url'] as String;
       final title = track['label'] as String? ?? 'Audio';
       final key = track['key'] as String? ?? 'track_$i';
+      final localPath = track['localPath'] as String?;
 
-      sources.add(
-        AudioSource.uri(
-          Uri.parse(url),
-          tag: MediaItem(
-            id: key,
-            album: 'Lectio Divina',
-            title: title,
-            artist: 'Lectio Divina',
-            artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
-          ),
-        ),
+      // Použiť lokálny súbor ak existuje, inak streaming
+      final audioSource = _createAudioSource(
+        url: url,
+        localPath: localPath,
+        key: key,
+        title: title,
       );
+
+      sources.add(audioSource);
     }
 
     // Use setAudioSources (plural) like in official example
@@ -210,6 +212,31 @@ class LectioAudioPlayer extends ChangeNotifier {
     } catch (e) {
       appLogger.e('❌ Error setting audio sources: $e');
     }
+  }
+
+  /// Vytvorí AudioSource - lokálny súbor ak existuje, inak streaming URL
+  AudioSource _createAudioSource({
+    required String url,
+    String? localPath,
+    required String key,
+    required String title,
+  }) {
+    final mediaItem = MediaItem(
+      id: key,
+      album: 'Lectio Divina',
+      title: title,
+      artist: 'Lectio Divina',
+      artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
+    );
+
+    // Ak máme lokálny súbor a existuje, použijeme ho
+    if (localPath != null && File(localPath).existsSync()) {
+      appLogger.d('🎵 📦 Using local file for $key: $localPath');
+      return AudioSource.file(localPath, tag: mediaItem);
+    }
+
+    // Fallback na streaming
+    return AudioSource.uri(Uri.parse(url), tag: mediaItem);
   }
 
   /// Set audio mode
@@ -278,18 +305,31 @@ class LectioAudioPlayer extends ChangeNotifier {
             AVAudioSessionSetActiveOptions.notifyOthersOnDeactivation,
       );
 
-      await _player.setAudioSource(
-        AudioSource.uri(
-          Uri.parse(url),
-          tag: MediaItem(
-            id: 'interlude',
-            album: 'Lectio Divina',
-            title: title,
-            artist: 'Meditácia',
-            artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
-          ),
-        ),
-      );
+      // Check for local file (offline mode)
+      final localPath = _audioDownloadService.getLocalPath(url);
+      final audioSource = localPath != null && File(localPath).existsSync()
+          ? AudioSource.file(
+              localPath,
+              tag: MediaItem(
+                id: 'interlude',
+                album: 'Lectio Divina',
+                title: title,
+                artist: 'Meditácia',
+                artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
+              ),
+            )
+          : AudioSource.uri(
+              Uri.parse(url),
+              tag: MediaItem(
+                id: 'interlude',
+                album: 'Lectio Divina',
+                title: title,
+                artist: 'Meditácia',
+                artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
+              ),
+            );
+
+      await _player.setAudioSource(audioSource);
       await _player.play();
 
       onTrackChanged?.call('interlude', -1);
@@ -405,17 +445,14 @@ class LectioAudioPlayer extends ChangeNotifier {
         final url = t['url'] as String;
         final title = t['label'] as String? ?? 'Audio';
         final key = t['key'] as String? ?? 'track_$i';
+        final localPath = t['localPath'] as String?;
 
         sources.add(
-          AudioSource.uri(
-            Uri.parse(url),
-            tag: MediaItem(
-              id: key,
-              album: 'Lectio Divina',
-              title: title,
-              artist: 'Lectio Divina',
-              artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
-            ),
+          _createAudioSource(
+            url: url,
+            localPath: localPath,
+            key: key,
+            title: title,
           ),
         );
       }

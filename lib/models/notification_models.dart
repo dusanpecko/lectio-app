@@ -91,9 +91,9 @@ class NotificationTopic {
       'name_cs': nameCs,
       'name_es': nameEs,
       'name_de': nameDe,
-      'emoji': emoji,
+      'icon': emoji,
       'category': category,
-      'sort_order': sortOrder,
+      'display_order': sortOrder,
       'is_active': isActive,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -191,39 +191,6 @@ class NotificationPreference {
   @override
   String toString() {
     return 'NotificationPreference{topicId: $topicId, isEnabled: $isEnabled}';
-  }
-}
-
-/// Model pre FCM token registráciu
-class FCMTokenRequest {
-  final String fcmToken;
-  final String deviceType;
-  final String appVersion;
-  final String? deviceId;
-  final String? localeCode;
-
-  FCMTokenRequest({
-    required this.fcmToken,
-    required this.deviceType,
-    required this.appVersion,
-    this.deviceId,
-    this.localeCode,
-  });
-
-  /// Konvertuje na JSON pre API calls
-  Map<String, dynamic> toJson() {
-    return {
-      'fcm_token': fcmToken,
-      'device_type': deviceType,
-      'app_version': appVersion,
-      'device_id': deviceId,
-      'locale_code': localeCode,
-    };
-  }
-
-  @override
-  String toString() {
-    return 'FCMTokenRequest{deviceType: $deviceType, appVersion: $appVersion}';
   }
 }
 

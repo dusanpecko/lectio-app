@@ -199,8 +199,8 @@ class _NotificationSettingsScreenState
         SnackBar(
           content: Text(
             enabled
-                ? 'Denné lectio notifikácie zapnuté (9:00)'
-                : 'Denné lectio notifikácie vypnuté',
+                ? 'notifications.local.daily_lectio_enabled'.tr()
+                : 'notifications.local.daily_lectio_disabled'.tr(),
           ),
           backgroundColor: Colors.green,
         ),
@@ -210,7 +210,7 @@ class _NotificationSettingsScreenState
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Chyba pri nastavovaní denných notifikácií'),
+          content: Text('notifications.local.daily_lectio_error'.tr()),
           backgroundColor: Colors.red,
         ),
       );
@@ -244,7 +244,11 @@ class _NotificationSettingsScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Pripomenutie modlitby nastavené na ${picked.hour}:${picked.minute.toString().padLeft(2, '0')}',
+              'notifications.local.prayer_enabled'.tr(
+                args: [
+                  '${picked.hour}:${picked.minute.toString().padLeft(2, '0')}',
+                ],
+              ),
             ),
             backgroundColor: Colors.green,
           ),
@@ -254,7 +258,7 @@ class _NotificationSettingsScreenState
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Chyba pri nastavovaní pripomenutia'),
+            content: Text('notifications.local.prayer_error'.tr()),
             backgroundColor: Colors.red,
           ),
         );
@@ -273,7 +277,7 @@ class _NotificationSettingsScreenState
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Pripomenutie modlitby vypnuté'),
+          content: Text('notifications.local.prayer_disabled'.tr()),
           backgroundColor: Colors.green,
         ),
       );
@@ -419,7 +423,7 @@ class _NotificationSettingsScreenState
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
           child: Text(
-            'Lokálne notifikácie',
+            'notifications.local.section_title'.tr(),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -435,8 +439,8 @@ class _NotificationSettingsScreenState
               backgroundColor: AppColors.primary,
               child: Text('📖', style: TextStyle(fontSize: 20)),
             ),
-            title: const Text('Denné zamyslenie'),
-            subtitle: const Text('Každý deň o 9:00 - lectio divina text'),
+            title: Text('notifications.local.daily_lectio_title'.tr()),
+            subtitle: Text('notifications.local.daily_lectio_subtitle'.tr()),
             trailing: Switch(
               value: _dailyLectioEnabled,
               onChanged: _isLoading
@@ -454,11 +458,15 @@ class _NotificationSettingsScreenState
               backgroundColor: AppColors.primary,
               child: Text('🙏', style: TextStyle(fontSize: 20)),
             ),
-            title: const Text('Pripomenutie modlitby'),
+            title: Text('notifications.local.prayer_title'.tr()),
             subtitle: Text(
               _prayerReminderEnabled && _prayerReminderTime != null
-                  ? 'Každý deň o ${_prayerReminderTime!.hour}:${_prayerReminderTime!.minute.toString().padLeft(2, '0')}'
-                  : 'Nastaviť čas pripomenutia',
+                  ? 'notifications.local.prayer_subtitle_set'.tr(
+                      args: [
+                        '${_prayerReminderTime!.hour}:${_prayerReminderTime!.minute.toString().padLeft(2, '0')}',
+                      ],
+                    )
+                  : 'notifications.local.prayer_subtitle_unset'.tr(),
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
@@ -467,12 +475,12 @@ class _NotificationSettingsScreenState
                   IconButton(
                     icon: const Icon(Icons.close, color: Colors.red),
                     onPressed: _onPrayerReminderDisabled,
-                    tooltip: 'Vypnúť',
+                    tooltip: 'notifications.local.disable_tooltip'.tr(),
                   ),
                 IconButton(
                   icon: const Icon(Icons.access_time),
                   onPressed: _onPrayerReminderTimeChanged,
-                  tooltip: 'Nastaviť čas',
+                  tooltip: 'notifications.local.set_time_tooltip'.tr(),
                 ),
               ],
             ),
@@ -521,7 +529,7 @@ class _NotificationSettingsScreenState
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 32, 16, 8),
             child: Text(
-              'Vzdialené notifikácie',
+              'notifications.remote.section_title'.tr(),
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: Theme.of(context).colorScheme.primary,
                 fontWeight: FontWeight.bold,

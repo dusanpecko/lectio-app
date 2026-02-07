@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../shared/app_colors.dart';
@@ -7,22 +8,26 @@ class LectioSpeedDialFAB extends StatefulWidget {
   final VoidCallback? onAddNote;
   final VoidCallback? onDndToggle;
   final VoidCallback? onAudioToggle;
+  final VoidCallback? onDownload;
   final VoidCallback onRefresh;
   final bool isDndActive;
   final bool hasAudio;
   final bool showAudioPlayer;
   final bool dndEnabled;
+  final bool isOffline;
 
   const LectioSpeedDialFAB({
     super.key,
     this.onAddNote,
     this.onDndToggle,
     this.onAudioToggle,
+    this.onDownload,
     required this.onRefresh,
     this.isDndActive = false,
     this.hasAudio = false,
     this.showAudioPlayer = false,
     this.dndEnabled = false,
+    this.isOffline = false,
   });
 
   @override
@@ -87,6 +92,17 @@ class _LectioSpeedDialFABState extends State<LectioSpeedDialFAB>
       'color': AppColors.primary,
       'onTap': widget.onRefresh,
     });
+
+    // Download action (ak sme online)
+    if (!widget.isOffline && widget.onDownload != null) {
+      actions.add({
+        'key': 'download',
+        'icon': Icons.download_rounded,
+        'label': tr('offline.download_for_offline'),
+        'color': AppColors.primary,
+        'onTap': widget.onDownload,
+      });
+    }
 
     // Audio action (ak je audio dostupné)
     if (widget.hasAudio && widget.onAudioToggle != null) {

@@ -20,6 +20,9 @@ class CachedLectioData {
   final String? audioUrl;
   final DateTime cachedAt;
 
+  /// Kompletné raw dáta z lectio_sources tabuľky (obsahuje všetky audio URL)
+  final Map<String, dynamic>? rawLectioSource;
+
   CachedLectioData({
     required this.date,
     required this.locale,
@@ -33,6 +36,7 @@ class CachedLectioData {
     this.reference,
     this.audioUrl,
     required this.cachedAt,
+    this.rawLectioSource,
   });
 
   Map<String, dynamic> toJson() => {
@@ -48,6 +52,7 @@ class CachedLectioData {
     'reference': reference,
     'audioUrl': audioUrl,
     'cachedAt': cachedAt.toIso8601String(),
+    'rawLectioSource': rawLectioSource,
   };
 
   factory CachedLectioData.fromJson(Map<String, dynamic> json) {
@@ -64,6 +69,7 @@ class CachedLectioData {
       reference: json['reference'] as String?,
       audioUrl: json['audioUrl'] as String?,
       cachedAt: DateTime.parse(json['cachedAt'] as String),
+      rawLectioSource: json['rawLectioSource'] as Map<String, dynamic>?,
     );
   }
 
@@ -74,17 +80,27 @@ class CachedLectioData {
   }
 
   /// Vráti dáta ako Map pre kompatibilitu s existujúcim kódom
-  Map<String, dynamic> get rawData => {
-    'hlava': lectioHlava,
-    'actio_text': actioText,
-    'lectio_text': lectioText,
-    'meditatio_text': meditatioText,
-    'oratio_text': oratioText,
-    'contemplatio_text': contemplatioText,
-    'reference': reference,
-    'audio_url': audioUrl,
-    'celebration_title': celebrationTitle,
-  };
+  /// Ak máme rawLectioSource, vrátime ho (obsahuje všetky polia vrátane audio URLs)
+  Map<String, dynamic> get rawData {
+    if (rawLectioSource != null) {
+      // Pridáme celebration_title ak chýba
+      final data = Map<String, dynamic>.from(rawLectioSource!);
+      data['celebration_title'] = celebrationTitle;
+      return data;
+    }
+    // Fallback pre staré cache dáta bez rawLectioSource
+    return {
+      'hlava': lectioHlava,
+      'actio_text': actioText,
+      'lectio_text': lectioText,
+      'meditatio_text': meditatioText,
+      'oratio_text': oratioText,
+      'contemplatio_text': contemplatioText,
+      'reference': reference,
+      'audio_url': audioUrl,
+      'celebration_title': celebrationTitle,
+    };
+  }
 }
 
 /// Služba pre offline caching Lectio dát
@@ -290,6 +306,7 @@ class LectioCacheService {
         reference: lectioSource?['reference'] ?? celebrationTitle,
         audioUrl: lectioSource?['audio_url'],
         cachedAt: DateTime.now(),
+        rawLectioSource: lectioSource,
       );
     } catch (e) {
       appLogger.e('❌ Chyba pri fetch Lectio pre $date: $e');

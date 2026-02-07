@@ -2,6 +2,7 @@
   "app_title": "Lectio Divina",
   "offline": {
     "no_connection": "You are offline",
+    "offline_mode": "Offline",
     "reconnected": "Connection restored",
     "cached_data": "Using cached data",
     "title": "No connection",
@@ -19,8 +20,32 @@
     "data_available": "Data available until: {date}",
     "download_for_offline": "Download for offline",
     "download_description": "Download Lectio Divina for the next 7 days to use without internet.",
-    "download_days": "Download {0} days",
-    "download_complete": "Downloaded {0} days"
+    "download_days": "Download {} days",
+    "download_complete": "Downloaded {} days",
+    "download_texts": "Download texts for {} days",
+    "download_audio_today": "Download audio for today",
+    "download_all": "Texts + Audio for {} days",
+    "downloading_audio": "Downloading audio {}/{}...",
+    "audio_download_complete": "Audio downloaded: {}/{} tracks",
+    "audio_download_error": "Error downloading audio",
+    "audio_available_offline": "Audio available offline",
+    "audio_partial_download": "{} of {} tracks available offline",
+    "files": "files",
+    "manage": "Manage",
+    "storage_title": "Offline Storage",
+    "downloaded_files": "Downloaded files",
+    "storage_used": "Storage used",
+    "storage_info": "Old files are automatically deleted after 14 days.",
+    "cleanup_old": "Clean up old",
+    "cleanup_result": "Deleted {} old files",
+    "confirm_delete_all": "Delete all?",
+    "confirm_delete_all_desc": "Do you want to delete all downloaded audio files?",
+    "delete_all": "Delete all",
+    "all_audio_deleted": "All audio files deleted",
+    "available_offline": "Available offline",
+    "requires_internet": "Requires internet",
+    "offline_banner": "You are offline - downloaded content is available",
+    "cached": "Cached"
   },
   "login": "Sign in",
   "register": "Register",
@@ -127,7 +152,7 @@
   "slider_subtitle_meditatio": "Invitation to meditate on the Word ...",
   "slider_subtitle_oratio": "Prayer according to God's Word ...",
   "slider_subtitle_contemplatio": "The inner gaze of the heart at Jesus ...",
-  "module_not_available": "The module \"{0}\" is not available yet.",
+  "module_not_available": "The module \"{}\" is not available yet.",
   "content_not_available": "Content is not currently available.",
   "detail": "Detail",
   "forgot_password": "Forgot password?",
@@ -696,8 +721,8 @@
     "login_required_cancel": "Cancel",
     "login_required_login": "Sign in",
     "error_min_amount": "Minimum amount is €0.50",
-    "error_payment": "Error creating payment: {0}",
-    "error_subscription": "Error creating subscription: {0}",
+    "error_payment": "Error creating payment: {}",
+    "error_subscription": "Error creating subscription: {}",
     "tiers": {
       "friend": {
         "name": "💙 Lectio Friend",
@@ -755,6 +780,33 @@
     "action": {
       "retry": "Try Again",
       "save_changes": "Save Changes"
+    },
+    "local": {
+      "section_title": "Local Notifications",
+      "daily_lectio_title": "Daily Reflection",
+      "daily_lectio_subtitle": "Every day at 9:00 AM - lectio divina text",
+      "daily_lectio_enabled": "Daily lectio notifications enabled (9:00 AM)",
+      "daily_lectio_disabled": "Daily lectio notifications disabled",
+      "daily_lectio_error": "Error setting daily notifications",
+      "prayer_title": "Prayer Reminder",
+      "prayer_subtitle_set": "Every day at {}",
+      "prayer_subtitle_unset": "Set reminder time",
+      "prayer_enabled": "Prayer reminder set for {}",
+      "prayer_disabled": "Prayer reminder disabled",
+      "prayer_error": "Error setting reminder",
+      "disable_tooltip": "Disable",
+      "set_time_tooltip": "Set time"
+    },
+    "remote": {
+      "section_title": "Remote Notifications"
+    },
+    "push": {
+      "welcome_title": "Welcome to Lectio Divina! 🙏",
+      "welcome_body": "Discover the beauty of prayerful Scripture reading. Are you ready for a spiritual journey?",
+      "daily_title": "Daily Reflection 📖",
+      "daily_body": "Your daily lectio divina text is waiting. Open?",
+      "prayer_title": "Time for Prayer 🙏",
+      "prayer_body": "An invitation to a moment of meditation with God. Join?"
     },
     "dialog": {
       "title": "Notification",

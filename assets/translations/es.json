@@ -2,6 +2,7 @@
   "app_title": "Lectio Divina",
   "offline": {
     "no_connection": "Estás sin conexión",
+    "offline_mode": "Sin conexión",
     "reconnected": "Conexión restablecida",
     "cached_data": "Usando datos guardados",
     "title": "Sin conexión",
@@ -19,8 +20,32 @@
     "data_available": "Datos disponibles hasta: {date}",
     "download_for_offline": "Descargar para sin conexión",
     "download_description": "Descarga Lectio Divina para los próximos 7 días para usar sin internet.",
-    "download_days": "Descargar {0} días",
-    "download_complete": "Descargados {0} días"
+    "download_days": "Descargar {} días",
+    "download_complete": "Descargados {} días",
+    "download_texts": "Descargar textos para {} días",
+    "download_audio_today": "Descargar audio para hoy",
+    "download_all": "Textos + Audio para {} días",
+    "downloading_audio": "Descargando audio {}/{}...",
+    "audio_download_complete": "Audio descargado: {}/{} pistas",
+    "audio_download_error": "Error al descargar audio",
+    "audio_available_offline": "Audio disponible sin conexión",
+    "audio_partial_download": "{} de {} pistas disponibles sin conexión",
+    "files": "archivos",
+    "manage": "Gestionar",
+    "storage_title": "Almacenamiento offline",
+    "downloaded_files": "Archivos descargados",
+    "storage_used": "Almacenamiento usado",
+    "storage_info": "Los archivos antiguos se eliminan automáticamente después de 14 días.",
+    "cleanup_old": "Limpiar antiguos",
+    "cleanup_result": "{} archivos antiguos eliminados",
+    "confirm_delete_all": "¿Eliminar todo?",
+    "confirm_delete_all_desc": "¿Desea eliminar todos los archivos de audio descargados?",
+    "delete_all": "Eliminar todo",
+    "all_audio_deleted": "Todos los archivos de audio eliminados",
+    "available_offline": "Disponible sin conexión",
+    "requires_internet": "Requiere internet",
+    "offline_banner": "Sin conexión - el contenido descargado está disponible",
+    "cached": "En caché"
   },
   "login": "Iniciar sesión",
   "register": "Registrarse",
@@ -127,7 +152,7 @@
   "slider_subtitle_meditatio": "Invitación a meditar la Palabra...",
   "slider_subtitle_oratio": "Oración según la Palabra de Dios...",
   "slider_subtitle_contemplatio": "Mirada interior del corazón hacia Jesús...",
-  "module_not_available": "El módulo \"{0}\" aún no está disponible.",
+  "module_not_available": "El módulo \"{}\" aún no está disponible.",
   "content_not_available": "El contenido no está disponible por el momento.",
   "detail": "Detalle",
   "forgot_password": "¿Olvidaste la contraseña?",
@@ -696,8 +721,8 @@
     "login_required_cancel": "Cancelar",
     "login_required_login": "Iniciar sesión",
     "error_min_amount": "El importe mínimo es de €0.50",
-    "error_payment": "Error al crear el pago: {0}",
-    "error_subscription": "Error al crear la suscripción: {0}",
+    "error_payment": "Error al crear el pago: {}",
+    "error_subscription": "Error al crear la suscripción: {}",
     "tiers": {
       "friend": {
         "name": "💙 Amigo de Lectio",
@@ -755,6 +780,33 @@
     "action": {
       "retry": "Intentar de nuevo",
       "save_changes": "Guardar cambios"
+    },
+    "local": {
+      "section_title": "Notificaciones locales",
+      "daily_lectio_title": "Reflexión diaria",
+      "daily_lectio_subtitle": "Cada día a las 9:00 - texto de lectio divina",
+      "daily_lectio_enabled": "Notificaciones de lectio diaria activadas (9:00)",
+      "daily_lectio_disabled": "Notificaciones de lectio diaria desactivadas",
+      "daily_lectio_error": "Error al configurar las notificaciones diarias",
+      "prayer_title": "Recordatorio de oración",
+      "prayer_subtitle_set": "Cada día a las {}",
+      "prayer_subtitle_unset": "Establecer hora del recordatorio",
+      "prayer_enabled": "Recordatorio de oración establecido a las {}",
+      "prayer_disabled": "Recordatorio de oración desactivado",
+      "prayer_error": "Error al configurar el recordatorio",
+      "disable_tooltip": "Desactivar",
+      "set_time_tooltip": "Establecer hora"
+    },
+    "remote": {
+      "section_title": "Notificaciones remotas"
+    },
+    "push": {
+      "welcome_title": "¡Bienvenido a Lectio Divina! 🙏",
+      "welcome_body": "Descubre la belleza de la lectura orante de las Escrituras. ¿Estás listo para un viaje espiritual?",
+      "daily_title": "Reflexión diaria 📖",
+      "daily_body": "Tu texto diario de lectio divina te espera. ¿Abrir?",
+      "prayer_title": "Hora de orar 🙏",
+      "prayer_body": "Una invitación a un momento de meditación con Dios. ¿Unirse?"
     },
     "dialog": {
       "title": "Notificación",

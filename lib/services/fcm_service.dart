@@ -54,9 +54,17 @@ Future<void> _showLocalNotification(RemoteMessage message) async {
           presentSound: true,
         );
 
+    const DarwinNotificationDetails macOSPlatformChannelSpecifics =
+        DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        );
+
     const NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
       iOS: iOSPlatformChannelSpecifics,
+      macOS: macOSPlatformChannelSpecifics,
     );
 
     await flutterLocalNotificationsPlugin.show(
@@ -87,9 +95,6 @@ class FcmService {
   int _apnsRetryCount = 0;
   static const int _maxApnsRetries = 3;
 
-  // Local notifications initialized flag
-  bool _localNotificationsInitialized = false;
-
   // Current FCM token
   String? _currentToken;
 
@@ -109,103 +114,60 @@ class FcmService {
     }
   }
 
-  /// Inicializuje local notifications
-  Future<void> _initializeLocalNotifications() async {
-    if (_localNotificationsInitialized) return;
-
+  /// Zobrazí foreground notifikáciu cez zdieľaný plugin z LocalNotificationsService.
+  /// Tap callback je jednotný — spracuje ho LocalNotificationsService._onNotificationTapped.
+  Future<void> _showForegroundNotification(RemoteMessage message) async {
     try {
-      const AndroidInitializationSettings initializationSettingsAndroid =
-          AndroidInitializationSettings('@mipmap/launcher_icon');
+      final notification = message.notification;
+      if (notification == null) return;
 
-      const DarwinInitializationSettings initializationSettingsIOS =
-          DarwinInitializationSettings(
-            requestAlertPermission: true,
-            requestBadgePermission: true,
-            requestSoundPermission: true,
+      const AndroidNotificationDetails androidDetails =
+          AndroidNotificationDetails(
+            'lectio_divina_notifications',
+            'Lectio Divina Notifications',
+            channelDescription: 'Notifications for Lectio Divina app',
+            importance: Importance.high,
+            priority: Priority.high,
+            ticker: 'ticker',
+            icon: '@mipmap/launcher_icon',
+            number: 1,
           );
 
-      const InitializationSettings initializationSettings =
-          InitializationSettings(
-            android: initializationSettingsAndroid,
-            iOS: initializationSettingsIOS,
-          );
-
-      await flutterLocalNotificationsPlugin.initialize(
-        initializationSettings,
-        onDidReceiveNotificationResponse: _onLocalNotificationTapped,
+      const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        badgeNumber: 1,
       );
 
-      // Vytvor Android notification channel
-      if (Platform.isAndroid) {
-        await flutterLocalNotificationsPlugin
-            .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin
-            >()
-            ?.createNotificationChannel(
-              const AndroidNotificationChannel(
-                'lectio_divina_notifications',
-                'Lectio Divina Notifications',
-                description: 'Notifications for Lectio Divina app',
-                importance: Importance.high,
-              ),
-            );
-      }
+      const DarwinNotificationDetails macosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        badgeNumber: 1,
+      );
 
-      _localNotificationsInitialized = true;
-      _logger.i('Local notifications initialized successfully');
+      const NotificationDetails details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+        macOS: macosDetails,
+      );
+
+      await LocalNotificationsService.instance.plugin.show(
+        message.hashCode,
+        notification.title,
+        notification.body,
+        details,
+        payload: jsonEncode(message.data),
+      );
     } catch (e) {
-      _logger.e('Failed to initialize local notifications: $e');
-    }
-  }
-
-  /// Callback pre kliknutie na lokálnu notifikáciu
-  void _onLocalNotificationTapped(NotificationResponse response) {
-    _logger.i('Local notification tapped with payload: ${response.payload}');
-
-    // Forward to LocalNotificationsService so main.dart handlers receive payload.
-    LocalNotificationsService.instance.handleExternalNotificationTap(
-      response.payload,
-    );
-
-    if (response.payload != null) {
-      try {
-        final data = jsonDecode(response.payload!);
-        _handleNotificationData(data);
-      } catch (e) {
-        _logger.e('Error parsing notification payload: $e');
-      }
-    }
-  }
-
-  /// Spracuje dáta z notifikácie (navigácia, akcie...)
-  void _handleNotificationData(Map<String, dynamic> data) {
-    _logger.i('Handling notification data: $data');
-
-    // Tu môžeš implementovať navigáciu podľa typu notifikácie
-    final type = data['type'] as String?;
-
-    switch (type) {
-      case 'lectio':
-        // Naviguj na lectio screen
-        break;
-      case 'news':
-        // Naviguj na news detail
-        break;
-      case 'reminder':
-        // Naviguj na reminder screen
-        break;
-      default:
-        // Fallback - naviguj na home
-        break;
+      _logger.e('Error showing foreground notification: $e');
     }
   }
 
   Future<void> init(String appLangCode) async {
     _logger.i('Initializing FCM with language: $appLangCode');
     final m = FirebaseMessaging.instance;
-
-    // Inicializuj local notifications ako prvé
-    await _initializeLocalNotifications();
 
     // Povolenia pre FCM
     if (Platform.isIOS) {
@@ -241,8 +203,8 @@ class FcmService {
       _logger.i('Body: ${message.notification?.body}');
       _logger.i('Data: ${message.data}');
 
-      // Zobraz lokálnu notifikáciu pre foreground messages
-      await _showLocalNotification(message);
+      // Zobraz lokálnu notifikáciu cez zdieľaný plugin (LocalNotificationsService)
+      await _showForegroundNotification(message);
     });
 
     // Handler pre otvorenie app z notifikácie
@@ -250,8 +212,6 @@ class FcmService {
       _logger.i('App opened from notification: ${message.data}');
       if (_onNotificationCallback != null) {
         _onNotificationCallback!(message);
-      } else {
-        _handleNotificationData(message.data);
       }
     });
 
@@ -261,8 +221,6 @@ class FcmService {
       _logger.i('App launched from notification: ${initialMessage.data}');
       if (_onNotificationCallback != null) {
         _onNotificationCallback!(initialMessage);
-      } else {
-        _handleNotificationData(initialMessage.data);
       }
     }
 
@@ -325,7 +283,11 @@ class FcmService {
       _logger.i('FCM Token: ${token.substring(0, 20)}...');
 
       final code = _toLocaleCode(appLangCode); // 'sk'|'en'|'cz'|'es'|'de'
-      final platform = Platform.isIOS ? 'ios' : 'android';
+      final platform = Platform.isIOS
+          ? 'ios'
+          : Platform.isMacOS
+          ? 'macos'
+          : 'android';
       final packageInfo = await PackageInfo.fromPlatform();
       final appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
 

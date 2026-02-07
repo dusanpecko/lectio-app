@@ -6,6 +6,16 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lectio_divina/models/rosary_model.dart';
+import 'package:lectio_divina/screens/donation_screen.dart';
+import 'package:lectio_divina/screens/feedback_screen.dart';
+import 'package:lectio_divina/screens/lectio_screen.dart';
+import 'package:lectio_divina/screens/news_list_screen.dart';
+import 'package:lectio_divina/screens/notification_settings_screen.dart';
+import 'package:lectio_divina/screens/notifications_screen.dart';
+import 'package:lectio_divina/screens/profile_screen.dart';
+import 'package:lectio_divina/screens/rosary_category_screen.dart';
+import 'package:lectio_divina/screens/settings_screen.dart';
 import 'package:lectio_divina/shared/app_colors.dart';
 
 import 'package:lectio_divina/utils/app_logger.dart';
@@ -55,6 +65,69 @@ class NotificationController {
         });
       }
     }
+  }
+
+  /// Naviguje na obrazovku podľa screen name z push notifikácie
+  void navigateToScreen(String screen, {String? screenParams}) {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+
+    Map<String, dynamic>? params;
+    if (screenParams != null) {
+      try {
+        params = jsonDecode(screenParams) as Map<String, dynamic>;
+      } catch (e) {
+        _logger.w('Error parsing screen_params: $e');
+      }
+    }
+
+    Widget? targetScreen;
+    switch (screen) {
+      case 'lectio':
+        final dateStr = params?['date'] as String?;
+        final date = dateStr != null ? DateTime.tryParse(dateStr) : null;
+        targetScreen = LectioScreen(selectedDate: date ?? DateTime.now());
+        break;
+      case 'profile':
+        targetScreen = const ProfileScreen();
+        break;
+      case 'settings':
+        targetScreen = const SettingsScreen();
+        break;
+      case 'notifications':
+        targetScreen = const NotificationsScreen();
+        break;
+      case 'notification_settings':
+        targetScreen = const NotificationSettingsScreen();
+        break;
+      case 'rosary':
+        final categoryStr = params?['category'] as String? ?? 'joyful';
+        final category = RosaryCategory.values.firstWhere(
+          (c) => c.name == categoryStr,
+          orElse: () => RosaryCategory.joyful,
+        );
+        targetScreen = RosaryCategoryScreen(category: category);
+        break;
+      case 'news':
+        targetScreen = const NewsListScreen();
+        break;
+      case 'donation':
+        targetScreen = const DonationScreen();
+        break;
+      case 'feedback':
+        targetScreen = const FeedbackScreen();
+        break;
+      default:
+        _logger.w('Unknown screen for deep link: $screen');
+        return;
+    }
+
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder: (context) => targetScreen!,
+        settings: RouteSettings(name: '/$screen'),
+      ),
+    );
   }
 
   /// Vyčistí badge na aplikačnej ikone (iOS)
@@ -255,6 +328,8 @@ class NotificationController {
           'Správa nemá obsah.';
 
       final imageUrl = message.data['image_url'];
+      final screen = message.data['screen'] as String?;
+      final screenParams = message.data['screen_params'] as String?;
 
       showDialog(
         context: context,
@@ -325,11 +400,26 @@ class NotificationController {
                 child: Text(
                   'close'.tr(),
                   style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
+              if (screen != null)
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    navigateToScreen(screen, screenParams: screenParams);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text(
+                    'notifications.dialog.open'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
             ],
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),

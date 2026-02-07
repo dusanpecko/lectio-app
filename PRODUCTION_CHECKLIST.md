@@ -62,15 +62,21 @@ Projekt je v **excelentnom stave** a pripravený na nasadenie do produkcie.
 
 ### Lokálne notifikácie
 - [ ] **Plánovanie denných pripomienok**
-  - [ ] Scheduling
-  - [ ] Badges na ikone
-  - [ ] Deep linking
+  - [x] Scheduling (welcome 3d po registrácii, denné lectio 9:00, prayer reminder - custom čas)
+  - [x] Badges na ikone
+  - [x] Deep linking (payload → navigácia na LectioScreen / HomeScreen)
+  - [x] Boot receiver (re-schedule po reštarte zariadenia)
+  - [x] Battery optimization exemption
+  - [x] Exact alarm permission (Android 13+)
+  - [x] Notification settings UI (lokálne + FCM topics)
+  - [x] Cache lectio dát pre notifikácie (12h validita)
+  - [x] macOS support (DarwinNotificationDetails)
 
 ### Obsah
-- [ ] **Offline Mode** - sťahovanie MP3
-  - [ ] `download_service`
-  - [ ] Lokálne úložisko
-  - [ ] UI indikátor stiahnutia
+- [x] **Offline Mode** - sťahovanie MP3
+  - [x] `download_service` - `AudioDownloadService` s HTTP streaming
+  - [x] Lokálne úložisko - `path_provider` + SharedPreferences metadata
+  - [x] UI indikátor stiahnutia - `DownloadStatusIcon`, `OfflineAudioBanner`, `AudioDownloadProgress`
 
 - [ ] **Adorácie** - nová sekcia
   - [ ] Backend + Flutter obrazovky
@@ -83,6 +89,18 @@ Projekt je v **excelentnom stave** a pripravený na nasadenie do produkcie.
 - [ ] **Banner na home screen**
   - [ ] Dynamický widget
   - [ ] Backend administrácia
+
+### Kvalita kódu - Refactoring
+- [ ] **FÁZA 1: LectioScreen refactoring** (pred produkciou - 4-6h)
+  - [ ] `LectioAudioState` Provider/Controller - audio state & logika (~800 riadkov)
+  - [ ] `LectioFloatingPlayer` Widget - floating audio player UI (~650 riadkov)
+  - [ ] `LectioDownloadHandler` Mixin - download logika & dialógy (~400 riadkov)
+  - [ ] Cieľ: znížiť lectio_screen.dart z 3278 → ~1400 riadkov (57% ↓)
+
+- [ ] **FÁZA 2: LectioScreen refactoring** (po produkcii - 2-3h)
+  - [ ] `LectioDndHelper` - DND toggle & iOS instructions (~200 riadkov)
+  - [ ] `LectioDataProvider` - data fetching, cache, offline/online (~300 riadkov)
+  - [ ] Cieľ: znížiť lectio_screen.dart na ~900 riadkov (72% ↓ celkovo)
 
 ---
 
@@ -142,8 +160,8 @@ Projekt je v **excelentnom stave** a pripravený na nasadenie do produkcie.
 |-----------|--------|--------|---|
 | Kritické | 3 | 3 | ✅ 100% |
 | Vysoká priorita | 4 | 6 | 67% |
-| Stredná priorita | 1 | 6 | 17% |
+| Stredná priorita | 2 | 8 | 25% |
 | Nízka priorita | 0 | 3 | 0% |
 | Balíčky | 11 | 12 | ✅ 92% |
 
-**Celkový progres: ~65%**
+**Celkový progres: ~63%**

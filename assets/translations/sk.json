@@ -2,6 +2,7 @@
   "app_title": "Lectio Divina",
   "offline": {
     "no_connection": "Ste offline",
+    "offline_mode": "Offline",
     "reconnected": "Pripojenie obnovené",
     "cached_data": "Používate uložené dáta",
     "title": "Nie ste pripojení",
@@ -19,8 +20,32 @@
     "data_available": "Dáta dostupné do: {date}",
     "download_for_offline": "Stiahnuť pre offline",
     "download_description": "Stiahnite si Lectio Divina na nasledujúcich 7 dní pre používanie bez internetu.",
-    "download_days": "Stiahnuť {0} dní",
-    "download_complete": "Stiahnuté {0} dní"
+    "download_days": "Stiahnuť {} dní",
+    "download_complete": "Stiahnuté {} dní",
+    "download_texts": "Stiahnuť texty na {} dní",
+    "download_audio_today": "Stiahnuť audio pre dnes",
+    "download_all": "Texty + Audio na {} dní",
+    "downloading_audio": "Sťahujem audio {}/{}...",
+    "audio_download_complete": "Audio stiahnuté: {}/{} stôp",
+    "audio_download_error": "Chyba pri sťahovaní audio",
+    "audio_available_offline": "Audio dostupné offline",
+    "audio_partial_download": "{} z {} stôp dostupných offline",
+    "files": "súborov",
+    "manage": "Spravovať",
+    "storage_title": "Offline úložisko",
+    "downloaded_files": "Stiahnuté súbory",
+    "storage_used": "Použité úložisko",
+    "storage_info": "Staré súbory sa automaticky vymazávajú po 14 dňoch.",
+    "cleanup_old": "Vyčistiť staré",
+    "cleanup_result": "Vymazaných {} starých súborov",
+    "confirm_delete_all": "Vymazať všetko?",
+    "confirm_delete_all_desc": "Chcete vymazať všetky stiahnuté audio súbory?",
+    "delete_all": "Vymazať všetko",
+    "all_audio_deleted": "Všetky audio súbory vymazané",
+    "available_offline": "Dostupné offline",
+    "requires_internet": "Vyžaduje internet",
+    "offline_banner": "Ste offline - stiahnutý obsah je dostupný",
+    "cached": "V cache"
   },
   "login": "Prihlásiť sa",
   "register": "Registrovať sa",
@@ -125,7 +150,7 @@
   "slider_subtitle_meditatio": "Pozvanie zamyslieť sa nad Slovom ...",
   "slider_subtitle_oratio": "Modlitba podľa Božieho slova ...",
   "slider_subtitle_contemplatio": "Vnútorný pohľad srdca na Ježiša ...",
-  "module_not_available": "Modul \"{0}\" zatiaľ nie je dostupný.",
+  "module_not_available": "Modul \"{}\" zatiaľ nie je dostupný.",
   "content_not_available": "Obsah nie je aktuálne dostupný.",
   "detail": "Detail",
   "forgot_password": "Zabudnuté heslo?",
@@ -589,8 +614,8 @@
     "login_required_cancel": "Zrušiť",
     "login_required_login": "Prihlásiť sa",
     "error_min_amount": "Minimálna suma je €0.50",
-    "error_payment": "Chyba pri vytváraní platby: {0}",
-    "error_subscription": "Chyba pri vytváraní predplatného: {0}",
+    "error_payment": "Chyba pri vytváraní platby: {}",
+    "error_subscription": "Chyba pri vytváraní predplatného: {}",
     "tiers": {
       "friend": {
         "name": "💙 Priateľ Lectio",
@@ -757,6 +782,33 @@
     "action": {
       "retry": "Skúsiť znova",
       "save_changes": "Uložiť zmeny"
+    },
+    "local": {
+      "section_title": "Lokálne notifikácie",
+      "daily_lectio_title": "Denné zamyslenie",
+      "daily_lectio_subtitle": "Každý deň o 9:00 - lectio divina text",
+      "daily_lectio_enabled": "Denné lectio notifikácie zapnuté (9:00)",
+      "daily_lectio_disabled": "Denné lectio notifikácie vypnuté",
+      "daily_lectio_error": "Chyba pri nastavovaní denných notifikácií",
+      "prayer_title": "Pripomenutie modlitby",
+      "prayer_subtitle_set": "Každý deň o {}",
+      "prayer_subtitle_unset": "Nastaviť čas pripomenutia",
+      "prayer_enabled": "Pripomenutie modlitby nastavené na {}",
+      "prayer_disabled": "Pripomenutie modlitby vypnuté",
+      "prayer_error": "Chyba pri nastavovaní pripomenutia",
+      "disable_tooltip": "Vypnúť",
+      "set_time_tooltip": "Nastaviť čas"
+    },
+    "remote": {
+      "section_title": "Vzdialené notifikácie"
+    },
+    "push": {
+      "welcome_title": "Vitajte v Lectio Divina! 🙏",
+      "welcome_body": "Objavte krásu modlitbového čítania Písma. Ste pripravení na duchovnú cestu?",
+      "daily_title": "Denné zamyslenie 📖",
+      "daily_body": "Váš denný lectio divina text vás čaká. Otvoriť?",
+      "prayer_title": "Čas na modlitbu 🙏",
+      "prayer_body": "Pozvanie k chvíľke rozjímania s Bohom. Pripojiť sa?"
     },
     "dialog": {
       "title": "Notifikácia",

@@ -27,6 +27,9 @@ class LocalNotificationsService {
 
   final FlutterLocalNotificationsPlugin _notifications;
 
+  /// Verejný prístup k plugin inštancii — používa FcmService na foreground .show()
+  FlutterLocalNotificationsPlugin get plugin => _notifications;
+
   // Private constructor
   LocalNotificationsService._internal()
     : _notifications = FlutterLocalNotificationsPlugin();
@@ -271,6 +274,17 @@ class LocalNotificationsService {
             enableVibration: true,
           );
 
+      // Channel pre FCM push notifikácie (foreground + background)
+      const AndroidNotificationChannel fcmPushChannel =
+          AndroidNotificationChannel(
+            'lectio_divina_notifications',
+            'Lectio Divina Notifications',
+            description: 'Notifications for Lectio Divina app',
+            importance: Importance.high,
+            playSound: true,
+            enableVibration: true,
+          );
+
       // Registruj channels
       _logger.i('🔧 Attempting to create Android notification channels...');
       final androidPlugin = _notifications
@@ -289,6 +303,8 @@ class LocalNotificationsService {
         await androidPlugin.createNotificationChannel(prayerReminderChannel);
         _logger.i('🔧 Creating welcome channel...');
         await androidPlugin.createNotificationChannel(welcomeChannel);
+        _logger.i('🔧 Creating FCM push channel...');
+        await androidPlugin.createNotificationChannel(fcmPushChannel);
         _logger.i('✅ Android notification channels created');
       } else {
         _logger.e('❌ androidPlugin is NULL - channels NOT created!');
@@ -302,10 +318,19 @@ class LocalNotificationsService {
             requestSoundPermission: true,
           );
 
+      // macOS nastavenia
+      const DarwinInitializationSettings initializationSettingsMacOS =
+          DarwinInitializationSettings(
+            requestAlertPermission: true,
+            requestBadgePermission: true,
+            requestSoundPermission: true,
+          );
+
       final InitializationSettings initializationSettings =
           InitializationSettings(
             android: initializationSettingsAndroid,
             iOS: initializationSettingsDarwin,
+            macOS: initializationSettingsMacOS,
           );
 
       final initialized = await _notifications.initialize(
@@ -353,6 +378,15 @@ class LocalNotificationsService {
 
       // Decode payload and handle navigation
       final payload = jsonDecode(response.payload!);
+
+      // FCM push notifikácie majú 'screen' field — deleguj na callback chain
+      final screen = payload['screen'] as String?;
+      if (screen != null) {
+        _logger.i('📱 FCM push notification detected (screen=$screen)');
+        handleExternalNotificationTap(response.payload);
+        return;
+      }
+
       final type = payload['type'] as String?;
 
       switch (type) {
@@ -452,6 +486,43 @@ class LocalNotificationsService {
     await _setupWelcomeNotificationIfNeeded();
   }
 
+  /// Získaj preložený text notifikácie podľa aktuálneho jazyka
+  String _getNotificationText(String key) {
+    final lang = _getCurrentLanguage();
+    const texts = {
+      'sk': {
+        'welcome_title': 'Vitajte v Lectio Divina! 🙏',
+        'welcome_body':
+            'Objavte krásu modlitbového čítania Písma. Ste pripravení na duchovnú cestu?',
+        'daily_title': 'Denné zamyslenie 📖',
+        'daily_body': 'Váš denný lectio divina text vás čaká. Otvoriť?',
+        'prayer_title': 'Čas na modlitbu 🙏',
+        'prayer_body': 'Pozvanie k chvíľke rozjímania s Bohom. Pripojiť sa?',
+      },
+      'en': {
+        'welcome_title': 'Welcome to Lectio Divina! 🙏',
+        'welcome_body':
+            'Discover the beauty of prayerful Scripture reading. Are you ready for a spiritual journey?',
+        'daily_title': 'Daily Reflection 📖',
+        'daily_body': 'Your daily lectio divina text is waiting. Open?',
+        'prayer_title': 'Time for Prayer 🙏',
+        'prayer_body':
+            'An invitation to a moment of meditation with God. Join?',
+      },
+      'es': {
+        'welcome_title': '¡Bienvenido a Lectio Divina! 🙏',
+        'welcome_body':
+            'Descubre la belleza de la lectura orante de las Escrituras. ¿Estás listo para un viaje espiritual?',
+        'daily_title': 'Reflexión diaria 📖',
+        'daily_body': 'Tu texto diario de lectio divina te espera. ¿Abrir?',
+        'prayer_title': 'Hora de orar 🙏',
+        'prayer_body':
+            'Una invitación a un momento de meditación con Dios. ¿Unirse?',
+      },
+    };
+    return texts[lang]?[key] ?? texts['sk']![key]!;
+  }
+
   /// Získanie aktuálneho jazyka aplikácie
   String _getCurrentLanguage() {
     try {
@@ -549,8 +620,8 @@ class LocalNotificationsService {
 
       await _notifications.zonedSchedule(
         welcomeNotificationId,
-        'Vitajte v Lectio Divina! 🙏',
-        'Objavte krásu modlitbového čítania Písma. Ste pripravení na duchovnú cestu?',
+        _getNotificationText('welcome_title'),
+        _getNotificationText('welcome_body'),
         tz.TZDateTime.from(scheduledDate, _currentTimezone),
         const NotificationDetails(
           android: AndroidNotificationDetails(
@@ -561,11 +632,19 @@ class LocalNotificationsService {
             priority: Priority.high,
             icon: '@mipmap/launcher_icon',
             fullScreenIntent: true,
+            number: 1,
           ),
           iOS: DarwinNotificationDetails(
             presentAlert: true,
             presentBadge: true,
             presentSound: true,
+            badgeNumber: 1,
+          ),
+          macOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+            badgeNumber: 1,
           ),
         ),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -657,8 +736,8 @@ class LocalNotificationsService {
         final dateKey = DateFormat('yyyy-MM-dd').format(notificationDate);
         final dayData = lectioData[dateKey];
 
-        String title = 'Denné zamyslenie 📖';
-        String body = 'Váš denný lectio divina text vás čaká. Otvoriť?';
+        String title = _getNotificationText('daily_title');
+        String body = _getNotificationText('daily_body');
 
         if (dayData != null) {
           title = dayData['hlava'] ?? title;
@@ -689,11 +768,19 @@ class LocalNotificationsService {
               priority: Priority.high,
               icon: '@mipmap/launcher_icon',
               fullScreenIntent: true,
+              number: 1,
             ),
             iOS: DarwinNotificationDetails(
               presentAlert: true,
               presentBadge: true,
               presentSound: true,
+              badgeNumber: 1,
+            ),
+            macOS: DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: true,
+              badgeNumber: 1,
             ),
           ),
           androidScheduleMode: scheduleMode,
@@ -876,8 +963,8 @@ class LocalNotificationsService {
 
         await _notifications.zonedSchedule(
           prayerReminderBaseId + i,
-          'Čas na modlitbu 🙏',
-          'Pozvanie k chvíľke rozjímania s Bohom. Pripojiť sa?',
+          _getNotificationText('prayer_title'),
+          _getNotificationText('prayer_body'),
           tz.TZDateTime.from(scheduledTime, _currentTimezone),
           const NotificationDetails(
             android: AndroidNotificationDetails(
@@ -888,11 +975,19 @@ class LocalNotificationsService {
               priority: Priority.high,
               icon: '@mipmap/launcher_icon',
               fullScreenIntent: true,
+              number: 1,
             ),
             iOS: DarwinNotificationDetails(
               presentAlert: true,
               presentBadge: true,
               presentSound: true,
+              badgeNumber: 1,
+            ),
+            macOS: DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: true,
+              badgeNumber: 1,
             ),
           ),
           androidScheduleMode: scheduleMode,

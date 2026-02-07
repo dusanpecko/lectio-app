@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/spiritual_exercise.dart';
+import '../services/connectivity_service.dart';
+import '../services/lectio_cache_service.dart';
 import '../shared/app_colors.dart';
 import '../utils/app_logger.dart';
 import '../widgets/speed_dial_fab.dart';
@@ -81,10 +83,61 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _featuredCarouselController = PageController();
   int _currentFeaturedPage = 0;
 
+  // Offline state
+  bool _isOffline = false;
+  StreamSubscription<bool>? _connectivitySubscription;
+  final Set<String> _cachedDates = {};
+
   @override
   void initState() {
     super.initState();
     _startSliderTimer();
+    _initConnectivity();
+  }
+
+  void _initConnectivity() {
+    _isOffline = !ConnectivityService.instance.isOnline;
+    _connectivitySubscription = ConnectivityService
+        .instance
+        .onConnectivityChanged
+        .listen((isOnline) {
+          if (mounted) {
+            final wasOffline = _isOffline;
+            setState(() {
+              _isOffline = !isOnline;
+            });
+            // Ak sme sa práve prepli na online, refreshneme dáta
+            if (wasOffline && isOnline) {
+              _onRefresh();
+            }
+          }
+        });
+    if (_isOffline) {
+      _checkCachedDates();
+    }
+  }
+
+  Future<void> _checkCachedDates() async {
+    final today = DateTime.now();
+    final lang = context.locale.languageCode;
+    final dates = <String>{};
+    for (int i = -3; i < 7; i++) {
+      final date = today.add(Duration(days: i));
+      final dateStr = date.toIso8601String().substring(0, 10);
+      final cached = await LectioCacheService.instance.getCachedLectio(
+        dateStr,
+        lang,
+      );
+      if (cached != null) {
+        dates.add(dateStr);
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _cachedDates.clear();
+        _cachedDates.addAll(dates);
+      });
+    }
   }
 
   @override
@@ -103,6 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _timer?.cancel();
     _pageController.dispose();
     _featuredCarouselController.dispose();
+    _connectivitySubscription?.cancel();
     super.dispose();
   }
 
@@ -258,6 +312,20 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     } catch (e) {
       appLogger.e('❌ Home: Error fetching actio: $e');
+      // Ak je to sieťová chyba, označ ako offline
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('socket') ||
+          errorStr.contains('connection') ||
+          errorStr.contains('network') ||
+          errorStr.contains('clientexception')) {
+        ConnectivityService.instance.markOffline();
+        if (mounted) {
+          setState(() {
+            _isOffline = true;
+          });
+          _checkCachedDates();
+        }
+      }
       if (!mounted) return;
       setState(() {
         actioText = null;
@@ -554,6 +622,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       // Slider dots
                       _buildSliderDots(),
 
+                      // Offline banner
+                      if (_isOffline) _buildOfflineBanner(),
+
                       // Lectio Divina Calendar
                       _buildLectioCalendar(),
                       const SizedBox(height: 8),
@@ -564,13 +635,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       _buildNavigationButtons(),
                       const SizedBox(height: 15),
                       // Rosary section
-                      _buildRosarySection(),
+                      if (!_isOffline) _buildRosarySection(),
 
                       // Support button
-                      _buildSupportButton(),
+                      if (!_isOffline) _buildSupportButton(),
 
                       // News section
-                      _buildNewsSection(),
+                      if (!_isOffline) _buildNewsSection(),
                     ],
                   ),
                 ),
@@ -711,6 +782,39 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Build Offline Banner
+  Widget _buildOfflineBanner() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.cloud_off_rounded,
+            color: Colors.orange.shade700,
+            size: 22,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              tr('offline.offline_banner'),
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.orange.shade800,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Build Lectio Divina Calendar
   Widget _buildLectioCalendar() {
     final today = DateTime.now();
@@ -760,49 +864,68 @@ class _HomeScreenState extends State<HomeScreen> {
               itemBuilder: (context, index) {
                 final date = startDate.add(Duration(days: index));
                 final isToday = _isSameDay(date, today);
+                final dateStr = date.toIso8601String().substring(0, 10);
+                final isCached = _isOffline && _cachedDates.contains(dateStr);
+                final isUnavailable =
+                    _isOffline && !_cachedDates.contains(dateStr);
 
                 return GestureDetector(
-                  onTap: () => _openLectioForDate(date),
-                  child: Container(
-                    width: 70,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      color: isToday ? AppColors.primary : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: isToday
-                          ? [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFF4A5085,
-                                ).withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
+                  onTap: isUnavailable ? null : () => _openLectioForDate(date),
+                  child: Opacity(
+                    opacity: isUnavailable ? 0.35 : 1.0,
+                    child: Container(
+                      width: 70,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: isToday
+                            ? AppColors.primary
+                            : Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(16),
+                        border: isCached && !isToday
+                            ? Border.all(color: Colors.green.shade400, width: 2)
+                            : null,
+                        boxShadow: isToday
+                            ? [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF4A5085,
+                                  ).withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            date.day.toString(),
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: isToday ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          if (isCached && !isToday)
+                            Icon(
+                              Icons.cloud_done_outlined,
+                              size: 14,
+                              color: Colors.green.shade600,
+                            )
+                          else
+                            Text(
+                              _getDayName(date),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isToday
+                                    ? Colors.white70
+                                    : Colors.grey.shade600,
                               ),
-                            ]
-                          : null,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          date.day.toString(),
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: isToday ? Colors.white : Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _getDayName(date),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isToday
-                                ? Colors.white70
-                                : Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -931,26 +1054,55 @@ class _HomeScreenState extends State<HomeScreen> {
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
-          _ModuleButton(labelKey: 'lectio_divina', icon: Icons.menu_book),
+          _ModuleButton(
+            labelKey: 'lectio_divina',
+            icon: Icons.menu_book,
+            isOffline: _isOffline,
+          ),
           const SizedBox(width: 12),
-          _ModuleButton(labelKey: 'pray_intentions', icon: Icons.favorite),
+          _ModuleButton(
+            labelKey: 'pray_intentions',
+            icon: Icons.favorite,
+            isOffline: _isOffline,
+          ),
           const SizedBox(width: 12),
           _ModuleButton(
             labelKey: 'rosary_title',
             icon: Icons.auto_stories_rounded,
+            isOffline: _isOffline,
           ),
           const SizedBox(width: 12),
-          _ModuleButton(labelKey: 'news', icon: Icons.campaign),
+          _ModuleButton(
+            labelKey: 'news',
+            icon: Icons.campaign,
+            isOffline: _isOffline,
+          ),
           const SizedBox(width: 12),
           if (isLoggedIn) ...[
-            _ModuleButton(labelKey: 'notes_title', icon: Icons.notes),
+            _ModuleButton(
+              labelKey: 'notes_title',
+              icon: Icons.notes,
+              isOffline: _isOffline,
+            ),
             const SizedBox(width: 12),
           ],
-          _ModuleButton(labelKey: 'intro_title', icon: Icons.article),
+          _ModuleButton(
+            labelKey: 'intro_title',
+            icon: Icons.article,
+            isOffline: _isOffline,
+          ),
           const SizedBox(width: 12),
-          _ModuleButton(labelKey: 'about.title', icon: Icons.info),
+          _ModuleButton(
+            labelKey: 'about.title',
+            icon: Icons.info,
+            isOffline: _isOffline,
+          ),
           const SizedBox(width: 12),
-          _ModuleButton(labelKey: 'settings', icon: Icons.settings),
+          _ModuleButton(
+            labelKey: 'settings',
+            icon: Icons.settings,
+            isOffline: _isOffline,
+          ),
         ],
       ),
     );
@@ -1570,27 +1722,47 @@ class _HomeScreenState extends State<HomeScreen> {
 
 // Module Button Widget
 class _ModuleButton extends StatelessWidget {
-  const _ModuleButton({required this.labelKey, required this.icon});
+  const _ModuleButton({
+    required this.labelKey,
+    required this.icon,
+    this.isOffline = false,
+  });
 
   final String labelKey;
   final IconData icon;
+  final bool isOffline;
+
+  // Moduly vyžadujúce internet
+  static const _onlineOnlyModules = {'pray_intentions', 'news', 'notes_title'};
+
+  bool get _isDisabled => isOffline && _onlineOnlyModules.contains(labelKey);
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: 170,
-      child: ElevatedButton.icon(
-        onPressed: () => _handlePress(context),
-        icon: Icon(icon, size: 23),
-        label: Text(labelKey.tr()),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+      child: Opacity(
+        opacity: _isDisabled ? 0.4 : 1.0,
+        child: ElevatedButton.icon(
+          onPressed: _isDisabled ? null : () => _handlePress(context),
+          icon: Icon(icon, size: 23),
+          label: Text(labelKey.tr()),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _isDisabled
+                ? Colors.grey.shade400
+                : AppColors.primary,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: Colors.grey.shade300,
+            disabledForegroundColor: Colors.grey.shade500,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
     );

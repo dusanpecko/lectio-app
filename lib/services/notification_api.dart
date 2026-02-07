@@ -27,47 +27,6 @@ class NotificationAPI {
     defaultValue: false,
   );
 
-  /// Register FCM token in Supabase
-  /// This is called from fcm_service.dart after getting the token
-  Future<void> registerFCMToken({
-    required String fcmToken,
-    required String deviceType,
-    required String appVersion,
-    String? deviceId,
-  }) async {
-    // Mock mode - just log
-    if (_useMockData) {
-      _logger.i('🚧 Development Mode: Mock FCM token registration');
-      await Future.delayed(const Duration(milliseconds: 300));
-      return;
-    }
-
-    try {
-      _logger.i('Registering FCM token in Supabase...');
-
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
-        throw NotificationApiException('User not authenticated');
-      }
-
-      // Upsert token (insert or update if exists)
-      await _supabase.from('user_fcm_tokens').upsert({
-        'user_id': userId,
-        'token': fcmToken,
-        'device_type': deviceType,
-        'device_id': deviceId,
-        'app_version': appVersion,
-        'is_active': true,
-        'last_used_at': DateTime.now().toIso8601String(),
-      });
-
-      _logger.i('✅ FCM token registered successfully');
-    } catch (e) {
-      _logger.e('❌ Failed to register FCM token', error: e);
-      // Don't throw - FCM should still work even if backend fails
-    }
-  }
-
   /// Get notification preferences (topics + user's enabled state)
   Future<NotificationPreferencesResponse> getNotificationPreferences({
     bool forceRefresh = false,
@@ -260,47 +219,6 @@ class NotificationAPI {
     } catch (e) {
       _logger.e('❌ Failed to bulk update preferences', error: e);
       throw NotificationApiException('Failed to update preferences: $e');
-    }
-  }
-
-  /// Deaktivuje FCM token (napríklad pri odhlásení)
-  Future<void> deactivateFCMToken(String fcmToken) async {
-    try {
-      _logger.i('Deactivating FCM token in Supabase...');
-
-      // Update token to inactive in database
-      await _supabase
-          .from('user_fcm_tokens')
-          .update({'is_active': false})
-          .eq('token', fcmToken);
-
-      _logger.i('✅ FCM token deactivated successfully');
-    } catch (e) {
-      _logger.e('❌ Failed to deactivate FCM token', error: e);
-      throw NotificationApiException('Failed to deactivate token: $e');
-    }
-  }
-
-  /// Získa len zoznam dostupných topics (bez user preferencií)
-  Future<List<NotificationTopic>> getAvailableTopics() async {
-    try {
-      _logger.i('Fetching available notification topics from Supabase...');
-
-      final response = await _supabase
-          .from('notification_topics')
-          .select()
-          .eq('is_active', true)
-          .order('display_order', ascending: true);
-
-      final topics = (response as List)
-          .map((json) => NotificationTopic.fromJson(json))
-          .toList();
-
-      _logger.i('✅ Fetched ${topics.length} available topics');
-      return topics;
-    } catch (e) {
-      _logger.e('❌ Failed to fetch available topics', error: e);
-      throw NotificationApiException('Failed to fetch topics: $e');
     }
   }
 

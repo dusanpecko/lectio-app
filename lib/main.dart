@@ -21,11 +21,11 @@ import 'package:timezone/timezone.dart' as tz;
 import 'controllers/notification_controller.dart';
 import 'firebase_options.dart';
 import 'providers/theme_provider.dart';
+import 'services/audio_download_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/fcm_service.dart';
 import 'services/local_notifications_service.dart';
 import 'services/umami_analytics_service.dart';
-import 'widgets/offline_banner.dart';
 
 final _logger = appLogger;
 
@@ -154,6 +154,14 @@ Future<void> main() async {
       _logger.e('❌ Error initializing ConnectivityService: $e');
     }
 
+    // Inicializácia AudioDownloadService
+    try {
+      await AudioDownloadService.instance.initialize();
+      _logger.i('✅ AudioDownloadService initialized successfully');
+    } catch (e) {
+      _logger.e('❌ Error initializing AudioDownloadService: $e');
+    }
+
     _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   } catch (e) {
     _logger.e('❌ Error initializing LocalNotificationsService: $e');
@@ -209,7 +217,7 @@ class MyApp extends StatelessWidget {
       supportedLocales: context.supportedLocales,
       locale: context.locale,
       builder: (context, child) {
-        return OfflineBanner(child: child ?? const SizedBox.shrink());
+        return child ?? const SizedBox.shrink();
       },
       home: const FCMInitializer(child: SessionHandler()),
       routes: {'/lectio': (context) => const LectioScreen()},

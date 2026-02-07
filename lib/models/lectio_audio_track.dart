@@ -8,13 +8,23 @@ class LectioAudioTrack {
   final IconData icon;
   final Color color;
 
+  /// Lokálna cesta k stiahnutému súboru (null ak nie je stiahnuté)
+  final String? localPath;
+
   const LectioAudioTrack({
     required this.key,
     required this.label,
     required this.url,
     required this.icon,
     required this.color,
+    this.localPath,
   });
+
+  /// Či je audio dostupné offline
+  bool get isDownloaded => localPath != null;
+
+  /// Efektívna URL/cesta pre prehrávanie - preferuje lokálny súbor
+  String get effectiveUrl => localPath ?? url;
 
   /// Konverzia na Map pre spätnú kompatibilitu
   Map<String, dynamic> toMap() => {
@@ -23,6 +33,7 @@ class LectioAudioTrack {
     'url': url,
     'icon': icon,
     'color': color,
+    'localPath': localPath,
   };
 
   /// Vytvorenie z Map
@@ -33,6 +44,19 @@ class LectioAudioTrack {
       url: map['url'] as String,
       icon: map['icon'] as IconData,
       color: map['color'] as Color,
+      localPath: map['localPath'] as String?,
+    );
+  }
+
+  /// Kópia s lokálnou cestou
+  LectioAudioTrack copyWithLocalPath(String? localPath) {
+    return LectioAudioTrack(
+      key: key,
+      label: label,
+      url: url,
+      icon: icon,
+      color: color,
+      localPath: localPath,
     );
   }
 }

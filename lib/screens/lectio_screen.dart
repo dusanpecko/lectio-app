@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/lectio_audio_state.dart';
 import '../models/lectio_audio_track.dart';
+import '../services/audio_download_service.dart';
 import '../services/background_audio_manager.dart';
 import '../services/connectivity_service.dart';
 import '../services/lectio_cache_service.dart';
@@ -19,6 +20,7 @@ import '../services/prayer_focus_service.dart';
 import '../shared/app_colors.dart';
 import '../shared/date_limits_config.dart';
 import '../utils/app_logger.dart';
+import '../widgets/download_indicator.dart';
 import '../widgets/lectio_section_card.dart';
 import '../widgets/lectio_speed_dial_fab.dart';
 import '../widgets/prayer_focus_indicator.dart';
@@ -44,6 +46,8 @@ class _LectioScreenState extends State<LectioScreen> {
   final BackgroundAudioManager _backgroundAudioManager =
       BackgroundAudioManager();
   final DoNotDisturbService _dndService = DoNotDisturbService();
+  final AudioDownloadService _audioDownloadService =
+      AudioDownloadService.instance;
 
   Map<String, dynamic>? lectioData;
   bool isLoading = true;
@@ -73,10 +77,14 @@ class _LectioScreenState extends State<LectioScreen> {
 
   // Offline mode state
   bool _isDownloading = false;
-  int _downloadedDays = 0;
-  int _totalDaysToDownload = 7;
   bool _isOffline = false;
   StreamSubscription<bool>? _connectivitySubscription;
+
+  // Audio download state
+  bool _isDownloadingAudio = false;
+  int _audioDownloadCurrent = 0;
+  int _audioDownloadTotal = 0;
+  double _audioDownloadProgress = 0.0;
 
   // Cache pre tracks
   List<Map<String, dynamic>>? _cachedTracks;
@@ -290,18 +298,34 @@ class _LectioScreenState extends State<LectioScreen> {
       _fallbackPlayerSubscription = null;
       appLogger.d('🎵 Previous fallback subscription cancelled');
 
-      await _audioPlayer.setAudioSource(
-        AudioSource.uri(
-          Uri.parse(url),
-          tag: MediaItem(
-            id: sectionKey,
-            album: 'Lectio Divina',
-            title: _getSectionTitle(sectionKey),
-            artist: 'Lectio Divina',
-            artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
-          ),
-        ),
-      );
+      // Skontroluj lokálny súbor pre offline prehrávanie
+      final localPathOrNull = _audioDownloadService.getLocalPath(url);
+      final useLocalFile =
+          localPathOrNull != null && File(localPathOrNull).existsSync();
+      final localPath = localPathOrNull ?? '';
+
+      final audioSource = useLocalFile
+          ? AudioSource.file(
+              localPath,
+              tag: MediaItem(
+                id: sectionKey,
+                album: 'Lectio Divina',
+                title: _getSectionTitle(sectionKey),
+                artist: 'Lectio Divina',
+                artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
+              ),
+            )
+          : AudioSource.uri(
+              Uri.parse(url),
+              tag: MediaItem(
+                id: sectionKey,
+                album: 'Lectio Divina',
+                title: _getSectionTitle(sectionKey),
+                artist: 'Lectio Divina',
+                artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
+              ),
+            );
+      await _audioPlayer.setAudioSource(audioSource);
       await _audioPlayer.play();
       appLogger.d('🎵 Fallback player started playing');
 
@@ -438,6 +462,7 @@ class _LectioScreenState extends State<LectioScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) => Container(
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
@@ -473,6 +498,8 @@ class _LectioScreenState extends State<LectioScreen> {
               ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
             ),
             const SizedBox(height: 24),
+
+            // Stiahnutie textov
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -480,8 +507,8 @@ class _LectioScreenState extends State<LectioScreen> {
                   Navigator.pop(context);
                   _downloadLectioForDays(7);
                 },
-                icon: const Icon(Icons.download_rounded),
-                label: Text(tr('offline.download_days', args: ['7'])),
+                icon: const Icon(Icons.article_rounded),
+                label: Text(tr('offline.download_texts', args: ['7'])),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -493,13 +520,299 @@ class _LectioScreenState extends State<LectioScreen> {
               ),
             ),
             const SizedBox(height: 12),
+
+            // Stiahnutie audio pre dnešok
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: lectioData == null
+                    ? null
+                    : () {
+                        Navigator.pop(context);
+                        _downloadAudioForToday();
+                      },
+                icon: const Icon(Icons.music_note_rounded),
+                label: Text(tr('offline.download_audio_today')),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: BorderSide(color: AppColors.primary),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Stiahnutie textov + audio
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _downloadLectioWithAudio(7);
+                },
+                icon: const Icon(Icons.cloud_download_rounded),
+                label: Text(tr('offline.download_all', args: ['7'])),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.shade600,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Správa úložiska
+            if (_audioDownloadService.downloadedFilesCount > 0)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.storage_rounded,
+                      size: 16,
+                      color: Colors.grey[500],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${_audioDownloadService.downloadedFilesCount} ${tr('offline.files')} • ${_audioDownloadService.formattedStorageSize}',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showStorageManagement();
+                      },
+                      child: Text(
+                        tr('offline.manage'),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text(tr('common.cancel')),
+              child: Text(tr('cancel')),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  /// Stiahne audio nahrávky pre dnešný deň
+  Future<void> _downloadAudioForToday() async {
+    if (_isDownloadingAudio || lectioData == null) return;
+
+    setState(() {
+      _isDownloadingAudio = true;
+      _audioDownloadProgress = 0.0;
+      _audioDownloadCurrent = 0;
+      _audioDownloadTotal = 0;
+    });
+
+    // Invalidate tracks cache - lokálne cesty sa zmenia
+    _invalidateTracksCache();
+
+    try {
+      final today = DateFormat('yyyy-MM-dd').format(selectedDate);
+
+      // Stiahni interlude hudbu (ak ešte nie je stiahnutá)
+      await _audioDownloadService.downloadInterlude();
+
+      final result = await _audioDownloadService.downloadAllForDay(
+        lectioData: lectioData!,
+        date: today,
+        selectedBible: _selectedBible,
+        onProgress: (current, total, progress) {
+          if (mounted) {
+            setState(() {
+              _audioDownloadCurrent = current;
+              _audioDownloadTotal = total;
+              _audioDownloadProgress = progress;
+            });
+          }
+        },
+      );
+
+      // Invalidate tracks cache opäť - teraz budú nové lokálne cesty
+      _invalidateTracksCache();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              tr(
+                'offline.audio_download_complete',
+                args: ['${result.successCount}', '${result.totalCount}'],
+              ),
+            ),
+            backgroundColor: result.isComplete ? Colors.green : Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      appLogger.e('❌ Audio download failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(tr('offline.audio_download_error')),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDownloadingAudio = false;
+        });
+      }
+    }
+  }
+
+  /// Stiahne audio pre N dní (použije cached lectio data)
+  Future<void> _downloadAudioForDays(int days) async {
+    if (_isDownloadingAudio) return;
+
+    setState(() {
+      _isDownloadingAudio = true;
+      _audioDownloadProgress = 0.0;
+      _audioDownloadCurrent = 0;
+      _audioDownloadTotal = 0;
+    });
+
+    try {
+      final locale = context.locale.languageCode;
+      final now = DateTime.now();
+      int totalSuccess = 0;
+      int totalCount = 0;
+
+      // Stiahni interlude hudbu (ak ešte nie je stiahnutá)
+      await _audioDownloadService.downloadInterlude();
+
+      for (int i = 0; i < days; i++) {
+        final date = now.add(Duration(days: i));
+        final dateString = DateFormat('yyyy-MM-dd').format(date);
+
+        // Načítaj cached lectio data
+        final cachedData = await LectioCacheService.instance.getCachedLectio(
+          dateString,
+          locale,
+        );
+
+        if (cachedData == null || cachedData.rawLectioSource == null) {
+          appLogger.w('⚠️ Žiadne cached data pre $dateString - preskakujem');
+          continue;
+        }
+
+        // Stiahni audio pre tento deň
+        final result = await _audioDownloadService.downloadAllForDay(
+          lectioData: cachedData.rawLectioSource!,
+          date: dateString,
+          selectedBible: _selectedBible,
+          onProgress: (current, total, progress) {
+            if (mounted) {
+              setState(() {
+                _audioDownloadCurrent = totalSuccess + current;
+                _audioDownloadTotal = totalCount + total;
+                _audioDownloadProgress = _audioDownloadTotal > 0
+                    ? _audioDownloadCurrent / _audioDownloadTotal
+                    : 0.0;
+              });
+            }
+          },
+        );
+
+        totalSuccess += result.successCount;
+        totalCount += result.totalCount;
+      }
+
+      // Invalidate tracks cache
+      _invalidateTracksCache();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              tr(
+                'offline.audio_download_complete',
+                args: ['$totalSuccess', '$totalCount'],
+              ),
+            ),
+            backgroundColor: totalSuccess == totalCount
+                ? Colors.green
+                : Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      appLogger.e('❌ Audio download for days failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(tr('offline.audio_download_error')),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDownloadingAudio = false;
+        });
+      }
+    }
+  }
+
+  /// Stiahne texty + audio na N dní
+  Future<void> _downloadLectioWithAudio(int days) async {
+    // Najprv stiahni texty
+    await _downloadLectioForDays(days);
+
+    // Potom stiahni audio pre všetkých N dní
+    await _downloadAudioForDays(days);
+  }
+
+  /// Zobrazí dialóg správy úložiska
+  void _showStorageManagement() {
+    showDialog(
+      context: context,
+      builder: (context) =>
+          AudioStorageDialog(downloadService: _audioDownloadService),
     );
   }
 
@@ -509,8 +822,6 @@ class _LectioScreenState extends State<LectioScreen> {
 
     setState(() {
       _isDownloading = true;
-      _downloadedDays = 0;
-      _totalDaysToDownload = days;
     });
 
     try {
@@ -519,12 +830,7 @@ class _LectioScreenState extends State<LectioScreen> {
         locale: locale,
         days: days,
         onProgress: (current, total) {
-          if (mounted) {
-            setState(() {
-              _downloadedDays = current;
-              _totalDaysToDownload = total;
-            });
-          }
+          // Progress tracking - could be displayed in a future update
         },
       );
 
@@ -969,6 +1275,7 @@ class _LectioScreenState extends State<LectioScreen> {
           reference: lectioSource['reference'],
           audioUrl: lectioSource['audio_url'],
           cachedAt: DateTime.now(),
+          rawLectioSource: lectioSource,
         );
         await LectioCacheService.instance.cacheLectio(cachedData);
       } else {
@@ -984,6 +1291,21 @@ class _LectioScreenState extends State<LectioScreen> {
       }
     } catch (e) {
       appLogger.e('❌ Chyba pri načítavaní Lectio dát: $e');
+
+      // Ak je to sieťová chyba, označ ako offline
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('socket') ||
+          errorStr.contains('connection') ||
+          errorStr.contains('network') ||
+          errorStr.contains('clientexception')) {
+        ConnectivityService.instance.markOffline();
+        if (mounted) {
+          setState(() {
+            _isOffline = true;
+          });
+        }
+      }
+
       // Pri chybe skús načítať z cache
       final cachedData = await LectioCacheService.instance.getCachedLectio(
         today,
@@ -1053,7 +1375,16 @@ class _LectioScreenState extends State<LectioScreen> {
     );
 
     // Konverzia na mapy pre spätnú kompatibilitu
-    final tracks = builder.build().map((track) => track.toMap()).toList();
+    // + pridanie lokálnych ciest pre offline prehrávanie
+    final tracks = builder.build().map((track) {
+      final map = track.toMap();
+      // Skontroluj či je audio stiahnuté lokálne
+      final localPath = _audioDownloadService.getLocalPath(track.url);
+      if (localPath != null) {
+        map['localPath'] = localPath;
+      }
+      return map;
+    }).toList();
 
     // Ulož do cache
     _cachedTracks = tracks;
@@ -1143,29 +1474,51 @@ class _LectioScreenState extends State<LectioScreen> {
         }
       }
 
+      // Skontroluj lokálny súbor pre offline prehrávanie
+      final localPathOrNull = _audioDownloadService.getLocalPath(url);
+      final useLocalFile =
+          localPathOrNull != null && File(localPathOrNull).existsSync();
+      final localPath = localPathOrNull ?? '';
+
+      if (useLocalFile) {
+        appLogger.d('🎵 📦 Offline play: $sectionKey z lokálneho súboru');
+      }
+
       // Use background audio service if available, fallback to regular audio player
       if (_backgroundAudioManager.isInitialized) {
         // Zastaviť aj regular audio player pre istotu
         await _audioPlayer.stop();
-        await _playBackgroundAudio(url, sectionKey);
+        await _playBackgroundAudio(useLocalFile ? localPath : url, sectionKey);
         appLogger.d('🎵 Background audio started successfully');
       } else {
         // Zastaviť background audio ak beží
         if (_backgroundAudioManager.isInitialized) {
           await _backgroundAudioManager.stop();
         }
-        await _audioPlayer.setAudioSource(
-          AudioSource.uri(
-            Uri.parse(url),
-            tag: MediaItem(
-              id: sectionKey,
-              album: 'Lectio Divina',
-              title: _getSectionTitle(sectionKey),
-              artist: 'Lectio Divina',
-              artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
-            ),
-          ),
-        );
+
+        // Použi lokálny súbor alebo streaming
+        final audioSource = useLocalFile
+            ? AudioSource.file(
+                localPath,
+                tag: MediaItem(
+                  id: sectionKey,
+                  album: 'Lectio Divina',
+                  title: _getSectionTitle(sectionKey),
+                  artist: 'Lectio Divina',
+                  artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
+                ),
+              )
+            : AudioSource.uri(
+                Uri.parse(url),
+                tag: MediaItem(
+                  id: sectionKey,
+                  album: 'Lectio Divina',
+                  title: _getSectionTitle(sectionKey),
+                  artist: 'Lectio Divina',
+                  artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
+                ),
+              );
+        await _audioPlayer.setAudioSource(audioSource);
         await _audioPlayer.play();
         appLogger.d('🎵 Regular audio player started successfully');
       }
@@ -1842,29 +2195,6 @@ class _LectioScreenState extends State<LectioScreen> {
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     actions: [
-                      // Download button pre offline mód (zobrazí sa len keď sme online)
-                      if (!_isOffline)
-                        IconButton(
-                          icon: _isDownloading
-                              ? SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
-                                    value: _totalDaysToDownload > 0
-                                        ? _downloadedDays / _totalDaysToDownload
-                                        : null,
-                                  ),
-                                )
-                              : const Icon(Icons.download_rounded),
-                          tooltip: tr('offline.download_days', args: ['7']),
-                          onPressed: _isDownloading
-                              ? null
-                              : _showDownloadDialog,
-                        ),
                       // DND Status Indicator
                       StreamBuilder<bool>(
                         stream: DoNotDisturbService().dndStateStream,
@@ -1877,7 +2207,7 @@ class _LectioScreenState extends State<LectioScreen> {
                             duration: const Duration(milliseconds: 300),
                             child: Container(
                               margin: const EdgeInsets.only(
-                                right: 16,
+                                right: 8,
                                 top: 8,
                                 bottom: 8,
                               ),
@@ -1916,6 +2246,33 @@ class _LectioScreenState extends State<LectioScreen> {
                           );
                         },
                       ),
+                      // Offline Status Indicator - úplne vpravo
+                      if (_isOffline)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 16),
+                          child: Tooltip(
+                            message: tr('offline.offline_mode'),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.shade700,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.cloud_off_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                     flexibleSpace: FlexibleSpaceBar(
                       titlePadding: const EdgeInsets.fromLTRB(
@@ -2117,6 +2474,37 @@ class _LectioScreenState extends State<LectioScreen> {
                     child: Divider(height: 1, color: theme.dividerColor),
                   ),
 
+                  // Audio download progress indicator
+                  if (_isDownloadingAudio)
+                    SliverToBoxAdapter(
+                      child: AudioDownloadProgress(
+                        progress: _audioDownloadProgress,
+                        currentTrack: _audioDownloadCurrent,
+                        totalTracks: _audioDownloadTotal,
+                      ),
+                    ),
+
+                  // Offline audio banner
+                  if (!_isDownloadingAudio && lectioData != null)
+                    SliverToBoxAdapter(
+                      child: Builder(
+                        builder: (context) {
+                          final tracks = _getAvailableAudioTracks();
+                          final downloadedCount = tracks
+                              .where((t) => t['localPath'] != null)
+                              .length;
+                          if (downloadedCount == 0) {
+                            return const SizedBox.shrink();
+                          }
+                          return OfflineAudioBanner(
+                            downloadedTracks: downloadedCount,
+                            totalTracks: tracks.length,
+                            onManageTap: _showStorageManagement,
+                          );
+                        },
+                      ),
+                    ),
+
                   // Main Content
                   SliverToBoxAdapter(
                     child: isLoading
@@ -2262,11 +2650,13 @@ class _LectioScreenState extends State<LectioScreen> {
                   });
                 }
               : null,
+          onDownload: _showDownloadDialog,
           onRefresh: fetchLectioData,
           isDndActive: _isDndActive,
           hasAudio: _getAvailableAudioTracks().isNotEmpty,
           showAudioPlayer: _showAudioPlayer,
           dndEnabled: _dndEnabled,
+          isOffline: _isOffline,
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -2927,6 +3317,19 @@ class _LectioScreenState extends State<LectioScreen> {
                                         ],
                                       ),
                                     ),
+
+                                    // Download status ikona
+                                    if (track['localPath'] != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(left: 4),
+                                        child: Icon(
+                                          Icons.offline_pin_rounded,
+                                          size: 18,
+                                          color: Colors.green.withValues(
+                                            alpha: 0.7,
+                                          ),
+                                        ),
+                                      ),
                                   ],
                                 ),
                               ),
