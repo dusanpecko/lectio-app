@@ -356,6 +356,11 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
                               )
                             : _buildIntentionCard(item, isAuthor);
                       }),
+
+                    // Priestor pre FAB + systémovú navigačnú lištu
+                    SizedBox(
+                      height: MediaQuery.of(context).padding.bottom + 80,
+                    ),
                   ],
                 ),
               ),

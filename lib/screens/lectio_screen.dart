@@ -4,12 +4,14 @@ import 'dart:io';
 import 'package:audio_service/audio_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/lectio_audio_state.dart';
 import '../models/lectio_audio_track.dart';
+import '../helpers/dnd_helper.dart';
 import '../services/audio_download_service.dart';
 import '../services/background_audio_manager.dart';
 import '../services/connectivity_service.dart';
@@ -21,6 +23,8 @@ import '../shared/app_colors.dart';
 import '../shared/date_limits_config.dart';
 import '../utils/app_logger.dart';
 import '../widgets/download_indicator.dart';
+import '../widgets/global_mini_player.dart';
+import '../widgets/lectio_floating_audio_player.dart';
 import '../widgets/lectio_section_card.dart';
 import '../widgets/lectio_speed_dial_fab.dart';
 import '../widgets/prayer_focus_indicator.dart';
@@ -53,7 +57,7 @@ class _LectioScreenState extends State<LectioScreen> {
   bool isLoading = true;
   bool _dataLoaded = false;
   DateTime selectedDate = DateTime.now();
-  String _selectedBible = 'biblia1';
+  String _selectedBible = 'biblia_1'; // Názov stĺpca v lectio_sources
 
   // Audio player state - s enum pre hlavný stav
   LectioPlaybackState _playbackState = LectioPlaybackState.idle;
@@ -70,6 +74,10 @@ class _LectioScreenState extends State<LectioScreen> {
   bool _usingFallbackPlayer = false;
   StreamSubscription? _fallbackPlayerSubscription;
   bool _isPlayingInterlude = false; // Track if meditation music is playing
+  bool _isPlayAudioInProgress =
+      false; // Guard against concurrent _playAudio calls
+  Completer<void>? _playAudioCompleter; // For awaiting current _playAudio
+  DateTime? _lastSkipTime; // Debounce for skip buttons
 
   // Do Not Disturb state
   bool _isDndActive = false;
@@ -100,16 +108,106 @@ class _LectioScreenState extends State<LectioScreen> {
   @override
   void initState() {
     super.initState();
+    // Skry globálny mini player (LectioScreen má vlastný plný prehrávač)
+    GlobalMiniPlayer.hideOnCurrentScreen.value = true;
     _setupAudioListeners();
     _initializeDndService();
     _initializeBackgroundAudio();
     _startPositionTimer();
     _initializeConnectivity();
+    _restoreAudioPlayerState();
 
     // Callback sa zaregistruje v _playBackgroundAudio po inicializácii
 
     // Notifikuj Prayer Focus Service o vstupe do Lectio screen
     _prayerFocusService.onSpiritualScreenEntered(SpiritualScreen.lectio);
+  }
+
+  /// Obnoví stav audio prehrávača ak sa vracia na LectioScreen a audio stále hrá
+  void _restoreAudioPlayerState() {
+    final player = _backgroundAudioManager;
+    if (player.isInitialized && player.playlist.isNotEmpty) {
+      final isPlaying = player.isPlaying;
+      final currentIndex = player.currentTrackIndex;
+      final tracks = player.playlist;
+
+      if (currentIndex >= 0 && currentIndex < tracks.length) {
+        final currentTrack = tracks[currentIndex];
+        appLogger.i(
+          '🔄 Restoring audio player state: ${currentTrack['key']}, playing=$isPlaying',
+        );
+
+        setState(() {
+          _showAudioPlayer = true;
+          _currentAudioSection = currentTrack['key'] as String;
+          _isPlaying = isPlaying;
+          _isPlayingInterlude = player.isPlayingInterlude;
+          _playbackState = isPlaying
+              ? LectioPlaybackState.playing
+              : LectioPlaybackState.paused;
+          _currentPosition = player.currentPosition;
+          _totalDuration = player.totalDuration ?? Duration.zero;
+        });
+
+        // Animuj na správny track v playlistu
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_playlistPageController.hasClients && mounted) {
+            _playlistPageController.jumpToPage(currentIndex);
+          }
+        });
+
+        // Re-registruj callbacks
+        _setupBackgroundCallbacks();
+      }
+    }
+  }
+
+  /// Registruje callbacks pre BackgroundAudioManager
+  void _setupBackgroundCallbacks() {
+    final tracks = _getAvailableAudioTracks();
+
+    _backgroundAudioManager.setOnTrackChanged((trackKey, index) {
+      appLogger.d('🎵 onTrackChanged: trackKey=$trackKey, index=$index');
+      if (mounted) {
+        setState(() {
+          if (trackKey == 'interlude') {
+            _isPlayingInterlude = true;
+            _playbackState = LectioPlaybackState.playingInterlude;
+          } else if (index >= 0 && index < tracks.length) {
+            _isPlayingInterlude = false;
+            _currentAudioSection = tracks[index]['key'];
+            _playbackState = LectioPlaybackState.playing;
+            if (_playlistPageController.hasClients) {
+              _playlistPageController.animateToPage(
+                index,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeInOut,
+              );
+            }
+          }
+        });
+      }
+    });
+
+    _backgroundAudioManager.setOnPlaylistCompleted(() {
+      appLogger.d('🎵 Playlist completed');
+      if (mounted) {
+        setState(() {
+          _playbackState = LectioPlaybackState.stopped;
+          _isPlaying = false;
+          _isPlayingInterlude = false;
+          _currentPosition = Duration.zero;
+          _totalDuration = Duration.zero;
+        });
+      }
+    });
+
+    _backgroundAudioManager.setOnSectionCompleted(() {
+      appLogger.d('🎵 Section completed callback');
+      if (mounted) {
+        appLogger.d('🎵 UI will be updated via stream listeners');
+      }
+    });
   }
 
   /// Inicializácia sledovania pripojenia
@@ -198,18 +296,36 @@ class _LectioScreenState extends State<LectioScreen> {
         }
       }
 
-      // 🎯 NOVÁ LOGIKA: Nastaviť playlist do BackgroundAudioManager
-      // Toto umožňuje pokračovanie v background aj keď widget nie je mounted
+      // 🎯 Nastaviť playlist do BackgroundAudioManager
+      // Len ak sa playlist zmenil (napr. nový deň) alebo po interlude
       final tracks = _getAvailableAudioTracks();
       final currentIndex = tracks.indexWhere((t) => t['key'] == sectionKey);
 
-      // Nastaviť playlist a audio mode (NOW ASYNC)
-      await _backgroundAudioManager.setPlaylist(tracks, _audioMode);
-      if (currentIndex >= 0) {
-        // Nastaviť current index manuálne (nie cez playTrackByIndex aby sa neprehral znova)
+      // Skontroluj či treba rebuildiť playlist
+      final existingPlaylist = _backgroundAudioManager.playlist;
+      final playlistChanged =
+          existingPlaylist.length != tracks.length ||
+          !tracks.every(
+            (t) => existingPlaylist.any(
+              (e) =>
+                  e['key'] == t['key'] &&
+                  e['url'] == t['url'] &&
+                  e['localPath'] == t['localPath'],
+            ),
+          );
+      // Rebuild ak sa zmenil playlist alebo je prázdny
+      final needsRebuild = playlistChanged || existingPlaylist.isEmpty;
+
+      if (needsRebuild) {
+        // Nastaviť playlist a audio mode (NOW ASYNC)
+        await _backgroundAudioManager.setPlaylist(tracks, _audioMode);
         appLogger.d(
-          '🎵 Setting playlist with ${tracks.length} tracks, current: $currentIndex',
+          '🎵 Playlist rebuilt: ${tracks.length} tracks, current: $currentIndex',
         );
+      } else {
+        // Len aktualizuj audio mode
+        _backgroundAudioManager.setAudioMode(_audioMode);
+        appLogger.d('🎵 Playlist unchanged, seeking to track: $currentIndex');
       }
 
       // Callback pre UI update keď sa zmení track (pre prípad keď je widget mounted)
@@ -225,12 +341,14 @@ class _LectioScreenState extends State<LectioScreen> {
               // During interlude, keep _currentAudioSection on previous track
               // Only set the interlude flag
               _isPlayingInterlude = true;
+              _playbackState = LectioPlaybackState.playingInterlude;
               appLogger.d(
                 '🎵 Interlude started - keeping carousel on current track',
               );
             } else if (index >= 0 && index < tracks.length) {
               _isPlayingInterlude = false;
               _currentAudioSection = tracks[index]['key'];
+              _playbackState = LectioPlaybackState.playing;
               // Animovať na nový track
               if (_playlistPageController.hasClients) {
                 _playlistPageController.animateToPage(
@@ -250,8 +368,11 @@ class _LectioScreenState extends State<LectioScreen> {
         appLogger.d('🎵 Playlist completed');
         if (mounted) {
           setState(() {
+            _playbackState = LectioPlaybackState.stopped;
             _isPlaying = false;
-            _currentAudioSection = null;
+            _isPlayingInterlude = false;
+            _currentPosition = Duration.zero;
+            _totalDuration = Duration.zero;
           });
         }
       });
@@ -287,7 +408,30 @@ class _LectioScreenState extends State<LectioScreen> {
       appLogger.d('🎵 Background audio started: $title');
     } catch (e) {
       appLogger.e('❌ Error playing background audio: $e');
-      // Fallback to regular audio player
+
+      // Ak je error o offline dostupnosti, ukáž užívateľovi
+      if (e.toString().contains('not available offline')) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Audio nie je dostupné offline. Najprv si ho stiahnite.',
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.red.shade700,
+              duration: const Duration(seconds: 4),
+              action: SnackBarAction(
+                label: 'Stiahnuť',
+                textColor: Colors.white,
+                onPressed: _showDownloadDialog,
+              ),
+            ),
+          );
+        }
+        return; // Neskúšaj fallback ak je offline problém
+      }
+
+      // Fallback to regular audio player pre iné errory
       _usingFallbackPlayer = true;
       appLogger.d(
         '🎵 🔄 Using fallback player, _usingFallbackPlayer=$_usingFallbackPlayer',
@@ -312,7 +456,9 @@ class _LectioScreenState extends State<LectioScreen> {
                 album: 'Lectio Divina',
                 title: _getSectionTitle(sectionKey),
                 artist: 'Lectio Divina',
-                artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
+                artUri: _isOffline
+                    ? null
+                    : Uri.parse(AudioConstants.defaultArtworkUrl),
               ),
             )
           : AudioSource.uri(
@@ -322,7 +468,9 @@ class _LectioScreenState extends State<LectioScreen> {
                 album: 'Lectio Divina',
                 title: _getSectionTitle(sectionKey),
                 artist: 'Lectio Divina',
-                artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
+                artUri: _isOffline
+                    ? null
+                    : Uri.parse(AudioConstants.defaultArtworkUrl),
               ),
             );
       await _audioPlayer.setAudioSource(audioSource);
@@ -393,6 +541,12 @@ class _LectioScreenState extends State<LectioScreen> {
   void _updatePositionFromPlayer() {
     if (!mounted || _currentAudioSection == null) return;
 
+    // Neaktualizuj ak je playback stopped/completed - zabráni overridu _isPlaying
+    if (_playbackState == LectioPlaybackState.stopped ||
+        _playbackState == LectioPlaybackState.idle) {
+      return;
+    }
+
     // Ak používame fallback player (Android keď BAM zlyhá)
     if (_usingFallbackPlayer) {
       final position = _audioPlayer.position;
@@ -432,6 +586,44 @@ class _LectioScreenState extends State<LectioScreen> {
         );
         setState(() {
           _isPlayingInterlude = isInterlude;
+          if (isInterlude) {
+            _playbackState = LectioPlaybackState.playingInterlude;
+          }
+        });
+      }
+
+      // 🎯 Safety net: sync current track from BAM to UI
+      // Handles cases where onTrackChanged callback was missed
+      final bamTrackIndex = _backgroundAudioManager.currentTrackIndex;
+      final bamTrackKey = _backgroundAudioManager.lectioPlayer.currentTrackKey;
+      if (!isInterlude &&
+          bamTrackKey != null &&
+          bamTrackKey != 'interlude' &&
+          bamTrackKey != _currentAudioSection &&
+          bamTrackIndex >= 0) {
+        appLogger.d(
+          '🎵 Timer: track sync safety net: BAM=$bamTrackKey (idx=$bamTrackIndex), UI=$_currentAudioSection',
+        );
+        setState(() {
+          _currentAudioSection = bamTrackKey;
+          _playbackState = isPlaying
+              ? LectioPlaybackState.playing
+              : LectioPlaybackState.paused;
+        });
+        // Animate slide to correct track
+        if (_playlistPageController.hasClients) {
+          _playlistPageController.animateToPage(
+            bamTrackIndex,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
+
+      // Sync playbackState when playing (timer catches loading→playing transition)
+      if (isPlaying && _playbackState == LectioPlaybackState.loading) {
+        setState(() {
+          _playbackState = LectioPlaybackState.playing;
         });
       }
 
@@ -634,7 +826,7 @@ class _LectioScreenState extends State<LectioScreen> {
       // Stiahni interlude hudbu (ak ešte nie je stiahnutá)
       await _audioDownloadService.downloadInterlude();
 
-      final result = await _audioDownloadService.downloadAllForDay(
+      await _audioDownloadService.downloadAllForDay(
         lectioData: lectioData!,
         date: today,
         selectedBible: _selectedBible,
@@ -653,22 +845,7 @@ class _LectioScreenState extends State<LectioScreen> {
       _invalidateTracksCache();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              tr(
-                'offline.audio_download_complete',
-                args: ['${result.successCount}', '${result.totalCount}'],
-              ),
-            ),
-            backgroundColor: result.isComplete ? Colors.green : Colors.orange,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        );
+        _showSuccessIndicator();
       }
     } catch (e) {
       appLogger.e('❌ Audio download failed: $e');
@@ -755,24 +932,7 @@ class _LectioScreenState extends State<LectioScreen> {
       _invalidateTracksCache();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              tr(
-                'offline.audio_download_complete',
-                args: ['$totalSuccess', '$totalCount'],
-              ),
-            ),
-            backgroundColor: totalSuccess == totalCount
-                ? Colors.green
-                : Colors.orange,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        );
+        _showSuccessIndicator();
       }
     } catch (e) {
       appLogger.e('❌ Audio download for days failed: $e');
@@ -808,13 +968,70 @@ class _LectioScreenState extends State<LectioScreen> {
   }
 
   /// Zobrazí dialóg správy úložiska
-  void _showStorageManagement() {
-    showDialog(
+  void _showStorageManagement() async {
+    await showDialog(
       context: context,
       builder: (context) =>
           AudioStorageDialog(downloadService: _audioDownloadService),
     );
+    if (mounted) {
+      _invalidateTracksCache(); // Clear cache to refresh offline status
+      setState(() {}); // Refresh UI after dialog closes
+    }
   }
+
+  /// Zobrazí jednoducho indikátor úspechu (zelená fajka v kruhu)
+  void _showSuccessIndicator() {
+    final overlay = Overlay.of(context);
+    final overlayEntry = OverlayEntry(
+      builder: (context) => Center(
+        child: Material(
+          color: Colors.transparent,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 300),
+            builder: (context, value, child) {
+              return Transform.scale(
+                scale: value,
+                child: Opacity(
+                  opacity: value,
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.withValues(alpha: 0.4),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(overlayEntry);
+
+    // Automaticky odstrán po 1.5 sekundách
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      overlayEntry.remove();
+    });
+  }
+
+  // Removed obsolete _handleDeleteAllOfflineData (logic is in AudioStorageDialog)
 
   /// Stiahne Lectio pre zadaný počet dní
   Future<void> _downloadLectioForDays(int days) async {
@@ -826,7 +1043,7 @@ class _LectioScreenState extends State<LectioScreen> {
 
     try {
       final locale = context.locale.languageCode;
-      final result = await LectioCacheService.instance.downloadLectioForDays(
+      await LectioCacheService.instance.downloadLectioForDays(
         locale: locale,
         days: days,
         onProgress: (current, total) {
@@ -835,22 +1052,7 @@ class _LectioScreenState extends State<LectioScreen> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              tr(
-                'offline.download_complete',
-                args: ['${result.downloadedDays}'],
-              ),
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        );
+        _showSuccessIndicator();
       }
     } catch (e) {
       appLogger.e('❌ Download failed: $e');
@@ -878,6 +1080,9 @@ class _LectioScreenState extends State<LectioScreen> {
 
   @override
   void dispose() {
+    // Zobraz globálny mini player (opúšťame LectioScreen)
+    GlobalMiniPlayer.hideOnCurrentScreen.value = false;
+
     // Zrušiť position timer
     _positionUpdateTimer?.cancel();
 
@@ -1330,13 +1535,74 @@ class _LectioScreenState extends State<LectioScreen> {
   }
 
   Future<void> _loadSelectedBible() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (mounted) {
-      setState(() {
-        _selectedBible = prefs.getString('selectedBible') ?? 'biblia1';
-        _audioMode = prefs.getString('audioMode') ?? 'short';
-      });
-      _invalidateTracksCache();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      // Hodnota je priamo názov stĺpca: biblia_1, biblia_2 alebo biblia_3
+      String selectedBible = prefs.getString('selectedBible') ?? 'biblia_1';
+
+      // Komplexná migrácia starých hodnôt na nový formát
+      selectedBible = _migrateBibleValue(selectedBible);
+      await prefs.setString('selectedBible', selectedBible);
+
+      _selectedBible = selectedBible;
+      _audioMode = prefs.getString('audioMode') ?? 'short';
+
+      if (mounted) {
+        setState(() {});
+        _invalidateTracksCache();
+      }
+    } catch (e) {
+      debugPrint('Error loading selected bible: $e');
+      if (mounted) {
+        setState(() {
+          _selectedBible = 'biblia_1';
+          _audioMode = 'short';
+        });
+        _invalidateTracksCache();
+      }
+    }
+  }
+
+  // Migruje starú hodnotu na nový formát (biblia_1, biblia_2, biblia_3)
+  String _migrateBibleValue(String oldValue) {
+    // Ak je už v správnom formáte, vráť ho
+    if (oldValue == 'biblia_1' ||
+        oldValue == 'biblia_2' ||
+        oldValue == 'biblia_3') {
+      return oldValue;
+    }
+
+    // Migrácia zo starých formátov
+    switch (oldValue.toLowerCase()) {
+      // Starý formát bez podčiarkovníka
+      case 'biblia1':
+      case 'bible_en_1':
+        return 'biblia_1';
+
+      case 'biblia2':
+      case 'bible_en_2':
+        return 'biblia_2';
+
+      case 'biblia3':
+      case 'bible_en_3':
+        return 'biblia_3';
+
+      // Databázové kódy
+      case 'ssv':
+      case 'standardny':
+        return 'biblia_1';
+
+      case 'jeruzalemsky':
+      case 'jeruzalem':
+        return 'biblia_2';
+
+      case 'ekumenicky':
+      case 'ekumen':
+        return 'biblia_3';
+
+      default:
+        // Fallback na prvú bibliu
+        return 'biblia_1';
     }
   }
 
@@ -1359,10 +1625,23 @@ class _LectioScreenState extends State<LectioScreen> {
   List<Map<String, dynamic>> _getAvailableAudioTracks() {
     if (lectioData == null) return [];
 
-    // Cache check - ak sa nič nezmenilo, vráť cache
+    // Cache check - ak sa nič nezmenilo, vráť cache (ale refresh localPath)
     if (_cachedTracks != null &&
         _lastCachedBible == _selectedBible &&
         _lastCachedLectioData == lectioData) {
+      // Vždy refresh localPath z AudioDownloadService (nie z cache)
+      // aby sme mali aktuálny stav po stiahnutí
+      for (final track in _cachedTracks!) {
+        final url = track['url'] as String?;
+        if (url != null) {
+          final localPath = _audioDownloadService.getLocalPath(url);
+          if (localPath != null) {
+            track['localPath'] = localPath;
+          } else {
+            track.remove('localPath');
+          }
+        }
+      }
       return _cachedTracks!;
     }
 
@@ -1408,6 +1687,22 @@ class _LectioScreenState extends State<LectioScreen> {
         return;
       }
 
+      // Wait for any in-progress _playAudio to finish first
+      if (_isPlayAudioInProgress && _playAudioCompleter != null) {
+        appLogger.d('⏳ Čakám na dokončenie predchádzajúceho _playAudio...');
+        try {
+          await _playAudioCompleter!.future.timeout(
+            const Duration(seconds: 2),
+            onTimeout: () {
+              appLogger.w('⚠️ Timeout čakania na predchádzajúce _playAudio');
+            },
+          );
+        } catch (_) {}
+      }
+
+      _isPlayAudioInProgress = true;
+      _playAudioCompleter = Completer<void>();
+
       // Zrušiť fallback subscription PRED zastavením audio
       // aby sa nezachytil "completed" stav pri stop()
       await _fallbackPlayerSubscription?.cancel();
@@ -1419,7 +1714,8 @@ class _LectioScreenState extends State<LectioScreen> {
           '🛑 Zastavujem predchádzajúce audio: $_currentAudioSection',
         );
         if (_backgroundAudioManager.isInitialized) {
-          await _backgroundAudioManager.stop();
+          // Nepoužívaj stop() - len pause, aby sa nenastavil _isStopped flag
+          await _backgroundAudioManager.pause();
         }
         await _audioPlayer.stop();
       }
@@ -1488,7 +1784,10 @@ class _LectioScreenState extends State<LectioScreen> {
       if (_backgroundAudioManager.isInitialized) {
         // Zastaviť aj regular audio player pre istotu
         await _audioPlayer.stop();
-        await _playBackgroundAudio(useLocalFile ? localPath : url, sectionKey);
+        // VŽDY posielaj remote URL - playlist building v _playBackgroundAudio
+        // už rieši local/remote výber cez _createAudioSource.
+        // Posielanie localPath spôsobovalo URL mismatch v play() lookup.
+        await _playBackgroundAudio(url, sectionKey);
         appLogger.d('🎵 Background audio started successfully');
       } else {
         // Zastaviť background audio ak beží
@@ -1505,7 +1804,9 @@ class _LectioScreenState extends State<LectioScreen> {
                   album: 'Lectio Divina',
                   title: _getSectionTitle(sectionKey),
                   artist: 'Lectio Divina',
-                  artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
+                  artUri: _isOffline
+                      ? null
+                      : Uri.parse(AudioConstants.defaultArtworkUrl),
                 ),
               )
             : AudioSource.uri(
@@ -1515,7 +1816,9 @@ class _LectioScreenState extends State<LectioScreen> {
                   album: 'Lectio Divina',
                   title: _getSectionTitle(sectionKey),
                   artist: 'Lectio Divina',
-                  artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
+                  artUri: _isOffline
+                      ? null
+                      : Uri.parse(AudioConstants.defaultArtworkUrl),
                 ),
               );
         await _audioPlayer.setAudioSource(audioSource);
@@ -1537,6 +1840,10 @@ class _LectioScreenState extends State<LectioScreen> {
           ),
         );
       }
+    } finally {
+      _isPlayAudioInProgress = false;
+      _playAudioCompleter?.complete();
+      _playAudioCompleter = null;
     }
   }
 
@@ -1556,13 +1863,35 @@ class _LectioScreenState extends State<LectioScreen> {
 
   Future<void> _resumeAudio() async {
     appLogger.d('▶️ Resuming audio');
+    // Don't resume if another _playAudio is in progress
+    if (_isPlayAudioInProgress) {
+      appLogger.d('⏳ Skipping resume - _playAudio is in progress');
+      return;
+    }
     try {
       if (_backgroundAudioManager.isInitialized) {
         await _backgroundAudioManager.resume();
-      } else {
+      } else if (_currentAudioSection != null) {
         await _audioPlayer.play();
+      } else {
+        appLogger.d('⚠️ No audio source to resume');
+        return;
       }
       appLogger.d('✅ Resume complete');
+    } on PlatformException catch (e) {
+      appLogger.e('❌ PlatformException resuming: $e');
+      // Player may be in invalid state - try to recover by replaying current track
+      if (_currentAudioSection != null && mounted) {
+        final tracks = _getAvailableAudioTracks();
+        final currentTrack = tracks.firstWhere(
+          (t) => t['key'] == _currentAudioSection,
+          orElse: () => <String, dynamic>{},
+        );
+        if (currentTrack.isNotEmpty) {
+          appLogger.d('🔄 Recovering - replaying current track');
+          await _playAudio(currentTrack['url'], currentTrack['key']);
+        }
+      }
     } catch (e) {
       appLogger.e('❌ Error resuming: $e');
     }
@@ -1717,7 +2046,9 @@ class _LectioScreenState extends State<LectioScreen> {
             album: 'Lectio Divina',
             title: interludeTitle,
             artist: 'Meditácia',
-            artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
+            artUri: _isOffline
+                ? null
+                : Uri.parse(AudioConstants.defaultArtworkUrl),
           ),
         ),
       );
@@ -1747,12 +2078,15 @@ class _LectioScreenState extends State<LectioScreen> {
       } else {
         await _audioPlayer.stop();
       }
-      // Nájdi posledne hraný track pred interlude
-      // Keďže nevieme presne ktorý to bol, vrátime sa na začiatok playlistu
-      appLogger.d('🎵 Interlude stopped, returning to first track');
-      if (tracks.isNotEmpty) {
-        await _playAudio(tracks[0]['url'], tracks[0]['key']);
-      }
+      // Vráť sa na aktuálny track (pred interlude)
+      final currentIndex = tracks.indexWhere(
+        (t) => t['key'] == _currentAudioSection,
+      );
+      final trackToPlay = currentIndex >= 0 ? tracks[currentIndex] : tracks[0];
+      appLogger.d(
+        '🎵 Interlude stopped, returning to track: ${trackToPlay['key']}',
+      );
+      await _playAudio(trackToPlay['url'], trackToPlay['key']);
       return;
     }
 
@@ -1782,67 +2116,6 @@ class _LectioScreenState extends State<LectioScreen> {
     final previousTrack = tracks[currentIndex - 1];
     appLogger.d('🎵 Playing previous track: ${previousTrack['key']}');
     await _playAudio(previousTrack['url'], previousTrack['key']);
-  }
-
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final minutes = twoDigits(duration.inMinutes.remainder(60));
-    final seconds = twoDigits(duration.inSeconds.remainder(60));
-    return '$minutes:$seconds';
-  }
-
-  String _getNowPlayingTitle() {
-    if (_isPlayingInterlude) {
-      return 'Meditačná hudba';
-    }
-
-    // Nájdi aktuálny track
-    final tracks = _getAvailableAudioTracks();
-    final currentTrack = tracks.firstWhere(
-      (t) => t['key'] == _currentAudioSection,
-      orElse: () => {'label': 'Audio'},
-    );
-
-    return currentTrack['label'] ?? 'Audio';
-  }
-
-  Widget _buildAudioModeIconButton(
-    String mode,
-    IconData icon,
-    ThemeData theme,
-  ) {
-    final isSelected = _audioMode == mode;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _saveAudioMode(mode),
-        customBorder: const CircleBorder(),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isSelected ? AppColors.primary : Colors.grey.shade200,
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.4),
-                      blurRadius: 12,
-                      spreadRadius: 2,
-                    ),
-                  ]
-                : null,
-          ),
-          child: Icon(
-            icon,
-            color: isSelected ? Colors.white : Colors.grey.shade600,
-            size: 28,
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildSection({
@@ -1909,236 +2182,22 @@ class _LectioScreenState extends State<LectioScreen> {
   }
 
   Future<void> _handleDndToggle() async {
-    try {
-      if (_isDndActive) {
-        // Deaktivácia DND
-        await _dndService.deactivateDndManually();
-      } else {
-        // Aktivácia DND
-        final hasPermissions = await _dndService.checkPermissions();
-
-        if (!hasPermissions) {
-          // Požiadaj o povolenia
-          final granted = await _dndService.requestPermissions();
-          if (!granted) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Pre aktiváciu Nerušiť je potrebné povoliť prístup k notifikáciám',
-                  ),
-                  backgroundColor: Colors.orange,
-                ),
-              );
-            }
-            return;
-          }
-        }
-
-        // Aktivuj DND manuálne
-        await _dndService.activateDndManually();
-      }
-
-      // Aktualizuj UI stav podľa skutočného stavu service
-      setState(() {
-        _isDndActive = _dndService.isDndActive;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.do_not_disturb_on, color: Colors.white),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    Platform.isIOS
-                        ? 'Zapnite "Nerušiť" manuálne v Control Center'
-                        : 'Režim Nerušiť aktivovaný',
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            action: Platform.isIOS
-                ? SnackBarAction(
-                    label: 'Ako na to',
-                    textColor: Colors.white,
-                    onPressed: () => _showIOSDndInstructions(),
-                  )
-                : null,
-          ),
-        );
-      }
-    } catch (e) {
-      // Chyba pri toggle DND
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Chyba pri prepínaní režimu Nerušiť: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _showIOSDndInstructions() {
-    showDialog(
+    final dndHelper = DndHelper(
+      dndService: _dndService,
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.shortcut_outlined, color: Colors.blue),
-            SizedBox(width: 8),
-            Text('iOS Shortcuts pre DND'),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.auto_awesome,
-                          color: Colors.blue,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Automatické riešenie',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.blue[800],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Vytvorte si iOS Shortcuts pre automatické zapínanie/vypínanie Focus režimu pri používaní DND tlačidla.',
-                      style: TextStyle(fontSize: 13, color: Colors.blue[700]),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              _buildInstructionStep(
-                '1',
-                'Vytvorte Shortcuts',
-                'Nastavenia → Vytvorte Shortcuts pre DND',
-              ),
-              const SizedBox(height: 8),
-              _buildInstructionStep(
-                '2',
-                'Použite DND tlačidlo',
-                'Shortcuts sa spustia automaticky',
-              ),
-              const SizedBox(height: 16),
-
-              const Divider(),
-              const SizedBox(height: 12),
-
-              Text(
-                'Manuálne riešenie:',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
-                ),
-              ),
-              const SizedBox(height: 8),
-              _buildInstructionStep(
-                'A',
-                'Control Center',
-                'Potiahnite zhora doprava → 🌙',
-              ),
-              const SizedBox(height: 8),
-              _buildInstructionStep(
-                'B',
-                'Focus režim',
-                'Nastavenia → Focus → Do Not Disturb',
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Zavrieť'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/settings');
-            },
-            child: const Text('Nastavenia'),
-          ),
-        ],
-      ),
+      onStateChanged: (isDndActive) {
+        setState(() {
+          _isDndActive = isDndActive;
+        });
+      },
     );
-  }
-
-  Widget _buildInstructionStep(String number, String title, String subtitle) {
-    return Row(
-      children: [
-        Container(
-          width: 24,
-          height: 24,
-          decoration: const BoxDecoration(
-            color: Colors.orange,
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Text(
-              number,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-              Text(
-                subtitle,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+    await dndHelper.handleDndToggle();
   }
 
   void _handleAddNote() {
     if (lectioData == null) return;
-    String bibleReference = '';
-    if (_selectedBible == 'biblia1') {
-      bibleReference = lectioData?['biblia_1'] ?? '';
-    } else if (_selectedBible == 'biblia2') {
-      bibleReference = lectioData?['biblia_2'] ?? '';
-    } else if (_selectedBible == 'biblia3') {
-      bibleReference = lectioData?['biblia_3'] ?? '';
-    }
+    // Použij dynamický stĺpec podľa vybranej biblie
+    String bibleReference = lectioData?[_selectedBible] ?? '';
 
     final now = DateTime.now();
     final formattedDate = DateFormat('d.M.yyyy').format(now);
@@ -2571,24 +2630,13 @@ class _LectioScreenState extends State<LectioScreen> {
                                   ),
                                 ),
 
-                              // Biblický text podľa vybranej biblie (rovnako pre SK aj EN)
-                              if (_selectedBible == 'biblia1' ||
-                                  _selectedBible == 'bible_en_1')
+                              // Biblický text podľa vybranej biblie
+                              if (lectioData?[_selectedBible] != null &&
+                                  (lectioData?[_selectedBible] ?? '')
+                                      .isNotEmpty)
                                 _buildSection(
-                                  title: lectioData?['nazov_biblia_1'],
-                                  text: lectioData?['biblia_1'] ?? '',
-                                ),
-                              if (_selectedBible == 'biblia2' ||
-                                  _selectedBible == 'bible_en_2')
-                                _buildSection(
-                                  title: lectioData?['nazov_biblia_2'],
-                                  text: lectioData?['biblia_2'] ?? '',
-                                ),
-                              if (_selectedBible == 'biblia3' ||
-                                  _selectedBible == 'bible_en_3')
-                                _buildSection(
-                                  title: lectioData?['nazov_biblia_3'],
-                                  text: lectioData?['biblia_3'] ?? '',
+                                  title: lectioData?['nazov_$_selectedBible'],
+                                  text: lectioData?[_selectedBible] ?? '',
                                 ),
 
                               // Lectio Divina sekcie
@@ -2628,7 +2676,7 @@ class _LectioScreenState extends State<LectioScreen> {
 
             // Floating Audio Player
             if (_showAudioPlayer && _getAvailableAudioTracks().isNotEmpty)
-              _buildFloatingAudioPlayer(theme),
+              _buildFloatingAudioPlayerWidget(),
 
             // Prayer Focus Mode Indicator
             const PrayerFocusIndicator(),
@@ -2663,762 +2711,136 @@ class _LectioScreenState extends State<LectioScreen> {
     ); // Scaffold
   }
 
-  Widget _buildFloatingAudioPlayer(ThemeData theme) {
+  Widget _buildFloatingAudioPlayerWidget() {
     final tracks = _getAvailableAudioTracks();
     final currentTrackIndex = tracks.indexWhere(
       (t) => t['key'] == _currentAudioSection,
     );
 
-    // Zobraz current track alebo interlude
-    final currentTrack = currentTrackIndex >= 0
-        ? tracks[currentTrackIndex]
-        : null;
-
-    // ============================================
-    // MINIMALIZOVANÝ REŽIM - Kruh na ľavej strane
-    // ============================================
-    if (_isMinimized) {
-      return Positioned(
-        bottom: 20, // Zarovnané s FAB na pravej strane
-        left: 16,
-        child: GestureDetector(
-          onTap: () {
-            setState(() {
-              _isMinimized = false;
-            });
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.primary,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.4),
-                  blurRadius: 16,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Progress ring
-                if (_totalDuration.inMilliseconds > 0)
-                  SizedBox(
-                    width: 58,
-                    height: 58,
-                    child: CircularProgressIndicator(
-                      value:
-                          _currentPosition.inMilliseconds /
-                          _totalDuration.inMilliseconds,
-                      strokeWidth: 3,
-                      backgroundColor: Colors.white.withValues(alpha: 0.2),
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Colors.white,
-                      ),
-                    ),
-                  ),
-                // Play/Pause icon
-                Icon(
-                  _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                  color: Colors.white,
-                  size: 32,
-                ),
-                // Pulsing animation when playing
-                if (_isPlaying) Positioned.fill(child: _PulsingCircle()),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    // ============================================
-    // PLNÝ PREHRÁVAČ
-    // ============================================
-    return Positioned(
-      bottom: 16,
-      left: 16,
-      right: 16,
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
-        decoration: BoxDecoration(
-          color: theme.cardColor.withValues(alpha: 0.98),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Audio prehrávač',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Minimize button
-                      IconButton(
-                        icon: const Icon(
-                          Icons.remove_rounded,
-                          size: 20,
-                          color: Colors.white,
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        tooltip: 'Minimalizovať',
-                        onPressed: () {
-                          setState(() {
-                            _isMinimized = true;
-                          });
-                        },
-                      ),
-                      const SizedBox(width: 16),
-                      // Close button
-                      IconButton(
-                        icon: const Icon(
-                          Icons.close,
-                          size: 20,
-                          color: Colors.white,
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        tooltip: 'Zatvoriť a zastaviť',
-                        onPressed: () async {
-                          appLogger.d('🔒 Zatváram prehrávač');
-                          _audioPlayerClosed = true;
-                          await _fallbackPlayerSubscription?.cancel();
-                          _fallbackPlayerSubscription = null;
-                          await _stopAudio();
-                          if (mounted) {
-                            setState(() {
-                              _showAudioPlayer = false;
-                            });
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Plný obsah prehrávača
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  // Audio Mode Selector - len ikony v kruhu
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildAudioModeIconButton('none', Icons.music_off, theme),
-                      const SizedBox(width: 12),
-                      _buildAudioModeIconButton(
-                        'short',
-                        Icons.music_note,
-                        theme,
-                      ),
-                      const SizedBox(width: 12),
-                      _buildAudioModeIconButton(
-                        'long',
-                        Icons.queue_music,
-                        theme,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Now Playing - s animáciou
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 400),
-                    transitionBuilder:
-                        (Widget child, Animation<double> animation) {
-                          return FadeTransition(
-                            opacity: animation,
-                            child: SlideTransition(
-                              position: Tween<Offset>(
-                                begin: const Offset(0, 0.1),
-                                end: Offset.zero,
-                              ).animate(animation),
-                              child: child,
-                            ),
-                          );
-                        },
-                    child: _currentAudioSection != null
-                        ? Container(
-                            key: ValueKey(
-                              '${_currentAudioSection}_${_isPlayingInterlude ? 'interlude' : 'track'}',
-                            ),
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _isPlayingInterlude
-                                      ? Icons
-                                            .spa // Ikona pre meditáciu
-                                      : (currentTrack?['icon'] ??
-                                            Icons.music_note),
-                                  color: _isPlayingInterlude
-                                      ? Colors.blue.shade300
-                                      : (currentTrack?['color'] ??
-                                            AppColors.primary),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Práve hrá',
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(
-                                              color: Colors.grey.shade600,
-                                            ),
-                                      ),
-                                      Text(
-                                        _getNowPlayingTitle(),
-                                        style: theme.textTheme.bodyMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.primary,
-                                            ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                  ), // Controls
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.skip_previous),
-                        color: _currentAudioSection != null
-                            ? AppColors.primary
-                            : Colors.grey.shade400,
-                        onPressed: _currentAudioSection != null
-                            ? _playPreviousTrack
-                            : null,
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(
-                                0xFF4A5085,
-                              ).withValues(alpha: 0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: IconButton(
-                          icon: Icon(
-                            _isPlaying ? Icons.pause : Icons.play_arrow,
-                            size: 32,
-                          ),
-                          color: Colors.white,
-                          onPressed: () {
-                            appLogger.d('🎮 HLAVNÉ PLAY tlačidlo stlačené');
-                            appLogger.d('🎮 _isPlaying: $_isPlaying');
-                            appLogger.d(
-                              '🎮 _currentAudioSection: $_currentAudioSection',
-                            );
-                            appLogger.d(
-                              '🎮 _showAudioPlayer: $_showAudioPlayer',
-                            );
-
-                            if (_isPlaying) {
-                              appLogger.d('🎮 -> Pozastavujem audio');
-                              _pauseAudio();
-                            } else if (_currentAudioSection != null) {
-                              appLogger.d('🎮 -> Obnovujem pozastavené audio');
-                              _resumeAudio();
-                            } else {
-                              appLogger.d('🎮 -> Spúšťam prvú nahrávku');
-                              // Reset closed flag - user wants to play again
-                              _audioPlayerClosed = false;
-                              final tracks = _getAvailableAudioTracks();
-                              appLogger.d(
-                                '🎮 -> Počet dostupných tracks: ${tracks.length}',
-                              );
-                              final firstTrack = tracks.isNotEmpty
-                                  ? tracks[0]
-                                  : null;
-                              if (firstTrack != null) {
-                                appLogger.d(
-                                  '🎮 -> Prvý track: ${firstTrack['key']} - ${firstTrack['label']}',
-                                );
-                                appLogger.d('🎮 -> URL: ${firstTrack['url']}');
-                                _playAudio(
-                                  firstTrack['url'],
-                                  firstTrack['key'],
-                                  // Manuálne spustenie = animovať hneď
-                                );
-                              } else {
-                                appLogger.e(
-                                  '🎮 -> CHYBA: Žiaden track k dispozícii!',
-                                );
-                              }
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.skip_next),
-                        color:
-                            _currentAudioSection != null &&
-                                _currentAudioSection != 'interlude' &&
-                                currentTrackIndex < tracks.length - 1
-                            ? AppColors.primary
-                            : Colors.grey.shade400,
-                        onPressed:
-                            _currentAudioSection != null &&
-                                _currentAudioSection != 'interlude' &&
-                                currentTrackIndex < tracks.length - 1
-                            ? () async {
-                                // Manuálne preskočenie - zastaviť aktuálne audio a prehrať ďalšie
-                                appLogger.d('🎮 Skip Next button pressed');
-                                final nextIndex = currentTrackIndex + 1;
-                                if (nextIndex < tracks.length) {
-                                  final nextTrack = tracks[nextIndex];
-                                  await _playAudio(
-                                    nextTrack['url'],
-                                    nextTrack['key'],
-                                  );
-                                }
-                              }
-                            : null,
-                      ),
-                    ],
-                  ),
-
-                  // Progress bar - zobrazuj vždy
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Text(
-                        _formatDuration(_currentPosition),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Expanded(
-                        child: SliderTheme(
-                          data: SliderTheme.of(context).copyWith(
-                            trackHeight: 4.0,
-                            thumbShape: const RoundSliderThumbShape(
-                              enabledThumbRadius: 8.0,
-                            ),
-                            overlayShape: const RoundSliderOverlayShape(
-                              overlayRadius: 16.0,
-                            ),
-                            activeTrackColor: AppColors.primary,
-                            inactiveTrackColor: AppColors.primary.withValues(
-                              alpha: 0.2,
-                            ),
-                            thumbColor: AppColors.primary,
-                            overlayColor: AppColors.primary.withValues(
-                              alpha: 0.3,
-                            ),
-                          ),
-                          child: Slider(
-                            value: _totalDuration.inMilliseconds > 0
-                                ? _currentPosition.inMilliseconds
-                                      .toDouble()
-                                      .clamp(
-                                        0.0,
-                                        _totalDuration.inMilliseconds
-                                            .toDouble(),
-                                      )
-                                : 0.0,
-                            min: 0.0,
-                            max: _totalDuration.inMilliseconds > 0
-                                ? _totalDuration.inMilliseconds.toDouble()
-                                : 1.0,
-                            onChangeStart: _currentAudioSection != null
-                                ? (value) {
-                                    _setPlaybackState(
-                                      LectioPlaybackState.seeking,
-                                    );
-                                    appLogger.d('🎚️ Seek started');
-                                  }
-                                : null,
-                            onChangeEnd: _currentAudioSection != null
-                                ? (value) async {
-                                    final position = Duration(
-                                      milliseconds: value.toInt(),
-                                    );
-                                    appLogger.d(
-                                      '🎚️ Seek ended at ${position.inSeconds}s',
-                                    );
-                                    // Seekni na playeri
-                                    await _seekAudio(position);
-                                    // Počkaj trochu a potom reset flag
-                                    await Future.delayed(
-                                      const Duration(milliseconds: 300),
-                                    );
-                                    _setPlaybackState(
-                                      _isPlaying
-                                          ? LectioPlaybackState.playing
-                                          : LectioPlaybackState.paused,
-                                    );
-                                    appLogger.d('🎚️ Seek flag reset');
-                                  }
-                                : null,
-                            onChanged: _currentAudioSection != null
-                                ? (value) {
-                                    final position = Duration(
-                                      milliseconds: value.toInt(),
-                                    );
-                                    // Okamžite aktualizuj lokálny stav (len vizuálne)
-                                    setState(() {
-                                      _currentPosition = position;
-                                    });
-                                  }
-                                : null,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        _formatDuration(_totalDuration),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-                  const Divider(),
-                  const SizedBox(height: 8),
-
-                  // Playlist - horizontálny swipe
-                  Text(
-                    'Dostupné nahrávky',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // PageView so swipe
-                  SizedBox(
-                    height: 70,
-                    child: PageView.builder(
-                      controller: _playlistPageController,
-                      itemCount: tracks.length,
-                      onPageChanged: (index) {
-                        // Voliteľne môžeme prehrať nahrávku pri manuálnom swipe
-                        // final track = tracks[index];
-                        // _playAudio(track['url'], track['key']);
-                      },
-                      itemBuilder: (context, index) {
-                        final track = tracks[index];
-                        final isCurrentTrack =
-                            track['key'] == _currentAudioSection;
-
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: GestureDetector(
-                            onTap: () {
-                              // Reset closed flag - user wants to play
-                              _audioPlayerClosed = false;
-                              _playAudio(
-                                track['url'],
-                                track['key'],
-                                // Priame kliknutie používateľa = animovať hneď (skipAnimation: false)
-                              );
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                              decoration: BoxDecoration(
-                                gradient: isCurrentTrack
-                                    ? LinearGradient(
-                                        colors: [
-                                          AppColors.primary.withValues(
-                                            alpha: 0.2,
-                                          ),
-                                          AppColors.primary.withValues(
-                                            alpha: 0.1,
-                                          ),
-                                        ],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      )
-                                    : null,
-                                color: isCurrentTrack
-                                    ? null
-                                    : Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(20),
-                                border: isCurrentTrack
-                                    ? Border.all(
-                                        color: AppColors.primary.withValues(
-                                          alpha: 0.5,
-                                        ),
-                                        width: 2,
-                                      )
-                                    : Border.all(
-                                        color: Colors.grey.shade300,
-                                        width: 1,
-                                      ),
-                                boxShadow: isCurrentTrack
-                                    ? [
-                                        BoxShadow(
-                                          color: AppColors.primary.withValues(
-                                            alpha: 0.3,
-                                          ),
-                                          blurRadius: 16,
-                                          spreadRadius: 2,
-                                        ),
-                                      ]
-                                    : [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(
-                                            alpha: 0.05,
-                                          ),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    // Ikona
-                                    Container(
-                                      width: 44,
-                                      height: 44,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: AppColors.primary,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: AppColors.primary.withValues(
-                                              alpha: 0.4,
-                                            ),
-                                            blurRadius: 8,
-                                            spreadRadius: 1,
-                                          ),
-                                        ],
-                                      ),
-                                      child: Icon(
-                                        track['icon'],
-                                        color: Colors.white,
-                                        size: 24,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-
-                                    // Názov nahrávky + playing indicator
-                                    Expanded(
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            track['label'],
-                                            style: theme.textTheme.titleSmall
-                                                ?.copyWith(
-                                                  color: isCurrentTrack
-                                                      ? AppColors.primary
-                                                      : theme
-                                                            .colorScheme
-                                                            .onSurface,
-                                                  fontWeight: isCurrentTrack
-                                                      ? FontWeight.bold
-                                                      : FontWeight.w600,
-                                                ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          if (isCurrentTrack && _isPlaying) ...[
-                                            const SizedBox(height: 4),
-                                            Row(
-                                              children: [
-                                                SizedBox(
-                                                  width: 14,
-                                                  height: 14,
-                                                  child: CircularProgressIndicator(
-                                                    strokeWidth: 2,
-                                                    valueColor:
-                                                        AlwaysStoppedAnimation<
-                                                          Color
-                                                        >(AppColors.primary),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 6),
-                                                Text(
-                                                  'Práve hrá',
-                                                  style: theme
-                                                      .textTheme
-                                                      .bodySmall
-                                                      ?.copyWith(
-                                                        color:
-                                                            AppColors.primary,
-                                                        fontSize: 11,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    ),
-
-                                    // Download status ikona
-                                    if (track['localPath'] != null)
-                                      Padding(
-                                        padding: const EdgeInsets.only(left: 4),
-                                        child: Icon(
-                                          Icons.offline_pin_rounded,
-                                          size: 18,
-                                          color: Colors.green.withValues(
-                                            alpha: 0.7,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-                  // Page indicator (dots)
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(tracks.length, (index) {
-                      final isCurrentPage =
-                          tracks[index]['key'] == _currentAudioSection;
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        width: isCurrentPage ? 20 : 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: isCurrentPage
-                              ? AppColors.primary
-                              : Colors.grey.shade400,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      );
-                    }),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Pulsujúci kruh pre minimalizovaný prehrávač počas prehrávania
-class _PulsingCircle extends StatefulWidget {
-  @override
-  State<_PulsingCircle> createState() => _PulsingCircleState();
-}
-
-class _PulsingCircleState extends State<_PulsingCircle>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _animation = Tween<double>(
-      begin: 1.0,
-      end: 1.15,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _animation.value,
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.3),
-                width: 2,
-              ),
-            ),
-          ),
+    return LectioFloatingAudioPlayer(
+      tracks: tracks,
+      currentAudioSection: _currentAudioSection,
+      isPlaying: _isPlaying,
+      isPlayingInterlude: _isPlayingInterlude,
+      isMinimized: _isMinimized,
+      currentPosition: _currentPosition,
+      totalDuration: _totalDuration,
+      audioMode: _audioMode,
+      playlistPageController: _playlistPageController,
+      onPlayPause: () {
+        if (_isPlaying) {
+          _pauseAudio();
+        } else if (_currentAudioSection != null) {
+          _resumeAudio();
+        } else {
+          _audioPlayerClosed = false;
+          final firstTrack = tracks.isNotEmpty ? tracks[0] : null;
+          if (firstTrack != null) {
+            _playAudio(firstTrack['url'], firstTrack['key']);
+          }
+        }
+      },
+      onSkipPrevious: _currentAudioSection != null || _isPlayingInterlude
+          ? () async {
+              // Debounce: ignore if pressed within 500ms
+              final now = DateTime.now();
+              if (_lastSkipTime != null &&
+                  now.difference(_lastSkipTime!) <
+                      const Duration(milliseconds: 500)) {
+                appLogger.d('⏳ Skip Previous debounced');
+                return;
+              }
+              _lastSkipTime = now;
+              appLogger.d('🎮 Skip Previous button pressed');
+              if (_isPlayingInterlude) {
+                _nextTrackAfterInterlude = null;
+                setState(() {
+                  _isPlayingInterlude = false;
+                });
+                final currentIndex = tracks.indexWhere(
+                  (t) => t['key'] == _currentAudioSection,
+                );
+                final trackToPlay = currentIndex >= 0
+                    ? tracks[currentIndex]
+                    : tracks[0];
+                await _playAudio(trackToPlay['url'], trackToPlay['key']);
+              } else {
+                await _playPreviousTrack();
+              }
+            }
+          : null,
+      onSkipNext:
+          (_currentAudioSection != null || _isPlayingInterlude) &&
+              (currentTrackIndex < tracks.length - 1 || _isPlayingInterlude)
+          ? () async {
+              // Debounce: ignore if pressed within 500ms
+              final now = DateTime.now();
+              if (_lastSkipTime != null &&
+                  now.difference(_lastSkipTime!) <
+                      const Duration(milliseconds: 500)) {
+                appLogger.d('⏳ Skip Next debounced');
+                return;
+              }
+              _lastSkipTime = now;
+              appLogger.d('🎮 Skip Next button pressed');
+              if (_isPlayingInterlude) {
+                final nextTrack = _nextTrackAfterInterlude;
+                _nextTrackAfterInterlude = null;
+                setState(() {
+                  _isPlayingInterlude = false;
+                });
+                if (nextTrack != null) {
+                  await _playAudio(nextTrack['url'], nextTrack['key']);
+                }
+                return;
+              }
+              final nextIndex = currentTrackIndex + 1;
+              if (nextIndex < tracks.length) {
+                final nextTrack = tracks[nextIndex];
+                await _playAudio(nextTrack['url'], nextTrack['key']);
+              }
+            }
+          : null,
+      onSeekStart: () {
+        _setPlaybackState(LectioPlaybackState.seeking);
+        appLogger.d('🎚️ Seek started');
+      },
+      onSeekChanged: (position) {
+        setState(() {
+          _currentPosition = position;
+        });
+      },
+      onSeekEnd: (value) async {
+        final position = Duration(milliseconds: value.toInt());
+        appLogger.d('🎚️ Seek ended at ${position.inSeconds}s');
+        await _seekAudio(position);
+        await Future.delayed(const Duration(milliseconds: 300));
+        _setPlaybackState(
+          _isPlaying ? LectioPlaybackState.playing : LectioPlaybackState.paused,
         );
+        appLogger.d('🎚️ Seek flag reset');
+      },
+      onPlayTrack: (url, key) {
+        _audioPlayerClosed = false;
+        _playAudio(url, key);
+      },
+      onAudioModeChanged: _saveAudioMode,
+      onMinimize: () {
+        setState(() {
+          _isMinimized = !_isMinimized;
+        });
+      },
+      onClose: () async {
+        appLogger.d('🔒 Zatváram prehrávač');
+        _audioPlayerClosed = true;
+        await _fallbackPlayerSubscription?.cancel();
+        _fallbackPlayerSubscription = null;
+        await _stopAudio();
+        if (mounted) {
+          setState(() {
+            _showAudioPlayer = false;
+          });
+        }
       },
     );
   }

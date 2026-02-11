@@ -151,10 +151,59 @@ class LectioAudioTracksBuilder {
 
   /// Extrahuje číslo biblie z selectedBible stringu
   String _extractBibleNumber() {
-    if (selectedBible.startsWith('bible_en_')) {
-      return selectedBible.replaceAll('bible_en_', '');
+    // Najprv migrujeme hodnotu na nový formát
+    final migrated = _migrateBibleValue(selectedBible);
+
+    // Teraz máme určite biblia_1, biblia_2 alebo biblia_3
+    if (migrated.startsWith('biblia_')) {
+      return migrated.replaceAll('biblia_', '');
     }
-    return selectedBible.replaceAll('biblia', '');
+
+    // Fallback
+    return '1';
+  }
+
+  /// Migruje starú hodnotu na nový formát (biblia_1, biblia_2, biblia_3)
+  String _migrateBibleValue(String oldValue) {
+    // Ak je už v správnom formáte, vráť ho
+    if (oldValue == 'biblia_1' ||
+        oldValue == 'biblia_2' ||
+        oldValue == 'biblia_3') {
+      return oldValue;
+    }
+
+    // Migrácia zo starých formátov
+    switch (oldValue.toLowerCase()) {
+      // Starý formát bez podčiarkovníka
+      case 'biblia1':
+      case 'bible_en_1':
+        return 'biblia_1';
+
+      case 'biblia2':
+      case 'bible_en_2':
+        return 'biblia_2';
+
+      case 'biblia3':
+      case 'bible_en_3':
+        return 'biblia_3';
+
+      // Databázové kódy
+      case 'ssv':
+      case 'standardny':
+        return 'biblia_1';
+
+      case 'jeruzalemsky':
+      case 'jeruzalem':
+        return 'biblia_2';
+
+      case 'ekumenicky':
+      case 'ekumen':
+        return 'biblia_3';
+
+      default:
+        // Fallback na prvú bibliu
+        return 'biblia_1';
+    }
   }
 
   /// Pridá stopu ak existuje v dátach

@@ -78,8 +78,8 @@ Projekt je v **excelentnom stave** a pripravený na nasadenie do produkcie.
   - [x] Lokálne úložisko - `path_provider` + SharedPreferences metadata
   - [x] UI indikátor stiahnutia - `DownloadStatusIcon`, `OfflineAudioBanner`, `AudioDownloadProgress`
 
-- [ ] **Adorácie** - nová sekcia
-  - [ ] Backend + Flutter obrazovky
+- [x] **Adorácie** - nová sekcia
+  - [x] Backend + Flutter obrazovky
 
 - [ ] **Základné modlitby**
   - [ ] Zoznam modlitieb (Otčenáš, Zdravas'...)

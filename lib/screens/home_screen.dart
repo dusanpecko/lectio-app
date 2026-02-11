@@ -25,7 +25,8 @@ import 'rosary_screen.dart';
 import 'settings_screen.dart';
 import 'spiritual_exercise_detail_screen.dart';
 import 'spiritual_exercises_list_screen.dart';
-import 'support_screen.dart';
+import 'donation_screen.dart';
+import 'adoration_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -37,15 +38,17 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   // Slider properties
   final List<String> imagePaths = [
-    'assets/images/slide1.jpg',
-    'assets/images/slide2.jpg',
-    'assets/images/slide3.jpg',
-    'assets/images/slide4.jpg',
-    'assets/images/slide5.jpg',
+    'assets/images/slide1.webp',
+    'assets/images/slide0.webp',
+    'assets/images/slide2.webp',
+    'assets/images/slide3.webp',
+    'assets/images/slide4.webp',
+    'assets/images/slide5.webp',
   ];
 
   final List<String> slideTitleKeys = [
     'god_word',
+    'silencio',
     'lectio_divina',
     'meditatio',
     'oratio',
@@ -54,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<String> slideSubtitleKeys = [
     'slider_subtitle_god_word',
+    'slider_subtitle_silencio',
     'slider_subtitle_lectio',
     'slider_subtitle_meditatio',
     'slider_subtitle_oratio',
@@ -67,9 +71,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Actio data (z lectio_sources namiesto daily_quotes)
   String? actioText;
-  String? actioReference;
   bool isLoading = true;
   bool _dataLoaded = false;
+  String? _lastLocale;
 
   // News data
   List<Map<String, dynamic>> newsArticles = [];
@@ -143,11 +147,22 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final currentLocale = context.locale.languageCode;
+
+    // Načítaj dáta pri prvom načítaní
     if (!_dataLoaded) {
       _fetchQuoteData();
       _fetchNewsData();
       _fetchFeaturedExercise();
       _dataLoaded = true;
+      _lastLocale = currentLocale;
+    }
+    // Alebo keď sa zmení jazyk
+    else if (_lastLocale != currentLocale) {
+      _lastLocale = currentLocale;
+      _fetchQuoteData();
+      _fetchNewsData();
+      _fetchFeaturedExercise();
     }
   }
 
@@ -246,7 +261,6 @@ class _HomeScreenState extends State<HomeScreen> {
         if (!mounted) return;
         setState(() {
           actioText = null;
-          actioReference = null;
           isLoading = false;
         });
         return;
@@ -299,11 +313,35 @@ class _HomeScreenState extends State<HomeScreen> {
             .maybeSingle();
       }
 
+      // Fallback na slovenčinu ak aktuálny jazyk nemá záznam
+      if (lectioSource == null && locale != 'sk') {
+        appLogger.d(
+          '🔄 Home: Actio nenájdené pre $locale, skúšam slovenčinu...',
+        );
+        lectioSource = await supabase
+            .from('lectio_sources')
+            .select()
+            .eq('hlava', lectioHlava)
+            .eq('lang', 'sk')
+            .eq('rok', rokToSearch)
+            .maybeSingle();
+
+        // Ešte jeden fallback pre sviatky v slovenčine
+        if (lectioSource == null && isSpecialDay && rokToSearch != 'N') {
+          lectioSource = await supabase
+              .from('lectio_sources')
+              .select()
+              .eq('hlava', lectioHlava)
+              .eq('lang', 'sk')
+              .eq('rok', 'N')
+              .maybeSingle();
+        }
+      }
+
       if (!mounted) return;
 
       setState(() {
         actioText = lectioSource?['actio_text'];
-        actioReference = lectioSource?['reference'] ?? celebrationTitle;
         isLoading = false;
       });
 
@@ -329,7 +367,6 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       setState(() {
         actioText = null;
-        actioReference = null;
         isLoading = false;
       });
     }
@@ -548,8 +585,8 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const SupportScreen(),
-            settings: const RouteSettings(name: '/support'),
+            builder: (context) => const DonationScreen(),
+            settings: const RouteSettings(name: '/donation'),
           ),
         );
         break;
@@ -939,105 +976,100 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Build quote card - kompaktná verzia
   Widget _buildQuoteCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Card(
-        elevation: 0, // Vypnuté Card elevation, používame vlastný shadow
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Container(
-          decoration: BoxDecoration(
+    return GestureDetector(
+      onTap: () {
+        // Naviguj do Lectio screen
+        Navigator.pushNamed(context, '/lectio');
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Card(
+          elevation: 0, // Vypnuté Card elevation, používame vlastný shadow
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.primary.withValues(alpha: 0.03),
-                AppColors.primary.withValues(alpha: 0.01),
-              ],
-            ),
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 12.0,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.03),
+                  AppColors.primary.withValues(alpha: 0.01),
+                ],
+              ),
             ),
-            child: isLoading
-                ? const SizedBox(
-                    height: 40,
-                    child: Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                          strokeWidth: 2,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 12.0,
+              ),
+              child: isLoading
+                  ? const SizedBox(
+                      height: 40,
+                      child: Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: AppColors.primary,
+                            strokeWidth: 2,
+                          ),
                         ),
                       ),
-                    ),
-                  )
-                : Row(
-                    children: [
-                      // Quote icon - menší
-                      const Icon(
-                        Icons.format_quote,
-                        size: 20,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: 12),
+                    )
+                  : Row(
+                      children: [
+                        // Quote icon - menší
+                        const Icon(
+                          Icons.format_quote,
+                          size: 20,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 12),
 
-                      // Actio content (z lectio_sources)
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Actio text
-                            Text(
-                              actioText ?? tr('quote_not_available'),
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF2D3748),
-                                height: 1.4,
-                                fontStyle: FontStyle.italic,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-
-                            if (actioReference != null) ...[
-                              const SizedBox(height: 4),
+                        // Actio content (z lectio_sources)
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Actio text
                               Text(
-                                actioReference!,
+                                actioText ?? tr('quote_not_available'),
                                 style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.primary,
-                                  letterSpacing: 0.3,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF2D3748),
+                                  height: 1.4,
+                                  fontStyle: FontStyle.italic,
                                 ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+            ),
           ),
         ),
       ),
@@ -1054,30 +1086,28 @@ class _HomeScreenState extends State<HomeScreen> {
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
+          // 1. Na úvod
+          _ModuleButton(
+            labelKey: 'intro_title',
+            icon: Icons.article,
+            isOffline: _isOffline,
+          ),
+          const SizedBox(width: 12),
+          // 2. Lectio divina
           _ModuleButton(
             labelKey: 'lectio_divina',
             icon: Icons.menu_book,
             isOffline: _isOffline,
           ),
           const SizedBox(width: 12),
-          _ModuleButton(
-            labelKey: 'pray_intentions',
-            icon: Icons.favorite,
-            isOffline: _isOffline,
-          ),
-          const SizedBox(width: 12),
-          _ModuleButton(
-            labelKey: 'rosary_title',
-            icon: Icons.auto_stories_rounded,
-            isOffline: _isOffline,
-          ),
-          const SizedBox(width: 12),
+          // 3. Aktuality
           _ModuleButton(
             labelKey: 'news',
             icon: Icons.campaign,
             isOffline: _isOffline,
           ),
           const SizedBox(width: 12),
+          // 4. Poznámky (len pre prihlásených)
           if (isLoggedIn) ...[
             _ModuleButton(
               labelKey: 'notes_title',
@@ -1086,18 +1116,35 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(width: 12),
           ],
+          // 5. Modlitby
           _ModuleButton(
-            labelKey: 'intro_title',
-            icon: Icons.article,
+            labelKey: 'pray_intentions',
+            icon: Icons.favorite,
             isOffline: _isOffline,
           ),
           const SizedBox(width: 12),
+          // 6. Adorácie
           _ModuleButton(
-            labelKey: 'about.title',
+            labelKey: 'adoration_title',
+            icon: Icons.favorite_rounded,
+            isOffline: _isOffline,
+          ),
+          const SizedBox(width: 12),
+          // 7. Ruženec
+          _ModuleButton(
+            labelKey: 'rosary_title',
+            icon: Icons.auto_stories_rounded,
+            isOffline: _isOffline,
+          ),
+          const SizedBox(width: 12),
+          // 8. O aplikácii
+          _ModuleButton(
+            labelKey: 'about_title',
             icon: Icons.info,
             isOffline: _isOffline,
           ),
           const SizedBox(width: 12),
+          // 9. Nastavenie
           _ModuleButton(
             labelKey: 'settings',
             icon: Icons.settings,
@@ -1118,8 +1165,8 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const SupportScreen(),
-              settings: const RouteSettings(name: '/support'),
+              builder: (context) => const DonationScreen(),
+              settings: const RouteSettings(name: '/donation'),
             ),
           );
         },
@@ -1163,7 +1210,10 @@ class _HomeScreenState extends State<HomeScreen> {
     // 2. Vždy pridaj Rosary
     carouselItems.add(_buildRosaryCardContent());
 
-    // 3. Tu môžeš pridať ďalšie položky v budúcnosti
+    // 3. Pridaj Adorácie
+    carouselItems.add(_buildAdorationCardContent());
+
+    // 4. Tu môžeš pridať ďalšie položky v budúcnosti
     // carouselItems.add(_buildOtherCardContent());
 
     // Ak je len jedna položka, nezobrazuj dots
@@ -1407,7 +1457,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: Image.asset(
-                  'assets/images/rosary_bg.jpg',
+                  'assets/images/rosary_bg.webp',
                   width: double.infinity,
                   height: double.infinity,
                   fit: BoxFit.cover,
@@ -1486,6 +1536,127 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 8),
                       Text(
                         tr('rosary_description'),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF718096),
+                          height: 1.4,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Build Adoration card content (bez margin pre carousel)
+  Widget _buildAdorationCardContent() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AdorationScreen(),
+            settings: const RouteSettings(name: '/adoration'),
+          ),
+        );
+      },
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+          child: Stack(
+            children: [
+              // Background image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.asset(
+                  'assets/images/adoration_bg.webp',
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Fallback ak sa obrázok nenačíta
+                    return Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            const Color(0xFFD32F2F).withValues(alpha: 0.8),
+                            const Color(0xFFD32F2F),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              // Gradient overlay pre lepšiu čitateľnosť textu
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.3),
+                      Colors.black.withValues(alpha: 0.6),
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
+                  ),
+                ),
+              ),
+
+              // Bottom content with radius
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.favorite_rounded,
+                            size: 16,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            tr('adoration_title'),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2D3748),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        tr('adoration_main_subtitle'),
                         style: const TextStyle(
                           fontSize: 14,
                           color: Color(0xFF718096),
@@ -1800,6 +1971,16 @@ class _ModuleButton extends StatelessWidget {
         );
         break;
 
+      case 'adoration_title':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AdorationScreen(),
+            settings: const RouteSettings(name: '/adoration'),
+          ),
+        );
+        break;
+
       case 'spiritual_exercises':
         Navigator.push(
           context,
@@ -1840,7 +2021,7 @@ class _ModuleButton extends StatelessWidget {
         );
         break;
 
-      case 'about.title':
+      case 'about_title':
         Navigator.push(
           context,
           MaterialPageRoute(

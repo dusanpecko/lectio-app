@@ -131,6 +131,15 @@ class AppFloatingMenu extends StatelessWidget {
             title: Text(tr('rosary_title')),
             onTap: () => Navigator.pop(context, 'rosary'),
           ),
+          // ✨ NOVÝ - Adorácie
+          ListTile(
+            leading: Icon(
+              Icons.favorite_rounded,
+              color: Colors.red, // Výrazná farba pre adorácie
+            ), // Adorácia - srdce
+            title: Text(tr('adoration_title')),
+            onTap: () => Navigator.pop(context, 'adoration'),
+          ),
           ListTile(
             leading: Icon(
               Icons.campaign_rounded,
@@ -170,7 +179,7 @@ class AppFloatingMenu extends StatelessWidget {
               Icons.info_rounded,
               color: theme.colorScheme.primary,
             ), // O aplikácii
-            title: Text(tr('about.title')),
+            title: Text(tr('about_title')),
             onTap: () => Navigator.pop(context, 'about'),
           ),
           ListTile(

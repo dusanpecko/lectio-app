@@ -8,6 +8,7 @@ import 'package:flutter_html/flutter_html.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/rosary_model.dart';
 import '../services/rosary_service.dart';
+import '../shared/app_colors.dart';
 import '../shared/rosary_constants.dart';
 import '../widgets/audio/universal_audio_player.dart';
 import '../widgets/audio/audio_player_models.dart';
@@ -34,7 +35,7 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
   RosaryNavigation? _navigation;
   bool _isLoading = true;
   String? _error;
-  bool _isBookmarked = false;
+  // bool _isBookmarked = false; // TODO: záložka - zatiaľ zakomentované
 
   @override
   void initState() {
@@ -126,53 +127,51 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
     }
   }
 
-  void _handleShare() async {
-    if (_decade != null) {
-      final categoryInfo = RosaryConstants.getCategoryInfo(widget.category);
-      final shareText =
-          '${categoryInfo.name} - ${_decade!.title}\n\n${_decade!.introduction}';
+  // TODO: záložka a zdieľať - zatiaľ zakomentované
+  // void _handleShare() async {
+  //   if (_decade != null) {
+  //     final categoryInfo = RosaryConstants.getCategoryInfo(widget.category);
+  //     final shareText =
+  //         '${categoryInfo.name} - ${_decade!.title}\n\n${_decade!.introduction}';
+  //     try {
+  //       await Clipboard.setData(ClipboardData(text: shareText));
+  //       if (mounted) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(
+  //             content: Text(tr('copied_to_clipboard')),
+  //             duration: const Duration(seconds: 2),
+  //             action: SnackBarAction(label: tr('ok'), onPressed: () {}),
+  //           ),
+  //         );
+  //       }
+  //     } catch (e) {
+  //       if (mounted) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(
+  //             content: Text(tr('share_error')),
+  //             duration: const Duration(seconds: 2),
+  //           ),
+  //         );
+  //       }
+  //     }
+  //   }
+  // }
 
-      try {
-        await Clipboard.setData(ClipboardData(text: shareText));
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(tr('copied_to_clipboard')),
-              duration: const Duration(seconds: 2),
-              action: SnackBarAction(label: tr('ok'), onPressed: () {}),
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(tr('share_error')),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  void _handleBookmark() {
-    setState(() {
-      _isBookmarked = !_isBookmarked;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _isBookmarked
-              ? tr('added_to_bookmarks')
-              : tr('removed_from_bookmarks'),
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
+  // void _handleBookmark() {
+  //   setState(() {
+  //     _isBookmarked = !_isBookmarked;
+  //   });
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(
+  //       content: Text(
+  //         _isBookmarked
+  //             ? tr('added_to_bookmarks')
+  //             : tr('removed_from_bookmarks'),
+  //       ),
+  //       duration: const Duration(seconds: 2),
+  //     ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -229,18 +228,17 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
                     ),
 
                   // Existujúci obsah
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        _buildActionButtons(theme, categoryColor),
-                        const SizedBox(height: 20),
-                        _buildMainContent(theme, categoryColor),
-                        const SizedBox(height: 20),
-                        _buildNavigationButtons(theme, categoryColor),
-                        const SizedBox(height: 20),
-                      ],
-                    ),
+                  Column(
+                    children: [
+                      _buildBiblicalText(theme, categoryColor),
+                      _buildIntroduction(theme, categoryColor),
+                      _buildLectioDivinaSections(theme, categoryColor),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildNavigationButtons(theme, categoryColor),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
                   ),
                 ],
               ),
@@ -374,251 +372,195 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
     Color categoryColor,
   ) {
     return SliverAppBar(
-      expandedHeight: 200,
+      expandedHeight: 300,
       floating: false,
       pinned: true,
       backgroundColor: categoryColor,
       foregroundColor: Colors.white,
-      flexibleSpace: FlexibleSpaceBar(
-        titlePadding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-        title: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Text(
-            _decade!.title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              shadows: [
-                Shadow(
-                  color: Colors.black26,
-                  blurRadius: 4,
-                  offset: Offset(0, 1),
-                ),
-              ],
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+      title: Text(
+        _decade!.title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
         ),
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [categoryColor, categoryColor.withValues(alpha: 0.8)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-          child: Stack(
-            children: [
-              if (_decade!.hasImage)
-                Positioned.fill(
-                  child: CachedNetworkImage(
-                    imageUrl: _decade!.illustrationImage!,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) =>
-                        const Center(child: CircularProgressIndicator()),
-                    errorWidget: (context, url, error) => Container(),
-                  ),
-                ),
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        categoryColor.withValues(alpha: 0.7),
-                        categoryColor,
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                  ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      flexibleSpace: FlexibleSpaceBar(
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (_decade!.hasImage)
+              CachedNetworkImage(
+                imageUrl: _decade!.illustrationImage!,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(color: categoryColor),
+                errorWidget: (context, url, error) =>
+                    Container(color: categoryColor),
+              )
+            else
+              Container(color: categoryColor),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    categoryColor.withValues(alpha: 0.5),
+                    categoryColor.withValues(alpha: 0.85),
+                  ],
                 ),
               ),
-              Positioned(
-                top: 100,
-                right: 20,
-                child: Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${widget.decadeOrder}',
-                      style: const TextStyle(
+            ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Icon(
+                        categoryInfo.icon,
+                        size: 48,
                         color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 16),
+                    Text(
+                      _decade!.title,
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${categoryInfo.name} · ${widget.decadeOrder}/5',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(ThemeData theme, Color categoryColor) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        OutlinedButton.icon(
-          onPressed: _handleBookmark,
-          icon: Icon(
-            _isBookmarked
-                ? Icons.bookmark_rounded
-                : Icons.bookmark_border_rounded,
-          ),
-          label: Text(tr('bookmark')),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: categoryColor,
-            side: BorderSide(color: categoryColor),
-          ),
-        ),
-        OutlinedButton.icon(
-          onPressed: _handleShare,
-          icon: const Icon(Icons.share_rounded),
-          label: Text(tr('share')),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: categoryColor,
-            side: BorderSide(color: categoryColor),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMainContent(ThemeData theme, Color categoryColor) {
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.cardColor.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildBiblicalText(theme, categoryColor),
-          _buildIntroduction(theme, categoryColor),
-          _buildLectioDivinaSections(theme, categoryColor),
-          _buildMetadata(theme),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBiblicalText(ThemeData theme, Color categoryColor) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            categoryColor.withValues(alpha: 0.1),
-            categoryColor.withValues(alpha: 0.05),
+            ),
           ],
         ),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(12),
-          topRight: Radius.circular(12),
-        ),
-        border: Border(left: BorderSide(color: categoryColor, width: 4)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    );
+  }
+
+  // TODO: záložka a zdieľať - zatiaľ zakomentované
+  // Widget _buildActionButtons(ThemeData theme, Color categoryColor) {
+  //   return Row(
+  //     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  //     children: [
+  //       OutlinedButton.icon(
+  //         onPressed: _handleBookmark,
+  //         icon: Icon(
+  //           _isBookmarked
+  //               ? Icons.bookmark_rounded
+  //               : Icons.bookmark_border_rounded,
+  //         ),
+  //         label: Text(tr('bookmark')),
+  //         style: OutlinedButton.styleFrom(
+  //           foregroundColor: categoryColor,
+  //           side: BorderSide(color: categoryColor),
+  //         ),
+  //       ),
+  //       OutlinedButton.icon(
+  //         onPressed: _handleShare,
+  //         icon: const Icon(Icons.share_rounded),
+  //         label: Text(tr('share')),
+  //         style: OutlinedButton.styleFrom(
+  //           foregroundColor: categoryColor,
+  //           side: BorderSide(color: categoryColor),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
+
+  Widget _buildBiblicalText(ThemeData theme, Color categoryColor) {
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        elevation: 2,
+        color: theme.cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.book_rounded, color: categoryColor, size: 28),
-              const SizedBox(width: 12),
               Text(
                 tr('gods_word'),
-                style: theme.textTheme.titleLarge?.copyWith(
+                style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: categoryColor,
+                  color: AppColors.primary,
                 ),
+              ),
+              const SizedBox(height: 8),
+              Html(
+                data: _decade!.biblicalText,
+                style: {
+                  "body": Style(
+                    lineHeight: const LineHeight(1.6),
+                    fontStyle: FontStyle.italic,
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                },
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Html(
-            data: _decade!.biblicalText,
-            style: {
-              "body": Style(
-                fontSize: FontSize(18),
-                lineHeight: const LineHeight(1.6),
-                fontStyle: FontStyle.italic,
-                fontWeight: FontWeight.w500,
-                color: theme.colorScheme.onSurface,
-              ),
-            },
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildIntroduction(ThemeData theme, Color categoryColor) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        elevation: 2,
+        color: theme.cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 4,
-                height: 32,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      categoryColor,
-                      categoryColor.withValues(alpha: 0.5),
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 16),
               Text(
                 tr('mystery_introduction'),
-                style: theme.textTheme.titleLarge?.copyWith(
+                style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
                 ),
+              ),
+              const SizedBox(height: 8),
+              Html(
+                data: _decade!.introduction,
+                style: {
+                  "body": Style(
+                    lineHeight: const LineHeight(1.6),
+                    color: theme.colorScheme.onSurface,
+                  ),
+                },
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Html(
-            data: _decade!.introduction,
-            style: {
-              "body": Style(
-                fontSize: FontSize(16),
-                lineHeight: const LineHeight(1.6),
-                color: theme.colorScheme.onSurface,
-              ),
-            },
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -651,28 +593,35 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
     final lectioDivinaSteps = {
       'lectio_text': {
         'name': 'Lectio',
-        'subtitle': tr('reading'),
-        'color': '#4CAF50',
+        'subtitle': _decade!.author?.isNotEmpty == true
+            ? _decade!.author!
+            : tr('reading'),
+        'color': '#4A5085',
       },
       'meditatio_text': {
         'name': 'Meditatio',
         'subtitle': tr('meditation'),
-        'color': '#FF9800',
+        'color': '#4A5085',
       },
       'oratio_html': {
         'name': 'Oratio',
         'subtitle': tr('prayer'),
-        'color': '#9C27B0',
+        'color': '#4A5085',
       },
       'contemplatio_text': {
         'name': 'Contemplatio',
         'subtitle': tr('contemplation'),
-        'color': '#2196F3',
+        'color': '#4A5085',
+      },
+      'silencio_text': {
+        'name': 'Silencio',
+        'subtitle': tr('silence'),
+        'color': '#4A5085',
       },
       'actio_text': {
         'name': 'Actio',
         'subtitle': tr('action'),
-        'color': '#F44336',
+        'color': '#4A5085',
       },
     };
 
@@ -685,118 +634,48 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
     Map<String, dynamic> sectionInfo,
     String content,
   ) {
-    final sectionColor = RosaryConstants.hexToColor(sectionInfo['color']);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        elevation: 2,
+        color: theme.cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 4,
-                height: 32,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [sectionColor, sectionColor.withValues(alpha: 0.5)],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                  borderRadius: BorderRadius.circular(2),
+              Text(
+                sectionInfo['name'],
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
                 ),
               ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    sectionInfo['name'],
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: sectionColor,
-                    ),
+              if (sectionInfo['subtitle'].isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  sectionInfo['subtitle'],
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
                   ),
-                  if (sectionInfo['subtitle'].isNotEmpty)
-                    Text(
-                      sectionInfo['subtitle'],
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                ],
+                ),
+              ],
+              const SizedBox(height: 8),
+              Html(
+                data: content,
+                style: {
+                  "body": Style(
+                    lineHeight: const LineHeight(1.6),
+                    color: theme.colorScheme.onSurface,
+                  ),
+                },
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Html(
-            data: content,
-            style: {
-              "body": Style(
-                fontSize: FontSize(16),
-                lineHeight: const LineHeight(1.6),
-                color: theme.colorScheme.onSurface,
-              ),
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetadata(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
         ),
-      ),
-      child: Row(
-        children: [
-          if (_decade!.author?.isNotEmpty == true) ...[
-            Icon(
-              Icons.person_rounded,
-              size: 16,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              _decade!.author!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(width: 16),
-          ],
-          Icon(
-            Icons.calendar_today_rounded,
-            size: 16,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            DateFormat('d.M.yyyy').format(_decade!.createdAt),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Icon(
-            Icons.schedule_rounded,
-            size: 16,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            '~${RosaryConstants.averageDecadeMinutes} min',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
       ),
     );
   }

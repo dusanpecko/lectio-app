@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import '../shared/app_colors.dart';
 import 'intro_step_translations.dart';
 
 class IntroStepScreen extends StatefulWidget {
@@ -37,7 +38,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
         slivers: [
           // Hero App Bar with step indicator
           SliverAppBar(
-            expandedHeight: 280,
+            expandedHeight: 300,
             floating: false,
             pinned: true,
             backgroundColor: _getStepColor(widget.step),
@@ -51,68 +52,83 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
             iconTheme: const IconThemeData(color: Colors.white),
             flexibleSpace: FlexibleSpaceBar(
               title: null, // Disable default title to avoid overlap
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: _getStepGradient(widget.step),
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Background image
+                  Image.asset(
+                    _getStepBackgroundImage(widget.step),
+                    fit: BoxFit.cover,
                   ),
-                ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Step indicator
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            t['stepIndicator'] ?? 'Krok',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Step icon
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Icon(
-                            _getStepIcon(widget.step),
-                            size: 48,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Step title
-                        Text(
-                          t['stepTitle'] ?? 'Step Title',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                  // Gradient overlay for readability
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          _getStepColor(widget.step).withValues(alpha: 0.6),
+                          _getStepColor(widget.step).withValues(alpha: 0.85),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                  // Content
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Step indicator
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              t['stepIndicator'] ?? 'Krok',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Step icon
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Icon(
+                              _getStepIcon(widget.step),
+                              size: 48,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Step title
+                          Text(
+                            t['stepTitle'] ?? 'Step Title',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -128,44 +144,58 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
 
                   // Quote section
                   if (t['quoteText'] != null) ...[
-                    Card(
-                      color: theme.colorScheme.primaryContainer.withValues(
-                        alpha: 0.3,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.format_quote_rounded,
-                              size: 32,
-                              color: theme.colorScheme.primary,
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 180),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: Card(
+                          color: theme.colorScheme.primaryContainer.withValues(
+                            alpha: 0.3,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20.0,
+                              vertical: 24.0,
                             ),
-                            const SizedBox(height: 12),
-                            Text(
-                              t['quoteText'],
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontStyle: FontStyle.italic,
-                                height: 1.6,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            if (t['quoteReference'] != null) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                t['quoteReference'],
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.format_quote_rounded,
+                                  size: 32,
+                                  color: theme.colorScheme.primary,
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ],
+                                const SizedBox(height: 12),
+                                Text(
+                                  t['quoteText'],
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    fontStyle: FontStyle.italic,
+                                    height: 1.6,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                if (t['quoteReference'] != null) ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    t['quoteReference'],
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 24),
                   ],
+
+                  // Navigation buttons (top)
+                  _buildNavigationButtons(context, t),
+                  const SizedBox(height: 24),
 
                   // Introduction paragraph
                   if (t['introParagraph'] != null) ...[
@@ -327,63 +357,8 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                     const SizedBox(height: 24),
                   ],
 
-                  // Navigation buttons
-                  Row(
-                    children: [
-                      if (_getPreviousStep(widget.step) != null)
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _navigateToStep(
-                              context,
-                              _getPreviousStep(widget.step)!,
-                            ),
-                            icon: const Icon(Icons.arrow_back_rounded),
-                            label: Text(t['back'] ?? 'Späť'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                          ),
-                        ),
-                      if (_getPreviousStep(widget.step) != null &&
-                          _getNextStep(widget.step) != null)
-                        const SizedBox(width: 16),
-                      if (_getNextStep(widget.step) != null)
-                        Expanded(
-                          flex: _getPreviousStep(widget.step) == null ? 1 : 2,
-                          child: ElevatedButton.icon(
-                            onPressed: () => _navigateToStep(
-                              context,
-                              _getNextStep(widget.step)!,
-                            ),
-                            icon: const Icon(Icons.arrow_forward_rounded),
-                            label: Text(t['next'] ?? 'Ďalej'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _getStepColor(widget.step),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                          ),
-                        ),
-                      if (_getNextStep(widget.step) == null)
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => Navigator.popUntil(
-                              context,
-                              (route) => route.isFirst,
-                            ),
-                            icon: const Icon(Icons.home_rounded),
-                            label: Text(
-                              t['backToOverview'] ?? 'Späť na prehľad',
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _getStepColor(widget.step),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                  // Navigation buttons (bottom)
+                  _buildNavigationButtons(context, t),
 
                   const SizedBox(height: 24),
                 ],
@@ -662,66 +637,77 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
     );
   }
 
-  Color _getStepColor(String step) {
-    switch (step) {
-      case 'lectio':
-        return Colors.blue.shade700;
-      case 'meditatio':
-        return Colors.green.shade700;
-      case 'oratio':
-        return Colors.amber.shade700;
-      case 'contemplatio':
-        return Colors.red.shade700;
-      case 'actio':
-        return Colors.purple.shade700;
-      default:
-        return Colors.indigo.shade700;
-    }
+  Widget _buildNavigationButtons(BuildContext context, Map<String, dynamic> t) {
+    final previousStep = _getPreviousStep(widget.step);
+    final nextStep = _getNextStep(widget.step);
+
+    return Row(
+      children: [
+        // Left button: previous step or back to overview
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () {
+              if (previousStep != null) {
+                _navigateToStep(context, previousStep);
+              } else {
+                Navigator.popUntil(context, (route) => route.isFirst);
+              }
+            },
+            icon: Icon(
+              previousStep != null
+                  ? Icons.arrow_back_rounded
+                  : Icons.home_rounded,
+            ),
+            label: Text(
+              previousStep != null
+                  ? (t['back'] ?? 'Späť')
+                  : (t['backToOverview'] ?? 'Späť na prehľad'),
+            ),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        // Right button: next step or back to overview
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: () {
+              if (nextStep != null) {
+                _navigateToStep(context, nextStep);
+              } else {
+                Navigator.popUntil(context, (route) => route.isFirst);
+              }
+            },
+            icon: Icon(
+              nextStep != null
+                  ? Icons.arrow_forward_rounded
+                  : Icons.home_rounded,
+            ),
+            label: Text(
+              nextStep != null
+                  ? (t['next'] ?? 'Ďalej')
+                  : (t['backToOverview'] ?? 'Späť na prehľad'),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _getStepColor(widget.step),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
-  List<Color> _getStepGradient(String step) {
-    switch (step) {
-      case 'lectio':
-        return [
-          Colors.blue.shade900,
-          Colors.indigo.shade900,
-          Colors.purple.shade900,
-        ];
-      case 'meditatio':
-        return [
-          Colors.green.shade900,
-          Colors.teal.shade900,
-          Colors.cyan.shade900,
-        ];
-      case 'oratio':
-        return [
-          Colors.amber.shade900,
-          Colors.orange.shade900,
-          Colors.red.shade900,
-        ];
-      case 'contemplatio':
-        return [
-          Colors.red.shade900,
-          Colors.pink.shade900,
-          Colors.purple.shade900,
-        ];
-      case 'actio':
-        return [
-          Colors.purple.shade900,
-          Colors.deepPurple.shade900,
-          Colors.indigo.shade900,
-        ];
-      default:
-        return [
-          Colors.indigo.shade900,
-          Colors.purple.shade900,
-          Colors.blue.shade900,
-        ];
-    }
+  Color _getStepColor(String step) {
+    return AppColors.primary;
   }
 
   IconData _getStepIcon(String step) {
     switch (step) {
+      case 'silencio':
+        return Icons.hearing_rounded;
       case 'lectio':
         return Icons.menu_book_rounded;
       case 'meditatio':
@@ -729,7 +715,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
       case 'oratio':
         return Icons.favorite_rounded;
       case 'contemplatio':
-        return Icons.self_improvement_rounded;
+        return Icons.visibility_rounded;
       case 'actio':
         return Icons.directions_run_rounded;
       default:
@@ -737,15 +723,42 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
     }
   }
 
+  String _getStepBackgroundImage(String step) {
+    switch (step) {
+      case 'silencio':
+        return 'assets/images/intro_silencio_bg.webp';
+      case 'lectio':
+        return 'assets/images/intro_lectio_bg.webp';
+      case 'contemplatio':
+        return 'assets/images/intro_contemplatio_bg.webp';
+      default:
+        return 'assets/images/intro_about_bg.webp';
+    }
+  }
+
   String? _getPreviousStep(String currentStep) {
-    const steps = ['lectio', 'meditatio', 'oratio', 'contemplatio', 'actio'];
+    const steps = [
+      'silencio',
+      'lectio',
+      'meditatio',
+      'oratio',
+      'contemplatio',
+      'actio',
+    ];
     final currentIndex = steps.indexOf(currentStep);
     if (currentIndex <= 0) return null;
     return steps[currentIndex - 1];
   }
 
   String? _getNextStep(String currentStep) {
-    const steps = ['lectio', 'meditatio', 'oratio', 'contemplatio', 'actio'];
+    const steps = [
+      'silencio',
+      'lectio',
+      'meditatio',
+      'oratio',
+      'contemplatio',
+      'actio',
+    ];
     final currentIndex = steps.indexOf(currentStep);
     if (currentIndex < 0 || currentIndex >= steps.length - 1) return null;
     return steps[currentIndex + 1];

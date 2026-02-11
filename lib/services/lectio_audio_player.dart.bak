@@ -1,0 +1,705 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:audio_service/audio_service.dart';
+import 'package:audio_session/audio_session.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:just_audio/just_audio.dart';
+
+import '../shared/audio_constants.dart';
+import '../utils/app_logger.dart';
+import 'audio_download_service.dart';
+
+/// Simple, clean audio player for Lectio Divina
+/// Uses setAudioSources() with MediaItem tags for proper iOS lock screen controls
+class LectioAudioPlayer extends ChangeNotifier {
+  static final LectioAudioPlayer _instance = LectioAudioPlayer._internal();
+  factory LectioAudioPlayer() => _instance;
+  LectioAudioPlayer._internal();
+
+  final AudioPlayer _player = AudioPlayer();
+  final AudioDownloadService _audioDownloadService =
+      AudioDownloadService.instance;
+
+  // State
+  bool _isInitialized = false;
+  List<Map<String, dynamic>> _playlist = [];
+  int _currentTrackIndex = -1;
+  String _audioMode = 'short'; // none, short, long
+  bool _isPlayingInterlude = false;
+  Map<String, dynamic>? _nextTrackAfterInterlude;
+  bool _isStopped = false; // Flag to prevent auto-progression after stop
+  bool _completionHandledByIndexStream = false; // Prevent double handling
+  int? _lastKnownIndex; // Track last known index for auto-progression detection
+  bool _isRestoringPlaylist =
+      false; // Flag to ignore index changes during playlist restore
+  bool _isManualNavigation = false; // Flag to skip interlude on manual skip
+  bool _isHandlingCompletion =
+      false; // Guard against re-entrant completion handling
+  bool _isPlayerBusy = false; // Guard against concurrent native player calls
+
+  // Callbacks
+  VoidCallback? onPlaylistCompleted;
+  void Function(String trackKey, int index)? onTrackChanged;
+  VoidCallback? onSectionCompleted;
+
+  // Getters
+  AudioPlayer get player => _player;
+  bool get isInitialized => _isInitialized;
+  bool get isPlaying => _player.playing;
+  Duration get position => _player.position;
+  Duration? get duration => _player.duration;
+  String? get currentTrackKey =>
+      _currentTrackIndex >= 0 && _currentTrackIndex < _playlist.length
+      ? _playlist[_currentTrackIndex]['key']
+      : (_isPlayingInterlude ? 'interlude' : null);
+  int get currentTrackIndex => _currentTrackIndex;
+  List<Map<String, dynamic>> get playlist => _playlist;
+  String get audioMode => _audioMode;
+  bool get isPlayingInterlude => _isPlayingInterlude;
+
+  /// Initialize audio session
+  Future<void> initialize() async {
+    if (_isInitialized) return;
+
+    try {
+      // Configure audio session - use predefined music() configuration like official example
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration.music());
+      appLogger.d('🎵 AudioSession configured for music playback');
+
+      // Setup player listeners
+      _setupListeners();
+
+      _isInitialized = true;
+      appLogger.d('🎵 LectioAudioPlayer initialized');
+    } catch (e) {
+      appLogger.e('❌ Error initializing LectioAudioPlayer: $e');
+      rethrow;
+    }
+  }
+
+  void _setupListeners() {
+    // Position updates
+    _player.positionStream.listen((position) {
+      notifyListeners();
+    });
+
+    // Duration updates
+    _player.durationStream.listen((duration) {
+      notifyListeners();
+    });
+
+    // Track index changes (for lock screen next/prev AND auto-progression)
+    // CRITICAL: Not async - uses unawaited() to allow background execution
+    _player.currentIndexStream.listen((index) {
+      if (index == null) return;
+
+      appLogger.d(
+        '🎵 currentIndexStream: index=$index, _currentTrackIndex=$_currentTrackIndex, isInterlude=$_isPlayingInterlude, restoring=$_isRestoringPlaylist, handling=$_isHandlingCompletion',
+      );
+
+      // Ignore index changes during interlude, playlist restore, manual navigation, or active completion handling
+      if (_isPlayingInterlude ||
+          _isRestoringPlaylist ||
+          _isManualNavigation ||
+          _isHandlingCompletion) {
+        appLogger.d(
+          '🎵 Ignoring index change (interlude=$_isPlayingInterlude, restoring=$_isRestoringPlaylist, manual=$_isManualNavigation, handling=$_isHandlingCompletion)',
+        );
+        return;
+      }
+
+      // Detect auto-progression: index moved forward by 1
+      if (_lastKnownIndex != null &&
+          index == _lastKnownIndex! + 1 &&
+          index != _currentTrackIndex) {
+        appLogger.d(
+          '🎵 🎯 AUTO-PROGRESSION detected: $_lastKnownIndex -> $index',
+        );
+        _lastKnownIndex = index;
+        _isHandlingCompletion = true;
+
+        // CRITICAL: Use unawaited() to allow async operations to complete in background
+        // even when iOS throttles the event loop
+        unawaited(_handleAutoProgressionAsync(index));
+        return;
+      }
+
+      // Manual navigation or initial track
+      _lastKnownIndex = index;
+      if (index != _currentTrackIndex &&
+          index >= 0 &&
+          index < _playlist.length) {
+        _currentTrackIndex = index;
+        onTrackChanged?.call(_playlist[index]['key'], index);
+        notifyListeners();
+      }
+    });
+
+    // Player state changes - handles interlude completion AND last track completion
+    // CRITICAL: Not async - uses unawaited() to allow background execution
+    _player.playerStateStream.listen((state) {
+      appLogger.d(
+        '🎵 Player state: playing=${state.playing}, processingState=${state.processingState}, handling=$_isHandlingCompletion',
+      );
+
+      if (state.processingState == ProcessingState.completed) {
+        appLogger.d(
+          '🎵 🏁 ProcessingState.completed - isInterlude=$_isPlayingInterlude, handledByIndex=$_completionHandledByIndexStream, handling=$_isHandlingCompletion',
+        );
+
+        // Don't double-handle if already being processed
+        if (_isHandlingCompletion) {
+          appLogger.d('🎵 Skipping - completion already being handled');
+          notifyListeners();
+          return;
+        }
+
+        if (_isPlayingInterlude) {
+          // Interlude completed - always handle this
+          appLogger.d('🎵 ✅ Interlude completed, handling...');
+          _isHandlingCompletion = true;
+          unawaited(_handleCompletionAsync('interlude'));
+        } else if (_completionHandledByIndexStream) {
+          // Already handled by currentIndexStream auto-progression
+          appLogger.d('🎵 Skipping - already handled by currentIndexStream');
+          _completionHandledByIndexStream = false; // Reset for next time
+        } else if (_currentTrackIndex >= _playlist.length - 1) {
+          // Last track in playlist completed
+          appLogger.d('🎵 ✅ Last track completed, handling...');
+          _isHandlingCompletion = true;
+          unawaited(_handleCompletionAsync('last track'));
+        }
+      }
+
+      notifyListeners();
+    });
+
+    // Error handling
+    _player.playbackEventStream.listen(
+      (event) {},
+      onError: (Object e, StackTrace st) {
+        appLogger.e('❌ Playback error: $e');
+      },
+    );
+  }
+
+  /// Set playlist and audio mode
+  Future<void> setPlaylist(
+    List<Map<String, dynamic>> tracks,
+    String mode,
+  ) async {
+    _playlist = List.from(tracks);
+    _audioMode = mode;
+    _isStopped = false; // Reset stopped flag for new playlist
+    _completionHandledByIndexStream = false; // Reset completion flag
+    appLogger.d('🎵 Setting playlist: ${tracks.length} tracks, mode: $mode');
+
+    // Build list of AudioSources with MediaItem tags (like in official example)
+    final sources = <AudioSource>[];
+    for (int i = 0; i < tracks.length; i++) {
+      final track = tracks[i];
+      final url = track['url'] as String;
+      final title = track['label'] as String? ?? 'Audio';
+      final key = track['key'] as String? ?? 'track_$i';
+      final localPath = track['localPath'] as String?;
+
+      // Použiť lokálny súbor ak existuje, inak streaming
+      final audioSource = _createAudioSource(
+        url: url,
+        localPath: localPath,
+        key: key,
+        title: title,
+      );
+
+      sources.add(audioSource);
+    }
+
+    // Use setAudioSources (plural) like in official example
+    // This automatically creates ConcatenatingAudioSource and enables lock screen controls
+    try {
+      // CRITICAL: Stop player before replacing audio sources to prevent
+      // native iOS crash in KVO handler (getBufferedPosition accessing stale array)
+      if (_player.playing || _player.processingState != ProcessingState.idle) {
+        await _player.stop();
+        // Small delay to let KVO notifications settle
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
+      await _player.setAudioSources(sources, preload: true);
+      appLogger.d('🎵 ✅ Audio sources set with ${sources.length} tracks');
+    } catch (e) {
+      appLogger.e('❌ Error setting audio sources: $e');
+    }
+  }
+
+  /// Vytvorí AudioSource - lokálny súbor ak existuje, inak streaming URL
+  AudioSource _createAudioSource({
+    required String url,
+    String? localPath,
+    required String key,
+    required String title,
+  }) {
+    final mediaItem = MediaItem(
+      id: key,
+      album: 'Lectio Divina',
+      title: title,
+      artist: 'Lectio Divina',
+      artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
+    );
+
+    // Ak máme lokálny súbor a existuje, použijeme ho
+    if (localPath != null && File(localPath).existsSync()) {
+      appLogger.d('🎵 📦 Using local file for $key: $localPath');
+      return AudioSource.file(localPath, tag: mediaItem);
+    }
+
+    // Fallback na streaming
+    return AudioSource.uri(Uri.parse(url), tag: mediaItem);
+  }
+
+  /// Set audio mode
+  void setAudioMode(String mode) {
+    _audioMode = mode;
+    notifyListeners();
+  }
+
+  /// Play specific track by key
+  Future<void> playTrack(String key) async {
+    final index = _playlist.indexWhere((t) => t['key'] == key);
+    if (index < 0) {
+      appLogger.e('❌ Track not found: $key');
+      return;
+    }
+    await playTrackByIndex(index);
+  }
+
+  /// Play track by index
+  Future<void> playTrackByIndex(int index) async {
+    if (index < 0 || index >= _playlist.length) {
+      appLogger.e('❌ Invalid track index: $index');
+      return;
+    }
+
+    // Guard against concurrent native player calls
+    if (_isPlayerBusy) {
+      appLogger.w('⏳ Player busy, skipping playTrackByIndex($index)');
+      return;
+    }
+    _isPlayerBusy = true;
+
+    // Manuálna navigácia - preskoč interlude
+    _isManualNavigation = true;
+    _currentTrackIndex = index;
+    _isPlayingInterlude = false;
+    _nextTrackAfterInterlude = null;
+    _isStopped = false;
+    final track = _playlist[index];
+    final title = track['label'] as String? ?? 'Audio';
+    final key = track['key'] as String? ?? 'track_$index';
+
+    appLogger.d('🎵 Playing track $index: $title');
+
+    try {
+      // Use seek() to navigate to track in concatenated playlist (like official example)
+      await _player.seek(Duration.zero, index: index);
+      if (!_player.playing) {
+        // Don't await play() - it blocks until playback completes
+        _player.play();
+      }
+      appLogger.d('🎵 ✅ Seeked to track $index and started playback');
+
+      _lastKnownIndex = index; // Sync po manuálnom preskočení
+      _isManualNavigation = false; // Reset flagu
+
+      onTrackChanged?.call(key, index);
+      notifyListeners();
+    } on PlatformException catch (e) {
+      appLogger.e('❌ PlatformException playing track: $e');
+      _isManualNavigation = false;
+    } catch (e) {
+      _isManualNavigation = false; // Reset flagu aj pri chybe
+      appLogger.e('❌ Error playing track: $e');
+    } finally {
+      _isPlayerBusy = false;
+    }
+  }
+
+  /// Play interlude music (outside of playlist)
+  Future<void> _playInterlude(Map<String, dynamic>? nextTrack) async {
+    _isPlayingInterlude = true;
+    _nextTrackAfterInterlude = nextTrack;
+
+    // Match old _playMeditationMusic logic:
+    // - 'long' mode → always long interlude (lectio_full.mp3)
+    // - 'short' mode → long only for contemplatio/actio and last track
+    //   others get short (audio_null.mp3 = silent transition)
+    // - 'none' mode → no interlude at all (handled before this method)
+    final bool isLong;
+    if (_audioMode == 'long') {
+      isLong = true;
+    } else {
+      // Short mode: use long interlude for contemplatio, actio, and last track
+      final currentKey =
+          _currentTrackIndex >= 0 && _currentTrackIndex < _playlist.length
+          ? _playlist[_currentTrackIndex]['key'] as String?
+          : null;
+      isLong =
+          currentKey == 'contemplatio_audio' ||
+          currentKey == 'actio_audio' ||
+          nextTrack == null;
+    }
+    final url = AudioConstants.getInterludeUrl(isLong: isLong);
+    final title = isLong ? 'Meditačná hudba (dlhá)' : 'Meditačná hudba';
+
+    appLogger.d(
+      '🎵 Playing ${isLong ? "long" : "short"} interlude (currentTrack=${_currentTrackIndex >= 0 && _currentTrackIndex < _playlist.length ? _playlist[_currentTrackIndex]['key'] : 'unknown'})',
+    );
+
+    try {
+      // Small delay before interlude for smooth transition
+      final delay = isLong
+          ? AudioTimingConstants.longInterludeDelay
+          : AudioTimingConstants.shortInterludeDelay;
+      await Future.delayed(Duration(milliseconds: delay));
+
+      // CRITICAL: Keep audio session active during interlude
+      final session = await AudioSession.instance;
+      await session.setActive(
+        true,
+        avAudioSessionSetActiveOptions:
+            AVAudioSessionSetActiveOptions.notifyOthersOnDeactivation,
+      );
+
+      // CRITICAL: Stop player before replacing audio source to prevent
+      // native iOS crash in KVO handler (getBufferedPosition accessing stale array)
+      if (_player.playing || _player.processingState != ProcessingState.idle) {
+        await _player.stop();
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
+
+      // Check for local file (offline mode)
+      final localPath = _audioDownloadService.getLocalPath(url);
+      final audioSource = localPath != null && File(localPath).existsSync()
+          ? AudioSource.file(
+              localPath,
+              tag: MediaItem(
+                id: 'interlude',
+                album: 'Lectio Divina',
+                title: title,
+                artist: 'Meditácia',
+                artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
+              ),
+            )
+          : AudioSource.uri(
+              Uri.parse(url),
+              tag: MediaItem(
+                id: 'interlude',
+                album: 'Lectio Divina',
+                title: title,
+                artist: 'Meditácia',
+                artUri: Uri.parse(AudioConstants.defaultArtworkUrl),
+              ),
+            );
+
+      await _player.setAudioSource(audioSource);
+      // Don't await play() - it blocks until playback completes!
+      // Interlude completion is handled by playerStateStream listener
+      _player.play();
+
+      onTrackChanged?.call('interlude', -1);
+      notifyListeners();
+    } catch (e) {
+      appLogger.e('❌ Error playing interlude: $e');
+      // Skip to next track if interlude fails
+      if (nextTrack != null) {
+        await playTrack(nextTrack['key']);
+      }
+    }
+  }
+
+  /// Handle completion in background-safe way (for playerStateStream)
+  Future<void> _handleCompletionAsync(String reason) async {
+    try {
+      await _onTrackCompletedAsync();
+    } catch (e) {
+      appLogger.e('❌ Error handling $reason completion: $e');
+    } finally {
+      _isHandlingCompletion = false;
+    }
+  }
+
+  /// Handle auto-progression in background-safe way
+  Future<void> _handleAutoProgressionAsync(int newIndex) async {
+    try {
+      // Pause immediately to prevent further auto-advancement
+      await _player.pause();
+      appLogger.d(
+        '🎵 ⏸️ Player paused after auto-progression to index $newIndex',
+      );
+
+      // Mark that we're handling this completion via currentIndexStream
+      _completionHandledByIndexStream = true;
+
+      // Handle track completion (interlude + next track)
+      await _onTrackCompletedAsync();
+    } catch (e) {
+      appLogger.e('❌ Error handling auto-progression: $e');
+    } finally {
+      _isHandlingCompletion = false;
+    }
+  }
+
+  /// Handle track completion - async implementation
+  Future<void> _onTrackCompletedAsync() async {
+    try {
+      appLogger.d('🎵 ═══════════════════════════════════════════════');
+      appLogger.d('🎵 _onTrackCompletedAsync CALLED');
+      appLogger.d('🎵 currentIndex=$_currentTrackIndex');
+      appLogger.d('🎵 isInterlude=$_isPlayingInterlude');
+      appLogger.d('🎵 audioMode=$_audioMode');
+      appLogger.d('🎵 playlist length=${_playlist.length}');
+      appLogger.d('🎵 isStopped=$_isStopped');
+      appLogger.d('🎵 ═══════════════════════════════════════════════');
+
+      // Don't continue if user stopped playback or manual navigation is in progress
+      if (_isStopped || _isManualNavigation) {
+        appLogger.d(
+          '🛑 Playback was stopped or manual navigation - skipping auto-progression',
+        );
+        return;
+      }
+
+      // Notify section completed for UI callback
+      onSectionCompleted?.call();
+
+      // If interlude finished, play next track
+      if (_isPlayingInterlude) {
+        _isPlayingInterlude = false;
+        if (_nextTrackAfterInterlude != null) {
+          final next = _nextTrackAfterInterlude!;
+          _nextTrackAfterInterlude = null;
+          appLogger.d(
+            '🎵 Interlude completed, playing next track: ${next['key']}',
+          );
+          // Need to restore playlist and play next track
+          await _restorePlaylistAndPlayTrack(next);
+        } else {
+          appLogger.d('🎵 Interlude completed, playlist finished');
+          // Playlist completed
+          onPlaylistCompleted?.call();
+        }
+        return;
+      }
+
+      // Normal track finished - play interlude then next (if audio mode != none)
+      appLogger.d(
+        '🎵 Checking if should play interlude: audioMode=$_audioMode',
+      );
+      if (_audioMode != 'none' && _currentTrackIndex >= 0) {
+        // Current track just completed, next track is currentIndex + 1
+        final hasNext = _currentTrackIndex < _playlist.length - 1;
+        final nextTrack = hasNext ? _playlist[_currentTrackIndex + 1] : null;
+        appLogger.d(
+          '🎵 ✅ Will play interlude. hasNext=$hasNext, nextTrack=${nextTrack?['key']}',
+        );
+
+        // CRITICAL: Pause player before interlude to prevent auto-progression
+        await _player.pause();
+        appLogger.d('🎵 ⏸️ Player paused before interlude');
+
+        await _playInterlude(nextTrack);
+      } else {
+        appLogger.d(
+          '🎵 ❌ Skipping interlude: audioMode=$_audioMode, currentIndex=$_currentTrackIndex',
+        );
+        // No interlude mode - check if we need to advance
+        if (_currentTrackIndex >= _playlist.length - 1) {
+          appLogger.d('🎵 Playlist completed (no interlude mode)');
+          onPlaylistCompleted?.call();
+        } else {
+          // Auto-advance to next track
+          appLogger.d('🎵 Auto-advancing to next track (no interlude mode)');
+          await playTrackByIndex(_currentTrackIndex + 1);
+        }
+      }
+    } catch (e) {
+      appLogger.e('❌ Error in _onTrackCompletedAsync: $e');
+    }
+  }
+
+  /// Restore playlist after interlude and play specific track
+  Future<void> _restorePlaylistAndPlayTrack(Map<String, dynamic> track) async {
+    _isPlayingInterlude = false;
+
+    // Guard against concurrent native player calls
+    if (_isPlayerBusy) {
+      appLogger.w('⏳ Player busy, deferring playlist restore');
+      // Retry after a short delay
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (_isPlayerBusy) {
+        appLogger.e('❌ Player still busy, skipping playlist restore');
+        return;
+      }
+    }
+    _isPlayerBusy = true;
+
+    // Find track index
+    final index = _playlist.indexWhere((t) => t['key'] == track['key']);
+    if (index >= 0) {
+      appLogger.d('🎵 Resuming playlist at track $index after interlude');
+
+      // CRITICAL FIX: Restore full playlist before seeking
+      // During interlude, setAudioSource() replaced the playlist with a single track
+      // We must restore the full playlist using setAudioSources() before seeking
+      appLogger.d('🎵 Restoring full playlist with ${_playlist.length} tracks');
+      final sources = <AudioSource>[];
+      for (int i = 0; i < _playlist.length; i++) {
+        final t = _playlist[i];
+        final url = t['url'] as String;
+        final title = t['label'] as String? ?? 'Audio';
+        final key = t['key'] as String? ?? 'track_$i';
+        final localPath = t['localPath'] as String?;
+
+        sources.add(
+          _createAudioSource(
+            url: url,
+            localPath: localPath,
+            key: key,
+            title: title,
+          ),
+        );
+      }
+
+      try {
+        // Set flag to ignore currentIndexStream events during restore
+        _isRestoringPlaylist = true;
+
+        // CRITICAL: Stop player before replacing audio sources to prevent
+        // native iOS crash in KVO handler (getBufferedPosition accessing stale array)
+        if (_player.playing ||
+            _player.processingState != ProcessingState.idle) {
+          await _player.stop();
+          await Future.delayed(const Duration(milliseconds: 50));
+        }
+
+        await _player.setAudioSources(sources, preload: true);
+        appLogger.d('🎵 ✅ Playlist restored with ${sources.length} tracks');
+
+        // Now we can seek to the specific track
+        await _player.seek(Duration.zero, index: index);
+        // Don't await play() - it blocks until playback completes
+        _player.play();
+        _currentTrackIndex = index;
+        _lastKnownIndex =
+            index; // Sync so next auto-progression is detected correctly
+        _isRestoringPlaylist = false; // Re-enable index tracking
+
+        onTrackChanged?.call(track['key'], index);
+        notifyListeners();
+      } on PlatformException catch (e) {
+        _isRestoringPlaylist = false;
+        appLogger.e('❌ PlatformException restoring playlist: $e');
+      } catch (e) {
+        _isRestoringPlaylist = false; // Always reset flag
+        appLogger.e('❌ Error restoring playlist: $e');
+      } finally {
+        _isPlayerBusy = false;
+      }
+    } else {
+      _isPlayerBusy = false;
+      appLogger.e('❌ Track not found in playlist: ${track['key']}');
+    }
+  }
+
+  /// Play/Resume
+  Future<void> play() async {
+    if (_currentTrackIndex < 0 && _playlist.isNotEmpty) {
+      await playTrackByIndex(0);
+    } else {
+      await _player.play();
+    }
+  }
+
+  /// Pause
+  Future<void> pause() async {
+    await _player.pause();
+  }
+
+  /// Stop
+  Future<void> stop() async {
+    _isStopped = true; // Prevent auto-progression
+    await _player.stop();
+    _currentTrackIndex = -1;
+    _isPlayingInterlude = false;
+    _nextTrackAfterInterlude = null;
+    notifyListeners();
+  }
+
+  /// Seek
+  Future<void> seek(Duration position) async {
+    await _player.seek(position);
+  }
+
+  /// Skip to next track
+  Future<void> skipNext() async {
+    appLogger.d(
+      '🎵 skipNext called, isInterlude=$_isPlayingInterlude, currentIndex=$_currentTrackIndex',
+    );
+
+    if (_isPlayingInterlude) {
+      // Skip interlude, go to next track
+      _isPlayingInterlude = false;
+      if (_nextTrackAfterInterlude != null) {
+        final next = _nextTrackAfterInterlude!;
+        _nextTrackAfterInterlude = null;
+        await _restorePlaylistAndPlayTrack(next);
+      }
+      return;
+    }
+
+    // Use just_audio's built-in next for playlist
+    if (_player.hasNext) {
+      await _player.seekToNext();
+    } else if (_currentTrackIndex < _playlist.length - 1) {
+      await playTrackByIndex(_currentTrackIndex + 1);
+    }
+  }
+
+  /// Skip to previous track
+  Future<void> skipPrevious() async {
+    appLogger.d(
+      '🎵 skipPrevious called, isInterlude=$_isPlayingInterlude, currentIndex=$_currentTrackIndex',
+    );
+
+    if (_isPlayingInterlude) {
+      // Cancel interlude, restart current track
+      _isPlayingInterlude = false;
+      _nextTrackAfterInterlude = null;
+      if (_currentTrackIndex >= 0) {
+        await playTrackByIndex(_currentTrackIndex);
+      }
+      return;
+    }
+
+    // If more than 3 seconds in, restart current track
+    if (_player.position.inSeconds > 3) {
+      await seek(Duration.zero);
+    } else if (_player.hasPrevious) {
+      await _player.seekToPrevious();
+    } else if (_currentTrackIndex > 0) {
+      await playTrackByIndex(_currentTrackIndex - 1);
+    } else {
+      await seek(Duration.zero);
+    }
+  }
+
+  /// Dispose
+  @override
+  void dispose() {
+    // Dispose player (audio session will be deactivated automatically)
+    _player.dispose();
+    super.dispose();
+  }
+}

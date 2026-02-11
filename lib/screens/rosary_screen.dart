@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../models/rosary_model.dart';
 import '../services/rosary_service.dart';
+import '../shared/app_colors.dart';
 import '../shared/rosary_constants.dart';
 import 'rosary_category_screen.dart';
 
@@ -68,21 +69,105 @@ class _RosaryScreenState extends State<RosaryScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(tr('rosary_title')),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: _loadData,
-            tooltip: tr('refresh'),
-          ),
-        ],
-      ),
       body: _isLoading
           ? _buildLoadingState(theme)
           : _error != null
           ? _buildErrorState(theme)
-          : _buildContent(theme),
+          : CustomScrollView(
+              slivers: [
+                // Hero App Bar s obrázkom
+                SliverAppBar(
+                  expandedHeight: 300,
+                  floating: false,
+                  pinned: true,
+                  backgroundColor: AppColors.primary,
+                  title: Text(
+                    tr('rosary_title'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  actions: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.refresh_rounded,
+                        color: Colors.white,
+                      ),
+                      onPressed: _loadData,
+                      tooltip: tr('refresh'),
+                    ),
+                  ],
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.asset(
+                          'assets/images/rosary_backround.webp',
+                          fit: BoxFit.cover,
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                AppColors.primary.withValues(alpha: 0.6),
+                                AppColors.primary.withValues(alpha: 0.85),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SafeArea(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Icon(
+                                    Icons.auto_stories_rounded,
+                                    size: 48,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  tr('rosary_main_title'),
+                                  style: theme.textTheme.headlineMedium
+                                      ?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  tr('rosary_main_subtitle'),
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    color: Colors.white70,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Content
+                SliverToBoxAdapter(child: _buildContentBody(theme)),
+              ],
+            ),
     );
   }
 
@@ -148,25 +233,13 @@ class _RosaryScreenState extends State<RosaryScreen> {
     );
   }
 
-  Widget _buildContent(ThemeData theme) {
-    final totalDecades = _categoryStats.fold<int>(
-      0,
-      (sum, stat) => sum + stat.totalCount,
-    );
-    final totalWithAudio = _categoryStats.fold<int>(
-      0,
-      (sum, stat) => sum + stat.withAudio,
-    );
-
-    return SingleChildScrollView(
+  Widget _buildContentBody(ThemeData theme) {
+    return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(theme),
-          const SizedBox(height: 24),
-          _buildStats(theme, totalDecades, totalWithAudio),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
           _buildHowToSection(theme),
           const SizedBox(height: 32),
           _buildCategoriesSection(theme),
@@ -174,154 +247,6 @@ class _RosaryScreenState extends State<RosaryScreen> {
           _buildBenefitsSection(theme),
         ],
       ),
-    );
-  }
-
-  Widget _buildHeader(ThemeData theme) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.colorScheme.primary.withValues(alpha: 0.1),
-            theme.colorScheme.secondary.withValues(alpha: 0.1),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary,
-                  theme.colorScheme.secondary,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Icon(
-              Icons.auto_stories_rounded,
-              size: 40,
-              color: theme.colorScheme.onPrimary,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            tr('rosary_main_title'),
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            tr('rosary_main_subtitle'),
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStats(ThemeData theme, int totalDecades, int totalWithAudio) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _buildStatItem(
-          theme,
-          icon: Icons.apps_rounded,
-          title: '4',
-          subtitle: tr('categories'),
-          color: theme.colorScheme.primary,
-        ),
-        _buildStatItem(
-          theme,
-          icon: Icons.star_rounded,
-          title: '$totalDecades',
-          subtitle: tr('mysteries'),
-          color: Colors.green,
-        ),
-        _buildStatItem(
-          theme,
-          icon: Icons.headphones_rounded,
-          title: '$totalWithAudio',
-          subtitle: tr('with_audio'),
-          color: Colors.orange,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatItem(
-    ThemeData theme, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        // Ikona v kruhu s gradientom
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [color, color.withValues(alpha: 0.7)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Icon(icon, color: Colors.white, size: 28),
-        ),
-        const SizedBox(height: 12),
-
-        // Číslo
-        Text(
-          title,
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 4),
-
-        // Popis
-        Text(
-          subtitle,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
     );
   }
 
@@ -339,74 +264,101 @@ class _RosaryScreenState extends State<RosaryScreen> {
           ),
         ],
       ),
-      padding: const EdgeInsets.all(20),
+      clipBehavior: Clip.antiAlias,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.amber, Colors.orange],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.info_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
+          // Hlavička
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.1),
+                  AppColors.accent.withValues(alpha: 0.05),
+                ],
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  tr('how_to_pray_rosary'),
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.primary, AppColors.accent],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.info_rounded,
+                    color: Colors.white,
+                    size: 24,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    tr('how_to_pray_rosary'),
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 20),
 
-          // Traditional Rosary section
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '📿 ${tr('traditional_rosary')}',
+          // FAQ - Tradičný ruženec
+          Theme(
+            data: theme.copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 4,
+              ),
+              childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              leading: const Text('📿', style: TextStyle(fontSize: 24)),
+              title: Text(
+                tr('traditional_rosary'),
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 12),
-              _buildHowToItem(theme, tr('opening_prayers')),
-              _buildHowToItem(theme, tr('five_decades')),
-              _buildHowToItem(theme, tr('decade_structure')),
-            ],
+              children: [
+                _buildHowToItem(theme, tr('opening_prayers')),
+                _buildHowToItem(theme, tr('five_decades')),
+                _buildHowToItem(theme, tr('decade_structure')),
+              ],
+            ),
           ),
 
-          const SizedBox(height: 24),
+          Divider(
+            height: 1,
+            indent: 20,
+            endIndent: 20,
+            color: theme.dividerColor.withValues(alpha: 0.3),
+          ),
 
-          // Lectio Divina section
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '📖 ${tr('lectio_divina_steps')}',
+          // FAQ - Lectio Divina kroky
+          Theme(
+            data: theme.copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 4,
+              ),
+              childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              leading: const Text('📖', style: TextStyle(fontSize: 24)),
+              title: Text(
+                tr('lectio_divina_steps'),
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 12),
-              ...RosaryConstants.lectioDivinaSteps.map(
-                (step) => _buildLectioDivinaStep(theme, step),
-              ),
-            ],
+              children: RosaryConstants.lectioDivinaSteps
+                  .map((step) => _buildLectioDivinaStep(theme, step))
+                  .toList(),
+            ),
           ),
         ],
       ),
@@ -688,7 +640,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.blue,
+                      color: AppColors.primary,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -716,7 +668,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
               ),
               _buildBenefitItem(
                 theme,
-                Icons.self_improvement_rounded,
+                Icons.visibility_rounded,
                 tr('peaceful_prayer'),
               ),
               _buildBenefitItem(
@@ -757,7 +709,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.green,
+                      color: AppColors.accent,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(

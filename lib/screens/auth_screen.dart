@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:app_links/app_links.dart';
+import 'package:crypto/crypto.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -297,6 +300,24 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  /// Generuje kryptograficky bezpečný náhodný nonce
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(
+      length,
+      (_) => charset[random.nextInt(charset.length)],
+    ).join();
+  }
+
+  /// SHA256 hash nonce pre Apple
+  String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+
   Future<void> _signInWithApple() async {
     setState(() {
       _isLoading = true;
@@ -304,27 +325,59 @@ class _AuthScreenState extends State<AuthScreen> {
     });
 
     try {
-      // Starting Apple Sign-In
+      // Generuj nonce pre bezpečnosť
+      final rawNonce = _generateNonce();
+      final hashedNonce = _sha256ofString(rawNonce);
 
-      await Supabase.instance.client.auth.signInWithOAuth(
-        OAuthProvider.apple,
-        redirectTo: 'lectio-divina://login-callback',
-        authScreenLaunchMode: LaunchMode.externalApplication,
+      // Natívny Apple Sign-In dialog
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
       );
 
-      // Supabase Apple OAuth response logged
+      final idToken = credential.identityToken;
+      if (idToken == null) {
+        throw Exception('Apple Sign-In: chýba identityToken');
+      }
 
-      if (!mounted) return;
+      // Prihlásenie cez Supabase s natívnym tokenom
+      final response = await Supabase.instance.client.auth.signInWithIdToken(
+        provider: OAuthProvider.apple,
+        idToken: idToken,
+        nonce: rawNonce,
+      );
 
-      // Monitoruj zmeny v auth state
-      _monitorAuthState();
+      if (response.session != null && mounted) {
+        setState(() => _isLoading = false);
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          (route) => false,
+        );
+      }
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // Používateľ zrušil prihlásenie
+      if (e.code == AuthorizationErrorCode.canceled) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+        return;
+      }
+      if (mounted) {
+        setState(() {
+          _error = 'Apple Sign-In chyba: ${e.message}';
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      // Supabase Apple OAuth error
-      if (!mounted) return;
-      setState(() {
-        _error = 'Apple Sign-In chyba: ${e.toString()}';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'Apple Sign-In chyba: ${e.toString()}';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -443,6 +496,44 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
+  Widget _buildSocialButton({
+    required VoidCallback? onPressed,
+    required Widget icon,
+    required String label,
+    required Color backgroundColor,
+    required Color textColor,
+    required Color borderColor,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: backgroundColor,
+          side: BorderSide(color: borderColor),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            icon,
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -455,6 +546,12 @@ class _AuthScreenState extends State<AuthScreen> {
               : Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    Image.asset(
+                      'assets/icon/lectio_logo.png',
+                      width: 80,
+                      height: 80,
+                    ),
+                    const SizedBox(height: 24),
                     if (_isRegister)
                       TextField(
                         controller: _fullNameController,
@@ -543,58 +640,65 @@ class _AuthScreenState extends State<AuthScreen> {
                         child: Text(tr('forgot_password')),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    // Google Sign-In tlačidlo
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _isLoading ? null : _signInWithGoogle,
-                        icon: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: Image.asset(
-                            'assets/images/google_logo.png',
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                Icons.account_circle,
-                                size: 20,
-                                color: Colors.white,
-                              );
-                            },
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        const Expanded(child: Divider()),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            tr('or'),
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 13,
+                            ),
                           ),
                         ),
-                        label: Text(
-                          tr('sign_in_with_google'),
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF4285F4), // Google blue
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
+                        const Expanded(child: Divider()),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    // Apple Sign-In tlačidlo (Only show on non-Android platforms, mainly iOS)
-                    if (!Platform.isAndroid)
-                      SizedBox(
-                        width: double.infinity,
-                        child: SignInWithAppleButton(
-                          onPressed: _isLoading
-                              ? () {}
-                              : () => _signInWithApple(),
-                          text: tr('sign_in_with_apple'),
-                          height: 48,
-                        ),
+                    const SizedBox(height: 20),
+                    // Google Sign-In
+                    _buildSocialButton(
+                      onPressed: _isLoading ? null : _signInWithGoogle,
+                      icon: Image.asset(
+                        'assets/images/google_logo.png',
+                        width: 20,
+                        height: 20,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(Icons.g_mobiledata, size: 24);
+                        },
                       ),
-                    if (!Platform.isAndroid) const SizedBox(height: 16),
-                    const Divider(),
-                    const SizedBox(height: 16),
+                      label: tr('sign_in_with_google'),
+                      backgroundColor: Colors.white,
+                      textColor: Colors.black87,
+                      borderColor: Colors.grey.shade300,
+                    ),
+                    // Apple Sign-In (iOS / macOS only)
+                    if (!Platform.isAndroid) ...[
+                      const SizedBox(height: 12),
+                      _buildSocialButton(
+                        onPressed: _isLoading ? null : _signInWithApple,
+                        icon: const Icon(
+                          Icons.apple,
+                          size: 22,
+                          color: Colors.white,
+                        ),
+                        label: tr('sign_in_with_apple'),
+                        backgroundColor: Colors.black,
+                        textColor: Colors.white,
+                        borderColor: Colors.black,
+                      ),
+                    ],
+                    const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
-                      child: OutlinedButton(
+                      child: TextButton(
                         onPressed: _continueAsGuest,
-                        child: Text(tr('continue_without_login')),
+                        child: Text(
+                          tr('continue_without_login'),
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
                       ),
                     ),
                   ],

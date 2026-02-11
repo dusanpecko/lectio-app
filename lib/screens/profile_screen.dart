@@ -231,12 +231,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
   List<PaymentHistoryItem> _paymentHistory = [];
   BillingInfo? _billingInfo;
 
+  // Billing editing state
+  bool _editingBilling = false;
+  bool _savingBilling = false;
+  late TextEditingController _companyNameCtrl;
+  late TextEditingController _icoCtrl;
+  late TextEditingController _dicCtrl;
+  late TextEditingController _ibanCtrl;
+  // Shipping address
+  late TextEditingController _shippingStreetCtrl;
+  late TextEditingController _shippingCityCtrl;
+  late TextEditingController _shippingZipCtrl;
+  late TextEditingController _shippingCountryCtrl;
+  late TextEditingController _shippingPhoneCtrl;
+  late TextEditingController _shippingEmailCtrl;
+  // Billing address
+  late TextEditingController _billingStreetCtrl;
+  late TextEditingController _billingCityCtrl;
+  late TextEditingController _billingZipCtrl;
+  late TextEditingController _billingCountryCtrl;
+  late TextEditingController _billingPhoneCtrl;
+  late TextEditingController _billingEmailCtrl;
+
   @override
   void initState() {
     super.initState();
     final user = supabase.auth.currentUser;
     _nameCtrl = TextEditingController();
     _emailCtrl = TextEditingController(text: user?.email ?? '');
+
+    // Initialize billing controllers
+    _companyNameCtrl = TextEditingController();
+    _icoCtrl = TextEditingController();
+    _dicCtrl = TextEditingController();
+    _ibanCtrl = TextEditingController();
+    _shippingStreetCtrl = TextEditingController();
+    _shippingCityCtrl = TextEditingController();
+    _shippingZipCtrl = TextEditingController();
+    _shippingCountryCtrl = TextEditingController();
+    _shippingPhoneCtrl = TextEditingController();
+    _shippingEmailCtrl = TextEditingController();
+    _billingStreetCtrl = TextEditingController();
+    _billingCityCtrl = TextEditingController();
+    _billingZipCtrl = TextEditingController();
+    _billingCountryCtrl = TextEditingController();
+    _billingPhoneCtrl = TextEditingController();
+    _billingEmailCtrl = TextEditingController();
+
     _loadAllData();
   }
 
@@ -408,8 +449,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
           .eq('id', user.id)
           .maybeSingle();
       if (data != null && mounted) {
+        final billingInfo = BillingInfo.fromJson(data);
         setState(() {
-          _billingInfo = BillingInfo.fromJson(data);
+          _billingInfo = billingInfo;
+
+          // Fill controllers
+          _companyNameCtrl.text = billingInfo.companyName ?? '';
+          _icoCtrl.text = billingInfo.ico ?? '';
+          _dicCtrl.text = billingInfo.dic ?? '';
+          _ibanCtrl.text = billingInfo.iban ?? '';
+
+          // Shipping address
+          if (billingInfo.shippingAddress != null) {
+            _shippingStreetCtrl.text =
+                billingInfo.shippingAddress!['street'] ?? '';
+            _shippingCityCtrl.text = billingInfo.shippingAddress!['city'] ?? '';
+            _shippingZipCtrl.text = billingInfo.shippingAddress!['zip'] ?? '';
+            _shippingCountryCtrl.text =
+                billingInfo.shippingAddress!['country'] ?? '';
+            _shippingPhoneCtrl.text =
+                billingInfo.shippingAddress!['phone'] ?? '';
+            _shippingEmailCtrl.text =
+                billingInfo.shippingAddress!['email'] ?? '';
+          }
+
+          // Billing address
+          if (billingInfo.billingAddress != null) {
+            _billingStreetCtrl.text =
+                billingInfo.billingAddress!['street'] ?? '';
+            _billingCityCtrl.text = billingInfo.billingAddress!['city'] ?? '';
+            _billingZipCtrl.text = billingInfo.billingAddress!['zip'] ?? '';
+            _billingCountryCtrl.text =
+                billingInfo.billingAddress!['country'] ?? '';
+            _billingPhoneCtrl.text = billingInfo.billingAddress!['phone'] ?? '';
+            _billingEmailCtrl.text = billingInfo.billingAddress!['email'] ?? '';
+          }
         });
       }
     } catch (e) {
@@ -507,6 +581,84 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _saveBillingInfo() async {
+    setState(() => _savingBilling = true);
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      setState(() => _savingBilling = false);
+      return;
+    }
+
+    try {
+      // Prepare shipping address
+      Map<String, dynamic>? shippingAddress;
+      if (_shippingStreetCtrl.text.isNotEmpty ||
+          _shippingCityCtrl.text.isNotEmpty ||
+          _shippingZipCtrl.text.isNotEmpty) {
+        shippingAddress = {
+          'street': _shippingStreetCtrl.text.trim(),
+          'city': _shippingCityCtrl.text.trim(),
+          'zip': _shippingZipCtrl.text.trim(),
+          'country': _shippingCountryCtrl.text.trim(),
+          'phone': _shippingPhoneCtrl.text.trim(),
+          'email': _shippingEmailCtrl.text.trim(),
+        };
+      }
+
+      // Prepare billing address
+      Map<String, dynamic>? billingAddress;
+      if (_billingStreetCtrl.text.isNotEmpty ||
+          _billingCityCtrl.text.isNotEmpty ||
+          _billingZipCtrl.text.isNotEmpty) {
+        billingAddress = {
+          'street': _billingStreetCtrl.text.trim(),
+          'city': _billingCityCtrl.text.trim(),
+          'zip': _billingZipCtrl.text.trim(),
+          'country': _billingCountryCtrl.text.trim(),
+          'phone': _billingPhoneCtrl.text.trim(),
+          'email': _billingEmailCtrl.text.trim(),
+        };
+      }
+
+      await supabase
+          .from('users')
+          .update({
+            'shipping_address': shippingAddress,
+            'billing_address': billingAddress,
+            'company_name': _companyNameCtrl.text.trim().isEmpty
+                ? null
+                : _companyNameCtrl.text.trim(),
+            'ico': _icoCtrl.text.trim().isEmpty ? null : _icoCtrl.text.trim(),
+            'dic': _dicCtrl.text.trim().isEmpty ? null : _dicCtrl.text.trim(),
+            'iban': _ibanCtrl.text.trim().isEmpty
+                ? null
+                : _ibanCtrl.text.trim(),
+          })
+          .eq('id', user.id);
+
+      await _fetchBillingInfo();
+
+      if (mounted) {
+        setState(() => _editingBilling = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('profile.snackbar.saved'.tr())));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'profile.snackbar.save_failed'.tr(args: [e.toString()]),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _savingBilling = false);
     }
   }
 
@@ -960,6 +1112,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
+    _companyNameCtrl.dispose();
+    _icoCtrl.dispose();
+    _dicCtrl.dispose();
+    _ibanCtrl.dispose();
+    _shippingStreetCtrl.dispose();
+    _shippingCityCtrl.dispose();
+    _shippingZipCtrl.dispose();
+    _shippingCountryCtrl.dispose();
+    _shippingPhoneCtrl.dispose();
+    _shippingEmailCtrl.dispose();
+    _billingStreetCtrl.dispose();
+    _billingCityCtrl.dispose();
+    _billingZipCtrl.dispose();
+    _billingCountryCtrl.dispose();
+    _billingPhoneCtrl.dispose();
+    _billingEmailCtrl.dispose();
     super.dispose();
   }
 
@@ -983,501 +1151,407 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       body: user == null
           ? Center(child: Text("profile.not_logged".tr()))
-          : Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Form(
-                key: _formKey,
-                child: ListView(
-                  children: [
+          : Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  // Avatar Card
+                  _buildAvatarCard(theme),
+                  const SizedBox(height: 16),
+
+                  // Profile Info Card
+                  _buildProfileInfoCard(theme),
+                  const SizedBox(height: 16),
+
+                  // Action Buttons Card
+                  _buildActionButtonsCard(theme),
+                  const SizedBox(height: 16),
+
+                  // Billing Info Section
+                  _buildBillingInfoSection(theme),
+                  const SizedBox(height: 16),
+
+                  // My Subscriptions (expandable)
+                  if (_subscriptions.isNotEmpty) ...[
+                    _buildSubscriptionsCard(theme),
                     const SizedBox(height: 16),
-                    GestureDetector(
-                      onTap: _isUploading ? null : showAvatarPicker,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Gradient ring for supporters (Priateľ program)
-                          if (_subscriptions.isNotEmpty)
-                            Container(
-                              width: 96,
-                              height: 96,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors:
-                                      _subscriptions.any(
-                                        (s) => s.tier == 'founder',
-                                      )
-                                      ? [
-                                          Colors.purple.shade400,
-                                          Colors.purple.shade600,
-                                          Colors.deepPurple.shade700,
-                                        ]
-                                      : _subscriptions.any(
-                                          (s) => s.tier == 'patron',
-                                        )
-                                      ? [
-                                          Colors.blue.shade400,
-                                          Colors.blue.shade600,
-                                          Colors.indigo.shade700,
-                                        ]
-                                      : [
-                                          Colors.amber.shade400,
-                                          Colors.orange.shade500,
-                                          Colors.deepOrange.shade600,
-                                        ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(4),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: theme.colorScheme.surface,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          CircleAvatar(
-                            radius: 42,
-                            backgroundColor:
-                                theme.colorScheme.surfaceContainerHighest,
-                            backgroundImage:
-                                (_avatarUrl != null && _avatarUrl!.isNotEmpty)
-                                ? NetworkImage(_avatarUrl!)
-                                : null,
-                            child: (_avatarUrl == null || _avatarUrl!.isEmpty)
-                                ? Icon(
-                                    Icons.person,
-                                    size: 48,
-                                    color: theme.colorScheme.primary,
-                                  )
-                                : null,
-                          ),
-                          if (_isUploading)
-                            const SizedBox(
-                              width: 84,
-                              height: 84,
-                              child: CircularProgressIndicator(),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    TextButton(
-                      onPressed: _isUploading ? null : showAvatarPicker,
-                      style: TextButton.styleFrom(
-                        foregroundColor: theme.colorScheme.primary,
-                      ),
-                      child: Text('profile.avatar.change'.tr()),
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _nameCtrl,
-                      decoration: InputDecoration(
-                        labelText: 'profile.field.fullname'.tr(),
-                        filled: true,
-                        fillColor: theme.colorScheme.surface,
-                      ),
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'profile.field.fullname_required'.tr()
-                          : null,
-                    ),
-                    const SizedBox(height: 14),
-                    ListTile(
-                      leading: Icon(
-                        Icons.email,
-                        color: theme.colorScheme.primary,
-                      ),
-                      title: Text('profile.field.email'.tr()),
-                      subtitle: Text(_emailCtrl.text),
-                    ),
-                    const SizedBox(height: 14),
-                    if (_registeredAt != null) ...[
-                      ListTile(
-                        leading: Icon(
-                          Icons.event,
-                          color: theme.colorScheme.primary,
-                        ),
-                        title: Text('profile.field.registered_at'.tr()),
-                        subtitle: Text(
-                          '${_registeredAt!.day.toString().padLeft(2, '0')}.'
-                          '${_registeredAt!.month.toString().padLeft(2, '0')}.'
-                          '${_registeredAt!.year}',
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                    ],
-                    ListTile(
-                      leading: Icon(
-                        Icons.verified_user,
-                        color: theme.colorScheme.primary,
-                      ),
-                      title: Text('profile.field.role'.tr()),
-                      subtitle: Text(
-                        _role ?? 'profile.field.role_loading'.tr(),
-                      ),
-                    ),
-                    // Variable Symbol
-                    if (_variableSymbol != null &&
-                        _variableSymbol!.isNotEmpty) ...[
-                      const SizedBox(height: 14),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Colors.cyan.shade50, Colors.blue.shade50],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.cyan.shade200),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.cyan.shade500,
-                                    Colors.blue.shade600,
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'VS',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'profile.field.variable_symbol'.tr(),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.cyan.shade900,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    _variableSymbol!,
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontFamily: 'monospace',
-                                      color: Colors.grey.shade700,
-                                    ),
-                                  ),
-                                  Text(
-                                    'profile.field.variable_symbol_hint'.tr(),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    // Supporter Badge
-                    if (_subscriptions.isNotEmpty) ...[
-                      const SizedBox(height: 14),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.amber.shade50,
-                              Colors.yellow.shade50,
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.amber.shade200),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.amber.shade500,
-                                    Colors.yellow.shade600,
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  '⭐',
-                                  style: TextStyle(fontSize: 20),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'profile.support_status'.tr(),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.amber.shade900,
-                                    ),
-                                  ),
-                                  Text(
-                                    _subscriptions.any(
-                                          (s) => s.tier == 'founder',
-                                        )
-                                        ? '🏆 ${'profile.tier.founder'.tr()}'
-                                        : _subscriptions.any(
-                                            (s) => s.tier == 'patron',
-                                          )
-                                        ? '💎 ${'profile.tier.patron'.tr()}'
-                                        : '❤️ ${'profile.tier.friend'.tr()}',
-                                    style: TextStyle(
-                                      color: Colors.amber.shade700,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    _subscriptions.any(
-                                      (s) => s.tier == 'founder',
-                                    )
-                                    ? Colors.purple.shade600
-                                    : _subscriptions.any(
-                                        (s) => s.tier == 'patron',
-                                      )
-                                    ? Colors.blue.shade600
-                                    : Colors.red.shade500,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                _subscriptions.any((s) => s.tier == 'founder')
-                                    ? 'profile.tier_badge.founder'.tr()
-                                    : _subscriptions.any(
-                                        (s) => s.tier == 'patron',
-                                      )
-                                    ? 'profile.tier_badge.patron'.tr()
-                                    : 'profile.tier_badge.friend'.tr(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 10),
-                    OutlinedButton.icon(
-                      onPressed: changePassword,
-                      icon: Icon(
-                        Icons.lock_reset,
-                        color: theme.colorScheme.primary,
-                      ),
-                      label: Text('profile.button.change_password'.tr()),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: theme.colorScheme.primary),
-                        foregroundColor: theme.colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const NotificationSettingsScreen(),
-                          ),
-                        );
-                      },
-                      icon: Icon(
-                        Icons.notifications,
-                        color: theme.colorScheme.primary,
-                      ),
-                      label: Text('profile.button.notification_settings'.tr()),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: theme.colorScheme.primary),
-                        foregroundColor: theme.colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: _isSaving ? null : downloadUserData,
-                      icon: Icon(
-                        Icons.download,
-                        color: theme.colorScheme.primary,
-                      ),
-                      label: Text('profile.button.download_data'.tr()),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: theme.colorScheme.primary),
-                        foregroundColor: theme.colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isSaving ? null : saveProfile,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.colorScheme.primary,
-                          foregroundColor: theme.colorScheme.onPrimary,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          textStyle: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        ),
-                        child: _isSaving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text('profile.button.save_changes'.tr()),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Subscriptions Section
-                    if (_subscriptions.isNotEmpty) ...[
-                      _buildSectionHeader(
-                        theme,
-                        Icons.credit_card,
-                        'profile.section.subscriptions'.tr(),
-                        Colors.purple,
-                      ),
-                      const SizedBox(height: 12),
-                      ..._subscriptions.map(
-                        (sub) => _buildSubscriptionCard(theme, sub),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-
-                    // Donations Section
-                    if (_donations.isNotEmpty) ...[
-                      _buildSectionHeader(
-                        theme,
-                        Icons.favorite,
-                        'profile.section.donations'.tr(),
-                        Colors.red,
-                      ),
-                      const SizedBox(height: 12),
-                      ..._donations.map(
-                        (donation) => _buildDonationCard(theme, donation),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-
-                    // Spiritual Exercise Registrations Section
-                    if (_exerciseRegistrations.isNotEmpty) ...[
-                      _buildSectionHeader(
-                        theme,
-                        Icons.church,
-                        'profile.section.exercise_registrations'.tr(),
-                        AppColors.primary,
-                      ),
-                      const SizedBox(height: 12),
-                      ..._exerciseRegistrations.map(
-                        (reg) => _buildExerciseRegistrationCard(theme, reg),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-
-                    // Bank Payments Section
-                    _buildBankPaymentsSection(theme),
-
-                    // Billing Info Section
-                    _buildBillingInfoSection(theme),
-
-                    // Combined Payment History Section
-                    _buildPaymentHistorySection(theme),
-
-                    // Delete Account Button
-                    OutlinedButton.icon(
-                      onPressed: _isSaving ? null : deleteAccount,
-                      icon: const Icon(Icons.delete_forever, color: Colors.red),
-                      label: Text('profile.button.delete_account'.tr()),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.red),
-                        foregroundColor: Colors.red,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
                   ],
-                ),
+
+                  // My Donations (expandable)
+                  if (_donations.isNotEmpty) ...[
+                    _buildDonationsCard(theme),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Spiritual Exercise Registrations
+                  if (_exerciseRegistrations.isNotEmpty) ...[
+                    _buildExerciseRegistrationsCard(theme),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Bank Payments (expandable)
+                  if (_bankPayments.isNotEmpty) ...[
+                    _buildBankPaymentsCard(theme),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Payment History (expandable)
+                  if (_paymentHistory.isNotEmpty) ...[
+                    _buildPaymentHistoryCard(theme),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Save Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isSaving ? null : saveProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text('profile.button.save_changes'.tr()),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Delete Account Button
+                  OutlinedButton.icon(
+                    onPressed: _isSaving ? null : deleteAccount,
+                    icon: const Icon(Icons.delete_forever, color: Colors.red),
+                    label: Text('profile.button.delete_account'.tr()),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.red),
+                      foregroundColor: Colors.red,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                ],
               ),
             ),
     );
   }
 
-  Widget _buildSectionHeader(
-    ThemeData theme,
-    IconData icon,
-    String title,
-    Color color,
-  ) {
-    return Row(
-      children: [
-        Container(
+  Widget _buildAvatarCard(ThemeData theme) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            GestureDetector(
+              onTap: _isUploading ? null : showAvatarPicker,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Gradient ring for supporters
+                  if (_subscriptions.isNotEmpty)
+                    Container(
+                      width: 96,
+                      height: 96,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: _subscriptions.any((s) => s.tier == 'founder')
+                              ? [
+                                  Colors.purple.shade400,
+                                  Colors.purple.shade600,
+                                  Colors.deepPurple.shade700,
+                                ]
+                              : _subscriptions.any((s) => s.tier == 'patron')
+                              ? [
+                                  Colors.blue.shade400,
+                                  Colors.blue.shade600,
+                                  Colors.indigo.shade700,
+                                ]
+                              : [
+                                  Colors.amber.shade400,
+                                  Colors.orange.shade500,
+                                  Colors.deepOrange.shade600,
+                                ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: theme.colorScheme.surface,
+                          ),
+                        ),
+                      ),
+                    ),
+                  CircleAvatar(
+                    radius: 42,
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                    backgroundImage:
+                        (_avatarUrl != null && _avatarUrl!.isNotEmpty)
+                        ? NetworkImage(_avatarUrl!)
+                        : null,
+                    child: (_avatarUrl == null || _avatarUrl!.isEmpty)
+                        ? Icon(
+                            Icons.person,
+                            size: 48,
+                            color: theme.colorScheme.primary,
+                          )
+                        : null,
+                  ),
+                  if (_isUploading)
+                    const SizedBox(
+                      width: 84,
+                      height: 84,
+                      child: CircularProgressIndicator(),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: _isUploading ? null : showAvatarPicker,
+              icon: const Icon(Icons.photo_camera, size: 18),
+              label: Text('profile.avatar.change'.tr()),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileInfoCard(ThemeData theme) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            TextFormField(
+              controller: _nameCtrl,
+              decoration: InputDecoration(
+                labelText: 'profile.field.fullname'.tr(),
+                prefixIcon: const Icon(Icons.person),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: theme.colorScheme.surface,
+              ),
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'profile.field.fullname_required'.tr()
+                  : null,
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: Icon(Icons.email, color: theme.colorScheme.primary),
+              title: Text('profile.field.email'.tr()),
+              subtitle: Text(_emailCtrl.text),
+              contentPadding: EdgeInsets.zero,
+            ),
+            if (_registeredAt != null) ...[
+              const Divider(),
+              ListTile(
+                leading: Icon(Icons.event, color: theme.colorScheme.primary),
+                title: Text('profile.field.registered_at'.tr()),
+                subtitle: Text(
+                  '${_registeredAt!.day.toString().padLeft(2, '0')}.'
+                  '${_registeredAt!.month.toString().padLeft(2, '0')}.'
+                  '${_registeredAt!.year}',
+                ),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ],
+            const Divider(),
+            ListTile(
+              leading: Icon(
+                Icons.verified_user,
+                color: theme.colorScheme.primary,
+              ),
+              title: Text('profile.field.role'.tr()),
+              subtitle: Text(_role ?? 'profile.field.role_loading'.tr()),
+              contentPadding: EdgeInsets.zero,
+            ),
+            // Variable Symbol
+            if (_variableSymbol != null && _variableSymbol!.isNotEmpty) ...[
+              const Divider(),
+              ListTile(
+                leading: Icon(Icons.tag, color: theme.colorScheme.primary),
+                title: Text('profile.field.variable_symbol'.tr()),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _variableSymbol!,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      'profile.field.variable_symbol_hint'.tr(),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ],
+            // Support Status
+            if (_subscriptions.isNotEmpty) ...[
+              const Divider(),
+              ListTile(
+                leading: Icon(Icons.star, color: theme.colorScheme.primary),
+                title: Text('profile.support_status'.tr()),
+                subtitle: Text(
+                  _subscriptions.any((s) => s.tier == 'founder')
+                      ? '🏆 ${'profile.tier.founder'.tr()}'
+                      : _subscriptions.any((s) => s.tier == 'patron')
+                      ? '💎 ${'profile.tier.patron'.tr()}'
+                      : '❤️ ${'profile.tier.friend'.tr()}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _subscriptions.any((s) => s.tier == 'founder')
+                        ? Colors.purple.shade600
+                        : _subscriptions.any((s) => s.tier == 'patron')
+                        ? Colors.blue.shade600
+                        : Colors.red.shade500,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    _subscriptions.any((s) => s.tier == 'founder')
+                        ? 'profile.tier_badge.founder'.tr()
+                        : _subscriptions.any((s) => s.tier == 'patron')
+                        ? 'profile.tier_badge.patron'.tr()
+                        : 'profile.tier_badge.friend'.tr(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtonsCard(ThemeData theme) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            ListTile(
+              leading: Icon(Icons.lock_reset, color: theme.colorScheme.primary),
+              title: Text('profile.button.change_password'.tr()),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: changePassword,
+              contentPadding: EdgeInsets.zero,
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: Icon(
+                Icons.notifications,
+                color: theme.colorScheme.primary,
+              ),
+              title: Text('profile.button.notification_settings'.tr()),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationSettingsScreen(),
+                  ),
+                );
+              },
+              contentPadding: EdgeInsets.zero,
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: Icon(Icons.download, color: theme.colorScheme.primary),
+              title: Text('profile.button.download_data'.tr()),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _isSaving ? null : downloadUserData,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubscriptionsCard(ThemeData theme) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      child: ExpansionTile(
+        leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
+            color: Colors.purple.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: color, size: 20),
+          child: const Icon(Icons.credit_card, color: Colors.purple, size: 20),
         ),
-        const SizedBox(width: 12),
-        Text(
-          title,
+        title: Text(
+          'profile.section.subscriptions'.tr(),
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
-      ],
+        subtitle: Text(
+          '${_subscriptions.length} ${'profile.subscription.active'.tr().toLowerCase()}',
+        ),
+        children: _subscriptions
+            .map((sub) => _buildSubscriptionItem(theme, sub))
+            .toList(),
+      ),
     );
   }
 
-  Widget _buildSubscriptionCard(ThemeData theme, Subscription sub) {
+  Widget _buildSubscriptionItem(ThemeData theme, Subscription sub) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.purple.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.purple.shade200),
+        border: Border.all(color: Colors.grey.shade300),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1511,11 +1585,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 8),
           Text(
             '€${sub.amount.toStringAsFixed(2)}/${sub.interval == 'month' ? 'profile.subscription.monthly'.tr() : 'profile.subscription.yearly'.tr()}',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.purple.shade600,
-            ),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
@@ -1542,14 +1612,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildDonationCard(ThemeData theme, Donation donation) {
+  Widget _buildDonationsCard(ThemeData theme) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      child: ExpansionTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.red.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.favorite, color: Colors.red, size: 20),
+        ),
+        title: Text(
+          'profile.section.donations'.tr(),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Text(
+          '${_donations.length} ${'profile.payment.one_time'.tr()}',
+        ),
+        children: _donations
+            .map((donation) => _buildDonationItem(theme, donation))
+            .toList(),
+      ),
+    );
+  }
+
+  Widget _buildDonationItem(ThemeData theme, Donation donation) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.shade200),
+        border: Border.all(color: Colors.grey.shade300),
       ),
       child: Row(
         children: [
@@ -1582,8 +1680,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
           ),
-          Icon(Icons.favorite, color: Colors.red.shade500, size: 32),
+          Icon(Icons.favorite, color: theme.colorScheme.primary, size: 32),
         ],
+      ),
+    );
+  }
+
+  Widget _buildExerciseRegistrationsCard(ThemeData theme) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      child: ExpansionTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.church, color: AppColors.primary, size: 20),
+        ),
+        title: Text(
+          'profile.section.exercise_registrations'.tr(),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Text('${_exerciseRegistrations.length}'),
+        children: _exerciseRegistrations
+            .map((reg) => _buildExerciseRegistrationCard(theme, reg))
+            .toList(),
       ),
     );
   }
@@ -1775,96 +1900,377 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Billing Info Section Widget
   Widget _buildBillingInfoSection(ThemeData theme) {
-    if (_billingInfo == null) return const SizedBox.shrink();
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'profile.section.billing_info'.tr(),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (!_editingBilling)
+                  IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () => setState(() => _editingBilling = true),
+                    tooltip: 'profile.button.edit'.tr(),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
 
-    final hasAnyData =
-        _billingInfo!.shippingAddress != null ||
-        _billingInfo!.billingAddress != null ||
-        _billingInfo!.companyName != null ||
-        _billingInfo!.ico != null ||
-        _billingInfo!.dic != null ||
-        _billingInfo!.iban != null;
+            if (_editingBilling) ...[
+              // Edit mode
+              Text(
+                'profile.billing.company_name'.tr(),
+                style: theme.textTheme.titleSmall,
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _companyNameCtrl,
+                decoration: InputDecoration(
+                  hintText: 'profile.billing.company_name'.tr(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surface,
+                ),
+              ),
+              const SizedBox(height: 16),
 
-    if (!hasAnyData) return const SizedBox.shrink();
+              TextFormField(
+                controller: _icoCtrl,
+                decoration: InputDecoration(
+                  labelText: 'profile.billing.ico'.tr(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surface,
+                ),
+              ),
+              const SizedBox(height: 16),
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader(
-          theme,
-          Icons.receipt_long,
-          'profile.section.billing_info'.tr(),
-          Colors.teal,
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.teal.shade50,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.teal.shade200),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (_billingInfo!.shippingAddress != null) ...[
-                _buildBillingInfoRow(
-                  theme,
-                  Icons.local_shipping,
-                  'profile.billing.shipping_address'.tr(),
-                  _formatAddress(_billingInfo!.shippingAddress!),
+              TextFormField(
+                controller: _dicCtrl,
+                decoration: InputDecoration(
+                  labelText: 'profile.billing.dic'.tr(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surface,
                 ),
-                const SizedBox(height: 12),
-              ],
-              if (_billingInfo!.billingAddress != null) ...[
-                _buildBillingInfoRow(
-                  theme,
-                  Icons.business,
-                  'profile.billing.billing_address'.tr(),
-                  _formatAddress(_billingInfo!.billingAddress!),
+              ),
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _ibanCtrl,
+                decoration: InputDecoration(
+                  labelText: 'profile.billing.iban'.tr(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surface,
                 ),
-                const SizedBox(height: 12),
-              ],
-              if (_billingInfo!.companyName != null) ...[
-                _buildBillingInfoRow(
-                  theme,
-                  Icons.apartment,
-                  'profile.billing.company_name'.tr(),
-                  _billingInfo!.companyName!,
+              ),
+              const SizedBox(height: 24),
+
+              // Shipping Address
+              Text(
+                'profile.billing.shipping_address'.tr(),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(height: 12),
-              ],
-              if (_billingInfo!.ico != null) ...[
-                _buildBillingInfoRow(
-                  theme,
-                  Icons.numbers,
-                  'profile.billing.ico'.tr(),
-                  _billingInfo!.ico!,
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _shippingStreetCtrl,
+                decoration: InputDecoration(
+                  labelText: 'profile.billing.street'.tr(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surface,
                 ),
-                const SizedBox(height: 12),
-              ],
-              if (_billingInfo!.dic != null) ...[
-                _buildBillingInfoRow(
-                  theme,
-                  Icons.account_balance,
-                  'profile.billing.dic'.tr(),
-                  _billingInfo!.dic!,
+              ),
+              const SizedBox(height: 12),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _shippingCityCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'profile.billing.city'.tr(),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: theme.colorScheme.surface,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _shippingZipCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'profile.billing.zip'.tr(),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: theme.colorScheme.surface,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              TextFormField(
+                controller: _shippingCountryCtrl,
+                decoration: InputDecoration(
+                  labelText: 'profile.billing.country'.tr(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surface,
                 ),
-                const SizedBox(height: 12),
-              ],
-              if (_billingInfo!.iban != null) ...[
-                _buildBillingInfoRow(
-                  theme,
-                  Icons.credit_card,
-                  'profile.billing.iban'.tr(),
-                  _billingInfo!.iban!,
+              ),
+              const SizedBox(height: 12),
+
+              TextFormField(
+                controller: _shippingPhoneCtrl,
+                decoration: InputDecoration(
+                  labelText: 'profile.billing.phone'.tr(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surface,
                 ),
+              ),
+              const SizedBox(height: 12),
+
+              TextFormField(
+                controller: _shippingEmailCtrl,
+                decoration: InputDecoration(
+                  labelText: 'profile.billing.email'.tr(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surface,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Billing Address
+              Text(
+                'profile.billing.billing_address'.tr(),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _billingStreetCtrl,
+                decoration: InputDecoration(
+                  labelText: 'profile.billing.street'.tr(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surface,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _billingCityCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'profile.billing.city'.tr(),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: theme.colorScheme.surface,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _billingZipCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'profile.billing.zip'.tr(),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: theme.colorScheme.surface,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              TextFormField(
+                controller: _billingCountryCtrl,
+                decoration: InputDecoration(
+                  labelText: 'profile.billing.country'.tr(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surface,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              TextFormField(
+                controller: _billingPhoneCtrl,
+                decoration: InputDecoration(
+                  labelText: 'profile.billing.phone'.tr(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surface,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              TextFormField(
+                controller: _billingEmailCtrl,
+                decoration: InputDecoration(
+                  labelText: 'profile.billing.email'.tr(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surface,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Save/Cancel buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _savingBilling
+                          ? null
+                          : () => setState(() => _editingBilling = false),
+                      child: Text('profile.button.cancel'.tr()),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _savingBilling ? null : _saveBillingInfo,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
+                      ),
+                      child: _savingBilling
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text('profile.button.save'.tr()),
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              // Read-only mode
+              if (_billingInfo == null || !_billingInfo!.hasAnyData)
+                Text(
+                  'profile.billing.no_data'.tr(),
+                  style: TextStyle(color: Colors.grey.shade600),
+                )
+              else ...[
+                if (_billingInfo!.companyName != null) ...[
+                  _buildBillingInfoRow(
+                    theme,
+                    Icons.apartment,
+                    'profile.billing.company_name'.tr(),
+                    _billingInfo!.companyName!,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (_billingInfo!.ico != null) ...[
+                  _buildBillingInfoRow(
+                    theme,
+                    Icons.numbers,
+                    'profile.billing.ico'.tr(),
+                    _billingInfo!.ico!,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (_billingInfo!.dic != null) ...[
+                  _buildBillingInfoRow(
+                    theme,
+                    Icons.account_balance,
+                    'profile.billing.dic'.tr(),
+                    _billingInfo!.dic!,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (_billingInfo!.iban != null) ...[
+                  _buildBillingInfoRow(
+                    theme,
+                    Icons.credit_card,
+                    'profile.billing.iban'.tr(),
+                    _billingInfo!.iban!,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (_billingInfo!.shippingAddress != null) ...[
+                  _buildBillingInfoRow(
+                    theme,
+                    Icons.local_shipping,
+                    'profile.billing.shipping_address'.tr(),
+                    _formatAddress(_billingInfo!.shippingAddress!),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (_billingInfo!.billingAddress != null) ...[
+                  _buildBillingInfoRow(
+                    theme,
+                    Icons.business,
+                    'profile.billing.billing_address'.tr(),
+                    _formatAddress(_billingInfo!.billingAddress!),
+                  ),
+                ],
               ],
             ],
-          ),
+          ],
         ),
-        const SizedBox(height: 24),
-      ],
+      ),
     );
   }
 
@@ -1877,7 +2283,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: Colors.teal.shade700),
+        Icon(icon, size: 18, color: theme.colorScheme.primary),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
@@ -1905,35 +2311,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // Bank Payments Section Widget
-  Widget _buildBankPaymentsSection(ThemeData theme) {
-    if (_bankPayments.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader(
-          theme,
-          Icons.account_balance,
+  Widget _buildBankPaymentsCard(ThemeData theme) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      child: ExpansionTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.cyan.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(
+            Icons.account_balance,
+            color: Colors.cyan,
+            size: 20,
+          ),
+        ),
+        title: Text(
           'profile.section.bank_payments'.tr(),
-          Colors.cyan,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        const SizedBox(height: 12),
-        ..._bankPayments.map(
-          (payment) => _buildBankPaymentCard(theme, payment),
+        subtitle: Text(
+          '${_bankPayments.length} ${_bankPayments.length == 1 ? 'profile.payment.singular'.tr() : 'profile.payment.plural'.tr()}',
         ),
-        const SizedBox(height: 24),
-      ],
+        children: _bankPayments
+            .map((payment) => _buildBankPaymentItem(theme, payment))
+            .toList(),
+      ),
     );
   }
 
-  Widget _buildBankPaymentCard(ThemeData theme, BankPayment payment) {
+  Widget _buildBankPaymentItem(ThemeData theme, BankPayment payment) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.cyan.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.cyan.shade200),
+        border: Border.all(color: Colors.grey.shade300),
       ),
       child: Row(
         children: [
@@ -1941,12 +2358,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.cyan.shade100,
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               Icons.account_balance,
-              color: Colors.cyan.shade700,
+              color: theme.colorScheme.primary,
               size: 22,
             ),
           ),
@@ -1985,7 +2402,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             '${payment.amount.toStringAsFixed(2)} ${payment.currency}',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.cyan.shade800,
             ),
           ),
         ],
@@ -1993,37 +2409,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Combined Payment History Section Widget
-  Widget _buildPaymentHistorySection(ThemeData theme) {
-    if (_paymentHistory.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader(
-          theme,
-          Icons.history,
-          'profile.section.payment_history'.tr(),
-          Colors.indigo,
-        ),
-        const SizedBox(height: 12),
-        Container(
+  Widget _buildPaymentHistoryCard(ThemeData theme) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      child: ExpansionTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.indigo.shade50,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.indigo.shade200),
+            color: Colors.indigo.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
           ),
-          child: Column(
-            children: _paymentHistory.asMap().entries.map((entry) {
-              final index = entry.key;
-              final payment = entry.value;
-              final isLast = index == _paymentHistory.length - 1;
-              return _buildPaymentHistoryRow(theme, payment, isLast);
-            }).toList(),
+          child: const Icon(Icons.history, color: Colors.indigo, size: 20),
+        ),
+        title: Text(
+          'profile.section.payment_history'.tr(),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 24),
-      ],
+        subtitle: Text(
+          '${_paymentHistory.length} ${_paymentHistory.length == 1 ? 'profile.payment.singular'.tr() : 'profile.payment.plural'.tr()}',
+        ),
+        children: [
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Column(
+              children: _paymentHistory.asMap().entries.map((entry) {
+                final index = entry.key;
+                final payment = entry.value;
+                final isLast = index == _paymentHistory.length - 1;
+                return _buildPaymentHistoryRow(theme, payment, isLast);
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -2058,9 +2483,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         border: isLast
             ? null
-            : Border(
-                bottom: BorderSide(color: Colors.indigo.shade200, width: 1),
-              ),
+            : Border(bottom: BorderSide(color: Colors.grey.shade300, width: 1)),
       ),
       child: Row(
         children: [
@@ -2090,7 +2513,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 '${payment.amount.toStringAsFixed(2)} €',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.indigo.shade800,
                 ),
               ),
               if (payment.status != null)

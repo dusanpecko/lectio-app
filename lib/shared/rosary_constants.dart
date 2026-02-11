@@ -8,12 +8,12 @@ class RosaryConstants {
   static const int averageDecadeMinutes = 15;
   static const int totalDecadesPerCategory = 5;
 
-  // Farebné schémy pre kategórie - anglické názvy ako v DB
+  // Farebné schémy pre kategórie - zjednotené s AppColors
   static const Map<RosaryCategory, String> categoryColors = {
-    RosaryCategory.joyful: '#4CAF50', // Zelená - bolo radostne
-    RosaryCategory.luminous: '#FFC107', // Žltá/Zlatá - bolo svetelne
-    RosaryCategory.sorrowful: '#9C27B0', // Fialová - bolo bolestne
-    RosaryCategory.glorious: '#FF5722', // Oranžová/Červená - bolo slavnostne
+    RosaryCategory.joyful: '#4A5085',
+    RosaryCategory.luminous: '#4A5085',
+    RosaryCategory.sorrowful: '#4A5085',
+    RosaryCategory.glorious: '#4A5085',
   };
 
   // Ikony pre kategórie
@@ -73,13 +73,22 @@ class RosaryConstants {
   // Lectio Divina kroky
   static const List<Map<String, dynamic>> lectioDivinaSteps = [
     {
+      'id': 'silencio',
+      'title': 'Silencio',
+      'subtitle': 'Ticho',
+      'description': 'Vnútorné stíšenie pred Bohom',
+      'duration': 3,
+      'color': '#4A5085',
+      'icon': Icons.hearing_rounded,
+    },
+    {
       'id': 'lectio',
       'title': 'Lectio',
       'subtitle': 'Čítanie',
       'description': 'Pozorné čítanie biblického textu',
       'duration': 3,
-      'color': '#4CAF50',
-      'icon': Icons.book_rounded,
+      'color': '#4A5085',
+      'icon': Icons.menu_book_rounded,
     },
     {
       'id': 'meditatio',
@@ -87,7 +96,7 @@ class RosaryConstants {
       'subtitle': 'Rozjímanie',
       'description': 'Hlboké rozjímanie nad obsahom',
       'duration': 5,
-      'color': '#FF9800',
+      'color': '#4A5085',
       'icon': Icons.psychology_rounded,
     },
     {
@@ -96,7 +105,7 @@ class RosaryConstants {
       'subtitle': 'Modlitba',
       'description': 'Modlitba ruženec s tajomstvom',
       'duration': 5,
-      'color': '#9C27B0',
+      'color': '#4A5085',
       'icon': Icons.favorite_rounded,
     },
     {
@@ -105,8 +114,8 @@ class RosaryConstants {
       'subtitle': 'Kontemplácia',
       'description': 'Tiché sústredenie na Boha',
       'duration': 5,
-      'color': '#2196F3',
-      'icon': Icons.self_improvement_rounded,
+      'color': '#4A5085',
+      'icon': Icons.visibility_rounded,
     },
     {
       'id': 'actio',
@@ -114,8 +123,8 @@ class RosaryConstants {
       'subtitle': 'Konanie',
       'description': 'Praktické uplatnenie v živote',
       'duration': 2,
-      'color': '#F44336',
-      'icon': Icons.directions_walk_rounded,
+      'color': '#4A5085',
+      'icon': Icons.directions_run_rounded,
     },
   ];
 

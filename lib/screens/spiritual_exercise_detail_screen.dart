@@ -314,7 +314,6 @@ class _SpiritualExerciseDetailScreenState
                           'body': Style(
                             margin: Margins.zero,
                             padding: HtmlPaddings.zero,
-                            fontSize: FontSize(16),
                             lineHeight: const LineHeight(1.6),
                           ),
                         },
@@ -333,7 +332,6 @@ class _SpiritualExerciseDetailScreenState
                           'body': Style(
                             margin: Margins.zero,
                             padding: HtmlPaddings.zero,
-                            fontSize: FontSize(16),
                             lineHeight: const LineHeight(1.6),
                           ),
                         },
@@ -392,7 +390,6 @@ class _SpiritualExerciseDetailScreenState
                                         'body': Style(
                                           margin: Margins.zero,
                                           padding: HtmlPaddings.zero,
-                                          fontSize: FontSize(14),
                                           lineHeight: const LineHeight(1.5),
                                         ),
                                       },

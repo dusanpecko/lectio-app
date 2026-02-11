@@ -21,13 +21,17 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 final _backgroundLogger = appLogger;
 
 /// TOP-LEVEL background handler – musí byť mimo triedy.
-/// Zobrazuje lokálne notifikácie pre background messages
+/// Na Androide pri notification+data payloadoch systém sám zobrazí notifikáciu,
+/// preto zobrazujeme lokálnu len na iOS/macOS (kde je to potrebné).
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   _backgroundLogger.i('Background message received: ${message.data}');
 
-  // Zobraz lokálnu notifikáciu pre background messages
-  await _showLocalNotification(message);
+  // Na Androide systém zobrazí notifikáciu automaticky (notification payload).
+  // Ak by sme ju zobrazili aj my, používateľ by videl duplikát.
+  if (!Platform.isAndroid) {
+    await _showLocalNotification(message);
+  }
 }
 
 /// Helper funkcia pre zobrazenie lokálnej notifikácie

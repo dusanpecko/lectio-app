@@ -357,7 +357,26 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                     const SizedBox(height: 12),
                     Html(
                       data: htmlContent,
-                      style: {"body": Style(fontSize: FontSize(16))},
+                      style: {
+                        "body": Style(
+                          margin: Margins.zero,
+                          padding: HtmlPaddings.zero,
+                        ),
+                        "p": Style(
+                          lineHeight: const LineHeight(1.6),
+                          margin: Margins.only(top: 0, bottom: 4),
+                        ),
+                        "div": Style(
+                          lineHeight: const LineHeight(1.6),
+                          margin: Margins.zero,
+                        ),
+                        "hr": Style(
+                          margin: Margins.only(top: 8, bottom: 8),
+                          border: const Border(
+                            bottom: BorderSide(color: Colors.grey, width: 1),
+                          ),
+                        ),
+                      },
                     ),
                     const SizedBox(height: 16),
                     Row(

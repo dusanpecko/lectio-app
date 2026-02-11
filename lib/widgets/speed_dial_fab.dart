@@ -82,7 +82,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
       {
         'key': 'about',
         'icon': Icons.info_rounded,
-        'label': tr('about.title'),
+        'label': tr('about_title'),
         'color': AppColors.primary,
       },
       {

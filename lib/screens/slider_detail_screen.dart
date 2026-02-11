@@ -94,7 +94,6 @@ class SliderDetailScreen extends StatelessWidget {
                         margin: Margins.zero,
                         padding: HtmlPaddings.zero,
                         color: Theme.of(context).textTheme.bodyLarge?.color,
-                        fontSize: FontSize(16),
                       ),
                     },
                     extensions: [

@@ -1,8 +1,10 @@
 // lib/screens/rosary_category_screen.dart
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../models/rosary_model.dart';
+import '../shared/app_colors.dart';
 import '../services/rosary_service.dart';
 import '../shared/rosary_constants.dart';
 import 'rosary_decade_screen.dart';
@@ -88,6 +90,18 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
     //_navigateToLectioDivinaStep('lectio');
   }
 
+  String _stripHtml(String html) {
+    return html
+        .replaceAll(RegExp(r'<[^>]*>'), '')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&quot;', '"')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -96,21 +110,18 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(categoryInfo.name),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: _loadDecades,
-            tooltip: tr('refresh'),
-          ),
-        ],
-      ),
       body: _isLoading
           ? _buildLoadingState(theme)
           : _error != null
           ? _buildErrorState(theme)
-          : _buildContent(theme, categoryInfo, categoryColor),
+          : CustomScrollView(
+              slivers: [
+                _buildHeroAppBar(theme, categoryInfo, categoryColor),
+                SliverToBoxAdapter(
+                  child: _buildContentBody(theme, categoryInfo, categoryColor),
+                ),
+              ],
+            ),
     );
   }
 
@@ -176,181 +187,130 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
     );
   }
 
-  Widget _buildContent(
+  // Získaj URL obrázku z prvého desiatku
+  String? get _firstDecadeImage {
+    if (_decades.isNotEmpty && _decades.first.hasImage) {
+      return _decades.first.illustrationImage;
+    }
+    return null;
+  }
+
+  Widget _buildHeroAppBar(
     ThemeData theme,
     RosaryCategoryInfo categoryInfo,
     Color categoryColor,
   ) {
-    final stats = _getStats();
+    return SliverAppBar(
+      expandedHeight: 300,
+      floating: false,
+      pinned: true,
+      backgroundColor: categoryColor,
+      foregroundColor: Colors.white,
+      title: Text(
+        categoryInfo.name,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+          onPressed: _loadDecades,
+          tooltip: tr('refresh'),
+        ),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (_firstDecadeImage != null)
+              CachedNetworkImage(
+                imageUrl: _firstDecadeImage!,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(color: categoryColor),
+                errorWidget: (context, url, error) =>
+                    Container(color: categoryColor),
+              )
+            else
+              Container(color: categoryColor),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    categoryColor.withValues(alpha: 0.5),
+                    categoryColor.withValues(alpha: 0.85),
+                  ],
+                ),
+              ),
+            ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Icon(
+                        categoryInfo.icon,
+                        size: 48,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      categoryInfo.name,
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      categoryInfo.description,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-    return SingleChildScrollView(
+  Widget _buildContentBody(
+    ThemeData theme,
+    RosaryCategoryInfo categoryInfo,
+    Color categoryColor,
+  ) {
+    return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(theme, categoryInfo, categoryColor),
-          const SizedBox(height: 24),
-          _buildStats(theme, stats),
-          const SizedBox(height: 32),
-          _buildLectioDivinaInfo(theme),
-          const SizedBox(height: 32),
           _buildDecadesList(theme, categoryColor, _decades),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
           _buildSpiritualAdvice(theme, categoryColor),
+          const SizedBox(height: 24),
+          _buildLectioDivinaInfo(theme),
         ],
       ),
-    );
-  }
-
-  Widget _buildHeader(
-    ThemeData theme,
-    RosaryCategoryInfo categoryInfo,
-    Color categoryColor,
-  ) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            categoryColor.withValues(alpha: 0.1),
-            categoryColor.withValues(alpha: 0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: categoryColor,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: categoryColor.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Icon(categoryInfo.icon, size: 40, color: Colors.white),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            categoryInfo.name,
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            categoryInfo.description,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Map<String, int> _getStats() {
-    return {
-      'total': _decades.length,
-      'withAudio': _decades.where((d) => d.hasAudio).length,
-      'withImages': _decades.where((d) => d.hasImage).length,
-      'estimatedTime': _decades.length * RosaryConstants.averageDecadeMinutes,
-    };
-  }
-
-  Widget _buildStats(ThemeData theme, Map<String, int> stats) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            theme,
-            icon: Icons.book_rounded,
-            title: '${stats['total']}',
-            subtitle: tr('mysteries'),
-            color: Colors.blue,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            theme,
-            icon: Icons.headphones_rounded,
-            title: '${stats['withAudio']}',
-            subtitle: tr('with_audio'),
-            color: Colors.green,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            theme,
-            icon: Icons.image_rounded,
-            title: '${stats['withImages']}',
-            subtitle: tr('with_images'),
-            color: Colors.purple,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            theme,
-            icon: Icons.schedule_rounded,
-            title: '${stats['estimatedTime']}',
-            subtitle: tr('minutes_total'),
-            color: Colors.orange,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(
-    ThemeData theme, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          title,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          subtitle,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
     );
   }
 
@@ -378,8 +338,8 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Colors.blue, Colors.purple],
+                  gradient: LinearGradient(
+                    colors: [AppColors.primary, AppColors.accent],
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -421,6 +381,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
 
                 // Mapovanie krokov na slug názvy
                 final stepSlugs = [
+                  'silencio',
                   'lectio',
                   'meditatio',
                   'oratio',
@@ -585,7 +546,11 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.check_circle_rounded, size: 16, color: Colors.green),
+                Icon(
+                  Icons.check_circle_rounded,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '${decades.length}/5 ${tr('available')}',
@@ -597,7 +562,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         // Decades list
         decades.isEmpty
             ? _buildEmptyState(theme)
@@ -737,99 +702,13 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          decade.introduction,
+                          _stripHtml(decade.introduction),
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
+                          textAlign: TextAlign.justify,
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 12),
-                        // Indikátory
-                        Row(
-                          children: [
-                            if (decade.hasAudio) ...[
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.headphones_rounded,
-                                      size: 14,
-                                      color: Colors.green,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      tr('audio'),
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: Colors.green,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                            ],
-                            if (decade.hasImage) ...[
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.purple.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.image_rounded,
-                                      size: 14,
-                                      color: Colors.purple,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      tr('image'),
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: Colors.purple,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                            ],
-                            const Spacer(),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.schedule_rounded,
-                                  size: 14,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '~${RosaryConstants.averageDecadeMinutes} min',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
                         ),
                       ],
                     ),

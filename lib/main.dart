@@ -13,6 +13,7 @@ import 'package:lectio_divina/screens/lectio_screen.dart';
 import 'package:lectio_divina/shared/app_theme.dart';
 import 'package:lectio_divina/utils/app_logger.dart';
 import 'package:lectio_divina/utils/umami_navigation_observer.dart';
+import 'package:lectio_divina/widgets/global_mini_player.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -24,6 +25,7 @@ import 'providers/theme_provider.dart';
 import 'services/audio_download_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/fcm_service.dart';
+import 'services/lectio_audio_player.dart';
 import 'services/local_notifications_service.dart';
 import 'services/umami_analytics_service.dart';
 
@@ -72,7 +74,9 @@ Future<void> main() async {
     rewindInterval: const Duration(seconds: 10),
     // Notification icon
     notificationColor: const Color(0xFF8B5C2A),
-    preloadArtwork: true,
+    // IMPORTANT: preloadArtwork must be false to prevent Android crash when offline
+    // (artwork URL points to Supabase which is unreachable in airplane mode)
+    preloadArtwork: false,
   );
   _logger.i('✅ JustAudioBackground initialized');
 
@@ -217,7 +221,7 @@ class MyApp extends StatelessWidget {
       supportedLocales: context.supportedLocales,
       locale: context.locale,
       builder: (context, child) {
-        return child ?? const SizedBox.shrink();
+        return GlobalMiniPlayer(child: child ?? const SizedBox.shrink());
       },
       home: const FCMInitializer(child: SessionHandler()),
       routes: {'/lectio': (context) => const LectioScreen()},
@@ -298,6 +302,21 @@ class _FCMInitializerState extends State<FCMInitializer>
 
       // Kontrola pending notifikácie keď aplikácia prejde do popredia
       NotificationController.instance.checkPendingNotification(mounted);
+    } else if (state == AppLifecycleState.paused) {
+      _logger.i('⏸️ App PAUSED (minimized or in background)');
+    } else if (state == AppLifecycleState.inactive) {
+      _logger.i('🔕 App INACTIVE (transitioning)');
+    } else if (state == AppLifecycleState.detached) {
+      _logger.i('🛑 App DETACHED (closing) - stopping audio');
+      // Zastaviť audio keď sa aplikácia zavrie
+      LectioAudioPlayer()
+          .stop()
+          .then((_) {
+            _logger.i('✅ Audio stopped on app close');
+          })
+          .catchError((e) {
+            _logger.e('❌ Error stopping audio: $e');
+          });
     }
   }
 

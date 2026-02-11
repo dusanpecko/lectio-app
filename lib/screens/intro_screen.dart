@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import '../shared/app_colors.dart';
 import 'intro_step_screen.dart';
 import 'intro_translations.dart';
 
@@ -26,63 +27,78 @@ class _IntroScreenState extends State<IntroScreen> {
         slivers: [
           // Hero App Bar
           SliverAppBar(
-            expandedHeight: 320,
+            expandedHeight: 300,
             floating: false,
             pinned: true,
             backgroundColor: theme.colorScheme.primary,
+            title: Text(
+              t['heroSubtitle'],
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      theme.colorScheme.primary,
-                      theme.colorScheme.primary.withValues(alpha: 0.8),
-                      Colors.deepPurple.shade900,
-                    ],
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(
+                    'assets/images/intro_about_bg.webp',
+                    fit: BoxFit.cover,
                   ),
-                ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Icon(
-                            Icons.menu_book_rounded,
-                            size: 48,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          t['heroTitle'],
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          t['heroSubtitle'],
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            color: Colors.yellow.shade200,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          theme.colorScheme.primary.withValues(alpha: 0.6),
+                          theme.colorScheme.primary.withValues(alpha: 0.85),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Icon(
+                              Icons.menu_book_rounded,
+                              size: 48,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            t['heroTitle'],
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            t['heroSubtitle'],
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -114,7 +130,7 @@ class _IntroScreenState extends State<IntroScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () => _navigateToStep(context, 'lectio'),
+                      onPressed: () => _navigateToStep(context, 'silencio'),
                       icon: const Icon(Icons.play_arrow_rounded, size: 24),
                       label: Text(
                         t['startLectio'],
@@ -124,8 +140,8 @@ class _IntroScreenState extends State<IntroScreen> {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.yellow.shade600,
-                        foregroundColor: Colors.black87,
+                        backgroundColor: AppColors.accent,
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -249,7 +265,7 @@ class _IntroScreenState extends State<IntroScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () => _navigateToStep(context, 'lectio'),
+                      onPressed: () => _navigateToStep(context, 'silencio'),
                       icon: const Icon(Icons.auto_stories_rounded, size: 24),
                       label: Text(
                         t['startFirstStep'],
@@ -328,11 +344,12 @@ class _IntroScreenState extends State<IntroScreen> {
       children: steps.map<Widget>((step) {
         final stepData = step as Map<String, dynamic>;
         final stepColors = [
-          [Colors.blue.shade500, Colors.indigo.shade600],
-          [Colors.green.shade500, Colors.teal.shade600],
-          [Colors.amber.shade500, Colors.orange.shade600],
-          [Colors.red.shade500, Colors.pink.shade600],
-          [Colors.purple.shade500, Colors.deepPurple.shade600],
+          [AppColors.primary, AppColors.accent],
+          [AppColors.primary, AppColors.accent],
+          [AppColors.primary, AppColors.accent],
+          [AppColors.primary, AppColors.accent],
+          [AppColors.primary, AppColors.accent],
+          [AppColors.primary, AppColors.accent],
         ];
         final colorIndex = (stepData['number'] as int) - 1;
         final colors = stepColors[colorIndex];
@@ -433,9 +450,9 @@ class _IntroScreenState extends State<IntroScreen> {
         ];
         final colors = [
           theme.colorScheme.primary,
-          Colors.green.shade600,
-          Colors.purple.shade600,
-          Colors.orange.shade600,
+          theme.colorScheme.primary,
+          theme.colorScheme.primary,
+          theme.colorScheme.primary,
         ];
         final index = benefits.indexOf(benefit);
 
@@ -549,6 +566,8 @@ class _IntroScreenState extends State<IntroScreen> {
 
   IconData _getStepIcon(String slug) {
     switch (slug) {
+      case 'silencio':
+        return Icons.hearing_rounded;
       case 'lectio':
         return Icons.menu_book_rounded;
       case 'meditatio':
@@ -556,7 +575,7 @@ class _IntroScreenState extends State<IntroScreen> {
       case 'oratio':
         return Icons.favorite_rounded;
       case 'contemplatio':
-        return Icons.self_improvement_rounded;
+        return Icons.visibility_rounded;
       case 'actio':
         return Icons.directions_run_rounded;
       default:

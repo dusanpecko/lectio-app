@@ -226,6 +226,57 @@ class AudioDownloadProgress extends StatelessWidget {
   }
 }
 
+/// Zobrazí jednoduchý indikátor úspechu (zelená fajka v kruhu)
+void _showSuccessIndicator(BuildContext context) {
+  final overlay = Overlay.of(context);
+  final overlayEntry = OverlayEntry(
+    builder: (context) => Center(
+      child: Material(
+        color: Colors.transparent,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: const Duration(milliseconds: 300),
+          builder: (context, value, child) {
+            return Transform.scale(
+              scale: value,
+              child: Opacity(
+                opacity: value,
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.green.withValues(alpha: 0.4),
+                        blurRadius: 12,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    ),
+  );
+
+  overlay.insert(overlayEntry);
+
+  // Automaticky odstrán po 1.5 sekundách
+  Future.delayed(const Duration(milliseconds: 1500), () {
+    overlayEntry.remove();
+  });
+}
+
 /// Dialóg pre správu offline audio úložiska
 class AudioStorageDialog extends StatelessWidget {
   final AudioDownloadService downloadService;
@@ -271,22 +322,14 @@ class AudioStorageDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text(tr('common.cancel')),
+          child: Text(tr('cancel')),
         ),
         TextButton(
           onPressed: () async {
-            final deleted = await downloadService.cleanupOldDownloads();
+            await downloadService.cleanupOldDownloads();
             if (context.mounted) {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    tr('offline.cleanup_result', args: ['$deleted']),
-                  ),
-                  backgroundColor: Colors.green,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+              _showSuccessIndicator(context);
             }
           },
           child: Text(tr('offline.cleanup_old')),
@@ -301,7 +344,7 @@ class AudioStorageDialog extends StatelessWidget {
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, false),
-                    child: Text(tr('common.cancel')),
+                    child: Text(tr('cancel')),
                   ),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(ctx, true),
@@ -319,13 +362,7 @@ class AudioStorageDialog extends StatelessWidget {
               await downloadService.clearAllDownloads();
               if (context.mounted) {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(tr('offline.all_audio_deleted')),
-                    backgroundColor: Colors.green,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
+                _showSuccessIndicator(context);
               }
             }
           },

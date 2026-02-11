@@ -45,6 +45,7 @@ dependencies:
   flutter_html: ^3.0.0-beta.2
   shared_preferences: ^2.2.3
   sign_in_with_apple: ^6.1.1
+  crypto: ^3.0.6
   google_sign_in: ^7.2.0
   google_fonts: ^6.2.1
   easy_localization: ^3.0.7

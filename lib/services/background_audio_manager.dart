@@ -84,6 +84,12 @@ class BackgroundAudioManager {
   /// Audio mode - 'none', 'short', 'long'
   String audioMode = 'short';
 
+  /// Set audio mode without rebuilding playlist
+  void setAudioMode(String mode) {
+    audioMode = mode;
+    _player.setAudioMode(mode);
+  }
+
   /// Check if playing interlude
   bool get isPlayingInterlude => _player.isPlayingInterlude;
 

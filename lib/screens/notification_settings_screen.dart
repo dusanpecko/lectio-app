@@ -386,7 +386,7 @@ class _NotificationSettingsScreenState
         leading: CircleAvatar(
           backgroundColor: Theme.of(context).colorScheme.primaryContainer,
           child: Text(
-            topic.emoji ?? '📢',
+            _getIconEmoji(topic.emoji),
             style: const TextStyle(fontSize: 20),
           ),
         ),
@@ -405,14 +405,44 @@ class _NotificationSettingsScreenState
           onChanged: _isLoading
               ? null
               : (value) => _onTopicChanged(topic.id, value),
-          thumbColor: WidgetStateProperty.resolveWith<Color?>(
-            (states) => states.contains(WidgetState.selected)
-                ? Theme.of(context).colorScheme.primary
-                : null,
-          ),
         ),
       ),
     );
+  }
+
+  /// Konvertuje názov Lucide ikony na emoji
+  /// Ak je už emoji, vráti ho, inak použije mapping
+  String _getIconEmoji(String? icon) {
+    if (icon == null) return '🔔';
+
+    // Ak už obsahuje emoji (nie ASCII znak), vráť ho
+    if (icon.runes.any((rune) => rune > 127)) {
+      return icon;
+    }
+
+    // Mapping z Lucide icon názvov na emoji (zhodný s Next.js)
+    const iconMap = {
+      'book-open': '📖',
+      'bell': '🔔',
+      'hands-praying': '🙏',
+      'rosary': '📿',
+      'calendar': '📅',
+      'star': '⭐',
+      'heart': '❤️',
+      'church': '⛪',
+      'cross': '✝️',
+      'bible': '📜',
+      'candle': '🕯️',
+      'dove': '🕊️',
+      'book': '📚',
+      'scroll': '📜',
+      'pray': '🙏',
+      'news': '📰',
+      'info': 'ℹ️',
+      'sparkles': '✨',
+    };
+
+    return iconMap[icon.toLowerCase()] ?? '🔔';
   }
 
   Widget _buildLocalNotificationsSection() {

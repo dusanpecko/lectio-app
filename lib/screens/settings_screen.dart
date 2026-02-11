@@ -4,7 +4,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lectio_divina/providers/theme_provider.dart';
+import 'package:lectio_divina/screens/about_screen.dart';
 import 'package:lectio_divina/screens/auth_screen.dart';
+import 'package:lectio_divina/screens/privacy_screen.dart';
 import 'package:lectio_divina/screens/profile_screen.dart';
 
 import 'package:provider/provider.dart';
@@ -21,8 +23,9 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  String _selectedBible = 'biblia1';
-  bool _isLoadingBible = true;
+  String _selectedBible = 'biblia_1';
+  bool _isLoadingBible = true; // Začneme s loading stavom
+  String? _lastLocale; // Sledovanie posledného jazyka
 
   @override
   void initState() {
@@ -30,31 +33,112 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _initSettings();
   }
 
-  // Výber biblie je teraz jednotný pre všetky jazyky - biblia1, biblia2, biblia3
-  // Lokalizované názvy sa načítajú z príslušného JSON súboru
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final currentLocale = context.locale.languageCode;
+
+    // Ak sa zmenil jazyk, skontroluj a resetuj bibliu ak treba
+    if (_lastLocale != null && _lastLocale != currentLocale) {
+      _handleLanguageChange(currentLocale);
+    }
+    _lastLocale = currentLocale;
+  }
+
+  /// Ošetrí zmenu jazyka - resetuje bibliu na biblia_1 ak nie je SK
+  Future<void> _handleLanguageChange(String newLocale) async {
+    // Ak nový jazyk nie je slovenčina a máme nastavenú bibliu 2 alebo 3
+    if (newLocale != 'sk' &&
+        (_selectedBible == 'biblia_2' || _selectedBible == 'biblia_3')) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('selectedBible', 'biblia_1');
+
+      if (mounted) {
+        setState(() {
+          _selectedBible = 'biblia_1';
+        });
+      }
+    }
+  }
 
   Future<void> _initSettings() async {
     final prefs = await SharedPreferences.getInstance();
 
     if (!mounted) return;
 
-    // Jeden kľúč pre výber biblie - rovnaký pre všetky jazyky
-    final bible = prefs.getString('selectedBible') ?? 'biblia1';
+    // Načítaj uloženú hodnotu
+    String bible = prefs.getString('selectedBible') ?? 'biblia_1';
+
+    // Komplexná migrácia starých hodnôt na nový formát
+    bible = _migrateBibleValue(bible);
+
+    // Kontrola: ak nie je SK jazyk a biblia je 2 alebo 3, nastav na 1
+    final currentLocale = context.locale.languageCode;
+    if (currentLocale != 'sk' && (bible == 'biblia_2' || bible == 'biblia_3')) {
+      bible = 'biblia_1';
+    }
+
+    await prefs.setString('selectedBible', bible);
 
     if (!mounted) return;
     setState(() {
       _selectedBible = bible;
-      _isLoadingBible = false;
+      _isLoadingBible = false; // Ukončíme loading
     });
+  }
+
+  // Migruje starú hodnotu na nový formát (biblia_1, biblia_2, biblia_3)
+  String _migrateBibleValue(String oldValue) {
+    // Ak je už v správnom formáte, vráť ho
+    if (oldValue == 'biblia_1' ||
+        oldValue == 'biblia_2' ||
+        oldValue == 'biblia_3') {
+      return oldValue;
+    }
+
+    // Migrácia zo starých formátov
+    switch (oldValue.toLowerCase()) {
+      // Starý formát bez podčiarkovníka
+      case 'biblia1':
+      case 'bible_en_1':
+        return 'biblia_1';
+
+      case 'biblia2':
+      case 'bible_en_2':
+        return 'biblia_2';
+
+      case 'biblia3':
+      case 'bible_en_3':
+        return 'biblia_3';
+
+      // Databázové kódy
+      case 'ssv':
+      case 'standardny':
+        return 'biblia_1';
+
+      case 'jeruzalemsky':
+      case 'jeruzalem':
+        return 'biblia_2';
+
+      case 'ekumenicky':
+      case 'ekumen':
+        return 'biblia_3';
+
+      default:
+        // Fallback na prvú bibliu
+        return 'biblia_1';
+    }
+  }
+
+  Future<void> _saveBibleSelection(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selectedBible', value);
   }
 
   Future<void> _onBibleChanged(String? value) async {
     if (value == null) return;
     setState(() => _selectedBible = value);
-
-    final prefs = await SharedPreferences.getInstance();
-    // Jeden kľúč pre výber biblie - rovnaký pre všetky jazyky
-    await prefs.setString('selectedBible', value);
+    await _saveBibleSelection(value);
   }
 
   Future<void> _onThemeModeChanged(ThemeMode? mode) async {
@@ -78,6 +162,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (language == null) return;
     final themeProvider = context.read<ThemeProvider>();
     await themeProvider.setLanguageCode(language, context);
+
+    // Resetuj bibliu na biblia_1 ak nie je slovenčina a máme nastavenú bibliu 2 alebo 3
+    String effectiveLocale = language;
+    if (language == 'system') {
+      effectiveLocale =
+          WidgetsBinding.instance.platformDispatcher.locale.languageCode;
+    }
+
+    if (effectiveLocale != 'sk' &&
+        (_selectedBible == 'biblia_2' || _selectedBible == 'biblia_3')) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('selectedBible', 'biblia_1');
+
+      if (mounted) {
+        setState(() {
+          _selectedBible = 'biblia_1';
+        });
+      }
+    }
   }
 
   /// Vráti správny TextStyle pre preview podľa zvoleného fontu
@@ -125,6 +228,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // 5. Téma (systém/svetlá/tmavá)
           _buildThemeCard(themeProvider),
+          const SizedBox(height: 16),
+
+          // 6. O aplikácii a Ochrana osobných údajov
+          _buildAboutAndPrivacyCard(),
           const SizedBox(height: 16),
         ],
       ),
@@ -476,80 +583,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// Vytvorí dropdown items pre biblické preklady
-  /// Vždy používa biblia1, biblia2, biblia3 - názvy sú lokalizované v JSON súboroch
+  /// Vytvorí dropdown items pre biblické preklady z databázy
   List<DropdownMenuItem<String>> _buildBibleDropdownItems() {
+    // Lokalizované názvy biblií
     return [
       DropdownMenuItem(
-        value: 'biblia1',
-        child: Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text: tr('bible_1'),
-                style: const TextStyle(fontWeight: FontWeight.w500),
-              ),
-              TextSpan(
-                text: ' - ${tr('bible_1_desc')}',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
+        value: 'biblia_1',
+        child: Text(
+          tr('bible_1'),
+          style: const TextStyle(fontWeight: FontWeight.w500),
           overflow: TextOverflow.ellipsis,
         ),
       ),
       DropdownMenuItem(
-        value: 'biblia2',
-        child: Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text: tr('bible_2'),
-                style: const TextStyle(fontWeight: FontWeight.w500),
-              ),
-              TextSpan(
-                text: ' - ${tr('bible_2_desc')}',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
+        value: 'biblia_2',
+        child: Text(
+          tr('bible_2'),
+          style: const TextStyle(fontWeight: FontWeight.w500),
           overflow: TextOverflow.ellipsis,
         ),
       ),
       DropdownMenuItem(
-        value: 'biblia3',
-        child: Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text: tr('bible_3'),
-                style: const TextStyle(fontWeight: FontWeight.w500),
-              ),
-              TextSpan(
-                text: ' - ${tr('bible_3_desc')}',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
+        value: 'biblia_3',
+        child: Text(
+          tr('bible_3'),
+          style: const TextStyle(fontWeight: FontWeight.w500),
           overflow: TextOverflow.ellipsis,
         ),
       ),
     ];
   }
 
-  Widget _buildBibleCard() {
+  Widget _buildAboutAndPrivacyCard() {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 4,
@@ -560,10 +625,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.menu_book),
+                const Icon(Icons.info_outline),
                 const SizedBox(width: 8),
                 Text(
-                  tr('select_bible'),
+                  tr('privacy.info_section'),
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -572,24 +637,120 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            _isLoadingBible
-                ? const Center(child: CircularProgressIndicator())
-                : DropdownButtonFormField<String>(
-                    value: _selectedBible,
-                    onChanged: _onBibleChanged,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
+            ListTile(
+              leading: const Icon(Icons.info_outline, color: AppColors.primary),
+              title: Text(tr('about_title')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AboutScreen()),
+                );
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(
+                Icons.privacy_tip_outlined,
+                color: AppColors.primary,
+              ),
+              title: Text(tr('privacy.page_title')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PrivacyScreen()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBibleCard() {
+    final locale = context.locale.languageCode;
+    final isSlovak = locale == 'sk';
+
+    return Opacity(
+      opacity: isSlovak ? 1.0 : 0.5,
+      child: Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 4,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.menu_book),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      tr('select_bible'),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
                     ),
-                    items: _buildBibleDropdownItems(),
                   ),
-          ],
+                  // Badge/info že je to dočasne vypnuté (len pre non-SK jazyky)
+                  if (!isSlovak)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        tr('temporarily_disabled'),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.orange.shade800,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _isLoadingBible
+                  ? const Center(child: CircularProgressIndicator())
+                  : DropdownButtonFormField<String>(
+                      value: _selectedBible,
+                      onChanged: isSlovak
+                          ? _onBibleChanged
+                          : null, // Aktívne len pre SK
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                      ),
+                      items: _buildBibleDropdownItems(),
+                    ),
+              if (!isSlovak) ...[
+                const SizedBox(height: 8),
+                Text(
+                  tr('bible_selection_info'),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );

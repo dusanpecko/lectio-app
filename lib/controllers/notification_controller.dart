@@ -15,6 +15,7 @@ import 'package:lectio_divina/screens/notification_settings_screen.dart';
 import 'package:lectio_divina/screens/notifications_screen.dart';
 import 'package:lectio_divina/screens/profile_screen.dart';
 import 'package:lectio_divina/screens/rosary_category_screen.dart';
+import 'package:lectio_divina/screens/adoration_screen.dart';
 import 'package:lectio_divina/screens/settings_screen.dart';
 import 'package:lectio_divina/shared/app_colors.dart';
 
@@ -107,6 +108,9 @@ class NotificationController {
           orElse: () => RosaryCategory.joyful,
         );
         targetScreen = RosaryCategoryScreen(category: category);
+        break;
+      case 'adoration':
+        targetScreen = const AdorationScreen();
         break;
       case 'news':
         targetScreen = const NewsListScreen();

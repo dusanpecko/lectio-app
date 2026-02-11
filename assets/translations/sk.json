@@ -146,6 +146,7 @@
   "user_exists": "Používateľ s týmto emailom už existuje.",
   "email_not_confirmed": "Emailová adresa nebola potvrdená. Skontrolujte si email a potvrďte registráciu.",
   "slider_subtitle_god_word": "formou Lectio divina",
+  "slider_subtitle_silencio": "Stíšenie a príprava srdca ...",
   "slider_subtitle_lectio": "Čítanie vybraného textu ...",
   "slider_subtitle_meditatio": "Pozvanie zamyslieť sa nad Slovom ...",
   "slider_subtitle_oratio": "Modlitba podľa Božieho slova ...",
@@ -156,6 +157,7 @@
   "forgot_password": "Zabudnuté heslo?",
   "sign_in_with_google": "Prihlásiť sa cez Google",
   "sign_in_with_apple": "Prihlásiť sa cez Apple",
+  "or": "alebo",
   "reset_password": "Obnoviť heslo",
   "reset_password_title": "Obnova hesla",
   "reset_email_sent": "Ak existuje účet s týmto emailom, bol odoslaný email na obnovenie hesla.",
@@ -289,7 +291,9 @@
   "reset_password_success": "Heslo bolo úspešne obnovené.",
   "reset_password_instructions": "Zadajte svoj email a my vám pošleme inštrukcie na obnovenie hesla.",
   "select_bible": "Vybrať biblický text",
-  "bible_1": "Preklad SSV",
+  "temporarily_disabled": "Dočasne vypnuté",
+  "bible_selection_info": "Výber biblického prekladu je dočasne nedostupný. Aktuálne je použiteľný len jeden preklad, kým nevyriešime licenčné podmienky.",
+  "bible_1": "Slovenský štandardný preklad",
   "bible_1_desc": "Slovenský štandardný verš",
   "bible_2": "Jeruzalemský preklad",
   "bible_2_desc": "Katolícky preklad z francúzštiny",
@@ -349,26 +353,7 @@
   "audio_bible_select_no_text": "Žiadny biblický text nie je dostupný",
   "audio_bible_select_no_text_desc": "Momentálne nie sú k dispozícii žiadne biblické texty pre audio prehrávanie.",
   "audio_nothing_playing": "Momentálne nič nehrá.",
-  "about": {
-    "title": "O aplikácii",
-    "headline": "Informácie o aplikácii Lectio Divina",
-    "rights": "Lectio Divina © Dušan Pecko 2022–2025. Všetky práva vyhradené.",
-    "collaborators_title": "Spolupracovali",
-    "collaborators": "Kristína Krchová, Daniel Balej, Jakub Melo, Adam Čižmárik, Andrej Krekáč, Sestry Panny Márie Útechy.",
-    "bible_title": "Texty Svätého písma",
-    "bible_copyright": "© Spolok svätého Vojtecha, Trnava 2022\n© Slovenská biblická spoločnosť, Banská Bystrica, 2010\n© Biblické texty: Biblia – slovenský ekumenický preklad, 2008\n© Text je prevzatý z 10. vydania Jeruzalemskej Biblie (ed. Ján Ďurica), Dobrá kniha, Trnava 2022.",
-    "lectio_title": "Texty Lectio Divina",
-    "lectio_texts": "© Biblická spoločnosť\n© Monika Durkačová 2022–2024\n© Dušan Pecko 2022–2025",
-    "meditatio_title": "Texty Meditatio",
-    "meditatio_texts": "© Nakladateľstvo PAULÍNKY, 2016–2019 – Evangelium na každý den 2016–2021\n© Zachej.sk, 2022 – Päť minút s Bohom – Denné zamyslenia nad evanjeliom 2023",
-    "greek_catholic_title": "Gréckokatolícke texty",
-    "greek_catholic": "„Meditatio“ © Slovo – oficiálny časopis Gréckokatolíckej cirkvi na Slovensku.",
-    "projects_title": "Ďalšie projekty",
-    "other_projects": "© 2024 Odrobiny – jedným Slovom je projekt neziskovej organizácie Cor Sancti Martini, n.o.\n© 2024 Timothy – slovenská worshipová kapela.",
-    "supported_by_title": "Podporili nás",
-    "supported_by": "4IGV s.r.o., SysTech Group s.r.o., Žilinská diecéza, KROK – Pastoračný fond Žilinskej diecézy",
-    "version": "Verzia"
-  },
+  "about_title": "O aplikácii",
   "pray_intentions_title": "Modlitbové úmysly",
   "pray_intentions": "Modlitby",
   "pray_submit": "Odoslať úmysel",
@@ -464,6 +449,7 @@
       "cancel": "Zrušiť",
       "save": "Uložiť",
       "save_changes": "Uložiť zmeny",
+      "edit": "Upraviť",
       "change_password": "Zmeniť heslo",
       "notification_settings": "Nastavenia notifikácií",
       "download_data": "Stiahnuť moje dáta",
@@ -514,6 +500,8 @@
       "cancels_on": "Zruší sa"
     },
     "payment": {
+      "singular": "platba",
+      "plural": "platieb",
       "monthly": "mesačne",
       "yearly": "ročne",
       "one_time": "jednorazovo",
@@ -559,7 +547,14 @@
       "company_name": "Názov firmy",
       "ico": "IČO",
       "dic": "DIČ",
-      "iban": "IBAN"
+      "iban": "IBAN",
+      "street": "Ulica a číslo",
+      "city": "Mesto",
+      "zip": "PSČ",
+      "country": "Krajina",
+      "phone": "Telefón",
+      "email": "Email",
+      "no_data": "Nemáte vyplnené žiadne fakturačné údaje"
     },
     "bank_payment": {
       "unknown_type": "Bankový prevod"
@@ -685,7 +680,6 @@
   "step_by_step": "Postupné vedenie krok za krokom",
   "loading_rosary": "Načítavam ruženec...",
   "error_loading_rosary": "Chyba pri načítavaní ruženeca",
-  "refresh": "Obnoviť",
   "unknown_error": "Neznáma chyba",
   "loading_mysteries": "Načítavam tajomstvá...",
   "error_loading_mysteries": "Chyba pri načítavaní tajomstiev",
@@ -700,7 +694,6 @@
   "no_mysteries": "Žiadne tajomstvá nie sú dostupné",
   "show_all_mysteries": "Zobraziť všetky tajomstvá",
   "audio": "Audio",
-  "image": "Obrázok",
   "spiritual_advice": "Duchovné rady pre modlitbu",
   "prayer_preparation": "Príprava na modlitbu",
   "during_prayer": "Počas modlitby",
@@ -729,6 +722,7 @@
   "meditation": "Rozjímanie",
   "prayer": "Modlitba",
   "contemplation": "Kontemplácia",
+  "silence": "Ticho",
   "action": "Actio - Konanie",
   "previous": "Predchádzajúce",
   "next": "Ďalšie",
@@ -826,7 +820,11 @@
         "title": "✨ Vitajte v aplikácii!",
         "body": "Ďakujeme, že používate Lectio Divina. Preskúmajte naše denné zamyslenia."
       }
-    }
+    },
+    "empty": "Žiadne notifikácie",
+    "empty_hint": "Keď dostanete nové notifikácie, zobrazia sa tu.",
+    "load_error": "Nepodarilo sa načítať notifikácie.",
+    "yesterday": "Včera"
   },
   "settings_screen": {
     "theme": {
@@ -925,16 +923,138 @@
     "success": "Ďakujeme za vašu spätnú väzbu!",
     "error": "Chyba pri odosielaní: {}"
   },
-  "notifications": {
-    "title": "Notifikácie",
-    "empty": "Žiadne notifikácie",
-    "empty_hint": "Keď dostanete nové notifikácie, zobrazia sa tu.",
-    "load_error": "Nepodarilo sa načítať notifikácie.",
-    "yesterday": "Včera"
-  },
+  "adoration_title": "Adorácie",
+  "adoration_main_title": "Adorácia Najsvätejšej sviatosti",
+  "adoration_main_subtitle": "Čas strávený s Ježišom v tichej modlitbe",
+  "loading_adorations": "Načítavam adorácie...",
+  "error_loading_adorations": "Chyba pri načítavaní adorácií",
+  "total_adorations": "Celkom",
+  "loading_adoration": "Načítavam adoráciu...",
+  "adoration_not_found": "Adorácia nenájdená",
+  "requested_adoration_not_found": "Požadovaná adorácia nebola nájdená alebo nie je dostupná.",
+  "back_to_list": "Späť na zoznam",
+  "eucharistic_adoration": "Eucharistická adorácia",
+  "unknown_author": "Neznámy autor",
+  "introductory_prayers": "Úvodné modlitby",
+  "image": "Obrázok",
   "common": {
     "refresh": "Obnoviť",
     "try_again": "Skúsiť znova",
     "close": "Zavrieť"
+  },
+  "privacy": {
+    "page_title": "Ochrana osobných údajov",
+    "last_updated": "Posledná aktualizácia: Február 2026",
+    "header": {
+      "app_name": "Mobilná aplikácia Lectio Divina",
+      "updated": "Február 2026"
+    },
+    "intro": {
+      "title": "Úvod",
+      "description": "Táto mobilná aplikácia Lectio Divina je primárne určená na zasielanie Push notifikácií s duchovnými obsahmi a čítaniami.",
+      "purpose": "Aplikácia slúži na poskytovanie každodenných duchovných čítaní, meditácií a modlitieb podľa tradície Lectio Divina.",
+      "commitment": "K spracúvaniu Vašich osobných údajov pristupujeme len zákonným spôsobom, profesionálne a citlivo. Vaše osobné údaje sú uložené v zabezpečenom informačnom systéme."
+    },
+    "token": {
+      "title": "Registration Token",
+      "description": "Informácia ktorú aplikácia získava, prenáša na náš server, a ktorú ukladáme je tzv. registration id/token (ďalej len token) a ktorý slúži na zaslanie Push notifikácie na Vaše zariadenie.",
+      "notice": "Tento token nie je osobný údaj, nakoľko tento token nie je pre nás možné spojiť s Vašou osobou.",
+      "generator": "Tento token je generovaný Google službou Firebase Cloud Messaging."
+    },
+    "personal": {
+      "title": "Spracúvanie osobných údajov",
+      "intro": "Aplikácia môže spracovávať po súhlase osobné informácie:",
+      "items": {
+        "0": "Vaše meno a priezvisko",
+        "1": "Váš email",
+        "2": "Vaše tel. č.",
+        "3": "Adresu bydliska (ulicu)"
+      },
+      "purpose": "Tieto osobné údaje sú potrebné pre spätné kontaktovanie vašej osoby pre promptné vyriešenie vášho podnetu.",
+      "additional_title": "Aplikácia môže ďalej spracovávať:",
+      "location_title": "📍 Presnú polohu",
+      "location_desc": "Polohu používame pre zabezpečenie správnosti a použiteľnosti fungovania modulov.",
+      "photos_title": "📸 Fotografie",
+      "photos_desc": "Fotografie používame pre spracovanie podnetu od používateľa.",
+      "app_info_title": "📊 Informácie o aplikácii a výkone",
+      "app_info_desc": "Tieto informácie používame pre diagnostiku porúch aplikácie a vyhodnocovanie štatistík.",
+      "identifiers_title": "🔔 Ostatné identifikátory",
+      "identifiers_desc": "Tieto informácie používame pre správne doručovanie PUSH notifikácií."
+    },
+    "cookies": {
+      "title": "Cookies",
+      "notice": "V našej mobilnej aplikácii Lectio Divina nepoužívame cookies.",
+      "web_note": "Cookies sú používané len na webovej stránke lectio.sk pre analýzu návštevnosti (Google Analytics) a zobrazovanie relevantných reklám."
+    },
+    "rights": {
+      "title": "Vaše práva",
+      "intro": "Máte právo:",
+      "items": {
+        "0": "Požiadať o prístup k vašim osobným údajom",
+        "1": "Požiadať o opravu nesprávnych údajov",
+        "2": "Požiadať o vymazanie vašich údajov",
+        "3": "Odvolať súhlas so spracovaním",
+        "4": "Podať sťažnosť na Úrad pre ochranu osobných údajov"
+      },
+      "request": "Môžete nás kedykoľvek požiadať o zmazanie vašich osobných údajov e-mailom alebo písomne."
+    },
+    "contact": {
+      "title": "Kontakt",
+      "question": "Máte otázky ohľadom ochrany osobných údajov?",
+      "organization": "lectio.one",
+      "email": "📧 Email: info@lectio.one",
+      "web": "🌐 Web: www.lectio.one"
+    },
+    "footer": {
+      "version": "Verzia aplikácie:",
+      "copyright": "© 2026 lectio.one",
+      "rights": "Všetky práva vyhradené."
+    },
+    "info_section": "Informácie"
+  },
+  "about": {
+    "page_title": "O aplikácii",
+    "hero_title": "Lectio Divina",
+    "hero_subtitle": "lectio.one",
+    "description": "Lectio Divina je starobylý spôsob modlitby s Božím slovom: čítanie (Lectio), rozjímanie (Meditatio), modlitba (Oratio), ticho (Contemplatio) a konkrétny krok života (Actio).\n\nAplikácia lectio.one ponúka denné biblické čítania, sprievodcu krokmi Lectio Divina, zamyslenia a audio nahrávky, aby si sa mohol/mohla každý deň vracať k Božiemu slovu a nechať sa ním viesť.",
+    "version_title": "Verzia aplikácie",
+    "version_label": "Verzia:",
+    "copyright": "© 2022 – 2026 lectio.one",
+    "contact_title": "Kontakt",
+    "operator_title": "Prevádzkovateľ aplikácie",
+    "operator_name": "Názov:",
+    "operator_name_value": "lectio.one",
+    "operator_legal_form": "Právna forma:",
+    "operator_legal_form_value": "občianske združenie",
+    "operator_ico": "IČO:",
+    "operator_ico_value": "55971521",
+    "operator_address": "Sídlo:",
+    "operator_address_value": "Jána Kalinčiaka 3098/1, 010 01 Žilina",
+    "operator_reg_number": "Registračné číslo:",
+    "operator_reg_number_value": "VVS/1-900/90-68879",
+    "operator_reg_office": "Registrový úrad:",
+    "operator_reg_office_value": "Okresný úrad Žilina",
+    "collaborators_title": "Spolupracovali",
+    "collaborators_names": "Adam Čižmárik\nMatúš Sedliak\nSestry Panny Márie Útechy",
+    "bible_title": "Texty Svätého písma",
+    "bible_copyrights": "© Spolok svätého Vojtecha, Trnava 2022\n\n© Slovenská biblická spoločnosť, Banská Bystrica, 2010\n\n© Biblia – slovenský ekumenický preklad, 2008\n\n© Text je prevzatý z 10. vydania Jeruzalemskej Biblie (ed. Ján Ďurica), Dobrá kniha, Trnava 2022\n\nNew American Bible, Revised Edition (NABRE)\n© 2010, 1991, 1986, 1970 Confraternity of Christian Doctrine, Washington, D.C.\nAll rights reserved.\n\nSagrada Biblia – Cantera-Iglesias (BAC Maior)\n© Biblioteca de Autores Cristianos (BAC), Madrid.\nAll rights reserved.",
+    "lectio_title": "Texty Lectio Divina",
+    "lectio_copyright": "© Dušan Pecko 2022 – 2026",
+    "translations_title": "Texty Lectio Divina – preklady",
+    "translations_copyright": "© Adam Čižmárik 2026 (EN)\n© Sr. Mary Carmen 2026 (ES)",
+    "reflections_title": "Texty zamyslení",
+    "reflections_copyright": "© Marian Kováčik 2026",
+    "audio_title": "Audio",
+    "audio_description": "Audio nahrávky boli vytvorené pomocou technológie ElevenLabs (elevenlabs.io).",
+    "illustrations_title": "Ilustrácie a grafické prvky",
+    "illustrations_description": "Ilustrácie a grafické prvky: Freepik (freepik.com)\nNiektoré ilustrácie boli vytvorené alebo upravené s pomocou generatívnych AI nástrojov (ChatGPT – obrazový model).",
+    "supporters_title": "Podporili nás",
+    "supporters_list": "Penzión Bystrík\nFarnosť Bytča\nKROK – Pastoračný fond Žilinskej diecézy",
+    "privacy_title": "Ochrana osobných údajov",
+    "privacy_description": "Aplikácia spracúva osobné údaje v súlade s GDPR.\nPodrobnosti sú uvedené v Zásadách ochrany osobných údajov, ktoré sú dostupné na webovej stránke a v aplikácii.",
+    "privacy_button": "Zobraziť zásady ochrany údajov",
+    "opensource_title": "Open-Source knižnice",
+    "opensource_description": "Licencie open-source knižníc sú dostupné v samostatnej sekcii aplikácie.",
+    "opensource_button": "Zobraziť licencie"
   }
 }

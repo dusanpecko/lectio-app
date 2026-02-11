@@ -71,13 +71,16 @@ class AuthService {
     }
   }
 
-  // Sign In with Apple
-  Future<bool> signInWithApple({required String redirectTo}) async {
+  // Sign In with Apple (natívny flow - volá sa z auth_screen.dart priamo)
+  Future<AuthResponse> signInWithAppleNative({
+    required String idToken,
+    required String nonce,
+  }) async {
     try {
-      return await _client.auth.signInWithOAuth(
-        OAuthProvider.apple,
-        redirectTo: redirectTo,
-        authScreenLaunchMode: LaunchMode.externalApplication,
+      return await _client.auth.signInWithIdToken(
+        provider: OAuthProvider.apple,
+        idToken: idToken,
+        nonce: nonce,
       );
     } catch (e) {
       appLogger.e('Error signing in with Apple: $e');

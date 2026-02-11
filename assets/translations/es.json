@@ -148,6 +148,7 @@
   "user_exists": "Ya existe un usuario con este correo.",
   "email_not_confirmed": "La dirección de correo no ha sido confirmada. Revisa tu bandeja y confirma el registro.",
   "slider_subtitle_god_word": "en forma de Lectio divina",
+  "slider_subtitle_silencio": "Silenciarse y preparar el corazón ...",
   "slider_subtitle_lectio": "Lectura del texto seleccionado...",
   "slider_subtitle_meditatio": "Invitación a meditar la Palabra...",
   "slider_subtitle_oratio": "Oración según la Palabra de Dios...",
@@ -158,6 +159,7 @@
   "forgot_password": "¿Olvidaste la contraseña?",
   "sign_in_with_google": "Inicia sesión con Google",
   "sign_in_with_apple": "Inicia sesión con Apple",
+  "or": "o",
   "reset_password": "Restablecer contraseña",
   "reset_password_title": "Restablecer contraseña",
   "reset_email_sent": "Si existe una cuenta con este correo, se ha enviado un correo de restablecimiento.",
@@ -291,6 +293,8 @@
   "reset_password_success": "La contraseña se restableció correctamente.",
   "reset_password_instructions": "Introduce tu correo y te enviaremos instrucciones para restablecer la contraseña.",
   "select_bible": "Selecciona el texto bíblico",
+  "temporarily_disabled": "Deshabilitado temporalmente",
+  "bible_selection_info": "La selección de traducción bíblica no está disponible temporalmente. Actualmente solo hay una traducción disponible hasta que resolvamos los términos de licencia.",
   "bible_1": "Nueva Versión Internacional (NVI)",
   "bible_1_desc": "Traducción moderna al español",
   "bible_2": "Reina-Valera (RVR)",
@@ -351,26 +355,7 @@
   "audio_bible_select_no_text": "No hay texto bíblico disponible",
   "audio_bible_select_no_text_desc": "Actualmente no hay textos bíblicos disponibles para su reproducción.",
   "audio_nothing_playing": "No se está reproduciendo nada.",
-  "about": {
-    "title": "Acerca de la app",
-    "headline": "Información sobre la aplicación Lectio Divina",
-    "rights": "Lectio Divina © Dušan Pecko 2022-2025. Todos los derechos reservados.",
-    "collaborators_title": "Colaboradores",
-    "collaborators": "Kristína Krchová, Daniel Balej, Jakub Melo, Adam Čižmárik, Andrej Krekáč, Hermanas de Nuestra Señora de la Consolación.",
-    "bible_title": "Textos de la Sagrada Escritura",
-    "bible_copyright": "© Spolok svätého Vojtecha, Trnava 2022\n© Sociedad Bíblica Eslovaca, Banská Bystrica, 2010\n© Textos bíblicos: Biblia – Traducción Ecuménica Eslovaca, 2008\n© Texto tomado de la 10.ª edición de la Biblia de Jerusalén (ed. Ján Ďurica), Dobrá kniha, Trnava 2022.",
-    "lectio_title": "Textos de Lectio Divina",
-    "lectio_texts": "© Sociedad Bíblica\n© Monika Durkačová 2022-2024\n© Dušan Pecko 2022-2025",
-    "meditatio_title": "Textos de Meditatio",
-    "meditatio_texts": "© Editorial PAULÍNKY, 2016-2019 – Evangelio para cada día 2016-2021\n© Zachej.sk, 2022 – Cinco minutos con Dios – Reflexiones diarias sobre el Evangelio 2023",
-    "greek_catholic_title": "Textos greco-católicos",
-    "greek_catholic": "\"Meditatio\" © Slovo – revista oficial de la Iglesia Greco-Católica en Eslovaquia.",
-    "projects_title": "Otros proyectos",
-    "other_projects": "© 2024 Odrobiny – jedným Slovom es un proyecto de la organización sin fines de lucro Cor Sancti Martini, n.o.\n© 2024 Timothy – banda eslovaca de alabanza.",
-    "supported_by_title": "Apoyado por",
-    "supported_by": "4IGV s.r.o., SysTech Group s.r.o., Diócesis de Žilina, KROK – Fondo Pastoral de la Diócesis de Žilina",
-    "version": "Versión"
-  },
+  "about_title": "Acerca de la app",
   "pray_intentions_title": "Intenciones de oración",
   "pray_intentions": "Oraciones",
   "pray_submit": "Enviar intención",
@@ -507,7 +492,6 @@
   "no_mysteries": "No hay misterios disponibles",
   "show_all_mysteries": "Mostrar todos los misterios",
   "audio": "Audio",
-  "image": "Imagen",
   "spiritual_advice": "Consejos espirituales para la oración",
   "prayer_preparation": "Preparación para la oración",
   "during_prayer": "Durante la oración",
@@ -521,7 +505,7 @@
   "error_loading_rosary": "Error al cargar el rosario",
   "loading_mysteries": "Cargando misterios...",
   "error_loading_mysteries": "Error al cargar los misterios",
-  "refresh": "Actualizar",
+
   "unknown_error": "Error desconocido",
   "loading_mystery": "Cargando misterio...",
   "preparing_spiritual_journey": "Preparando viaje espiritual para ti",
@@ -542,6 +526,7 @@
   "meditation": "Meditación",
   "prayer": "Oración",
   "contemplation": "Contemplación",
+  "silence": "Silencio",
   "action": "Acción",
   "previous": "Anterior",
   "next": "Siguiente",
@@ -574,7 +559,8 @@
       "change_password": "Cambiar contraseña",
       "notification_settings": "Ajustes de notificaciones",
       "download_data": "Descargar mis datos",
-      "delete_account": "Eliminar cuenta"
+      "delete_account": "Eliminar cuenta",
+      "edit": "Editar"
     },
     "avatar": {
       "change": "Cambiar avatar",
@@ -633,6 +619,8 @@
       "cancels_on": "Finaliza el"
     },
     "payment": {
+      "singular": "pago",
+      "plural": "pagos",
       "monthly": "mensual",
       "yearly": "anual",
       "one_time": "único",
@@ -666,7 +654,14 @@
       "company_name": "Nombre de la empresa",
       "ico": "ID de la empresa",
       "dic": "ID fiscal",
-      "iban": "IBAN"
+      "iban": "IBAN",
+      "street": "Calle y número",
+      "city": "Ciudad",
+      "zip": "Código postal",
+      "country": "País",
+      "phone": "Teléfono",
+      "email": "Correo electrónico",
+      "no_data": "No hay información de facturación"
     },
     "bank_payment": {
       "unknown_type": "Transferencia bancaria"
@@ -824,7 +819,11 @@
         "title": "✨ ¡Bienvenido a la app!",
         "body": "Gracias por usar Lectio Divina. Explora nuestras reflexiones diarias."
       }
-    }
+    },
+    "empty": "Sin notificaciones",
+    "empty_hint": "Cuando recibas nuevas notificaciones, aparecerán aquí.",
+    "load_error": "No se pudieron cargar las notificaciones.",
+    "yesterday": "Ayer"
   },
   "settings_screen": {
     "theme": {
@@ -925,16 +924,138 @@
     "success": "¡Gracias por tu comentario!",
     "error": "Error al enviar: {}"
   },
-  "notifications": {
-    "title": "Notificaciones",
-    "empty": "Sin notificaciones",
-    "empty_hint": "Cuando recibas nuevas notificaciones, aparecerán aquí.",
-    "load_error": "No se pudieron cargar las notificaciones.",
-    "yesterday": "Ayer"
-  },
+  "adoration_title": "Adoraciones",
+  "adoration_main_title": "Adoración del Santísimo Sacramento",
+  "adoration_main_subtitle": "Tiempo con Jesús en oración silenciosa",
+  "loading_adorations": "Cargando adoraciones...",
+  "error_loading_adorations": "Error al cargar adoraciones",
+  "total_adorations": "Total",
+  "loading_adoration": "Cargando adoración...",
+  "adoration_not_found": "Adoración no encontrada",
+  "requested_adoration_not_found": "La adoración solicitada no fue encontrada o no está disponible.",
+  "back_to_list": "Volver a la lista",
+  "eucharistic_adoration": "Adoración Eucarística",
+  "unknown_author": "Autor desconocido",
+  "introductory_prayers": "Oraciones introductorias",
+  "image": "Imagen",
   "common": {
     "refresh": "Actualizar",
     "try_again": "Intentar de nuevo",
     "close": "Cerrar"
+  },
+  "privacy": {
+    "page_title": "Política de Privacidad",
+    "last_updated": "Última actualización: Febrero 2026",
+    "header": {
+      "app_name": "Aplicación Móvil Lectio Divina",
+      "updated": "Febrero 2026"
+    },
+    "intro": {
+      "title": "Introducción",
+      "description": "Esta aplicación móvil Lectio Divina está diseñada principalmente para enviar notificaciones Push con contenido espiritual y lecturas.",
+      "purpose": "La aplicación sirve para proporcionar lecturas espirituales diarias, meditaciones y oraciones según la tradición de Lectio Divina.",
+      "commitment": "Abordamos el procesamiento de sus datos personales solo de manera legal, profesional y sensible. Sus datos personales se almacenan en un sistema de información seguro."
+    },
+    "token": {
+      "title": "Token de Registro",
+      "description": "La información que obtiene la aplicación, transmite a nuestro servidor y que almacenamos es el llamado registration id/token (en adelante solo token) y que sirve para enviar notificaciones Push a su dispositivo.",
+      "notice": "Este token no es un dato personal, ya que este token no puede ser vinculado a su persona por nosotros.",
+      "generator": "Este token es generado por el servicio de Google Firebase Cloud Messaging."
+    },
+    "personal": {
+      "title": "Procesamiento de Datos Personales",
+      "intro": "La aplicación puede procesar información personal con consentimiento:",
+      "items": {
+        "0": "Su nombre y apellido",
+        "1": "Su correo electrónico",
+        "2": "Su número de teléfono",
+        "3": "Su dirección (calle)"
+      },
+      "purpose": "Estos datos personales son necesarios para contactarlo de vuelta para la resolución rápida de su consulta.",
+      "additional_title": "La aplicación puede procesar además:",
+      "location_title": "📍 Ubicación precisa",
+      "location_desc": "Usamos la ubicación para asegurar la corrección y usabilidad de las funciones del módulo.",
+      "photos_title": "📸 Fotografías",
+      "photos_desc": "Usamos fotografías para procesar consultas de usuarios.",
+      "app_info_title": "📊 Información de aplicación y rendimiento",
+      "app_info_desc": "Usamos esta información para diagnósticos de fallas de aplicación y evaluación de estadísticas de uso.",
+      "identifiers_title": "🔔 Otros identificadores",
+      "identifiers_desc": "Usamos esta información para la entrega adecuada de notificaciones PUSH."
+    },
+    "cookies": {
+      "title": "Cookies",
+      "notice": "No usamos cookies en nuestra aplicación móvil Lectio Divina.",
+      "web_note": "Las cookies solo se usan en el sitio web lectio.sk para análisis de tráfico (Google Analytics) y mostrar anuncios relevantes."
+    },
+    "rights": {
+      "title": "Sus Derechos",
+      "intro": "Tiene derecho a:",
+      "items": {
+        "0": "Solicitar acceso a sus datos personales",
+        "1": "Solicitar corrección de datos incorrectos",
+        "2": "Solicitar eliminación de sus datos",
+        "3": "Revocar el consentimiento de procesamiento",
+        "4": "Presentar una queja ante la Oficina de Protección de Datos Personales"
+      },
+      "request": "Puede solicitar la eliminación de sus datos personales en cualquier momento por correo electrónico o por escrito."
+    },
+    "contact": {
+      "title": "Contacto",
+      "question": "¿Tiene preguntas sobre la protección de datos personales?",
+      "organization": "lectio.one",
+      "email": "📧 Email: info@lectio.one",
+      "web": "🌐 Web: www.lectio.one"
+    },
+    "footer": {
+      "version": "Versión de la aplicación:",
+      "copyright": "© 2026 lectio.one",
+      "rights": "Todos los derechos reservados."
+    },
+    "info_section": "Información"
+  },
+  "about": {
+    "page_title": "Acerca de",
+    "hero_title": "Lectio Divina",
+    "hero_subtitle": "lectio.one",
+    "description": "Lectio Divina es una forma antigua de orar con la palabra de Dios: lectura (Lectio), meditación (Meditatio), oración (Oratio), silencio (Contemplatio) y un paso concreto de vida (Actio).\n\nLa aplicación lectio.one ofrece lecturas bíblicas diarias, una guía a través de los pasos de la Lectio Divina, reflexiones y grabaciones de audio, para que puedas volver a la palabra de Dios cada día y dejarte guiar por ella.",
+    "version_title": "Versión de la aplicación",
+    "version_label": "Versión:",
+    "copyright": "© 2022 – 2026 lectio.one",
+    "contact_title": "Contacto",
+    "operator_title": "Operador de la aplicación",
+    "operator_name": "Nombre:",
+    "operator_name_value": "lectio.one",
+    "operator_legal_form": "Forma legal:",
+    "operator_legal_form_value": "asociación cívica",
+    "operator_ico": "ID de empresa:",
+    "operator_ico_value": "55971521",
+    "operator_address": "Dirección:",
+    "operator_address_value": "Jána Kalinčiaka 3098/1, 010 01 Žilina, Eslovaquia",
+    "operator_reg_number": "Número de registro:",
+    "operator_reg_number_value": "VVS/1-900/90-68879",
+    "operator_reg_office": "Oficina de registro:",
+    "operator_reg_office_value": "Oficina del Distrito de Žilina",
+    "collaborators_title": "Colaboradores",
+    "collaborators_names": "Adam Čižmárik\nMatúš Sedliak\nHermanas de Nuestra Señora de la Consolación",
+    "bible_title": "Textos de la Escritura",
+    "bible_copyrights": "© Spolok svätého Vojtecha, Trnava 2022\n\n© Sociedad Bíblica Eslovaca, Banská Bystrica, 2010\n\n© Biblia – Traducción Ecuménica Eslovaca, 2008\n\n© Texto tomado de la 10ª edición de la Biblia de Jerusalén (ed. Ján Ďurica), Dobrá kniha, Trnava 2022\n\nNew American Bible, Revised Edition (NABRE)\n© 2010, 1991, 1986, 1970 Confraternity of Christian Doctrine, Washington, D.C.\nAll rights reserved.\n\nSagrada Biblia – Cantera-Iglesias (BAC Maior)\n© Biblioteca de Autores Cristianos (BAC), Madrid.\nAll rights reserved.",
+    "lectio_title": "Textos de Lectio Divina",
+    "lectio_copyright": "© Dušan Pecko 2022 – 2026",
+    "translations_title": "Textos de Lectio Divina – Traducciones",
+    "translations_copyright": "© Adam Čižmárik 2026 (EN)\n© Sr. Mary Carmen 2026 (ES)",
+    "reflections_title": "Textos de reflexión",
+    "reflections_copyright": "© Marian Kováčik 2026",
+    "audio_title": "Audio",
+    "audio_description": "Las grabaciones de audio fueron creadas utilizando la tecnología ElevenLabs (elevenlabs.io).",
+    "illustrations_title": "Ilustraciones y elementos gráficos",
+    "illustrations_description": "Ilustraciones y elementos gráficos: Freepik (freepik.com)\nAlgunas ilustraciones fueron creadas o modificadas con la ayuda de herramientas de IA generativa (ChatGPT – modelo de imagen).",
+    "supporters_title": "Nuestros patrocinadores",
+    "supporters_list": "Penzión Bystrík\nParroquia de Bytča\nKROK – Fondo Pastoral de la Diócesis de Žilina",
+    "privacy_title": "Protección de datos personales",
+    "privacy_description": "La aplicación procesa datos personales de acuerdo con el RGPD.\nLos detalles se proporcionan en la Política de Protección de Datos Personales, que está disponible en el sitio web y en la aplicación.",
+    "privacy_button": "Ver política de privacidad",
+    "opensource_title": "Bibliotecas de código abierto",
+    "opensource_description": "Las licencias de las bibliotecas de código abierto están disponibles en una sección separada de la aplicación.",
+    "opensource_button": "Ver licencias"
   }
 }

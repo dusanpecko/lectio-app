@@ -5,6 +5,9 @@ class IntroTranslations {
         return _en;
       case 'es':
         return _es;
+      case 'cz':
+      case 'cs':
+        return _cz;
       case 'sk':
       default:
         return _sk;
@@ -25,7 +28,7 @@ class IntroTranslations {
     'whatIsText2':
         'Táto forma vznikla v prvotných kláštoroch a neskôr ju rozvíjali ľudia ako sv. Benedikt, Origenes, sv. Gregor z Nyssy či kartuzián Guigo II. Dnes si ju znovu osvojujú ľudia všetkých vekov, ktorí túžia po vzťahu s Bohom – aj mimo múrov kláštorov.',
 
-    'fiveStepsTitle': 'Päť krokov Lectio Divina',
+    'fiveStepsTitle': 'Šesť krokov Lectio Divina',
     'fiveStepsText':
         'Každý krok vás priblíži k hlbšiemu vzťahu s Bohom. Postupujte svojím tempom a nechajte Ducha Svätého viesť vaše srdce.',
 
@@ -46,6 +49,15 @@ class IntroTranslations {
     'steps': [
       {
         'number': 1,
+        'slug': 'silencio',
+        'title': 'Silencio - Ticho',
+        'subtitle': 'Brána do modlitby',
+        'description':
+            'Zastav sa. Stíš sa. Vytvor priestor, kde môže Boh prehovoriť.',
+        'duration': '5 min',
+      },
+      {
+        'number': 2,
         'slug': 'lectio',
         'title': 'Lectio - Čítanie',
         'subtitle': 'Pozorné čítanie Božieho slova',
@@ -53,7 +65,7 @@ class IntroTranslations {
         'duration': '10 min',
       },
       {
-        'number': 2,
+        'number': 3,
         'slug': 'meditatio',
         'title': 'Meditatio - Meditácia',
         'subtitle': 'Hlboké rozjímanie nad textom',
@@ -61,7 +73,7 @@ class IntroTranslations {
         'duration': '15 min',
       },
       {
-        'number': 3,
+        'number': 4,
         'slug': 'oratio',
         'title': 'Oratio - Modlitba',
         'subtitle': 'Rozhovor s Bohom',
@@ -69,7 +81,7 @@ class IntroTranslations {
         'duration': '10 min',
       },
       {
-        'number': 4,
+        'number': 5,
         'slug': 'contemplatio',
         'title': 'Contemplatio - Kontemplácia',
         'subtitle': 'Ticho s Bohom',
@@ -77,7 +89,7 @@ class IntroTranslations {
         'duration': '20 min',
       },
       {
-        'number': 5,
+        'number': 6,
         'slug': 'actio',
         'title': 'Actio - Žiť Božie slovo',
         'subtitle': 'Žiť podľa Božieho slova',
@@ -147,7 +159,7 @@ class IntroTranslations {
     'whatIsText2':
         'Nació en los primeros monasterios y la desarrollaron san Benito, Orígenes, san Gregorio de Nisa y el cartujo Guigo II. Hoy la redescubren personas de todas las edades que buscan una relación con Dios incluso fuera de los muros monásticos.',
 
-    'fiveStepsTitle': 'Los cinco pasos de Lectio Divina',
+    'fiveStepsTitle': 'Los seis pasos de Lectio Divina',
     'fiveStepsText':
         'Cada paso te acerca a una relación más profunda con Dios. Avanza a tu ritmo y deja que el Espíritu Santo guíe tu corazón.',
 
@@ -168,6 +180,15 @@ class IntroTranslations {
     'steps': [
       {
         'number': 1,
+        'slug': 'silencio',
+        'title': 'Silencio – Silencio',
+        'subtitle': 'Puerta a la oración',
+        'description':
+            'Deténte. Haz silencio. Crea un espacio donde Dios pueda hablar.',
+        'duration': '5 min',
+      },
+      {
+        'number': 2,
         'slug': 'lectio',
         'title': 'Lectio – Lectura',
         'subtitle': 'Lectura atenta de la Palabra',
@@ -176,7 +197,7 @@ class IntroTranslations {
         'duration': '10 min',
       },
       {
-        'number': 2,
+        'number': 3,
         'slug': 'meditatio',
         'title': 'Meditatio – Meditación',
         'subtitle': 'Profundizar en el texto',
@@ -184,7 +205,7 @@ class IntroTranslations {
         'duration': '15 min',
       },
       {
-        'number': 3,
+        'number': 4,
         'slug': 'oratio',
         'title': 'Oratio – Oración',
         'subtitle': 'Conversar con Dios',
@@ -192,7 +213,7 @@ class IntroTranslations {
         'duration': '10 min',
       },
       {
-        'number': 4,
+        'number': 5,
         'slug': 'contemplatio',
         'title': 'Contemplatio – Contemplación',
         'subtitle': 'Silencio con Dios',
@@ -200,7 +221,7 @@ class IntroTranslations {
         'duration': '20 min',
       },
       {
-        'number': 5,
+        'number': 6,
         'slug': 'actio',
         'title': 'Actio – Vivir la Palabra',
         'subtitle': 'Llevar la Palabra a la vida',
@@ -270,7 +291,7 @@ class IntroTranslations {
     'whatIsText2':
         'This form of prayer began in the early monasteries and was later shaped by saints like Benedict, Origen, Gregory of Nyssa, and the Carthusian Guigo II. Today, people of all ages rediscover it — seeking a relationship with God, even beyond monastery walls.',
 
-    'fiveStepsTitle': 'The Five Steps of Lectio Divina',
+    'fiveStepsTitle': 'The Six Steps of Lectio Divina',
     'fiveStepsText':
         'Each step brings you closer to a deeper relationship with God. Go at your own pace, and let the Holy Spirit guide your heart.',
 
@@ -291,6 +312,14 @@ class IntroTranslations {
     'steps': [
       {
         'number': 1,
+        'slug': 'silencio',
+        'title': 'Silencio – Silence',
+        'subtitle': 'Gateway to prayer',
+        'description': 'Stop. Be still. Create a space where God can speak.',
+        'duration': '5 min',
+      },
+      {
+        'number': 2,
         'slug': 'lectio',
         'title': 'Lectio – Reading',
         'subtitle': 'Attentive reading of God\'s Word',
@@ -299,7 +328,7 @@ class IntroTranslations {
         'duration': '10 min',
       },
       {
-        'number': 2,
+        'number': 3,
         'slug': 'meditatio',
         'title': 'Meditatio – Meditation',
         'subtitle': 'Deep reflection on the text',
@@ -307,7 +336,7 @@ class IntroTranslations {
         'duration': '15 min',
       },
       {
-        'number': 3,
+        'number': 4,
         'slug': 'oratio',
         'title': 'Oratio – Prayer',
         'subtitle': 'Speaking with God',
@@ -315,7 +344,7 @@ class IntroTranslations {
         'duration': '10 min',
       },
       {
-        'number': 4,
+        'number': 5,
         'slug': 'contemplatio',
         'title': 'Contemplatio – Contemplation',
         'subtitle': 'Silent being with God',
@@ -323,7 +352,7 @@ class IntroTranslations {
         'duration': '20 min',
       },
       {
-        'number': 5,
+        'number': 6,
         'slug': 'actio',
         'title': 'Actio – Action',
         'subtitle': 'Living according to God\'s Word',
@@ -375,6 +404,138 @@ class IntroTranslations {
         'title': 'Don\'t rush',
         'description':
             'Lectio Divina isn\'t about speed or achievement. God meets you at your pace.',
+      },
+    ],
+  };
+
+  static const Map<String, dynamic> _cz = {
+    'stepLabel': 'Krok',
+    'heroTitle': 'Naslouchej, co ti Bůh chce říct',
+    'heroSubtitle': 'Objev modlitbu Lectio Divina',
+    'heroDescription':
+        'V rychlém světě, kde se hodně mluví, ale málo skutečně naslouchá, je stále těžší najít ticho. A přesto – právě ticho je místo, kde může zaznít Boží hlas.',
+    'startLectio': 'Začni s Lectio Divina',
+
+    'whatIs': 'Co je Lectio Divina?',
+    'whatIsText1':
+        'Lectio Divina je starobylá forma modlitby s Biblí, ale nečekej výklad ani analýzu. Není to přednáška. Není to ani výkon. Je to setkání – tiché, osobní, skutečné. Skrze Boží slovo vstupujeme do rozhovoru s Tím, kdo nás zná do hloubky.',
+    'whatIsText2':
+        'Tato forma vznikla v prvních klášterech a později ji rozvíjeli lidé jako sv. Benedikt, Origenes, sv. Řehoř z Nyssy či kartuzián Guigo II. Dnes si ji znovu osvojují lidé všech věků, kteří touží po vztahu s Bohem.',
+
+    'fiveStepsTitle': 'Šest kroků Lectio Divina',
+    'fiveStepsText':
+        'Každý krok vás přiblíží k hlubšímu vztahu s Bohem. Postupujte svým tempem a nechte Ducha Svatého vést vaše srdce.',
+
+    'benefitsTitle': 'Posvátné čtení jako setkání',
+    'benefitsText':
+        'Pravidelná praxe Lectio Divina přináší pokoj, jasnost a hlubší duchovní růst. Tisíce křesťanů po celém světě objevily transformační sílu této modlitby.',
+
+    'howToTitle': 'Lectio Divina je pro všechny',
+    'howToText':
+        'Nepotřebujete žádné speciální znalosti. Stačí otevřít srdce, vybrat si text a začít prvním krokem. Bůh se postará o zbytek.',
+    'startFirstStep': 'Začít s prvním krokem',
+
+    'closingQuote':
+        'Slovo, které k tobě dnes přichází, tě hledá. Otevři srdce. Nech se najít.',
+    'closingText':
+        'Lectio Divina není jen starobylá metoda – je to živá cesta pro dnešního člověka. Slovo Boha, které se dnes dotkne tvého srdce, může změnit celý tvůj den… a možná i celý tvůj život.',
+
+    'steps': [
+      {
+        'number': 1,
+        'slug': 'silencio',
+        'title': 'Silencio - Ticho',
+        'subtitle': 'Brána do modlitby',
+        'description':
+            'Zastav se. Ztichni. Vytvoř prostor, kde může Bůh promluvit.',
+        'duration': '5 min',
+      },
+      {
+        'number': 2,
+        'slug': 'lectio',
+        'title': 'Lectio - Čtení',
+        'subtitle': 'Pozorné čtení Božího slova',
+        'description':
+            'Pomalé, soustředěné naslouchání Božímu hlasu skrze Písmo.',
+        'duration': '10 min',
+      },
+      {
+        'number': 3,
+        'slug': 'meditatio',
+        'title': 'Meditatio - Meditace',
+        'subtitle': 'Hluboké rozjímání nad textem',
+        'description': 'Necháváme Slovo proniknout z hlavy do srdce.',
+        'duration': '15 min',
+      },
+      {
+        'number': 4,
+        'slug': 'oratio',
+        'title': 'Oratio - Modlitba',
+        'subtitle': 'Rozhovor s Bohem',
+        'description': 'Upřímný dialog s Bohem na základě Jeho Slova.',
+        'duration': '10 min',
+      },
+      {
+        'number': 5,
+        'slug': 'contemplatio',
+        'title': 'Contemplatio - Kontemplace',
+        'subtitle': 'Ticho s Bohem',
+        'description': 'Spočinutí v Boží přítomnosti bez slov.',
+        'duration': '20 min',
+      },
+      {
+        'number': 6,
+        'slug': 'actio',
+        'title': 'Actio - Žít Boží slovo',
+        'subtitle': 'Žít podle Božího slova',
+        'description': 'Praktická aplikace do každodenního života.',
+        'duration': '5 min',
+      },
+    ],
+
+    'benefits': [
+      {
+        'title': 'Naslouchání Božímu hlasu',
+        'description':
+            'V tichu Lectio Divina se učíme rozpoznávat Boží hlas a otevírat mu srdce.',
+      },
+      {
+        'title': 'Proměna srdce',
+        'description':
+            'Lectio Divina není jen čtení – je to proces proměny skrze Boží slovo.',
+      },
+      {
+        'title': 'Obnova a pokoj',
+        'description':
+            'V rychlém světě nachází duše odpočinek v tichém setkání s Bohem.',
+      },
+      {
+        'title': 'Pro všechny a všude',
+        'description':
+            'Můžete ji praktikovat sami nebo ve společenství, teologická příprava není potřeba.',
+      },
+    ],
+
+    'guide': [
+      {
+        'title': 'Vyber si čas a místo',
+        'description':
+            'Stačí 10–15 minut denně v klidném prostředí. Důležitá je pravidelnost, ne délka.',
+      },
+      {
+        'title': 'Vyber si krátký biblický text',
+        'description':
+            'Nepotřebuješ číst celé kapitoly. Stačí pár veršů z Evangelia nebo žalmů.',
+      },
+      {
+        'title': 'Otevři se Bohu',
+        'description':
+            'Začni krátkou modlitbou: "Pane, chci Tě slyšet. Otevři mé srdce pro Tvé slovo."',
+      },
+      {
+        'title': 'Nespěchej',
+        'description':
+            'Lectio Divina není o rychlosti ani výkonu. Bůh se přizpůsobuje tvému tempu.',
       },
     ],
   };
