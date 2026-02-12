@@ -12,6 +12,7 @@ import '../shared/app_colors.dart';
 import '../shared/rosary_constants.dart';
 import '../widgets/audio/universal_audio_player.dart';
 import '../widgets/audio/audio_player_models.dart';
+import '../shared/app_spacing.dart';
 
 class RosaryDecadeScreen extends StatefulWidget {
   final RosaryCategory category;
@@ -234,10 +235,10 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
                       _buildIntroduction(theme, categoryColor),
                       _buildLectioDivinaSections(theme, categoryColor),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                         child: _buildNavigationButtons(theme, categoryColor),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppSpacing.xl),
                     ],
                   ),
                 ],
@@ -250,6 +251,7 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
   }
 
   Widget _buildLoadingScreen(ThemeData theme) {
+    final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Container(
@@ -266,10 +268,10 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
         ),
         child: Center(
           child: Container(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(AppSpacing.xxxl),
             decoration: BoxDecoration(
               color: theme.cardColor.withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               boxShadow: [
                 BoxShadow(
                   color: theme.shadowColor.withValues(alpha: 0.1),
@@ -287,14 +289,14 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
                   ),
                   strokeWidth: 3,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.xl),
                 Text(
                   tr('loading_mystery'),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
                   tr('preparing_spiritual_journey'),
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -311,12 +313,13 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
   }
 
   Widget _buildErrorScreen(ThemeData theme) {
+    final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(title: Text(tr('mystery_not_found'))),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.xxl),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -325,7 +328,7 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
                 size: 80,
                 color: theme.colorScheme.error,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xl),
               Text(
                 tr('mystery_not_found'),
                 style: theme.textTheme.headlineSmall?.copyWith(
@@ -334,7 +337,7 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 _error ?? tr('requested_mystery_not_found'),
                 style: theme.textTheme.bodyLarge?.copyWith(
@@ -342,7 +345,7 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxxl),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -351,7 +354,7 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
                     icon: const Icon(Icons.arrow_back_rounded),
                     label: Text(tr('back_to_category')),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.lg),
                   OutlinedButton.icon(
                     onPressed: _loadDecade,
                     icon: const Icon(Icons.refresh_rounded),
@@ -371,6 +374,7 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
     RosaryCategoryInfo categoryInfo,
     Color categoryColor,
   ) {
+    final theme = Theme.of(context);
     return SliverAppBar(
       expandedHeight: 300,
       floating: false,
@@ -414,15 +418,15 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
             ),
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.all(AppSpacing.xxl),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(AppSpacing.lg),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
                       ),
                       child: Icon(
                         categoryInfo.icon,
@@ -430,7 +434,7 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                     Text(
                       _decade!.title,
                       style: theme.textTheme.headlineMedium?.copyWith(
@@ -439,7 +443,7 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                     Text(
                       '${categoryInfo.name} · ${widget.decadeOrder}/5',
                       style: theme.textTheme.titleMedium?.copyWith(
@@ -490,15 +494,16 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
   // }
 
   Widget _buildBiblicalText(ThemeData theme, Color categoryColor) {
+    final theme = Theme.of(context);
     return SizedBox(
       width: double.infinity,
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        elevation: 2,
+        margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.lg),
+        elevation: AppElevation.medium,
         color: theme.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -509,7 +514,7 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
                   color: AppColors.primary,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Html(
                 data: _decade!.biblicalText,
                 style: {
@@ -529,15 +534,16 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
   }
 
   Widget _buildIntroduction(ThemeData theme, Color categoryColor) {
+    final theme = Theme.of(context);
     return SizedBox(
       width: double.infinity,
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        elevation: 2,
+        margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.lg),
+        elevation: AppElevation.medium,
         color: theme.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -548,7 +554,7 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
                   color: AppColors.primary,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Html(
                 data: _decade!.introduction,
                 style: {
@@ -634,15 +640,16 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
     Map<String, dynamic> sectionInfo,
     String content,
   ) {
+    final theme = Theme.of(context);
     return SizedBox(
       width: double.infinity,
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        elevation: 2,
+        margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.lg),
+        elevation: AppElevation.medium,
         color: theme.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -663,7 +670,7 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
                   ),
                 ),
               ],
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Html(
                 data: content,
                 style: {
@@ -684,7 +691,7 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
     return Container(
       decoration: BoxDecoration(
         color: theme.cardColor.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         boxShadow: [
           BoxShadow(
             color: theme.shadowColor.withValues(alpha: 0.1),
@@ -693,7 +700,7 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
           ),
         ],
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl, vertical: AppSpacing.lg),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [

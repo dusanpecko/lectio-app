@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'note_detail_screen.dart';
+import '../shared/app_spacing.dart';
 
 class NotesListScreen extends StatefulWidget {
   const NotesListScreen({super.key});
@@ -89,7 +90,7 @@ class _NotesListScreenState extends State<NotesListScreen>
             content: Row(
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Text(tr('note_deleted')),
               ],
             ),
@@ -144,12 +145,12 @@ class _NotesListScreenState extends State<NotesListScreen>
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32.0),
+        padding: const EdgeInsets.all(AppSpacing.xxxl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppSpacing.xxl),
               decoration: BoxDecoration(
                 color: Theme.of(
                   context,
@@ -164,7 +165,7 @@ class _NotesListScreenState extends State<NotesListScreen>
                 ).colorScheme.primary.withValues(alpha: 0.6),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
             Text(
               searchQuery.isEmpty
                   ? tr('no_notes')
@@ -177,7 +178,7 @@ class _NotesListScreenState extends State<NotesListScreen>
               textAlign: TextAlign.center,
             ),
             if (searchQuery.isEmpty) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 'Začnite písaním svojej prvej poznámky',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -196,9 +197,9 @@ class _NotesListScreenState extends State<NotesListScreen>
 
   Widget _buildSearchBar() {
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         boxShadow: [
           BoxShadow(
             color: Theme.of(context).shadowColor.withValues(alpha: 0.1),
@@ -226,11 +227,11 @@ class _NotesListScreenState extends State<NotesListScreen>
           filled: true,
           fillColor: Theme.of(context).colorScheme.surface,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
             borderSide: BorderSide.none,
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
             borderSide: BorderSide(
               color: Theme.of(context).colorScheme.primary,
               width: 2,
@@ -254,12 +255,12 @@ class _NotesListScreenState extends State<NotesListScreen>
 
     // Jednoduchšia implementácia bez zložitých animácií
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 6),
       child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: AppElevation.medium,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           onTap: () async {
             await Navigator.push(
               context,
@@ -271,7 +272,7 @@ class _NotesListScreenState extends State<NotesListScreen>
             fetchNotes();
           },
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -302,7 +303,7 @@ class _NotesListScreenState extends State<NotesListScreen>
                             context: context,
                             builder: (context) => AlertDialog(
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(AppRadius.lg),
                               ),
                               title: Row(
                                 children: [
@@ -310,7 +311,7 @@ class _NotesListScreenState extends State<NotesListScreen>
                                     Icons.warning_amber_rounded,
                                     color: Theme.of(context).colorScheme.error,
                                   ),
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: AppSpacing.sm),
                                   Text(tr('delete_note')),
                                 ],
                               ),
@@ -348,7 +349,7 @@ class _NotesListScreenState extends State<NotesListScreen>
                                 Icons.delete_outline,
                                 color: Theme.of(context).colorScheme.error,
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: AppSpacing.sm),
                               Text(tr('delete_note')),
                             ],
                           ),
@@ -358,7 +359,7 @@ class _NotesListScreenState extends State<NotesListScreen>
                   ],
                 ),
                 if (content.isNotEmpty) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     content.length > 100
                         ? '${content.substring(0, 100)}...'
@@ -374,7 +375,7 @@ class _NotesListScreenState extends State<NotesListScreen>
                   ),
                 ],
                 if (bibleReference != null && bibleReference.isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -384,7 +385,7 @@ class _NotesListScreenState extends State<NotesListScreen>
                       color: Theme.of(
                         context,
                       ).colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
                       border: Border.all(
                         color: Theme.of(
                           context,
@@ -417,7 +418,7 @@ class _NotesListScreenState extends State<NotesListScreen>
                   ),
                 ],
                 if (createdAt != null) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   Row(
                     children: [
                       Icon(
@@ -427,7 +428,7 @@ class _NotesListScreenState extends State<NotesListScreen>
                           context,
                         ).colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: AppSpacing.xs),
                       Text(
                         "${tr('created_at')}: ${formatDate(createdAt)}",
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -452,7 +453,7 @@ class _NotesListScreenState extends State<NotesListScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(tr('notes_title')),
-        elevation: 0,
+        elevation: AppElevation.none,
         actions: [
           if (notes.isNotEmpty)
             IconButton(
@@ -500,7 +501,7 @@ class _NotesListScreenState extends State<NotesListScreen>
         tooltip: tr('add_note'),
         icon: const Icon(Icons.add_rounded),
         label: Text(tr('add_note')),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
       ),
     );
   }

@@ -29,6 +29,7 @@ import '../widgets/lectio_section_card.dart';
 import '../widgets/lectio_speed_dial_fab.dart';
 import '../widgets/prayer_focus_indicator.dart';
 import 'note_detail_screen.dart';
+import '../shared/app_spacing.dart';
 
 class LectioScreen extends StatefulWidget {
   const LectioScreen({
@@ -658,30 +659,30 @@ class _LectioScreenState extends State<LectioScreen> {
       builder: (context) => Container(
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
         ),
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               width: 40,
               height: 4,
-              margin: const EdgeInsets.only(bottom: 20),
+              margin: const EdgeInsets.only(bottom: AppSpacing.xl),
               decoration: BoxDecoration(
                 color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             Icon(Icons.download_rounded, size: 48, color: AppColors.primary),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               tr('offline.download_for_offline'),
               style: Theme.of(
                 context,
               ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               tr('offline.download_description'),
               textAlign: TextAlign.center,
@@ -689,7 +690,7 @@ class _LectioScreenState extends State<LectioScreen> {
                 context,
               ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
 
             // Stiahnutie textov
             SizedBox(
@@ -704,14 +705,14 @@ class _LectioScreenState extends State<LectioScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
 
             // Stiahnutie audio pre dnešok
             SizedBox(
@@ -728,14 +729,14 @@ class _LectioScreenState extends State<LectioScreen> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
                   side: BorderSide(color: AppColors.primary),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
 
             // Stiahnutie textov + audio
             SizedBox(
@@ -750,19 +751,19 @@ class _LectioScreenState extends State<LectioScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green.shade600,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             // Správa úložiska
             if (_audioDownloadService.downloadedFilesCount > 0)
               Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -771,14 +772,14 @@ class _LectioScreenState extends State<LectioScreen> {
                       size: 16,
                       color: Colors.grey[500],
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: AppSpacing.xs),
                     Text(
                       '${_audioDownloadService.downloadedFilesCount} ${tr('offline.files')} • ${_audioDownloadService.formattedStorageSize}',
                       style: Theme.of(
                         context,
                       ).textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                     GestureDetector(
                       onTap: () {
                         Navigator.pop(context);
@@ -855,9 +856,9 @@ class _LectioScreenState extends State<LectioScreen> {
             content: Text(tr('offline.audio_download_error')),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
+            margin: const EdgeInsets.all(AppSpacing.lg),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
           ),
         );
@@ -942,9 +943,9 @@ class _LectioScreenState extends State<LectioScreen> {
             content: Text(tr('offline.audio_download_error')),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
+            margin: const EdgeInsets.all(AppSpacing.lg),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
           ),
         );
@@ -1062,9 +1063,9 @@ class _LectioScreenState extends State<LectioScreen> {
             content: Text(tr('offline.download_error')),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
+            margin: const EdgeInsets.all(AppSpacing.lg),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
           ),
         );
@@ -2246,7 +2247,7 @@ class _LectioScreenState extends State<LectioScreen> {
                 slivers: [
                   // Hero SliverAppBar s obrázkom
                   SliverAppBar(
-                    expandedHeight: 250,
+                    expandedHeight: 300,
                     floating: false,
                     pinned: true,
                     centerTitle:
@@ -2265,18 +2266,14 @@ class _LectioScreenState extends State<LectioScreen> {
                             opacity: isDndActive ? 1.0 : 0.0,
                             duration: const Duration(milliseconds: 300),
                             child: Container(
-                              margin: const EdgeInsets.only(
-                                right: 8,
-                                top: 8,
-                                bottom: 8,
-                              ),
+                              margin: const EdgeInsets.only(right: AppSpacing.sm, top: AppSpacing.sm, bottom: AppSpacing.sm),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(AppRadius.xl),
                                 border: Border.all(
                                   color: Colors.white.withValues(alpha: 0.3),
                                   width: 1,
@@ -2293,9 +2290,8 @@ class _LectioScreenState extends State<LectioScreen> {
                                   const SizedBox(width: 6),
                                   Text(
                                     tr('do_not_disturb_active'),
-                                    style: const TextStyle(
+                                    style: theme.textTheme.bodySmall!.copyWith(
                                       color: Colors.white,
-                                      fontSize: 12,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -2308,11 +2304,11 @@ class _LectioScreenState extends State<LectioScreen> {
                       // Offline Status Indicator - úplne vpravo
                       if (_isOffline)
                         Padding(
-                          padding: const EdgeInsets.only(right: 16),
+                          padding: const EdgeInsets.only(right: AppSpacing.lg),
                           child: Tooltip(
                             message: tr('offline.offline_mode'),
                             child: Container(
-                              padding: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.all(AppSpacing.sm),
                               decoration: BoxDecoration(
                                 color: Colors.orange.shade700,
                                 shape: BoxShape.circle,
@@ -2342,13 +2338,12 @@ class _LectioScreenState extends State<LectioScreen> {
                       ), // Viac priestoru pre centrálne zarovnanie
                       title: Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
                         child: Text(
                           "Lectio Divina",
-                          style: const TextStyle(
+                          style: theme.textTheme.titleMedium!.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
                             shadows: [
                               Shadow(
                                 color: Colors.black26,
@@ -2365,7 +2360,7 @@ class _LectioScreenState extends State<LectioScreen> {
                       background: Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [AppColors.primary, Color(0xFF6B73A8)],
+                            colors: [AppColors.primary, AppColors.primaryLight],
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                           ),
@@ -2388,7 +2383,7 @@ class _LectioScreenState extends State<LectioScreen> {
                                   gradient: LinearGradient(
                                     colors: [
                                       Colors.transparent,
-                                      Color(0x4D4A5085),
+                                      AppColors.primaryOverlay,
                                       AppColors.primary,
                                     ],
                                     begin: Alignment.topCenter,
@@ -2408,16 +2403,15 @@ class _LectioScreenState extends State<LectioScreen> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.9),
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(AppRadius.xl),
                                   border: Border.all(
                                     color: Colors.white.withValues(alpha: 0.3),
                                   ),
                                 ),
                                 child: Text(
                                   formattedDate,
-                                  style: const TextStyle(
+                                  style: theme.textTheme.bodyMedium!.copyWith(
                                     color: AppColors.primary,
-                                    fontSize: 14,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -2439,7 +2433,7 @@ class _LectioScreenState extends State<LectioScreen> {
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: theme.cardColor.withValues(alpha: 0.9),
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
                           boxShadow: [
                             BoxShadow(
                               color: theme.shadowColor.withValues(alpha: 0.07),
@@ -2482,7 +2476,7 @@ class _LectioScreenState extends State<LectioScreen> {
                                     color: AppColors.primary.withValues(
                                       alpha: 0.1,
                                     ),
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppRadius.md),
                                   ),
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -2492,7 +2486,7 @@ class _LectioScreenState extends State<LectioScreen> {
                                         size: 20,
                                         color: AppColors.primary,
                                       ),
-                                      const SizedBox(width: 8),
+                                      const SizedBox(width: AppSpacing.sm),
                                       Text(
                                         formattedDate,
                                         style: theme.textTheme.titleMedium
@@ -2583,7 +2577,7 @@ class _LectioScreenState extends State<LectioScreen> {
                                     size: 64,
                                     color: Colors.grey.shade400,
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: AppSpacing.lg),
                                   Text(
                                     tr("lectio_not_available"),
                                     style: theme.textTheme.titleMedium
@@ -2599,7 +2593,7 @@ class _LectioScreenState extends State<LectioScreen> {
                               // Title and Bible Reference
                               if ((lectioData?['hlava'] ?? '').isNotEmpty)
                                 Padding(
-                                  padding: const EdgeInsets.only(top: 16.0),
+                                  padding: const EdgeInsets.only(top: AppSpacing.lg),
                                   child: Center(
                                     child: Text(
                                       lectioData?['hlava'] ?? '',
@@ -2615,10 +2609,7 @@ class _LectioScreenState extends State<LectioScreen> {
                               if ((lectioData?['suradnice_pismo'] ?? '')
                                   .isNotEmpty)
                                 Padding(
-                                  padding: const EdgeInsets.only(
-                                    top: 4,
-                                    bottom: 8,
-                                  ),
+                                  padding: const EdgeInsets.only(top: AppSpacing.xs, bottom: AppSpacing.sm),
                                   child: Center(
                                     child: Text(
                                       lectioData?['suradnice_pismo'] ?? '',
@@ -2685,7 +2676,7 @@ class _LectioScreenState extends State<LectioScreen> {
       ), // GestureDetector
       // Floating Action Button Menu
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 20),
+        padding: const EdgeInsets.only(bottom: AppSpacing.xl),
         child: LectioSpeedDialFAB(
           onAddNote: Supabase.instance.client.auth.currentUser != null
               ? _handleAddNote

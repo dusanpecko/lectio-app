@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../shared/app_spacing.dart';
 
 class SliderDetailScreen extends StatelessWidget {
   final Map<String, dynamic> data;
@@ -10,6 +11,7 @@ class SliderDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final imageUrl = data['image_url_2'] ?? data['image_url'];
     final descriptions =
         List.generate(6, (index) => data['description_${index + 1}'])
@@ -32,15 +34,15 @@ class SliderDetailScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(tr('detail'))),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (imageUrl != null && imageUrl.toString().isNotEmpty)
               Container(
-                margin: const EdgeInsets.all(16),
+                margin: const EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withAlpha(50),
@@ -83,10 +85,10 @@ class SliderDetailScreen extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardColor.withAlpha(180),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(color: Colors.black12),
                   ),
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   child: Html(
                     data: _convertImageLinks(desc.toString()),
                     style: {
@@ -102,7 +104,7 @@ class SliderDetailScreen extends StatelessWidget {
                         builder: (context) {
                           final src = context.attributes['src'] ?? '';
                           return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                             child: CachedNetworkImage(
                               imageUrl: src,
                               placeholder: (context, url) => const Center(
@@ -119,17 +121,16 @@ class SliderDetailScreen extends StatelessWidget {
                 ),
             if (data['published_at'] != null)
               Padding(
-                padding: const EdgeInsets.only(top: 24),
+                padding: const EdgeInsets.only(top: AppSpacing.xxl),
                 child: Center(
                   child: Text(
                     '${tr('published')}: ${data['published_at'].toString().split('T').first}',
-                    style: TextStyle(
+                    style: theme.textTheme.bodySmall!.copyWith(
                       color:
                           Theme.of(
                             context,
                           ).textTheme.bodySmall?.color?.withAlpha(179) ??
                           Colors.grey,
-                      fontSize: 13,
                     ),
                   ),
                 ),

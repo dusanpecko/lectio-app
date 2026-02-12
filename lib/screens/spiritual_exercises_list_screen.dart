@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/spiritual_exercise.dart';
 import '../shared/app_colors.dart';
 import 'spiritual_exercise_detail_screen.dart';
+import '../shared/app_spacing.dart';
 
 class SpiritualExercisesListScreen extends StatefulWidget {
   const SpiritualExercisesListScreen({super.key});
@@ -123,19 +124,18 @@ class _SpiritualExercisesListScreenState
         slivers: [
           // Hero SliverAppBar
           SliverAppBar(
-            expandedHeight: 280,
+            expandedHeight: 300,
             floating: false,
             pinned: true,
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.fromLTRB(72, 16, 72, 16),
-              title: const Text(
+              title: Text(
                 'Duchovné cvičenia',
-                style: TextStyle(
+                style: theme.textTheme.titleMedium!.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
                   shadows: [
                     Shadow(
                       color: Colors.black26,
@@ -149,7 +149,7 @@ class _SpiritualExercisesListScreenState
               background: Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppColors.primary, Color(0xFF6B73A8)],
+                    colors: [AppColors.primary, AppColors.primaryLight],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
@@ -175,7 +175,7 @@ class _SpiritualExercisesListScreenState
                           gradient: LinearGradient(
                             colors: [
                               Colors.transparent,
-                              Color(0x4D4A5085),
+                              AppColors.primaryOverlay,
                               AppColors.primary,
                             ],
                             begin: Alignment.topCenter,
@@ -191,9 +191,8 @@ class _SpiritualExercisesListScreenState
                       right: 20,
                       child: Text(
                         'Príďte a zažite čas pokoja, modlitby a duchovnej obnovy.',
-                        style: TextStyle(
+                        style: theme.textTheme.titleMedium!.copyWith(
                           color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: 16,
                           height: 1.4,
                         ),
                         textAlign: TextAlign.center,
@@ -208,7 +207,7 @@ class _SpiritualExercisesListScreenState
           // Filter Section
           SliverToBoxAdapter(
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
                 color: theme.cardColor,
                 boxShadow: [
@@ -227,13 +226,15 @@ class _SpiritualExercisesListScreenState
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
@@ -264,7 +265,7 @@ class _SpiritualExercisesListScreenState
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.lg),
                   if (_isLoading)
                     const SizedBox(
                       width: 20,
@@ -292,7 +293,7 @@ class _SpiritualExercisesListScreenState
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CircularProgressIndicator(),
-                    SizedBox(height: 16),
+                    SizedBox(height: AppSpacing.lg),
                     Text('Načítavam duchovné cvičenia...'),
                   ],
                 ),
@@ -302,7 +303,7 @@ class _SpiritualExercisesListScreenState
             SliverFillRemaining(
               child: Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(32),
+                  padding: const EdgeInsets.all(AppSpacing.xxxl),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -311,7 +312,7 @@ class _SpiritualExercisesListScreenState
                         size: 80,
                         color: Colors.grey.shade300,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: AppSpacing.xxl),
                       Text(
                         _selectedLocale != null
                             ? 'Pre zvolený jazyk momentálne nemáme žiadne naplánované duchovné cvičenia.'
@@ -321,7 +322,7 @@ class _SpiritualExercisesListScreenState
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       Text(
                         'Skúste vybrať iný jazyk alebo sa vráťte neskôr.',
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -336,7 +337,7 @@ class _SpiritualExercisesListScreenState
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate((context, index) {
                   final exercise = _exercises[index];
@@ -376,11 +377,13 @@ class _ExerciseCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: AppSpacing.lg),
       clipBehavior: Clip.antiAlias,
-      elevation: 4,
+      elevation: AppElevation.high,
       shadowColor: Colors.black.withValues(alpha: 0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
       child: InkWell(
         onTap: onTap,
         child: Column(
@@ -413,13 +416,12 @@ class _ExerciseCard extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
                     ),
                     child: Text(
                       exercise.locale.nativeName,
-                      style: const TextStyle(
+                      style: theme.textTheme.bodySmall!.copyWith(
                         color: Colors.white,
-                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -430,7 +432,7 @@ class _ExerciseCard extends StatelessWidget {
 
             // Content
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -445,7 +447,7 @@ class _ExerciseCard extends StatelessWidget {
                   ),
 
                   if (exercise.description != null) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                     Text(
                       exercise.description!,
                       style: theme.textTheme.bodyMedium?.copyWith(
@@ -457,23 +459,28 @@ class _ExerciseCard extends StatelessWidget {
                     ),
                   ],
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // Meta info
                   _buildMetaRow(
+                    context,
                     Icons.calendar_today,
                     '${formatDate(exercise.startDate)} - ${formatDate(exercise.endDate)}',
                   ),
-                  const SizedBox(height: 8),
-                  _buildMetaRow(Icons.location_on, exercise.locationDisplay),
+                  const SizedBox(height: AppSpacing.sm),
+                  _buildMetaRow(
+                    context,
+                    Icons.location_on,
+                    exercise.locationDisplay,
+                  ),
                   if (exercise.leaderName != null) ...[
-                    const SizedBox(height: 8),
-                    _buildMetaRow(Icons.person, exercise.leaderName!),
+                    const SizedBox(height: AppSpacing.sm),
+                    _buildMetaRow(context, Icons.person, exercise.leaderName!),
                   ],
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   const Divider(height: 1),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
 
                   // CTA
                   Row(
@@ -485,7 +492,7 @@ class _ExerciseCard extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: AppSpacing.xs),
                       Icon(
                         Icons.arrow_forward,
                         size: 18,
@@ -511,15 +518,18 @@ class _ExerciseCard extends StatelessWidget {
     );
   }
 
-  Widget _buildMetaRow(IconData icon, String text) {
+  Widget _buildMetaRow(BuildContext context, IconData icon, String text) {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Icon(icon, size: 18, color: AppColors.primary),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            style: theme.textTheme.bodyMedium!.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),

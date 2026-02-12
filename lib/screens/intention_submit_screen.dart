@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../shared/app_spacing.dart';
 
 class IntentionSubmitScreen extends StatefulWidget {
   final Map<String, dynamic>? existingIntention;
@@ -186,14 +187,14 @@ class _IntentionSubmitScreenState extends State<IntentionSubmitScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Card(
-          elevation: 4,
+          elevation: AppElevation.high,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(AppSpacing.xl),
             child: Form(
               key: _formKey,
               autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -208,7 +209,7 @@ class _IntentionSubmitScreenState extends State<IntentionSubmitScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.xxl),
 
                   TextFormField(
                     controller: _nameController,
@@ -218,12 +219,12 @@ class _IntentionSubmitScreenState extends State<IntentionSubmitScreen> {
                       filled: true,
                       fillColor: Colors.grey[100],
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                         borderSide: BorderSide.none,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
 
                   TextFormField(
                     controller: _intentionController,
@@ -235,7 +236,7 @@ class _IntentionSubmitScreenState extends State<IntentionSubmitScreen> {
                       filled: true,
                       fillColor: Colors.grey[100],
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                         borderSide: BorderSide.none,
                       ),
                     ),
@@ -243,7 +244,7 @@ class _IntentionSubmitScreenState extends State<IntentionSubmitScreen> {
                         ? tr('intention_required')
                         : null,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
 
                   SwitchListTile(
                     title: Text(tr('publish_intention')),
@@ -252,20 +253,20 @@ class _IntentionSubmitScreenState extends State<IntentionSubmitScreen> {
                   ),
 
                   if (userRole == 'admin') ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                     SwitchListTile(
                       title: Text(tr('approved')),
                       value: approved,
                       onChanged: (val) => setState(() => approved = val),
                     ),
                   ],
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.xxl),
 
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                     ),
                     icon: AnimatedSwitcher(

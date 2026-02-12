@@ -39,12 +39,6 @@ void main() {
     ).thenReturn(mockAudioHandler);
     when(() => mockBackgroundAudioManager.isInitialized).thenReturn(true);
 
-    // Setup streams
-    // Pozor: BackgroundAudioManager.playbackStateStream je Stream<PlaybackState>
-    when(
-      () => mockBackgroundAudioManager.playbackStateStream,
-    ).thenAnswer((_) => playbackStateSubject.stream);
-
     // Ale LectioAudioHandler.mediaItem je BehaviorSubject<MediaItem?>
     when(() => mockAudioHandler.mediaItem).thenAnswer((_) => mediaItemSubject);
 
@@ -82,7 +76,7 @@ void main() {
     await audioController.initialize();
 
     // Assert
-    verify(() => mockBackgroundAudioManager.playbackStateStream).called(1);
+    verify(() => mockBackgroundAudioManager.initialize()).called(1);
     // Note: audioHandler access depends on initialization check order
   });
 

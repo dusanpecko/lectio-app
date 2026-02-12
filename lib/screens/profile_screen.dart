@@ -17,6 +17,7 @@ import '../shared/app_colors.dart';
 import '../utils/app_logger.dart';
 import 'notification_settings_screen.dart';
 import 'spiritual_exercise_detail_screen.dart';
+import '../shared/app_spacing.dart';
 
 // Data models
 class Subscription {
@@ -693,7 +694,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ? 'profile.password2.current_required'.tr()
                           : null,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                     TextFormField(
                       controller: newPassCtrl,
                       obscureText: true,
@@ -710,7 +711,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                     TextFormField(
                       controller: confirmPassCtrl,
                       obscureText: true,
@@ -722,7 +723,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           : null,
                     ),
                     if (error != null) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.md),
                       Text(
                         error!,
                         style: TextStyle(color: theme.colorScheme.error),
@@ -1066,7 +1067,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       // Zavolaj backend API endpoint pre vymazanie účtu
       final backendUrl =
-          dotenv.env['NEXT_PUBLIC_BACKEND_URL'] ?? 'https://lectio.one';
+          dotenv.env['NEXT_PUBLIC_BACKEND_URL'] ?? 'https://www.lectio.one';
 
       final response = await http.delete(
         Uri.parse('$backendUrl/api/user/delete-account'),
@@ -1154,52 +1155,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
           : Form(
               key: _formKey,
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 children: [
                   // Avatar Card
                   _buildAvatarCard(theme),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // Profile Info Card
                   _buildProfileInfoCard(theme),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // Action Buttons Card
                   _buildActionButtonsCard(theme),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // Billing Info Section
                   _buildBillingInfoSection(theme),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // My Subscriptions (expandable)
                   if (_subscriptions.isNotEmpty) ...[
                     _buildSubscriptionsCard(theme),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
 
                   // My Donations (expandable)
                   if (_donations.isNotEmpty) ...[
                     _buildDonationsCard(theme),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
 
                   // Spiritual Exercise Registrations
                   if (_exerciseRegistrations.isNotEmpty) ...[
                     _buildExerciseRegistrationsCard(theme),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
 
                   // Bank Payments (expandable)
                   if (_bankPayments.isNotEmpty) ...[
                     _buildBankPaymentsCard(theme),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
 
                   // Payment History (expandable)
                   if (_paymentHistory.isNotEmpty) ...[
                     _buildPaymentHistoryCard(theme),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
 
                   // Save Button
@@ -1210,10 +1211,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.colorScheme.primary,
                         foregroundColor: theme.colorScheme.onPrimary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.lg,
+                        ),
                         textStyle: const TextStyle(fontWeight: FontWeight.w600),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                       ),
                       child: _isSaving
@@ -1228,7 +1231,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           : Text('profile.button.save_changes'.tr()),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // Delete Account Button
                   OutlinedButton.icon(
@@ -1240,7 +1243,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       foregroundColor: Colors.red,
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: AppSpacing.xxxl),
                 ],
               ),
             ),
@@ -1249,10 +1252,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildAvatarCard(ThemeData theme) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      elevation: AppElevation.medium,
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           children: [
             GestureDetector(
@@ -1290,7 +1295,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(AppSpacing.xs),
                         child: Container(
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
@@ -1323,7 +1328,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             TextButton.icon(
               onPressed: _isUploading ? null : showAvatarPicker,
               icon: const Icon(Icons.photo_camera, size: 18),
@@ -1336,11 +1341,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileInfoCard(ThemeData theme) {
+    final theme = Theme.of(context);
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      elevation: AppElevation.medium,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           children: [
             TextFormField(
@@ -1349,7 +1357,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 labelText: 'profile.field.fullname'.tr(),
                 prefixIcon: const Icon(Icons.person),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 filled: true,
                 fillColor: theme.colorScheme.surface,
@@ -1358,7 +1366,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ? 'profile.field.fullname_required'.tr()
                   : null,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             ListTile(
               leading: Icon(Icons.email, color: theme.colorScheme.primary),
               title: Text('profile.field.email'.tr()),
@@ -1399,16 +1407,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Text(
                       _variableSymbol!,
-                      style: const TextStyle(
+                      style: theme.textTheme.titleMedium!.copyWith(
                         fontFamily: 'monospace',
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
                       ),
                     ),
                     Text(
                       'profile.field.variable_symbol_hint'.tr(),
-                      style: TextStyle(
-                        fontSize: 11,
+                      style: theme.textTheme.labelSmall!.copyWith(
                         color: Colors.grey.shade600,
                       ),
                     ),
@@ -1429,9 +1435,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       : _subscriptions.any((s) => s.tier == 'patron')
                       ? '💎 ${'profile.tier.patron'.tr()}'
                       : '❤️ ${'profile.tier.friend'.tr()}',
-                  style: const TextStyle(
+                  style: theme.textTheme.bodyLarge!.copyWith(
                     fontWeight: FontWeight.w600,
-                    fontSize: 15,
                   ),
                 ),
                 trailing: Container(
@@ -1445,7 +1450,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         : _subscriptions.any((s) => s.tier == 'patron')
                         ? Colors.blue.shade600
                         : Colors.red.shade500,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Text(
                     _subscriptions.any((s) => s.tier == 'founder')
@@ -1453,10 +1458,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         : _subscriptions.any((s) => s.tier == 'patron')
                         ? 'profile.tier_badge.patron'.tr()
                         : 'profile.tier_badge.friend'.tr(),
-                    style: const TextStyle(
+                    style: theme.textTheme.labelSmall!.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 10,
                     ),
                   ),
                 ),
@@ -1471,10 +1475,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildActionButtonsCard(ThemeData theme) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      elevation: AppElevation.medium,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           children: [
             ListTile(
@@ -1517,15 +1523,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildSubscriptionsCard(ThemeData theme) {
+    final theme = Theme.of(context);
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      elevation: AppElevation.medium,
       child: ExpansionTile(
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
             color: Colors.purple.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: const Icon(Icons.credit_card, color: Colors.purple, size: 20),
         ),
@@ -1546,11 +1555,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildSubscriptionItem(ThemeData theme, Subscription sub) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: Column(
@@ -1566,44 +1576,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xs,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.green.shade100,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Text(
                   'profile.subscription.active'.tr(),
-                  style: TextStyle(
+                  style: theme.textTheme.bodySmall!.copyWith(
                     color: Colors.green.shade800,
-                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             '€${sub.amount.toStringAsFixed(2)}/${sub.interval == 'month' ? 'profile.subscription.monthly'.tr() : 'profile.subscription.yearly'.tr()}',
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleLarge!.copyWith( fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             '${'profile.subscription.next_payment'.tr()}: ${DateFormat('dd.MM.yyyy').format(sub.currentPeriodEnd)}',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+            style: theme.textTheme.bodySmall!.copyWith( color: Colors.grey.shade600),
           ),
           if (sub.cancelAtPeriodEnd) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
                 color: Colors.yellow.shade50,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 border: Border.all(color: Colors.yellow.shade200),
               ),
               child: Text(
                 '${'profile.subscription.cancels_on'.tr()} ${DateFormat('dd.MM.yyyy').format(sub.currentPeriodEnd)}',
-                style: TextStyle(fontSize: 12, color: Colors.yellow.shade800),
+                style: theme.textTheme.bodySmall!.copyWith( color: Colors.yellow.shade800),
               ),
             ),
           ],
@@ -1613,15 +1625,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildDonationsCard(ThemeData theme) {
+    final theme = Theme.of(context);
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      elevation: AppElevation.medium,
       child: ExpansionTile(
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
             color: Colors.red.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: const Icon(Icons.favorite, color: Colors.red, size: 20),
         ),
@@ -1642,11 +1657,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildDonationItem(ThemeData theme, Donation donation) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: Row(
@@ -1661,14 +1677,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   DateFormat('dd.MM.yyyy').format(donation.createdAt),
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  style: theme.textTheme.bodySmall!.copyWith( color: Colors.grey.shade600),
                 ),
                 if (donation.message != null &&
                     donation.message!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     '"${donation.message}"',
                     style: TextStyle(
@@ -1687,15 +1703,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildExerciseRegistrationsCard(ThemeData theme) {
+    final theme = Theme.of(context);
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      elevation: AppElevation.medium,
       child: ExpansionTile(
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
             color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: const Icon(Icons.church, color: AppColors.primary, size: 20),
         ),
@@ -1717,6 +1736,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ThemeData theme,
     SpiritualExerciseRegistration reg,
   ) {
+    final theme = Theme.of(context);
     final exercise = reg.spiritualExercise;
     final startDate = exercise['start_date'] != null
         ? DateTime.parse(exercise['start_date'])
@@ -1758,10 +1778,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: AppSpacing.md),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
           boxShadow: [
             BoxShadow(
@@ -1801,7 +1821,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1822,20 +1842,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: statusColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         child: Text(
                           statusText,
-                          style: TextStyle(
+                          style: theme.textTheme.bodySmall!.copyWith(
                             color: statusColor,
-                            fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   if (startDate != null && endDate != null)
                     Row(
                       children: [
@@ -1847,15 +1866,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(width: 6),
                         Text(
                           '${DateFormat('dd.MM.yyyy').format(startDate)} - ${DateFormat('dd.MM.yyyy').format(endDate)}',
-                          style: TextStyle(
-                            fontSize: 13,
+                          style: theme.textTheme.bodySmall!.copyWith(
                             color: Colors.grey.shade600,
                           ),
                         ),
                       ],
                     ),
                   if (exercise['location_name'] != null) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Row(
                       children: [
                         Icon(
@@ -1866,18 +1884,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(width: 6),
                         Text(
                           '${exercise['location_name']}${exercise['location_city'] != null ? ', ${exercise['location_city']}' : ''}',
-                          style: TextStyle(
-                            fontSize: 13,
+                          style: theme.textTheme.bodySmall!.copyWith(
                             color: Colors.grey.shade600,
                           ),
                         ),
                       ],
                     ),
                   ],
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     '${reg.firstName} ${reg.lastName} • ${reg.roomType}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                    style: theme.textTheme.bodySmall!.copyWith( color: Colors.grey.shade500),
                   ),
                 ],
               ),
@@ -1900,11 +1917,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Billing Info Section Widget
   Widget _buildBillingInfoSection(ThemeData theme) {
+    final theme = Theme.of(context);
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      elevation: AppElevation.medium,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1925,7 +1945,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             if (_editingBilling) ...[
               // Edit mode
@@ -1933,58 +1953,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 'profile.billing.company_name'.tr(),
                 style: theme.textTheme.titleSmall,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               TextFormField(
                 controller: _companyNameCtrl,
                 decoration: InputDecoration(
                   hintText: 'profile.billing.company_name'.tr(),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   filled: true,
                   fillColor: theme.colorScheme.surface,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               TextFormField(
                 controller: _icoCtrl,
                 decoration: InputDecoration(
                   labelText: 'profile.billing.ico'.tr(),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   filled: true,
                   fillColor: theme.colorScheme.surface,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               TextFormField(
                 controller: _dicCtrl,
                 decoration: InputDecoration(
                   labelText: 'profile.billing.dic'.tr(),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   filled: true,
                   fillColor: theme.colorScheme.surface,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               TextFormField(
                 controller: _ibanCtrl,
                 decoration: InputDecoration(
                   labelText: 'profile.billing.iban'.tr(),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   filled: true,
                   fillColor: theme.colorScheme.surface,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xxl),
 
               // Shipping Address
               Text(
@@ -1993,19 +2013,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               TextFormField(
                 controller: _shippingStreetCtrl,
                 decoration: InputDecoration(
                   labelText: 'profile.billing.street'.tr(),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   filled: true,
                   fillColor: theme.colorScheme.surface,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
 
               Row(
                 children: [
@@ -2015,21 +2035,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       decoration: InputDecoration(
                         labelText: 'profile.billing.city'.tr(),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         filled: true,
                         fillColor: theme.colorScheme.surface,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: TextFormField(
                       controller: _shippingZipCtrl,
                       decoration: InputDecoration(
                         labelText: 'profile.billing.zip'.tr(),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         filled: true,
                         fillColor: theme.colorScheme.surface,
@@ -2038,46 +2058,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
 
               TextFormField(
                 controller: _shippingCountryCtrl,
                 decoration: InputDecoration(
                   labelText: 'profile.billing.country'.tr(),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   filled: true,
                   fillColor: theme.colorScheme.surface,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
 
               TextFormField(
                 controller: _shippingPhoneCtrl,
                 decoration: InputDecoration(
                   labelText: 'profile.billing.phone'.tr(),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   filled: true,
                   fillColor: theme.colorScheme.surface,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
 
               TextFormField(
                 controller: _shippingEmailCtrl,
                 decoration: InputDecoration(
                   labelText: 'profile.billing.email'.tr(),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   filled: true,
                   fillColor: theme.colorScheme.surface,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xxl),
 
               // Billing Address
               Text(
@@ -2086,19 +2106,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               TextFormField(
                 controller: _billingStreetCtrl,
                 decoration: InputDecoration(
                   labelText: 'profile.billing.street'.tr(),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   filled: true,
                   fillColor: theme.colorScheme.surface,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
 
               Row(
                 children: [
@@ -2108,21 +2128,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       decoration: InputDecoration(
                         labelText: 'profile.billing.city'.tr(),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         filled: true,
                         fillColor: theme.colorScheme.surface,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: TextFormField(
                       controller: _billingZipCtrl,
                       decoration: InputDecoration(
                         labelText: 'profile.billing.zip'.tr(),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         filled: true,
                         fillColor: theme.colorScheme.surface,
@@ -2131,46 +2151,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
 
               TextFormField(
                 controller: _billingCountryCtrl,
                 decoration: InputDecoration(
                   labelText: 'profile.billing.country'.tr(),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   filled: true,
                   fillColor: theme.colorScheme.surface,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
 
               TextFormField(
                 controller: _billingPhoneCtrl,
                 decoration: InputDecoration(
                   labelText: 'profile.billing.phone'.tr(),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   filled: true,
                   fillColor: theme.colorScheme.surface,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
 
               TextFormField(
                 controller: _billingEmailCtrl,
                 decoration: InputDecoration(
                   labelText: 'profile.billing.email'.tr(),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   filled: true,
                   fillColor: theme.colorScheme.surface,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xxl),
 
               // Save/Cancel buttons
               Row(
@@ -2183,7 +2203,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Text('profile.button.cancel'.tr()),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: _savingBilling ? null : _saveBillingInfo,
@@ -2220,7 +2240,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     'profile.billing.company_name'.tr(),
                     _billingInfo!.companyName!,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                 ],
                 if (_billingInfo!.ico != null) ...[
                   _buildBillingInfoRow(
@@ -2229,7 +2249,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     'profile.billing.ico'.tr(),
                     _billingInfo!.ico!,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                 ],
                 if (_billingInfo!.dic != null) ...[
                   _buildBillingInfoRow(
@@ -2238,7 +2258,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     'profile.billing.dic'.tr(),
                     _billingInfo!.dic!,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                 ],
                 if (_billingInfo!.iban != null) ...[
                   _buildBillingInfoRow(
@@ -2247,7 +2267,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     'profile.billing.iban'.tr(),
                     _billingInfo!.iban!,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                 ],
                 if (_billingInfo!.shippingAddress != null) ...[
                   _buildBillingInfoRow(
@@ -2256,7 +2276,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     'profile.billing.shipping_address'.tr(),
                     _formatAddress(_billingInfo!.shippingAddress!),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                 ],
                 if (_billingInfo!.billingAddress != null) ...[
                   _buildBillingInfoRow(
@@ -2291,8 +2311,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 12,
+                style: theme.textTheme.bodySmall!.copyWith(
                   color: Colors.grey.shade600,
                   fontWeight: FontWeight.w500,
                 ),
@@ -2312,15 +2331,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Bank Payments Section Widget
   Widget _buildBankPaymentsCard(ThemeData theme) {
+    final theme = Theme.of(context);
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      elevation: AppElevation.medium,
       child: ExpansionTile(
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
             color: Colors.cyan.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: const Icon(
             Icons.account_balance,
@@ -2345,11 +2367,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildBankPaymentItem(ThemeData theme, BankPayment payment) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: Row(
@@ -2382,14 +2405,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 2),
                 Text(
                   DateFormat('dd.MM.yyyy').format(payment.transactionDate),
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: theme.textTheme.bodySmall!.copyWith( color: Colors.grey.shade600),
                 ),
                 if (payment.payerReference != null) ...[
                   const SizedBox(height: 2),
                   Text(
                     'VS: ${payment.payerReference}',
-                    style: TextStyle(
-                      fontSize: 11,
+                    style: theme.textTheme.labelSmall!.copyWith(
                       color: Colors.grey.shade500,
                       fontFamily: 'monospace',
                     ),
@@ -2410,15 +2432,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildPaymentHistoryCard(ThemeData theme) {
+    final theme = Theme.of(context);
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      elevation: AppElevation.medium,
       child: ExpansionTile(
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
             color: Colors.indigo.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: const Icon(Icons.history, color: Colors.indigo, size: 20),
         ),
@@ -2435,7 +2460,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(color: Colors.grey.shade300),
             ),
             child: Column(
@@ -2457,6 +2482,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     PaymentHistoryItem payment,
     bool isLast,
   ) {
+    final theme = Theme.of(context);
     IconData icon;
     Color iconColor;
 
@@ -2479,7 +2505,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
       decoration: BoxDecoration(
         border: isLast
             ? null
@@ -2488,7 +2517,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         children: [
           Icon(icon, size: 20, color: iconColor),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2501,7 +2530,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 Text(
                   DateFormat('dd.MM.yyyy').format(payment.date),
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: theme.textTheme.bodySmall!.copyWith( color: Colors.grey.shade600),
                 ),
               ],
             ),
@@ -2527,12 +2556,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             payment.status == 'succeeded'
                         ? Colors.green.shade100
                         : Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Text(
                     payment.status!,
-                    style: TextStyle(
-                      fontSize: 10,
+                    style: theme.textTheme.labelSmall!.copyWith(
                       color:
                           payment.status == 'active' ||
                               payment.status == 'succeeded'

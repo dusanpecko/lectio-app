@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
 import 'audio_player_models.dart';
+import '../../shared/app_spacing.dart';
 
 class AudioProgressBar extends StatelessWidget {
   final AudioPlayer audioPlayer;
@@ -42,7 +43,7 @@ class AudioProgressBar extends StatelessWidget {
             ),
 
             if (showDuration) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               _buildDurationLabels(context, positionData, theme),
             ],
           ],
@@ -70,9 +71,8 @@ class AudioProgressBar extends StatelessWidget {
         thumbColor: accentColor,
         overlayColor: accentColor.withValues(alpha: 0.2),
         valueIndicatorColor: accentColor,
-        valueIndicatorTextStyle: TextStyle(
+        valueIndicatorTextStyle: theme.textTheme.bodySmall!.copyWith(
           color: theme.colorScheme.onPrimary,
-          fontSize: 12,
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -104,8 +104,9 @@ class AudioProgressBar extends StatelessWidget {
     AudioPositionData positionData,
     ThemeData theme,
   ) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -226,7 +227,7 @@ class AudioProgressBarAdvanced extends StatelessWidget {
               theme,
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
 
             // Duration labels s advanced info
             _buildAdvancedDurationLabels(context, positionData, theme),
@@ -237,6 +238,7 @@ class AudioProgressBarAdvanced extends StatelessWidget {
   }
 
   Widget _buildBufferingIndicator(BuildContext context, ThemeData theme) {
+    final theme = Theme.of(context);
     return StreamBuilder<PlayerState>(
       stream: audioPlayer.playerStateStream,
       builder: (context, snapshot) {
@@ -247,7 +249,7 @@ class AudioProgressBarAdvanced extends StatelessWidget {
         if (!isBuffering) return const SizedBox.shrink();
 
         return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -259,7 +261,7 @@ class AudioProgressBarAdvanced extends StatelessWidget {
                   color: theme.colorScheme.primary,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 'Načítava...',
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -292,9 +294,8 @@ class AudioProgressBarAdvanced extends StatelessWidget {
         thumbColor: accentColor,
         overlayColor: accentColor.withValues(alpha: 0.1),
         valueIndicatorColor: accentColor,
-        valueIndicatorTextStyle: TextStyle(
+        valueIndicatorTextStyle: theme.textTheme.labelSmall!.copyWith(
           color: theme.colorScheme.onPrimary,
-          fontSize: 11,
           fontWeight: FontWeight.w600,
         ),
         showValueIndicator: ShowValueIndicator.onlyForDiscrete,
@@ -327,8 +328,9 @@ class AudioProgressBarAdvanced extends StatelessWidget {
     AudioPositionData positionData,
     ThemeData theme,
   ) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

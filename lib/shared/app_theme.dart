@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
+import 'app_spacing.dart';
 
 class AppTheme {
   static final ThemeData light = ThemeData(
@@ -37,7 +38,7 @@ class AppTheme {
       shadowColor: AppColors.cardShadow,
       elevation: 4,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(16)),
+        borderRadius: BorderRadius.all(Radius.circular(AppRadius.lg)),
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -46,7 +47,7 @@ class AppTheme {
         foregroundColor: AppColors.buttonText,
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(18)),
+          borderRadius: BorderRadius.all(Radius.circular(AppRadius.lg)),
         ),
       ),
     ),
@@ -60,11 +61,11 @@ class AppTheme {
       filled: true,
       fillColor: AppColors.card,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(18)),
+        borderRadius: BorderRadius.all(Radius.circular(AppRadius.lg)),
         borderSide: BorderSide(color: AppColors.primary),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(18)),
+        borderRadius: BorderRadius.all(Radius.circular(AppRadius.lg)),
         borderSide: BorderSide(color: AppColors.primary, width: 2),
       ),
       labelStyle: TextStyle(color: AppColors.primary),
@@ -121,7 +122,7 @@ class AppTheme {
       shadowColor: AppColors.darkCardShadow,
       elevation: 4,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(16)),
+        borderRadius: BorderRadius.all(Radius.circular(AppRadius.lg)),
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -130,7 +131,7 @@ class AppTheme {
         foregroundColor: AppColors.darkButtonText,
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(18)),
+          borderRadius: BorderRadius.all(Radius.circular(AppRadius.lg)),
         ),
       ),
     ),
@@ -144,11 +145,11 @@ class AppTheme {
       filled: true,
       fillColor: AppColors.darkInputFill,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(18)),
+        borderRadius: BorderRadius.all(Radius.circular(AppRadius.lg)),
         borderSide: BorderSide(color: AppColors.darkPrimary),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(18)),
+        borderRadius: BorderRadius.all(Radius.circular(AppRadius.lg)),
         borderSide: BorderSide(color: AppColors.darkPrimary, width: 2),
       ),
       labelStyle: TextStyle(color: Colors.white70),

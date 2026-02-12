@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../shared/app_colors.dart';
+import '../shared/app_spacing.dart';
 
 /// Floating audio player widget - extrahovaný z LectioScreen.
 ///
@@ -201,7 +202,7 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
         width: MediaQuery.of(context).size.width * 0.9,
         decoration: BoxDecoration(
           color: theme.cardColor.withValues(alpha: 0.98),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.2),
@@ -218,29 +219,29 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
 
             // Plný obsah prehrávača
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
                 children: [
                   // Audio Mode Selector
-                  _buildAudioModeSelector(theme),
-                  const SizedBox(height: 12),
+                  _buildAudioModeSelector(context, theme),
+                  const SizedBox(height: AppSpacing.md),
 
                   // Now Playing
-                  _buildNowPlaying(theme, currentTrack),
+                  _buildNowPlaying(context, theme, currentTrack),
 
                   // Controls
                   _buildControls(theme, currentTrackIndex),
 
                   // Progress bar
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   _buildProgressBar(context, theme),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   const Divider(),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
 
                   // Playlist
-                  _buildPlaylist(theme),
+                  _buildPlaylist(context, theme),
                 ],
               ),
             ),
@@ -253,10 +254,13 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
   // ============ Header ============
   Widget _buildHeader(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
       decoration: const BoxDecoration(
         color: AppColors.primary,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -283,7 +287,7 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
                 tooltip: 'Minimalizovať',
                 onPressed: onMinimize,
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.lg),
               // Close button
               IconButton(
                 icon: const Icon(Icons.close, size: 20, color: Colors.white),
@@ -300,20 +304,21 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
   }
 
   // ============ Audio Mode Selector ============
-  Widget _buildAudioModeSelector(ThemeData theme) {
+  Widget _buildAudioModeSelector(BuildContext context, ThemeData theme) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildAudioModeIconButton('none', Icons.music_off, theme),
-        const SizedBox(width: 12),
-        _buildAudioModeIconButton('short', Icons.music_note, theme),
-        const SizedBox(width: 12),
-        _buildAudioModeIconButton('long', Icons.queue_music, theme),
+        _buildAudioModeIconButton(context, 'none', Icons.music_off, theme),
+        const SizedBox(width: AppSpacing.md),
+        _buildAudioModeIconButton(context, 'short', Icons.music_note, theme),
+        const SizedBox(width: AppSpacing.md),
+        _buildAudioModeIconButton(context, 'long', Icons.queue_music, theme),
       ],
     );
   }
 
   Widget _buildAudioModeIconButton(
+    BuildContext context,
     String mode,
     IconData icon,
     ThemeData theme,
@@ -331,7 +336,11 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
           height: 56,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isSelected ? AppColors.primary : Colors.grey.shade200,
+            color: isSelected
+                ? AppColors.primary
+                : (AppColors.isDark(context)
+                      ? AppColors.darkCard
+                      : Colors.grey.shade200),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
@@ -344,7 +353,9 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
           ),
           child: Icon(
             icon,
-            color: isSelected ? Colors.white : Colors.grey.shade600,
+            color: isSelected
+                ? Colors.white
+                : AppColors.adaptiveCardSubtitle(context),
             size: 28,
           ),
         ),
@@ -353,7 +364,12 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
   }
 
   // ============ Now Playing ============
-  Widget _buildNowPlaying(ThemeData theme, Map<String, dynamic>? currentTrack) {
+  Widget _buildNowPlaying(
+    BuildContext context,
+    ThemeData theme,
+    Map<String, dynamic>? currentTrack,
+  ) {
+    final theme = Theme.of(context);
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 400),
       transitionBuilder: (Widget child, Animation<double> animation) {
@@ -397,7 +413,7 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
                         Text(
                           'Práve hrá',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.grey.shade600,
+                            color: AppColors.adaptiveCardSubtitle(context),
                           ),
                         ),
                         Text(
@@ -431,7 +447,7 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
               : Colors.grey.shade400,
           onPressed: onSkipPrevious,
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         Container(
           decoration: BoxDecoration(
             color: AppColors.primary,
@@ -450,7 +466,7 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
             onPressed: onPlayPause,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         IconButton(
           icon: const Icon(Icons.skip_next),
           color: onSkipNext != null ? AppColors.primary : Colors.grey.shade400,
@@ -462,12 +478,13 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
 
   // ============ Progress Bar ============
   Widget _buildProgressBar(BuildContext context, ThemeData theme) {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Text(
           _formatDuration(currentPosition),
           style: theme.textTheme.bodySmall?.copyWith(
-            color: Colors.grey.shade600,
+            color: AppColors.adaptiveCardSubtitle(context),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -510,7 +527,7 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
         Text(
           _formatDuration(totalDuration),
           style: theme.textTheme.bodySmall?.copyWith(
-            color: Colors.grey.shade600,
+            color: AppColors.adaptiveCardSubtitle(context),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -519,14 +536,15 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
   }
 
   // ============ Playlist ============
-  Widget _buildPlaylist(ThemeData theme) {
+  Widget _buildPlaylist(BuildContext context, ThemeData theme) {
+    final theme = Theme.of(context);
     return Column(
       children: [
         Text(
           'Dostupné nahrávky',
           style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
-            color: AppColors.primary,
+            color: AppColors.adaptiveCardTitle(context),
           ),
         ),
         const SizedBox(height: 10),
@@ -542,7 +560,7 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
               final isCurrentTrack = track['key'] == currentAudioSection;
 
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 child: GestureDetector(
                   onTap: () {
                     // Ak už hrá rovnaký track, nerob nič
@@ -565,14 +583,23 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
                               end: Alignment.bottomRight,
                             )
                           : null,
-                      color: isCurrentTrack ? null : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(20),
+                      color: isCurrentTrack
+                          ? null
+                          : (AppColors.isDark(context)
+                                ? AppColors.darkCard
+                                : Colors.grey.shade100),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
                       border: isCurrentTrack
                           ? Border.all(
                               color: AppColors.primary.withValues(alpha: 0.5),
                               width: 2,
                             )
-                          : Border.all(color: Colors.grey.shade300, width: 1),
+                          : Border.all(
+                              color: AppColors.isDark(context)
+                                  ? Colors.grey.shade700
+                                  : Colors.grey.shade300,
+                              width: 1,
+                            ),
                       boxShadow: isCurrentTrack
                           ? [
                               BoxShadow(
@@ -590,7 +617,9 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
                             ],
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
@@ -617,7 +646,7 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
                               size: 24,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: AppSpacing.md),
 
                           // Názov nahrávky + playing indicator
                           Expanded(
@@ -639,12 +668,11 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 if (isCurrentTrack && isPlaying) ...[
-                                  const SizedBox(height: 4),
+                                  const SizedBox(height: AppSpacing.xs),
                                   Text(
                                     'Práve hrá',
-                                    style: theme.textTheme.bodySmall?.copyWith(
+                                    style: theme.textTheme.labelSmall?.copyWith(
                                       color: AppColors.primary,
-                                      fontSize: 11,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -656,7 +684,9 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
                           // Download status ikona
                           if (track['localPath'] != null)
                             Padding(
-                              padding: const EdgeInsets.only(left: 4),
+                              padding: const EdgeInsets.only(
+                                left: AppSpacing.xs,
+                              ),
                               child: Icon(
                                 Icons.offline_pin_rounded,
                                 size: 18,

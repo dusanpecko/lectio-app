@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../shared/app_colors.dart';
+import '../shared/app_spacing.dart';
 
 class LectioSpeedDialFAB extends StatefulWidget {
   final VoidCallback? onAddNote;
@@ -60,6 +62,7 @@ class _LectioSpeedDialFABState extends State<LectioSpeedDialFAB>
   }
 
   void _toggle() {
+    HapticFeedback.mediumImpact();
     setState(() {
       if (_isOpen) {
         _close();
@@ -160,6 +163,7 @@ class _LectioSpeedDialFABState extends State<LectioSpeedDialFAB>
           return AnimatedBuilder(
             animation: _animation,
             builder: (context, child) {
+              final theme = Theme.of(context);
               return Transform.scale(
                 scale: _animation.value,
                 child: Transform.translate(
@@ -167,7 +171,7 @@ class _LectioSpeedDialFABState extends State<LectioSpeedDialFAB>
                   child: Opacity(
                     opacity: _animation.value,
                     child: Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
+                      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -179,7 +183,7 @@ class _LectioSpeedDialFABState extends State<LectioSpeedDialFAB>
                             ),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(AppRadius.xl),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withValues(alpha: 0.1),
@@ -190,14 +194,13 @@ class _LectioSpeedDialFABState extends State<LectioSpeedDialFAB>
                             ),
                             child: Text(
                               action['label'],
-                              style: const TextStyle(
-                                fontSize: 14,
+                              style: theme.textTheme.bodyMedium!.copyWith(
                                 fontWeight: FontWeight.w500,
                                 color: Color(0xFF333333),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: AppSpacing.lg),
                           // Button
                           GestureDetector(
                             onTap: () {

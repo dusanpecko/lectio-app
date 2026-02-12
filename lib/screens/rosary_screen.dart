@@ -7,6 +7,7 @@ import '../services/rosary_service.dart';
 import '../shared/app_colors.dart';
 import '../shared/rosary_constants.dart';
 import 'rosary_category_screen.dart';
+import '../shared/app_spacing.dart';
 
 class RosaryScreen extends StatefulWidget {
   const RosaryScreen({super.key});
@@ -120,15 +121,15 @@ class _RosaryScreenState extends State<RosaryScreen> {
                         ),
                         SafeArea(
                           child: Padding(
-                            padding: const EdgeInsets.all(24.0),
+                            padding: const EdgeInsets.all(AppSpacing.xxl),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.all(AppSpacing.lg),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(AppRadius.xl),
                                   ),
                                   child: const Icon(
                                     Icons.auto_stories_rounded,
@@ -136,7 +137,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                                     color: Colors.white,
                                   ),
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: AppSpacing.lg),
                                 Text(
                                   tr('rosary_main_title'),
                                   style: theme.textTheme.headlineMedium
@@ -146,7 +147,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                                       ),
                                   textAlign: TextAlign.center,
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: AppSpacing.sm),
                                 Text(
                                   tr('rosary_main_subtitle'),
                                   style: theme.textTheme.titleLarge?.copyWith(
@@ -172,6 +173,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
   }
 
   Widget _buildLoadingState(ThemeData theme) {
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -181,7 +183,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
               theme.colorScheme.primary,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Text(
             tr('loading_rosary'),
             style: theme.textTheme.bodyLarge?.copyWith(
@@ -194,9 +196,10 @@ class _RosaryScreenState extends State<RosaryScreen> {
   }
 
   Widget _buildErrorState(ThemeData theme) {
+    final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -205,7 +208,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
               size: 64,
               color: theme.colorScheme.error,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               tr('error_loading_rosary'),
               style: theme.textTheme.titleLarge?.copyWith(
@@ -213,7 +216,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               _error ?? tr('unknown_error'),
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -221,7 +224,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
             ElevatedButton.icon(
               onPressed: _loadData,
               icon: const Icon(Icons.refresh_rounded),
@@ -235,15 +238,15 @@ class _RosaryScreenState extends State<RosaryScreen> {
 
   Widget _buildContentBody(ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           _buildHowToSection(theme),
-          const SizedBox(height: 32),
+          const SizedBox(height: AppSpacing.xxxl),
           _buildCategoriesSection(theme),
-          const SizedBox(height: 32),
+          const SizedBox(height: AppSpacing.xxxl),
           _buildBenefitsSection(theme),
         ],
       ),
@@ -251,11 +254,12 @@ class _RosaryScreenState extends State<RosaryScreen> {
   }
 
   Widget _buildHowToSection(ThemeData theme) {
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: theme.cardColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         boxShadow: [
           BoxShadow(
             color: theme.shadowColor.withValues(alpha: 0.1),
@@ -269,7 +273,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
         children: [
           // Hlavička
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(AppSpacing.xl),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -287,7 +291,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                     gradient: LinearGradient(
                       colors: [AppColors.primary, AppColors.accent],
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: const Icon(
                     Icons.info_rounded,
@@ -295,7 +299,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                     size: 24,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: AppSpacing.lg),
                 Expanded(
                   child: Text(
                     tr('how_to_pray_rosary'),
@@ -317,7 +321,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                 vertical: 4,
               ),
               childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-              leading: const Text('📿', style: TextStyle(fontSize: 24)),
+              leading: Text('📿', style: theme.textTheme.headlineSmall),
               title: Text(
                 tr('traditional_rosary'),
                 style: theme.textTheme.titleMedium?.copyWith(
@@ -348,7 +352,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                 vertical: 4,
               ),
               childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-              leading: const Text('📖', style: TextStyle(fontSize: 24)),
+              leading: Text('📖', style: theme.textTheme.headlineSmall),
               title: Text(
                 tr('lectio_divina_steps'),
                 style: theme.textTheme.titleMedium?.copyWith(
@@ -366,15 +370,16 @@ class _RosaryScreenState extends State<RosaryScreen> {
   }
 
   Widget _buildHowToItem(ThemeData theme, String text) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 6,
             height: 6,
-            margin: const EdgeInsets.only(top: 6, right: 12),
+            margin: const EdgeInsets.only(top: 6, right: AppSpacing.md),
             decoration: BoxDecoration(
               color: theme.colorScheme.primary,
               shape: BoxShape.circle,
@@ -394,15 +399,16 @@ class _RosaryScreenState extends State<RosaryScreen> {
   }
 
   Widget _buildLectioDivinaStep(ThemeData theme, Map<String, dynamic> step) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 8,
             height: 8,
-            margin: const EdgeInsets.only(top: 6, right: 12),
+            margin: const EdgeInsets.only(top: 6, right: AppSpacing.md),
             decoration: BoxDecoration(
               color: RosaryConstants.hexToColor(step['color']),
               shape: BoxShape.circle,
@@ -435,6 +441,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
   }
 
   Widget _buildCategoriesSection(ThemeData theme) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -444,7 +451,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
 
         // Changed from GridView to Column with individual cards
         Column(
@@ -461,7 +468,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
             );
 
             return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: _buildCategoryCard(theme, category, categoryInfo, stats),
             );
           }).toList(),
@@ -483,7 +490,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
       child: Container(
         decoration: BoxDecoration(
           color: theme.cardColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           boxShadow: [
             BoxShadow(
               color: theme.shadowColor.withValues(alpha: 0.1),
@@ -506,13 +513,13 @@ class _RosaryScreenState extends State<RosaryScreen> {
                     colors: [color.withValues(alpha: 0.1), Colors.transparent],
                   ),
                   borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(12),
+                    topRight: Radius.circular(AppRadius.md),
                   ),
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -522,7 +529,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                     height: 56,
                     decoration: BoxDecoration(
                       color: color,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       boxShadow: [
                         BoxShadow(
                           color: color.withValues(alpha: 0.3),
@@ -537,7 +544,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                       size: 28,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // Názov
                   Text(
@@ -549,7 +556,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
 
                   // Popis
                   Text(
@@ -560,7 +567,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // Štatistiky
                   Row(
@@ -573,7 +580,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                             size: 14,
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: AppSpacing.xs),
                           Text(
                             '${stats.totalCount}',
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -590,7 +597,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                               size: 14,
                               color: color,
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: AppSpacing.xs),
                             Text(
                               '${stats.withAudio}',
                               style: theme.textTheme.bodySmall?.copyWith(
@@ -613,6 +620,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
   }
 
   Widget _buildBenefitsSection(ThemeData theme) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -621,7 +629,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
           width: double.infinity,
           decoration: BoxDecoration(
             color: theme.cardColor,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             boxShadow: [
               BoxShadow(
                 color: theme.shadowColor.withValues(alpha: 0.1),
@@ -630,7 +638,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
               ),
             ],
           ),
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -641,7 +649,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                     height: 40,
                     decoration: BoxDecoration(
                       color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: const Icon(
                       Icons.favorite_rounded,
@@ -649,7 +657,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                       size: 20,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Text(
                       tr('spiritual_benefits'),
@@ -660,7 +668,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               _buildBenefitItem(
                 theme,
                 Icons.auto_stories_rounded,
@@ -684,13 +692,13 @@ class _RosaryScreenState extends State<RosaryScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
         // App Features Card
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
             color: theme.cardColor,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             boxShadow: [
               BoxShadow(
                 color: theme.shadowColor.withValues(alpha: 0.1),
@@ -699,7 +707,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
               ),
             ],
           ),
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -710,7 +718,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                     height: 40,
                     decoration: BoxDecoration(
                       color: AppColors.accent,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: const Icon(
                       Icons.phone_android_rounded,
@@ -718,7 +726,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                       size: 20,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Text(
                       tr('app_features'),
@@ -729,7 +737,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               _buildBenefitItem(
                 theme,
                 Icons.headphones_rounded,
@@ -758,13 +766,14 @@ class _RosaryScreenState extends State<RosaryScreen> {
   }
 
   Widget _buildBenefitItem(ThemeData theme, IconData icon, String text) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 16, color: theme.colorScheme.primary),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
               text,

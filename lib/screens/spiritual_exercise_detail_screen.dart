@@ -8,6 +8,7 @@ import '../models/spiritual_exercise.dart';
 import '../shared/app_colors.dart';
 import '../utils/app_logger.dart';
 import 'spiritual_exercise_registration_screen.dart';
+import '../shared/app_spacing.dart';
 
 class SpiritualExerciseDetailScreen extends StatefulWidget {
   final String slug;
@@ -135,7 +136,7 @@ class _SpiritualExerciseDetailScreenState
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               CircularProgressIndicator(),
-              SizedBox(height: 16),
+              SizedBox(height: AppSpacing.lg),
               Text('Načítavam...'),
             ],
           ),
@@ -151,7 +152,7 @@ class _SpiritualExerciseDetailScreenState
         ),
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(AppSpacing.xxxl),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -160,13 +161,13 @@ class _SpiritualExerciseDetailScreenState
                   size: 80,
                   color: Colors.grey.shade400,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xxl),
                 Text(
                   _error ?? 'Duchovné cvičenie sa nenašlo',
                   style: theme.textTheme.titleLarge,
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xxl),
                 TextButton.icon(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.arrow_back),
@@ -205,7 +206,7 @@ class _SpiritualExerciseDetailScreenState
                       errorWidget: (context, url, error) => Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [AppColors.primary, Color(0xFF6B73A8)],
+                            colors: [AppColors.primary, AppColors.primaryLight],
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                           ),
@@ -216,7 +217,7 @@ class _SpiritualExerciseDetailScreenState
                     Container(
                       decoration: const BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [AppColors.primary, Color(0xFF6B73A8)],
+                          colors: [AppColors.primary, AppColors.primaryLight],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                         ),
@@ -247,9 +248,8 @@ class _SpiritualExerciseDetailScreenState
                       children: [
                         Text(
                           exercise.title,
-                          style: const TextStyle(
+                          style: theme.textTheme.headlineSmall!.copyWith(
                             color: Colors.white,
-                            fontSize: 24,
                             fontWeight: FontWeight.bold,
                             shadows: [
                               Shadow(
@@ -262,7 +262,7 @@ class _SpiritualExerciseDetailScreenState
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         // Info chips
                         Wrap(
                           spacing: 8,
@@ -300,7 +300,7 @@ class _SpiritualExerciseDetailScreenState
           // Content
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -319,7 +319,7 @@ class _SpiritualExerciseDetailScreenState
                         },
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
 
                   // Full Description
@@ -337,7 +337,7 @@ class _SpiritualExerciseDetailScreenState
                         },
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
 
                   // Leader Bio
@@ -355,7 +355,9 @@ class _SpiritualExerciseDetailScreenState
                                 Container(
                                   width: 80,
                                   height: 80,
-                                  margin: const EdgeInsets.only(right: 16),
+                                  margin: const EdgeInsets.only(
+                                    right: AppSpacing.lg,
+                                  ),
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(
@@ -383,7 +385,7 @@ class _SpiritualExerciseDetailScreenState
                                             fontWeight: FontWeight.bold,
                                           ),
                                     ),
-                                    const SizedBox(height: 8),
+                                    const SizedBox(height: AppSpacing.sm),
                                     Html(
                                       data: exercise.leaderBio,
                                       style: {
@@ -402,7 +404,7 @@ class _SpiritualExerciseDetailScreenState
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
 
                   // Gallery
@@ -422,7 +424,9 @@ class _SpiritualExerciseDetailScreenState
                               itemBuilder: (context, index) {
                                 final image = exercise.gallery[index];
                                 return ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.md,
+                                  ),
                                   child: CachedNetworkImage(
                                     imageUrl: image.imageUrl,
                                     fit: BoxFit.cover,
@@ -443,7 +447,7 @@ class _SpiritualExerciseDetailScreenState
                             ),
                           ),
                           if (exercise.gallery.length > 1) ...[
-                            const SizedBox(height: 12),
+                            const SizedBox(height: AppSpacing.md),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: List.generate(
@@ -466,7 +470,7 @@ class _SpiritualExerciseDetailScreenState
                           ],
                           if (exercise.gallery[_currentGalleryIndex].caption !=
                               null) ...[
-                            const SizedBox(height: 8),
+                            const SizedBox(height: AppSpacing.sm),
                             Text(
                               exercise.gallery[_currentGalleryIndex].caption!,
                               style: theme.textTheme.bodySmall?.copyWith(
@@ -479,7 +483,7 @@ class _SpiritualExerciseDetailScreenState
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
 
                   // Testimonials
@@ -489,11 +493,13 @@ class _SpiritualExerciseDetailScreenState
                       child: Column(
                         children: exercise.testimonials.map((testimonial) {
                           return Container(
-                            margin: const EdgeInsets.only(bottom: 16),
-                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.only(
+                              bottom: AppSpacing.lg,
+                            ),
+                            padding: const EdgeInsets.all(AppSpacing.lg),
                             decoration: BoxDecoration(
                               color: AppColors.primary.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                               border: Border(
                                 left: BorderSide(
                                   color: AppColors.primary,
@@ -514,7 +520,7 @@ class _SpiritualExerciseDetailScreenState
                                           ),
                                     ),
                                     if (testimonial.rating != null) ...[
-                                      const SizedBox(width: 8),
+                                      const SizedBox(width: AppSpacing.sm),
                                       Row(
                                         children: List.generate(
                                           5,
@@ -530,7 +536,7 @@ class _SpiritualExerciseDetailScreenState
                                     ],
                                   ],
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: AppSpacing.sm),
                                 Text(
                                   '"${testimonial.testimonialText}"',
                                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -544,7 +550,7 @@ class _SpiritualExerciseDetailScreenState
                         }).toList(),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
 
                   // Pricing
@@ -554,8 +560,10 @@ class _SpiritualExerciseDetailScreenState
                       child: Column(
                         children: exercise.pricing.map((price) {
                           return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.only(
+                              bottom: AppSpacing.md,
+                            ),
+                            padding: const EdgeInsets.all(AppSpacing.lg),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
@@ -565,7 +573,7 @@ class _SpiritualExerciseDetailScreenState
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                               border: Border.all(
                                 color: AppColors.primary.withValues(alpha: 0.2),
                               ),
@@ -580,7 +588,7 @@ class _SpiritualExerciseDetailScreenState
                                   ),
                                 ),
                                 if (price.description != null) ...[
-                                  const SizedBox(height: 4),
+                                  const SizedBox(height: AppSpacing.xs),
                                   Text(
                                     price.description!,
                                     style: theme.textTheme.bodySmall?.copyWith(
@@ -588,7 +596,7 @@ class _SpiritualExerciseDetailScreenState
                                     ),
                                   ),
                                 ],
-                                const SizedBox(height: 12),
+                                const SizedBox(height: AppSpacing.md),
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
@@ -636,7 +644,7 @@ class _SpiritualExerciseDetailScreenState
                         }).toList(),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
 
                   // Location Card
@@ -652,11 +660,11 @@ class _SpiritualExerciseDetailScreenState
                           ),
                         ),
                         if (exercise.locationAddress != null) ...[
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSpacing.xs),
                           Text(exercise.locationAddress!),
                         ],
                         if (exercise.locationCity != null) ...[
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSpacing.xs),
                           Text(
                             '${exercise.locationCity}, ${exercise.locationCountry}',
                           ),
@@ -664,7 +672,7 @@ class _SpiritualExerciseDetailScreenState
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // Dates Card
                   _buildSectionCard(
@@ -673,10 +681,10 @@ class _SpiritualExerciseDetailScreenState
                       children: [
                         Expanded(
                           child: Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(AppSpacing.md),
                             decoration: BoxDecoration(
                               color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -687,7 +695,7 @@ class _SpiritualExerciseDetailScreenState
                                     color: Colors.grey.shade600,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: AppSpacing.xs),
                                 Text(
                                   _formatDate(exercise.startDate),
                                   style: theme.textTheme.titleSmall?.copyWith(
@@ -698,13 +706,13 @@ class _SpiritualExerciseDetailScreenState
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(AppSpacing.md),
                             decoration: BoxDecoration(
                               color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -715,7 +723,7 @@ class _SpiritualExerciseDetailScreenState
                                     color: Colors.grey.shade600,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: AppSpacing.xs),
                                 Text(
                                   _formatDate(exercise.endDate),
                                   style: theme.textTheme.titleSmall?.copyWith(
@@ -765,13 +773,17 @@ class _SpiritualExerciseDetailScreenState
   }
 
   Widget _buildInfoChip(IconData icon, String text, {bool isWarning = false}) {
+    final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 6,
+      ),
       decoration: BoxDecoration(
         color: isWarning
             ? Colors.red.withValues(alpha: 0.2)
             : Colors.white.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(
           color: isWarning
               ? Colors.red.withValues(alpha: 0.5)
@@ -785,9 +797,8 @@ class _SpiritualExerciseDetailScreenState
           const SizedBox(width: 6),
           Text(
             text,
-            style: TextStyle(
+            style: theme.textTheme.bodySmall!.copyWith(
               color: Colors.white,
-              fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -797,12 +808,13 @@ class _SpiritualExerciseDetailScreenState
   }
 
   Widget _buildSectionCard({required String title, required Widget child}) {
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -816,13 +828,12 @@ class _SpiritualExerciseDetailScreenState
         children: [
           Text(
             title,
-            style: TextStyle(
-              fontSize: 22,
+            style: theme.textTheme.titleLarge!.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.primary,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           child,
         ],
       ),

@@ -28,6 +28,7 @@ import 'services/fcm_service.dart';
 import 'services/lectio_audio_player.dart';
 import 'services/local_notifications_service.dart';
 import 'services/umami_analytics_service.dart';
+import '../shared/app_spacing.dart';
 
 final _logger = appLogger;
 
@@ -421,7 +422,7 @@ class EnvErrorApp extends StatelessWidget {
           title: const Text('Konfigurácia chýba / Missing config'),
         ),
         body: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(AppSpacing.xxl),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 600),
@@ -429,14 +430,14 @@ class EnvErrorApp extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.error_outline, size: 64),
-                  SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.lg),
                   Text(
                     'Chýba SUPABASE_URL alebo SUPABASE_ANON_KEY v súbore .env.\n'
                     'Doplň tieto kľúče a reštartuj aplikáciu.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 16),
                   ),
-                  SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.lg),
                   Text(
                     '(EN) SUPABASE_URL or SUPABASE_ANON_KEY is missing in .env.\n'
                     'Please add the keys and restart the app.',

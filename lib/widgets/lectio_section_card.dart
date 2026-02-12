@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../shared/app_colors.dart';
+import '../shared/app_spacing.dart';
 
 /// Widget pre zobrazenie jednej sekcie Lectio Divina
 /// (Lectio, Meditatio, Oratio, Contemplatio, Actio)
@@ -27,12 +28,12 @@ class LectioSectionCard extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        elevation: 2,
+        margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.lg),
+        elevation: AppElevation.medium,
         color: theme.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -55,7 +56,7 @@ class LectioSectionCard extends StatelessWidget {
                 ),
               ],
               if (text.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
                   text,
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -65,7 +66,7 @@ class LectioSectionCard extends StatelessWidget {
                 ),
               ],
               if (reference != null && reference!.isNotEmpty) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -73,7 +74,7 @@ class LectioSectionCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Text(
                     reference!,

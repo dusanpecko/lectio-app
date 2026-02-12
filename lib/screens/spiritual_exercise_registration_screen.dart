@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/spiritual_exercise.dart';
 import '../shared/app_colors.dart';
 import '../utils/app_logger.dart';
+import '../shared/app_spacing.dart';
 
 class SpiritualExerciseRegistrationScreen extends StatefulWidget {
   final String exerciseSlug;
@@ -246,7 +247,7 @@ class _SpiritualExerciseRegistrationScreenState
         title: Row(
           children: [
             const Icon(Icons.check_circle, color: Colors.green, size: 28),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             Text(tr('registration_success_title')),
           ],
         ),
@@ -360,24 +361,25 @@ class _SpiritualExerciseRegistrationScreenState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(tr('registration_title')),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        elevation: 0,
+        elevation: AppElevation.none,
       ),
       body: Form(
         key: _formKey,
         child: ListView(
           controller: _scrollController,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
             // Exercise header with image
             Container(
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               clipBehavior: Clip.antiAlias,
               child: Column(
@@ -409,11 +411,10 @@ class _SpiritualExerciseRegistrationScreenState
                       ),
                     ),
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     child: Text(
                       widget.exerciseTitle,
-                      style: const TextStyle(
-                        fontSize: 18,
+                      style: theme.textTheme.titleMedium!.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
                       ),
@@ -424,18 +425,18 @@ class _SpiritualExerciseRegistrationScreenState
             ),
 
             if (_serverError != null) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
                   color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(color: Colors.red.shade300),
                 ),
                 child: Row(
                   children: [
                     Icon(Icons.error_outline, color: Colors.red.shade700),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
                         _serverError!,
@@ -447,14 +448,14 @@ class _SpiritualExerciseRegistrationScreenState
               ),
             ],
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
 
             // Section: Contact Information
             _buildSectionHeader(
               icon: Icons.person,
               title: tr('registration_contact_info'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             _buildTextField(
               label: tr('first_name'),
@@ -501,14 +502,14 @@ class _SpiritualExerciseRegistrationScreenState
               },
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
 
             // Section: Personal Information
             _buildSectionHeader(
               icon: Icons.badge,
               title: tr('registration_personal_info'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             // Birth date picker
             _buildDateField(
@@ -528,14 +529,14 @@ class _SpiritualExerciseRegistrationScreenState
                   v?.isEmpty == true ? tr('field_required') : null,
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
 
             // Section: Address
             _buildSectionHeader(
               icon: Icons.home,
               title: tr('registration_address'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             _buildTextField(
               label: tr('street'),
@@ -568,7 +569,7 @@ class _SpiritualExerciseRegistrationScreenState
                   v?.isEmpty == true ? tr('field_required') : null,
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
 
             // Section: Church Information (optional)
             _buildSectionHeader(
@@ -576,7 +577,7 @@ class _SpiritualExerciseRegistrationScreenState
               title: tr('registration_church_info'),
               subtitle: tr('optional'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             _buildTextField(
               label: tr('parish'),
@@ -592,7 +593,7 @@ class _SpiritualExerciseRegistrationScreenState
               onChanged: (v) => setState(() => _diocese = v ?? ''),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
 
             // Section: Accommodation
             _buildSectionHeader(
@@ -600,17 +601,17 @@ class _SpiritualExerciseRegistrationScreenState
               title: tr('registration_accommodation'),
               required: true,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             ...widget.pricing.map((pricing) => _buildPricingOption(pricing)),
 
             if (_selectedPricing != null) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
                   color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(color: Colors.blue.shade200),
                 ),
                 child: Column(
@@ -618,13 +619,12 @@ class _SpiritualExerciseRegistrationScreenState
                   children: [
                     Text(
                       '${tr("price")}: ${_selectedPricing!.price.toStringAsFixed(2)} € + ${tr("deposit")}: ${(_selectedPricing!.deposit ?? 50).toStringAsFixed(2)} € = ${_selectedPricing!.totalPrice.toStringAsFixed(2)} €',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                     Text(
                       tr('registration_deposit_info'),
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: theme.textTheme.bodySmall!.copyWith(
                         color: Colors.grey.shade700,
                       ),
                     ),
@@ -633,14 +633,14 @@ class _SpiritualExerciseRegistrationScreenState
               ),
             ],
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
 
             // Section: Additional Information
             _buildSectionHeader(
               icon: Icons.info_outline,
               title: tr('registration_additional_info'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             _buildTextField(
               label: tr('dietary_restrictions'),
@@ -665,14 +665,14 @@ class _SpiritualExerciseRegistrationScreenState
               onChanged: (v) => setState(() => _referralSource = v ?? ''),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
 
             // Section: Consents
             _buildSectionHeader(
               icon: Icons.verified_user,
               title: tr('registration_consents'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             _buildConsentCheckbox(
               value: _gdprConsent,
@@ -696,7 +696,7 @@ class _SpiritualExerciseRegistrationScreenState
               label: tr('newsletter_consent_label'),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xxxl),
 
             // Submit button
             SizedBox(
@@ -707,9 +707,9 @@ class _SpiritualExerciseRegistrationScreenState
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                   ),
-                  elevation: 2,
+                  elevation: AppElevation.medium,
                 ),
                 child: _isSubmitting
                     ? const SizedBox(
@@ -722,15 +722,14 @@ class _SpiritualExerciseRegistrationScreenState
                       )
                     : Text(
                         tr('submit_registration'),
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: theme.textTheme.titleMedium!.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
               ),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xxxl),
           ],
         ),
       ),
@@ -743,10 +742,11 @@ class _SpiritualExerciseRegistrationScreenState
     String? subtitle,
     bool required = false,
   }) {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Icon(icon, color: AppColors.primary, size: 24),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -755,10 +755,9 @@ class _SpiritualExerciseRegistrationScreenState
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 18,
+                    style: theme.textTheme.titleMedium!.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2D3748),
+                      color: AppColors.adaptiveCardTitle(context),
                     ),
                   ),
                   if (required)
@@ -768,7 +767,9 @@ class _SpiritualExerciseRegistrationScreenState
               if (subtitle != null)
                 Text(
                   subtitle,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: theme.textTheme.bodySmall!.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
                 ),
             ],
           ),
@@ -789,7 +790,7 @@ class _SpiritualExerciseRegistrationScreenState
     String? Function(String?)? validator,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -797,16 +798,16 @@ class _SpiritualExerciseRegistrationScreenState
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF2D3748),
+                  color: AppColors.adaptiveCardTitle(context),
                 ),
               ),
               if (required)
                 const Text(' *', style: TextStyle(color: Colors.red)),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           TextFormField(
             initialValue: value,
             keyboardType: keyboardType,
@@ -816,22 +817,22 @@ class _SpiritualExerciseRegistrationScreenState
               hintText: hintText,
               counterText: '',
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 borderSide: const BorderSide(color: Colors.grey),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 borderSide: BorderSide(color: Colors.grey.shade300),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 borderSide: const BorderSide(
                   color: AppColors.primary,
                   width: 2,
                 ),
               ),
               errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 borderSide: const BorderSide(color: Colors.red),
               ),
               contentPadding: const EdgeInsets.symmetric(
@@ -854,7 +855,7 @@ class _SpiritualExerciseRegistrationScreenState
     required VoidCallback onTap,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -862,24 +863,27 @@ class _SpiritualExerciseRegistrationScreenState
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF2D3748),
+                  color: AppColors.adaptiveCardTitle(context),
                 ),
               ),
               if (required)
                 const Text(' *', style: TextStyle(color: Colors.red)),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: 14,
+              ),
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Row(
                 children: [
@@ -893,7 +897,7 @@ class _SpiritualExerciseRegistrationScreenState
                           : tr('select_date'),
                       style: TextStyle(
                         color: value.isNotEmpty
-                            ? const Color(0xFF2D3748)
+                            ? AppColors.adaptiveCardTitle(context)
                             : Colors.grey,
                       ),
                     ),
@@ -916,7 +920,7 @@ class _SpiritualExerciseRegistrationScreenState
     required ValueChanged<String?> onChanged,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -924,28 +928,28 @@ class _SpiritualExerciseRegistrationScreenState
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF2D3748),
+                  color: AppColors.adaptiveCardTitle(context),
                 ),
               ),
               if (required)
                 const Text(' *', style: TextStyle(color: Colors.red)),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           DropdownButtonFormField<String>(
             initialValue: value.isNotEmpty ? value : null,
             decoration: InputDecoration(
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 borderSide: BorderSide(color: Colors.grey.shade300),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 borderSide: const BorderSide(
                   color: AppColors.primary,
                   width: 2,
@@ -968,21 +972,22 @@ class _SpiritualExerciseRegistrationScreenState
   }
 
   Widget _buildPricingOption(SpiritualExercisePricing pricing) {
+    final theme = Theme.of(context);
     final isSelected = _roomType == pricing.roomType;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: InkWell(
         onTap: () => setState(() => _roomType = pricing.roomType),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             border: Border.all(
               color: isSelected ? AppColors.primary : Colors.grey.shade300,
               width: isSelected ? 2 : 1,
             ),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             color: isSelected
                 ? AppColors.primary.withValues(alpha: 0.05)
                 : Colors.white,
@@ -1004,24 +1009,22 @@ class _SpiritualExerciseRegistrationScreenState
                     ? const Icon(Icons.check, color: Colors.white, size: 16)
                     : null,
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.lg),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       pricing.roomType,
-                      style: const TextStyle(
+                      style: theme.textTheme.titleMedium!.copyWith(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
                       ),
                     ),
                     if (pricing.description != null) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         pricing.description!,
-                        style: TextStyle(
-                          fontSize: 12,
+                        style: theme.textTheme.bodySmall!.copyWith(
                           color: Colors.grey.shade600,
                         ),
                       ),
@@ -1034,15 +1037,16 @@ class _SpiritualExerciseRegistrationScreenState
                 children: [
                   Text(
                     '${pricing.totalPrice.toStringAsFixed(2)} €',
-                    style: const TextStyle(
+                    style: theme.textTheme.titleMedium!.copyWith(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
                       color: AppColors.primary,
                     ),
                   ),
                   Text(
                     '${pricing.price.toStringAsFixed(0)} € + ${(pricing.deposit ?? 50).toStringAsFixed(0)} € ${tr("deposit")}',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                    style: theme.textTheme.labelSmall!.copyWith(
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                 ],
               ),
@@ -1060,8 +1064,9 @@ class _SpiritualExerciseRegistrationScreenState
     bool required = false,
     VoidCallback? onInfoTap,
   }) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1074,7 +1079,7 @@ class _SpiritualExerciseRegistrationScreenState
               activeColor: AppColors.primary,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: GestureDetector(
               onTap: () => onChanged(!value),
@@ -1092,7 +1097,7 @@ class _SpiritualExerciseRegistrationScreenState
                         child: GestureDetector(
                           onTap: onInfoTap,
                           child: const Padding(
-                            padding: EdgeInsets.only(left: 4),
+                            padding: EdgeInsets.only(left: AppSpacing.xs),
                             child: Icon(
                               Icons.info_outline,
                               size: 16,
@@ -1103,7 +1108,7 @@ class _SpiritualExerciseRegistrationScreenState
                       ),
                   ],
                 ),
-                style: const TextStyle(fontSize: 14),
+                style: theme.textTheme.bodyMedium,
               ),
             ),
           ),

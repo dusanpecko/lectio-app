@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/audio_download_state.dart';
 import '../services/audio_download_service.dart';
 import '../shared/app_colors.dart';
+import '../shared/app_spacing.dart';
 
 /// Ikona stavu stiahnutia pre jednotlivý audio track
 ///
@@ -98,15 +99,15 @@ class OfflineAudioBanner extends StatelessWidget {
     final isComplete = downloadedTracks >= totalTracks;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       decoration: BoxDecoration(
         color: isComplete
             ? (isDarkMode ? Colors.green.shade900 : Colors.green.shade50)
             : (isDarkMode
                   ? Colors.orange.shade900.withValues(alpha: 0.3)
                   : Colors.orange.shade50),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(
           color: isComplete
               ? Colors.green.withValues(alpha: 0.3)
@@ -120,7 +121,7 @@ class OfflineAudioBanner extends StatelessWidget {
             size: 18,
             color: isComplete ? Colors.green : Colors.orange,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
               isComplete
@@ -170,11 +171,11 @@ class AudioDownloadProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -189,7 +190,7 @@ class AudioDownloadProgress extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.download_rounded, size: 20, color: AppColors.primary),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
                   tr(
@@ -210,7 +211,7 @@ class AudioDownloadProgress extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
@@ -289,7 +290,7 @@ class AudioStorageDialog extends StatelessWidget {
       title: Row(
         children: [
           const Icon(Icons.storage_rounded, size: 24),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           Text(tr('offline.storage_title')),
         ],
       ),
@@ -303,14 +304,14 @@ class AudioStorageDialog extends StatelessWidget {
             tr('offline.downloaded_files'),
             '${downloadService.downloadedFilesCount}',
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           _buildInfoRow(
             context,
             Icons.sd_storage_rounded,
             tr('offline.storage_used'),
             downloadService.formattedStorageSize,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Text(
             tr('offline.storage_info'),
             style: Theme.of(
@@ -385,7 +386,7 @@ class AudioStorageDialog extends StatelessWidget {
     return Row(
       children: [
         Icon(icon, size: 18, color: Colors.grey[600]),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
         ),

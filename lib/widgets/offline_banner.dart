@@ -4,6 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../services/connectivity_service.dart';
+import '../shared/app_spacing.dart';
 
 /// Banner zobrazujúci offline stav aplikácie
 class OfflineBanner extends StatefulWidget {
@@ -105,7 +106,7 @@ class _OfflineBannerState extends State<OfflineBanner>
         child: SafeArea(
           bottom: false,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -114,22 +115,21 @@ class _OfflineBannerState extends State<OfflineBanner>
                   color: Colors.white,
                   size: 18,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Flexible(
                   child: Text(
                     isReconnecting
                         ? 'offline.reconnected'.tr()
                         : 'offline.no_connection'.tr(),
-                    style: const TextStyle(
+                    style: theme.textTheme.bodyMedium!.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w500,
-                      fontSize: 14,
                     ),
                     textAlign: TextAlign.center,
                   ),
                 ),
                 if (!isReconnecting) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   const SizedBox(
                     width: 14,
                     height: 14,
@@ -156,22 +156,23 @@ class OfflineIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       decoration: BoxDecoration(
         color: Colors.orange.shade100,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: Colors.orange.shade300),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.cloud_off, size: 16, color: Colors.orange.shade800),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           Flexible(
             child: Text(
               message ?? 'offline.cached_data'.tr(),
-              style: TextStyle(color: Colors.orange.shade900, fontSize: 12),
+              style: theme.textTheme.bodySmall!.copyWith(color: Colors.orange.shade900),
             ),
           ),
         ],
@@ -192,7 +193,7 @@ class OfflineScreen extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpacing.xxxl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -209,7 +210,7 @@ class OfflineScreen extends StatelessWidget {
                 color: Colors.grey.shade500,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
             Text(
               'offline.title'.tr(),
               style: theme.textTheme.headlineSmall?.copyWith(
@@ -217,7 +218,7 @@ class OfflineScreen extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Text(
               'offline.message'.tr(),
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -225,7 +226,7 @@ class OfflineScreen extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xxxl),
             if (onRetry != null)
               ElevatedButton.icon(
                 onPressed: onRetry,
@@ -257,7 +258,7 @@ class NoOfflineDataScreen extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpacing.xxxl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -274,7 +275,7 @@ class NoOfflineDataScreen extends StatelessWidget {
                 color: Colors.amber.shade700,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
             Text(
               'offline.no_data_title'.tr(),
               style: theme.textTheme.headlineSmall?.copyWith(
@@ -282,7 +283,7 @@ class NoOfflineDataScreen extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Text(
               'offline.no_data_message'.tr(),
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -290,7 +291,7 @@ class NoOfflineDataScreen extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xxxl),
             ElevatedButton.icon(
               onPressed: onConnectPressed,
               icon: const Icon(Icons.wifi),

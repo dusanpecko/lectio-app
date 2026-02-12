@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/audio_player_service.dart';
 import '../shared/app_colors.dart';
+import '../shared/app_spacing.dart';
 
 class FloatingAudioPlayer extends StatelessWidget {
   final AudioPlayerService audioService;
@@ -38,7 +39,7 @@ class FloatingAudioPlayer extends StatelessWidget {
         width: 320,
         decoration: BoxDecoration(
           color: theme.cardColor.withValues(alpha: 0.98),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.2),
@@ -60,10 +61,12 @@ class FloatingAudioPlayer extends StatelessWidget {
 
   Widget _buildHeader(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.1),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppRadius.xl),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -92,17 +95,17 @@ class FloatingAudioPlayer extends StatelessWidget {
     int currentTrackIndex,
   ) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         children: [
           _buildAudioModeSelector(theme),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           _buildNowPlaying(theme, currentTrack),
           _buildControls(theme, currentTrackIndex),
           if (currentTrack != null) _buildProgressBar(theme),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           const Divider(),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           _buildPlaylist(theme),
         ],
       ),
@@ -111,10 +114,10 @@ class FloatingAudioPlayer extends StatelessWidget {
 
   Widget _buildAudioModeSelector(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,7 +129,7 @@ class FloatingAudioPlayer extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Row(
             children: [
               Expanded(
@@ -137,7 +140,7 @@ class FloatingAudioPlayer extends StatelessWidget {
                   theme,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: _buildAudioModeButton(
                   'short',
@@ -146,7 +149,7 @@ class FloatingAudioPlayer extends StatelessWidget {
                   theme,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: _buildAudioModeButton(
                   'long',
@@ -171,12 +174,15 @@ class FloatingAudioPlayer extends StatelessWidget {
     final isSelected = audioService.audioMode == mode;
     return InkWell(
       onTap: () => audioService.setAudioMode(mode),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.sm,
+          horizontal: AppSpacing.xs,
+        ),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           border: Border.all(
             color: isSelected ? AppColors.primary : Colors.grey.shade300,
             width: 1.5,
@@ -189,13 +195,12 @@ class FloatingAudioPlayer extends StatelessWidget {
               color: isSelected ? Colors.white : Colors.grey.shade600,
               size: 20,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               label,
-              style: theme.textTheme.bodySmall?.copyWith(
+              style: theme.textTheme.labelSmall?.copyWith(
                 color: isSelected ? Colors.white : Colors.grey.shade600,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 11,
               ),
               textAlign: TextAlign.center,
             ),
@@ -214,10 +219,10 @@ class FloatingAudioPlayer extends StatelessWidget {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
             color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: Row(
             children: [
@@ -230,7 +235,7 @@ class FloatingAudioPlayer extends StatelessWidget {
                     : (currentTrack?['color'] ?? Colors.grey),
                 size: 24,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,7 +263,7 @@ class FloatingAudioPlayer extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
       ],
     );
   }
@@ -274,7 +279,7 @@ class FloatingAudioPlayer extends StatelessWidget {
               : Colors.grey.shade400,
           onPressed: currentTrackIndex > 0 ? onPreviousTrack : null,
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         Container(
           decoration: BoxDecoration(
             color: AppColors.primary,
@@ -302,7 +307,7 @@ class FloatingAudioPlayer extends StatelessWidget {
             },
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         IconButton(
           icon: const Icon(Icons.skip_next),
           color: currentTrackIndex < tracks.length - 1
@@ -317,7 +322,7 @@ class FloatingAudioPlayer extends StatelessWidget {
   Widget _buildProgressBar(ThemeData theme) {
     return Column(
       children: [
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         Row(
           children: [
             Text(
@@ -361,7 +366,7 @@ class FloatingAudioPlayer extends StatelessWidget {
             color: AppColors.primary,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         SizedBox(
           height: 200,
           child: ListView.builder(
@@ -374,18 +379,18 @@ class FloatingAudioPlayer extends StatelessWidget {
 
               return InkWell(
                 onTap: () => onTrackTap(track['url'], track['key']),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 10,
                   ),
-                  margin: const EdgeInsets.only(bottom: 4),
+                  margin: const EdgeInsets.only(bottom: AppSpacing.xs),
                   decoration: BoxDecoration(
                     color: isCurrentTrack
                         ? AppColors.primary.withValues(alpha: 0.15)
                         : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Row(
                     children: [
@@ -396,7 +401,7 @@ class FloatingAudioPlayer extends StatelessWidget {
                             : track['color'],
                         size: 20,
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: Text(
                           track['label'],

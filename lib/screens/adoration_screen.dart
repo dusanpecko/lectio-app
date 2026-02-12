@@ -6,6 +6,7 @@ import '../models/adoration_model.dart';
 import '../services/adoration_service.dart';
 import '../shared/app_colors.dart';
 import 'adoration_detail_screen.dart';
+import '../shared/app_spacing.dart';
 
 class AdorationScreen extends StatefulWidget {
   const AdorationScreen({super.key});
@@ -79,7 +80,7 @@ class _AdorationScreenState extends State<AdorationScreen> {
               slivers: [
                 // Hero App Bar
                 SliverAppBar(
-                  expandedHeight: 280,
+                  expandedHeight: 300,
                   floating: false,
                   pinned: true,
                   backgroundColor: AppColors.primary,
@@ -125,15 +126,15 @@ class _AdorationScreenState extends State<AdorationScreen> {
                         ),
                         SafeArea(
                           child: Padding(
-                            padding: const EdgeInsets.all(24.0),
+                            padding: const EdgeInsets.all(AppSpacing.xxl),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.all(AppSpacing.lg),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(AppRadius.xl),
                                   ),
                                   child: const Icon(
                                     Icons.favorite_rounded,
@@ -141,7 +142,7 @@ class _AdorationScreenState extends State<AdorationScreen> {
                                     color: Colors.white,
                                   ),
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: AppSpacing.lg),
                                 Text(
                                   tr('adoration_main_title'),
                                   style: theme.textTheme.headlineMedium
@@ -151,7 +152,7 @@ class _AdorationScreenState extends State<AdorationScreen> {
                                       ),
                                   textAlign: TextAlign.center,
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: AppSpacing.sm),
                                 Text(
                                   tr('adoration_main_subtitle'),
                                   style: theme.textTheme.titleMedium?.copyWith(
@@ -190,6 +191,7 @@ class _AdorationScreenState extends State<AdorationScreen> {
   }
 
   Widget _buildLoadingState(ThemeData theme) {
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -199,7 +201,7 @@ class _AdorationScreenState extends State<AdorationScreen> {
               theme.colorScheme.primary,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Text(
             tr('loading_adorations'),
             style: theme.textTheme.bodyLarge?.copyWith(
@@ -212,9 +214,10 @@ class _AdorationScreenState extends State<AdorationScreen> {
   }
 
   Widget _buildErrorState(ThemeData theme) {
+    final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -223,7 +226,7 @@ class _AdorationScreenState extends State<AdorationScreen> {
               size: 64,
               color: theme.colorScheme.error,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               tr('error_loading_adorations'),
               style: theme.textTheme.titleLarge?.copyWith(
@@ -231,7 +234,7 @@ class _AdorationScreenState extends State<AdorationScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               _error ?? tr('unknown_error'),
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -239,7 +242,7 @@ class _AdorationScreenState extends State<AdorationScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
             ElevatedButton.icon(
               onPressed: _loadData,
               icon: const Icon(Icons.refresh_rounded),
@@ -252,24 +255,25 @@ class _AdorationScreenState extends State<AdorationScreen> {
   }
 
   Widget _buildAdorationCard(ThemeData theme, Adoration adoration, int index) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Material(
         color: theme.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        elevation: 0,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        elevation: AppElevation.none,
         child: InkWell(
           onTap: () => _navigateToAdoration(adoration),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               border: Border.all(
                 color: theme.dividerColor.withValues(alpha: 0.3),
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Row(
                 children: [
                   // Number Badge
@@ -282,7 +286,7 @@ class _AdorationScreenState extends State<AdorationScreen> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: Center(
                       child: Text(
@@ -294,7 +298,7 @@ class _AdorationScreenState extends State<AdorationScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.lg),
 
                   // Content
                   Expanded(
@@ -309,7 +313,7 @@ class _AdorationScreenState extends State<AdorationScreen> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: AppSpacing.xs),
                         Text(
                           adoration.biblicalText,
                           style: theme.textTheme.bodyMedium?.copyWith(
@@ -320,7 +324,7 @@ class _AdorationScreenState extends State<AdorationScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         if (adoration.author != null) ...[
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSpacing.xs),
                           Text(
                             adoration.author!,
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -330,7 +334,7 @@ class _AdorationScreenState extends State<AdorationScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         Row(
                           children: [
                             if (adoration.hasAudio)
@@ -353,7 +357,7 @@ class _AdorationScreenState extends State<AdorationScreen> {
                                       size: 14,
                                       color: AppColors.primary,
                                     ),
-                                    const SizedBox(width: 4),
+                                    const SizedBox(width: AppSpacing.xs),
                                     Text(
                                       tr('audio'),
                                       style: theme.textTheme.bodySmall
@@ -366,7 +370,7 @@ class _AdorationScreenState extends State<AdorationScreen> {
                                 ),
                               ),
                             if (adoration.hasImage) ...[
-                              if (adoration.hasAudio) const SizedBox(width: 8),
+                              if (adoration.hasAudio) const SizedBox(width: AppSpacing.sm),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
@@ -386,7 +390,7 @@ class _AdorationScreenState extends State<AdorationScreen> {
                                       size: 14,
                                       color: AppColors.accent,
                                     ),
-                                    const SizedBox(width: 4),
+                                    const SizedBox(width: AppSpacing.xs),
                                     Text(
                                       tr('image'),
                                       style: theme.textTheme.bodySmall

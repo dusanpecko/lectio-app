@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../shared/app_colors.dart';
 import 'intro_step_translations.dart';
+import '../shared/app_spacing.dart';
 
 class IntroStepScreen extends StatefulWidget {
   final String step;
@@ -76,7 +77,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                   // Content
                   SafeArea(
                     child: Padding(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: const EdgeInsets.all(AppSpacing.xxl),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -88,7 +89,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(AppRadius.xl),
                             ),
                             child: Text(
                               t['stepIndicator'] ?? 'Krok',
@@ -98,14 +99,14 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.lg),
 
                           // Step icon
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(AppSpacing.lg),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(AppRadius.xl),
                             ),
                             child: Icon(
                               _getStepIcon(widget.step),
@@ -113,7 +114,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                               color: Colors.white,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.lg),
 
                           // Step title
                           Text(
@@ -136,11 +137,11 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
           // Content
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // Quote section
                   if (t['quoteText'] != null) ...[
@@ -165,7 +166,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                                   size: 32,
                                   color: theme.colorScheme.primary,
                                 ),
-                                const SizedBox(height: 12),
+                                const SizedBox(height: AppSpacing.md),
                                 Text(
                                   t['quoteText'],
                                   style: theme.textTheme.bodyLarge?.copyWith(
@@ -175,7 +176,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                                   textAlign: TextAlign.center,
                                 ),
                                 if (t['quoteReference'] != null) ...[
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: AppSpacing.sm),
                                   Text(
                                     t['quoteReference'],
                                     style: theme.textTheme.bodySmall?.copyWith(
@@ -190,18 +191,18 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xxl),
                   ],
 
                   // Navigation buttons (top)
                   _buildNavigationButtons(context, t),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.xxl),
 
                   // Introduction paragraph
                   if (t['introParagraph'] != null) ...[
                     Card(
                       child: Padding(
-                        padding: const EdgeInsets.all(20.0),
+                        padding: const EdgeInsets.all(AppSpacing.xl),
                         child: Text(
                           t['introParagraph'],
                           style: theme.textTheme.bodyLarge?.copyWith(
@@ -210,7 +211,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xxl),
                   ],
 
                   // What is section
@@ -235,7 +236,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                             ),
                           ),
                           if (t['whatIsContent2'] != null) ...[
-                            const SizedBox(height: 16),
+                            const SizedBox(height: AppSpacing.lg),
                             Text(
                               t['whatIsContent2'],
                               style: theme.textTheme.bodyLarge?.copyWith(
@@ -245,13 +246,13 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                           ],
                         ],
                         if (t['whatIsQuote'] != null) ...[
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.lg),
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(AppSpacing.lg),
                             decoration: BoxDecoration(
                               color: theme.colorScheme.surfaceContainerHighest
                                   .withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                             child: Text(
                               t['whatIsQuote'],
@@ -264,7 +265,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                         ],
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xxl),
                   ],
 
                   // How to section
@@ -280,7 +281,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                           _buildStepsList(context, t['howToSteps']),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xxl),
                   ],
 
                   // Practical tips
@@ -291,7 +292,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                       icon: Icons.tips_and_updates_rounded,
                       children: [_buildTipsList(context, t['practicalTips'])],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xxl),
                   ],
 
                   // Example section
@@ -302,7 +303,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                       icon: Icons.lightbulb_rounded,
                       children: [_buildExample(context, t)],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xxl),
                   ],
 
                   // Closing section
@@ -310,7 +311,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                     Card(
                       color: _getStepColor(widget.step),
                       child: Padding(
-                        padding: const EdgeInsets.all(24.0),
+                        padding: const EdgeInsets.all(AppSpacing.xxl),
                         child: Column(
                           children: [
                             Text(
@@ -322,7 +323,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                               textAlign: TextAlign.center,
                             ),
                             if (t['closingText'] != null) ...[
-                              const SizedBox(height: 16),
+                              const SizedBox(height: AppSpacing.lg),
                               Text(
                                 t['closingText'],
                                 style: theme.textTheme.bodyLarge?.copyWith(
@@ -333,12 +334,14 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                               ),
                             ],
                             if (t['closingQuote'] != null) ...[
-                              const SizedBox(height: 16),
+                              const SizedBox(height: AppSpacing.lg),
                               Container(
-                                padding: const EdgeInsets.all(16),
+                                padding: const EdgeInsets.all(AppSpacing.lg),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.md,
+                                  ),
                                 ),
                                 child: Text(
                                   t['closingQuote'],
@@ -354,13 +357,13 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xxl),
                   ],
 
                   // Navigation buttons (bottom)
                   _buildNavigationButtons(context, t),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.xxl),
                 ],
               ),
             ),
@@ -380,21 +383,21 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Icon(icon, color: theme.colorScheme.primary, size: 24),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: AppSpacing.lg),
                 Expanded(
                   child: Text(
                     title,
@@ -405,7 +408,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.xl),
             ...children,
           ],
         ),
@@ -419,20 +422,20 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
     return Column(
       children: items.map<Widget>((item) {
         return Container(
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: const EdgeInsets.only(bottom: AppSpacing.md),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: 6,
                 height: 6,
-                margin: const EdgeInsets.only(top: 8),
+                margin: const EdgeInsets.only(top: AppSpacing.sm),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primary,
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Text(
                   item.toString(),
@@ -455,7 +458,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
         final step = entry.value;
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 16),
+          margin: const EdgeInsets.only(bottom: AppSpacing.lg),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -469,15 +472,14 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                 child: Center(
                   child: Text(
                     '${index + 1}',
-                    style: const TextStyle(
+                    style: theme.textTheme.bodyMedium!.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.lg),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -489,11 +491,14 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       if (step['items'] != null)
                         ...((step['items'] as List).map<Widget>((item) {
+                          final theme = Theme.of(context);
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
+                            padding: const EdgeInsets.only(
+                              bottom: AppSpacing.xs,
+                            ),
                             child: Text(
                               '• $item',
                               style: theme.textTheme.bodyMedium?.copyWith(
@@ -526,14 +531,14 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
         if (tip is! Map) return const SizedBox.shrink();
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 16),
+          margin: const EdgeInsets.only(bottom: AppSpacing.lg),
           child: Card(
-            elevation: 1,
+            elevation: AppElevation.low,
             color: theme.colorScheme.surfaceContainerHighest.withValues(
               alpha: 0.3,
             ),
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -544,7 +549,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                   ],
                   if (tip['description'] != null) ...[
                     Text(
@@ -554,7 +559,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                   ],
                   if (tip['content'] != null)
                     Text(
@@ -578,10 +583,10 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
       children: [
         if (t['exampleVerse'] != null) ...[
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
               color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Text(
               t['exampleVerse'],
@@ -590,19 +595,20 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
         ],
 
         if (t['exampleSteps'] != null) ...[
           ...((t['exampleSteps'] as List).map<Widget>((step) {
+            final theme = Theme.of(context);
             return Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: AppSpacing.md),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest.withValues(
                   alpha: 0.3,
                 ),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Text(
                 step.toString(),
@@ -610,15 +616,15 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
               ),
             );
           }).toList()),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
         ],
 
         if (t['exampleSummary'] != null) ...[
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
               color: _getStepColor(widget.step).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(
                 color: _getStepColor(widget.step).withValues(alpha: 0.3),
               ),
@@ -664,11 +670,19 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                   : (t['backToOverview'] ?? 'Späť na prehľad'),
             ),
             style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              foregroundColor: AppColors.isDark(context)
+                  ? AppColors.darkPrimaryLight
+                  : AppColors.primary,
+              side: BorderSide(
+                color: AppColors.isDark(context)
+                    ? AppColors.darkPrimaryLight
+                    : AppColors.primary,
+              ),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
             ),
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: AppSpacing.lg),
         // Right button: next step or back to overview
         Expanded(
           child: ElevatedButton.icon(
@@ -692,7 +706,7 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: _getStepColor(widget.step),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
             ),
           ),
         ),

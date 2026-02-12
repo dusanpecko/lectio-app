@@ -38,12 +38,10 @@ class AppSpacing {
   static const EdgeInsets cardPadding = EdgeInsets.all(lg);
 
   /// Horizontálny padding pre karty
-  static const EdgeInsets cardHorizontal =
-      EdgeInsets.symmetric(horizontal: lg);
+  static const EdgeInsets cardHorizontal = EdgeInsets.symmetric(horizontal: lg);
 
   /// Vertikálny padding pre karty
-  static const EdgeInsets cardVertical =
-      EdgeInsets.symmetric(vertical: md);
+  static const EdgeInsets cardVertical = EdgeInsets.symmetric(vertical: md);
 
   /// Kompaktný padding pre karty
   static const EdgeInsets cardCompact = EdgeInsets.all(md);
@@ -53,12 +51,15 @@ class AppSpacing {
   // ═══════════════════════════════════════════════════════════════════════════
 
   /// Štandardný padding pre obrazovky
-  static const EdgeInsets screenPadding =
-      EdgeInsets.symmetric(horizontal: lg, vertical: md);
+  static const EdgeInsets screenPadding = EdgeInsets.symmetric(
+    horizontal: lg,
+    vertical: md,
+  );
 
   /// Horizontálny padding pre obrazovky
-  static const EdgeInsets screenHorizontal =
-      EdgeInsets.symmetric(horizontal: lg);
+  static const EdgeInsets screenHorizontal = EdgeInsets.symmetric(
+    horizontal: lg,
+  );
 
   // ═══════════════════════════════════════════════════════════════════════════
   // LIST ITEM SPACING
@@ -68,8 +69,10 @@ class AppSpacing {
   static const double listItemSpacing = sm;
 
   /// Padding pre položky v zozname
-  static const EdgeInsets listItemPadding =
-      EdgeInsets.symmetric(horizontal: lg, vertical: md);
+  static const EdgeInsets listItemPadding = EdgeInsets.symmetric(
+    horizontal: lg,
+    vertical: md,
+  );
 }
 
 /// Konštanty pre zaoblenia rohov
@@ -118,6 +121,23 @@ class AppRadius {
       const BorderRadius.vertical(top: Radius.circular(xl));
 }
 
+/// Konštanty pre elevation (tieň) kariet a komponentov
+class AppElevation {
+  AppElevation._();
+
+  /// Žiadny tieň (0) - ploché karty, inline elementy
+  static const double none = 0;
+
+  /// Nízky tieň (1) - jemné oddelenie, intro karty
+  static const double low = 1;
+
+  /// Stredný tieň (2) - štandardné karty, sekcie
+  static const double medium = 2;
+
+  /// Vysoký tieň (4) - zdôraznené karty, carousel, settings
+  static const double high = 4;
+}
+
 /// Konštanty pre animácie
 class AppAnimation {
   AppAnimation._();
@@ -140,4 +160,3 @@ class AppAnimation {
   /// Krivka pre odchod elementu
   static const Curve exitCurve = Curves.easeIn;
 }
-

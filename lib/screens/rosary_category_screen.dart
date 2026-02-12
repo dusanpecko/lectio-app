@@ -10,6 +10,7 @@ import '../shared/rosary_constants.dart';
 import 'rosary_decade_screen.dart';
 import 'intro_step_screen.dart';
 import 'intro_screen.dart'; // Upravte cestu podľa vašej štruktúry
+import '../shared/app_spacing.dart';
 
 class RosaryCategoryScreen extends StatefulWidget {
   final RosaryCategory category;
@@ -126,6 +127,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
   }
 
   Widget _buildLoadingState(ThemeData theme) {
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -135,7 +137,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
               theme.colorScheme.primary,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Text(
             tr('loading_mysteries'),
             style: theme.textTheme.bodyLarge?.copyWith(
@@ -148,9 +150,10 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
   }
 
   Widget _buildErrorState(ThemeData theme) {
+    final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -159,7 +162,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
               size: 64,
               color: theme.colorScheme.error,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               tr('error_loading_mysteries'),
               style: theme.textTheme.titleLarge?.copyWith(
@@ -167,7 +170,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               _error ?? tr('unknown_error'),
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -175,7 +178,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
             ElevatedButton.icon(
               onPressed: _loadDecades,
               icon: const Icon(Icons.refresh_rounded),
@@ -200,6 +203,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
     RosaryCategoryInfo categoryInfo,
     Color categoryColor,
   ) {
+    final theme = Theme.of(context);
     return SliverAppBar(
       expandedHeight: 300,
       floating: false,
@@ -248,15 +252,15 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
             ),
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.all(AppSpacing.xxl),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(AppSpacing.lg),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
                       ),
                       child: Icon(
                         categoryInfo.icon,
@@ -264,7 +268,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                     Text(
                       categoryInfo.name,
                       style: theme.textTheme.headlineMedium?.copyWith(
@@ -273,7 +277,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                     Text(
                       categoryInfo.description,
                       style: theme.textTheme.titleMedium?.copyWith(
@@ -300,14 +304,14 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
     Color categoryColor,
   ) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildDecadesList(theme, categoryColor, _decades),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xxl),
           _buildSpiritualAdvice(theme, categoryColor),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xxl),
           _buildLectioDivinaInfo(theme),
         ],
       ),
@@ -315,11 +319,12 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
   }
 
   Widget _buildLectioDivinaInfo(ThemeData theme) {
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: theme.cardColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         boxShadow: [
           BoxShadow(
             color: theme.shadowColor.withAlpha((0.1 * 255).round()),
@@ -328,7 +333,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
           ),
         ],
       ),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -341,7 +346,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                   gradient: LinearGradient(
                     colors: [AppColors.primary, AppColors.accent],
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: const Icon(
                   Icons.info_rounded,
@@ -349,7 +354,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                   size: 24,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.lg),
               Expanded(
                 child: Text(
                   tr('lectio_divina_process'),
@@ -360,14 +365,14 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Text(
             tr('lectio_divina_description'),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
           // Lectio Divina kroky - teraz klikateľné
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -394,15 +399,15 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
 
                 return Container(
                   width: 140,
-                  margin: const EdgeInsets.only(right: 16),
+                  margin: const EdgeInsets.only(right: AppSpacing.lg),
                   child: InkWell(
                     onTap: () => _navigateToLectioDivinaStep(stepSlug),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                     child: Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
                         color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
                         border: Border.all(
                           color: stepColor.withValues(alpha: 0.2),
                           width: 1,
@@ -415,7 +420,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                             height: 60,
                             decoration: BoxDecoration(
                               color: stepColor,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                               boxShadow: [
                                 BoxShadow(
                                   color: stepColor.withValues(alpha: 0.3),
@@ -430,7 +435,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                               size: 28,
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppSpacing.md),
                           Text(
                             step['title'],
                             style: theme.textTheme.titleSmall?.copyWith(
@@ -438,7 +443,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSpacing.xs),
                           Text(
                             step['description'],
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -448,7 +453,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpacing.sm),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -457,7 +462,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                                 size: 12,
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: AppSpacing.xs),
                               Text(
                                 '${step['duration']} min',
                                 style: theme.textTheme.bodySmall?.copyWith(
@@ -466,7 +471,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpacing.sm),
                           // Klikateľný indikátor
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -475,7 +480,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: stepColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -485,7 +490,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                                   size: 12,
                                   color: stepColor,
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: AppSpacing.xs),
                                 Text(
                                   tr('tap_to_start'),
                                   style: theme.textTheme.bodySmall?.copyWith(
@@ -505,7 +510,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
           // Dodatočné tlačidlo pre celý prehľad
           SizedBox(
             width: double.infinity,
@@ -514,9 +519,9 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
               icon: const Icon(Icons.auto_stories_rounded),
               label: Text(tr('view_complete_guide')),
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
             ),
@@ -531,6 +536,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
     Color categoryColor,
     List<RosaryDecade> decades,
   ) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -551,7 +557,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                   size: 16,
                   color: AppColors.primary,
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: AppSpacing.xs),
                 Text(
                   '${decades.length}/5 ${tr('available')}',
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -562,7 +568,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         // Decades list
         decades.isEmpty
             ? _buildEmptyState(theme)
@@ -571,7 +577,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: decades.length,
                 separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                 itemBuilder: (context, index) {
                   final decade = decades[index];
                   return _buildDecadeCard(
@@ -587,12 +593,13 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
   }
 
   Widget _buildEmptyState(ThemeData theme) {
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(AppSpacing.xxxl),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface.withAlpha((0.3 * 255).round()),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         children: [
@@ -601,7 +608,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
             size: 48,
             color: theme.colorScheme.onSurfaceVariant,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Text(
             tr('no_mysteries'),
             style: theme.textTheme.titleMedium?.copyWith(
@@ -625,7 +632,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
       child: Container(
         decoration: BoxDecoration(
           color: theme.cardColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           boxShadow: [
             BoxShadow(
               color: theme.shadowColor.withAlpha((0.1 * 255).round()),
@@ -651,13 +658,13 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                     ],
                   ),
                   borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(12),
+                    topRight: Radius.circular(AppRadius.md),
                   ),
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(AppSpacing.xl),
               child: Row(
                 children: [
                   // Číslo desiatka
@@ -666,7 +673,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                     height: 60,
                     decoration: BoxDecoration(
                       color: categoryColor,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       boxShadow: [
                         BoxShadow(
                           color: categoryColor.withValues(alpha: 0.3),
@@ -685,7 +692,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.lg),
                   // Obsah
                   Expanded(
                     child: Column(
@@ -700,7 +707,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         Text(
                           _stripHtml(decade.introduction),
                           style: theme.textTheme.bodyMedium?.copyWith(
@@ -713,7 +720,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 16,
@@ -729,6 +736,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
   }
 
   Widget _buildSpiritualAdvice(ThemeData theme, Color categoryColor) {
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -740,9 +748,9 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -753,7 +761,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                 height: 48,
                 decoration: BoxDecoration(
                   color: categoryColor,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: const Icon(
                   Icons.favorite_rounded,
@@ -761,7 +769,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
                   size: 24,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.lg),
               Expanded(
                 child: Text(
                   tr('spiritual_advice'),
@@ -772,7 +780,7 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
           _buildAdviceItem(theme, categoryColor, tr('find_quiet_place')),
           _buildAdviceItem(theme, categoryColor, tr('prepare_heart')),
           _buildAdviceItem(theme, categoryColor, tr('pray_holy_spirit')),
@@ -785,15 +793,16 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
   }
 
   Widget _buildAdviceItem(ThemeData theme, Color color, String text) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 6,
             height: 6,
-            margin: const EdgeInsets.only(top: 6, right: 12),
+            margin: const EdgeInsets.only(top: 6, right: AppSpacing.md),
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           Expanded(

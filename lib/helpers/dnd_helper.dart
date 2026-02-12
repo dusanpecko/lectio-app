@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../services/do_not_disturb_service.dart';
+import '../shared/app_spacing.dart';
 
 /// Helper pre Do Not Disturb funkcionalitu v Lectio screen.
 ///
@@ -58,7 +59,7 @@ class DndHelper {
             content: Row(
               children: [
                 const Icon(Icons.do_not_disturb_on, color: Colors.white),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
                     Platform.isIOS
@@ -99,7 +100,7 @@ class DndHelper {
         title: const Row(
           children: [
             Icon(Icons.shortcut_outlined, color: Colors.blue),
-            SizedBox(width: 8),
+            SizedBox(width: AppSpacing.sm),
             Text('iOS Shortcuts pre DND'),
           ],
         ),
@@ -109,7 +110,7 @@ class DndHelper {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
                   color: Colors.blue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -124,7 +125,7 @@ class DndHelper {
                           color: Colors.blue,
                           size: 20,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         Text(
                           'Automatické riešenie',
                           style: TextStyle(
@@ -134,7 +135,7 @@ class DndHelper {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                     Text(
                       'Vytvorte si iOS Shortcuts pre automatické zapínanie/vypínanie Focus režimu pri používaní DND tlačidla.',
                       style: TextStyle(fontSize: 13, color: Colors.blue[700]),
@@ -142,23 +143,23 @@ class DndHelper {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               _buildInstructionStep(
                 '1',
                 'Vytvorte Shortcuts',
                 'Nastavenia → Vytvorte Shortcuts pre DND',
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               _buildInstructionStep(
                 '2',
                 'Použite DND tlačidlo',
                 'Shortcuts sa spustia automaticky',
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               const Divider(),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
 
               Text(
                 'Manuálne riešenie:',
@@ -167,13 +168,13 @@ class DndHelper {
                   color: Colors.grey[700],
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               _buildInstructionStep(
                 'A',
                 'Control Center',
                 'Potiahnite zhora doprava → 🌙',
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               _buildInstructionStep(
                 'B',
                 'Focus režim',
@@ -220,7 +221,7 @@ class DndHelper {
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

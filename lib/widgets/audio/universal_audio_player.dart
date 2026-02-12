@@ -5,6 +5,7 @@ import 'package:just_audio/just_audio.dart';
 import 'audio_player_models.dart';
 import 'audio_progress_bar.dart';
 import 'audio_player_controls.dart';
+import '../../shared/app_spacing.dart';
 
 class UniversalAudioPlayer extends StatefulWidget {
   final UniversalAudioItem audioItem;
@@ -24,7 +25,10 @@ class UniversalAudioPlayer extends StatefulWidget {
     this.audioPlayer,
     this.accentColor,
     this.config = const AudioPlayerConfig(),
-    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    this.padding = const EdgeInsets.symmetric(
+      horizontal: AppSpacing.lg,
+      vertical: AppSpacing.sm,
+    ),
     this.height,
     this.showHeader = true,
     this.headerTitle = 'Audio prehrávač',
@@ -139,7 +143,7 @@ class _UniversalAudioPlayerState extends State<UniversalAudioPlayer> {
         color: theme.cardTheme.color,
         borderRadius: theme.cardTheme.shape != null
             ? (theme.cardTheme.shape as RoundedRectangleBorder).borderRadius
-            : BorderRadius.circular(16),
+            : BorderRadius.circular(AppRadius.lg),
         border: Border.all(
           color: effectiveAccentColor.withValues(alpha: 0.3),
           width: 1,
@@ -158,14 +162,14 @@ class _UniversalAudioPlayerState extends State<UniversalAudioPlayer> {
             : null,
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Header s informáciami
             if (widget.showHeader) ...[
               _buildHeader(theme, effectiveAccentColor),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
             ],
 
             // Progress bar
@@ -176,7 +180,7 @@ class _UniversalAudioPlayerState extends State<UniversalAudioPlayer> {
                 onSeek: _handleSeek,
                 showDuration: widget.config.showDuration,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
             ],
 
             // Ovládacie tlačidlá
@@ -192,7 +196,7 @@ class _UniversalAudioPlayerState extends State<UniversalAudioPlayer> {
 
             // Informácie o tracku
             if (widget.config.showTitle || widget.config.showAuthor) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               _buildTrackInfo(theme),
             ],
           ],
@@ -202,10 +206,11 @@ class _UniversalAudioPlayerState extends State<UniversalAudioPlayer> {
   }
 
   Widget _buildHeader(ThemeData theme, Color accentColor) {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Icon(Icons.headphones_rounded, color: accentColor, size: 24),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Text(
             widget.headerTitle,
@@ -221,6 +226,7 @@ class _UniversalAudioPlayerState extends State<UniversalAudioPlayer> {
   }
 
   Widget _buildStatusIndicator(ThemeData theme, Color accentColor) {
+    final theme = Theme.of(context);
     return StreamBuilder<PlayerState>(
       stream: _audioPlayer.playerStateStream,
       builder: (context, snapshot) {
@@ -232,16 +238,18 @@ class _UniversalAudioPlayerState extends State<UniversalAudioPlayer> {
         final statusColor = _getStatusColor(status, accentColor);
 
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xs,
+          ),
           decoration: BoxDecoration(
             color: statusColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: Text(
             status.displayText,
-            style: theme.textTheme.bodySmall?.copyWith(
+            style: theme.textTheme.labelSmall?.copyWith(
               color: statusColor,
-              fontSize: 10,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -251,6 +259,7 @@ class _UniversalAudioPlayerState extends State<UniversalAudioPlayer> {
   }
 
   Widget _buildTrackInfo(ThemeData theme) {
+    final theme = Theme.of(context);
     return Column(
       children: [
         if (widget.config.showTitle) ...[
@@ -265,7 +274,7 @@ class _UniversalAudioPlayerState extends State<UniversalAudioPlayer> {
           ),
         ],
         if (widget.config.showAuthor && widget.audioItem.author != null) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             widget.audioItem.author!,
             style: theme.textTheme.bodySmall?.copyWith(
@@ -279,14 +288,15 @@ class _UniversalAudioPlayerState extends State<UniversalAudioPlayer> {
   }
 
   Widget _buildNoAudioWidget(ThemeData theme) {
+    final theme = Theme.of(context);
     return Container(
       margin: widget.padding,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
         borderRadius: theme.cardTheme.shape != null
             ? (theme.cardTheme.shape as RoundedRectangleBorder).borderRadius
-            : BorderRadius.circular(16),
+            : BorderRadius.circular(AppRadius.lg),
         border: Border.all(
           color: theme.colorScheme.outline.withValues(alpha: 0.3),
           width: 1,
@@ -303,7 +313,7 @@ class _UniversalAudioPlayerState extends State<UniversalAudioPlayer> {
                   color: theme.colorScheme.onSurfaceVariant,
                   size: 24,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.md),
                 Text(
                   widget.headerTitle,
                   style: theme.textTheme.titleMedium?.copyWith(
@@ -318,19 +328,18 @@ class _UniversalAudioPlayerState extends State<UniversalAudioPlayer> {
                   ),
                   decoration: BoxDecoration(
                     color: Colors.orange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Text(
                     'Nedostupné',
-                    style: theme.textTheme.bodySmall?.copyWith(
+                    style: theme.textTheme.labelSmall?.copyWith(
                       color: Colors.orange,
-                      fontSize: 10,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
           ],
           Text(
             'Audio nie je dostupné',
@@ -443,7 +452,10 @@ class UniversalAudioPlayerCompact extends StatelessWidget {
       accentColor: accentColor,
       config: AudioPlayerConfig.minimal,
       showHeader: false,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
     );
   }
 }

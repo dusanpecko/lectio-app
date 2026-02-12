@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../shared/app_colors.dart';
 import '../utils/app_logger.dart';
+import '../shared/app_spacing.dart';
 
 /// Model pre notifikáciu z databázy
 class NotificationLog {
@@ -164,6 +165,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Widget _buildBody(ThemeData theme, bool isDark) {
+    final theme = Theme.of(context);
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -174,13 +176,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               _errorMessage!,
               style: TextStyle(color: theme.colorScheme.error),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             ElevatedButton.icon(
               onPressed: _fetchNotifications,
               icon: const Icon(Icons.refresh),
@@ -201,14 +203,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               size: 80,
               color: isDark ? Colors.grey[600] : Colors.grey[400],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               tr('notifications.empty'),
               style: theme.textTheme.titleMedium?.copyWith(
                 color: isDark ? Colors.grey[400] : Colors.grey[600],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               tr('notifications.empty_hint'),
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -224,7 +226,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return RefreshIndicator(
       onRefresh: _onRefresh,
       child: ListView.separated(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         itemCount: _notifications.length,
         separatorBuilder: (context, index) => Divider(
           height: 1,
@@ -244,8 +246,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     ThemeData theme,
     bool isDark,
   ) {
+    final theme = Theme.of(context);
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
       leading: _buildLeadingWidget(notification, isDark),
       title: Text(
         notification.title,
@@ -258,7 +264,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             notification.body,
             style: theme.textTheme.bodySmall?.copyWith(
@@ -275,12 +281,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 size: 12,
                 color: isDark ? Colors.grey[500] : Colors.grey[400],
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: AppSpacing.xs),
               Text(
                 _formatDate(notification.sentAt),
-                style: theme.textTheme.bodySmall?.copyWith(
+                style: theme.textTheme.labelSmall?.copyWith(
                   color: isDark ? Colors.grey[500] : Colors.grey[400],
-                  fontSize: 11,
                 ),
               ),
             ],
@@ -294,7 +299,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget _buildLeadingWidget(NotificationLog notification, bool isDark) {
     if (notification.imageUrl != null && notification.imageUrl!.isNotEmpty) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         child: SizedBox(
           width: 48,
           height: 48,
@@ -328,7 +333,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       height: 48,
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Icon(_getTopicIcon(notification.topic), color: AppColors.primary),
     );
@@ -359,7 +364,9 @@ class _NotificationDetailSheet extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppRadius.xl),
+        ),
       ),
       child: DraggableScrollableSheet(
         initialChildSize: 0.5,
@@ -369,7 +376,7 @@ class _NotificationDetailSheet extends StatelessWidget {
         builder: (context, scrollController) {
           return SingleChildScrollView(
             controller: scrollController,
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppSpacing.xxl),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -384,13 +391,13 @@ class _NotificationDetailSheet extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xxl),
 
                 // Obrázok ak existuje
                 if (notification.imageUrl != null &&
                     notification.imageUrl!.isNotEmpty) ...[
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     child: CachedNetworkImage(
                       imageUrl: notification.imageUrl!,
                       width: double.infinity,
@@ -408,7 +415,7 @@ class _NotificationDetailSheet extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.xl),
                 ],
 
                 // Titulok
@@ -418,7 +425,7 @@ class _NotificationDetailSheet extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
 
                 // Dátum
                 Row(
@@ -439,14 +446,14 @@ class _NotificationDetailSheet extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.xl),
 
                 // Telo notifikácie
                 Text(
                   notification.body,
                   style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: AppSpacing.xxxl),
 
                 // Zatvoriť tlačidlo
                 SizedBox(
@@ -456,7 +463,7 @@ class _NotificationDetailSheet extends StatelessWidget {
                     child: Text(tr('common.close')),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
               ],
             ),
           );

@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -14,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../shared/app_colors.dart';
+import '../shared/app_spacing.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -208,66 +207,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(tr('settings'))),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
           // 1. Profil / Prihlásenie
           _buildUserInfoCard(context, userEmail),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           // 2. Výber Biblie
           _buildBibleCard(),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           // 3. Jazyk
           _buildLanguageCard(themeProvider),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           // 4. Písmo a veľkosť písma
           _buildFontCard(themeProvider),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           // 5. Téma (systém/svetlá/tmavá)
           _buildThemeCard(themeProvider),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           // 6. O aplikácii a Ochrana osobných údajov
           _buildAboutAndPrivacyCard(),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
         ],
       ),
     );
   }
 
   Widget _buildUserInfoCard(BuildContext context, String email) {
+    final theme = Theme.of(context);
     final session = Supabase.instance.client.auth.currentSession;
     final isLoggedIn = session != null;
 
     if (!isLoggedIn) {
       // Pre neprihlásených používateľov ukáž tlačidlo na prihlásenie
       return Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        elevation: AppElevation.high,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             children: [
               const Icon(Icons.login, size: 48, color: AppColors.primary),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               Text(
                 tr('not_logged_in'),
-                style: const TextStyle(
-                  fontSize: 16,
+                style: theme.textTheme.titleMedium!.copyWith(
                   fontWeight: FontWeight.w500,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 tr('login_to_sync'),
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                style: theme.textTheme.bodyMedium!.copyWith(
+                  color: Colors.grey[600],
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               ElevatedButton.icon(
                 onPressed: () {
                   Navigator.push(
@@ -294,8 +297,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     // Pre prihlásených používateľov ukáž profil
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      elevation: AppElevation.high,
       child: ListTile(
         leading: const Icon(Icons.person_outline),
         title: Text(
@@ -315,70 +320,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildThemeCard(ThemeProvider themeProvider) {
+    final theme = Theme.of(context);
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      elevation: AppElevation.high,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 const Icon(Icons.brightness_6),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Text(
                   tr('settings_screen.theme.title'),
-                  style: const TextStyle(
+                  style: theme.textTheme.titleMedium!.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Column(
-              children: [
-                RadioListTile<ThemeMode>(
-                  title: Row(
-                    children: [
-                      const Icon(Icons.phone_android, size: 20),
-                      const SizedBox(width: 8),
-                      Text(tr('settings_screen.theme.system')),
-                    ],
+            const SizedBox(height: AppSpacing.md),
+            RadioGroup<ThemeMode>(
+              groupValue: themeProvider.themeMode,
+              onChanged: (value) => _onThemeModeChanged(value),
+              child: Column(
+                children: [
+                  RadioListTile<ThemeMode>(
+                    title: Row(
+                      children: [
+                        const Icon(Icons.phone_android, size: 20),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(tr('settings_screen.theme.system')),
+                      ],
+                    ),
+                    subtitle: Text(tr('settings_screen.theme.system_desc')),
+                    value: ThemeMode.system,
                   ),
-                  subtitle: Text(tr('settings_screen.theme.system_desc')),
-                  value: ThemeMode.system,
-                  groupValue: themeProvider.themeMode,
-                  onChanged: _onThemeModeChanged,
-                ),
-                RadioListTile<ThemeMode>(
-                  title: Row(
-                    children: [
-                      const Icon(Icons.light_mode, size: 20),
-                      const SizedBox(width: 8),
-                      Text(tr('settings_screen.theme.light')),
-                    ],
+                  RadioListTile<ThemeMode>(
+                    title: Row(
+                      children: [
+                        const Icon(Icons.light_mode, size: 20),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(tr('settings_screen.theme.light')),
+                      ],
+                    ),
+                    subtitle: Text(tr('settings_screen.theme.light_desc')),
+                    value: ThemeMode.light,
                   ),
-                  subtitle: Text(tr('settings_screen.theme.light_desc')),
-                  value: ThemeMode.light,
-                  groupValue: themeProvider.themeMode,
-                  onChanged: _onThemeModeChanged,
-                ),
-                RadioListTile<ThemeMode>(
-                  title: Row(
-                    children: [
-                      const Icon(Icons.dark_mode, size: 20),
-                      const SizedBox(width: 8),
-                      Text(tr('settings_screen.theme.dark')),
-                    ],
+                  RadioListTile<ThemeMode>(
+                    title: Row(
+                      children: [
+                        const Icon(Icons.dark_mode, size: 20),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(tr('settings_screen.theme.dark')),
+                      ],
+                    ),
+                    subtitle: Text(tr('settings_screen.theme.dark_desc')),
+                    value: ThemeMode.dark,
                   ),
-                  subtitle: Text(tr('settings_screen.theme.dark_desc')),
-                  value: ThemeMode.dark,
-                  groupValue: themeProvider.themeMode,
-                  onChanged: _onThemeModeChanged,
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -387,41 +392,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildFontCard(ThemeProvider themeProvider) {
+    final theme = Theme.of(context);
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      elevation: AppElevation.high,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 const Icon(Icons.text_fields),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Text(
                   tr('settings_screen.font.title'),
-                  style: const TextStyle(
+                  style: theme.textTheme.titleMedium!.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             // Font Family
             Text(
               tr('settings_screen.font.family'),
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             DropdownButtonFormField<String>(
-              value: themeProvider.fontFamily,
+              initialValue: themeProvider.fontFamily,
               onChanged: _onFontFamilyChanged,
               decoration: InputDecoration(
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -449,19 +456,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             // Font Size
             Text(
               tr('settings_screen.font.size'),
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
                 Text(
                   tr('settings_screen.font.small'),
-                  style: const TextStyle(fontSize: 12),
+                  style: theme.textTheme.bodySmall,
                 ),
                 Expanded(
                   child: Slider(
@@ -475,18 +482,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 Text(
                   tr('settings_screen.font.large'),
-                  style: const TextStyle(fontSize: 18),
+                  style: theme.textTheme.titleMedium,
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
 
             // Preview
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
+                color: AppColors.isDark(context)
+                    ? AppColors.darkCard
+                    : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: Text(
                 tr('settings_screen.font.preview'),
@@ -500,34 +509,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildLanguageCard(ThemeProvider themeProvider) {
+    final theme = Theme.of(context);
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      elevation: AppElevation.high,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 const Icon(Icons.language),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Text(
                   tr('settings_screen.language.title'),
-                  style: const TextStyle(
+                  style: theme.textTheme.titleMedium!.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             DropdownButtonFormField<String>(
-              value: themeProvider.languageCode,
+              initialValue: themeProvider.languageCode,
               onChanged: _onLanguageChanged,
               decoration: InputDecoration(
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -540,7 +551,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Row(
                     children: [
                       const Icon(Icons.phone_android, size: 20),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.sm),
                       Text(tr('settings_screen.language.system')),
                     ],
                   ),
@@ -549,8 +560,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: 'sk',
                   child: Row(
                     children: [
-                      const Text('🇸🇰', style: TextStyle(fontSize: 20)),
-                      const SizedBox(width: 8),
+                      Text('🇸🇰', style: theme.textTheme.titleLarge),
+                      const SizedBox(width: AppSpacing.sm),
                       Text(tr('settings_screen.language.slovak')),
                     ],
                   ),
@@ -559,8 +570,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: 'en',
                   child: Row(
                     children: [
-                      const Text('🇺🇸', style: TextStyle(fontSize: 20)),
-                      const SizedBox(width: 8),
+                      Text('🇺🇸', style: theme.textTheme.titleLarge),
+                      const SizedBox(width: AppSpacing.sm),
                       Text(tr('settings_screen.language.english')),
                     ],
                   ),
@@ -569,8 +580,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: 'es',
                   child: Row(
                     children: [
-                      const Text('🇪🇸', style: TextStyle(fontSize: 20)),
-                      const SizedBox(width: 8),
+                      Text('🇪🇸', style: theme.textTheme.titleLarge),
+                      const SizedBox(width: AppSpacing.sm),
                       Text(tr('settings_screen.language.spanish')),
                     ],
                   ),
@@ -615,28 +626,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildAboutAndPrivacyCard() {
+    final theme = Theme.of(context);
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      elevation: AppElevation.high,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 const Icon(Icons.info_outline),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Text(
                   tr('privacy.info_section'),
-                  style: const TextStyle(
+                  style: theme.textTheme.titleMedium!.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             ListTile(
               leading: const Icon(Icons.info_outline, color: AppColors.primary),
               title: Text(tr('about_title')),
@@ -670,29 +683,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildBibleCard() {
+    final theme = Theme.of(context);
     final locale = context.locale.languageCode;
     final isSlovak = locale == 'sk';
 
     return Opacity(
       opacity: isSlovak ? 1.0 : 0.5,
       child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        elevation: AppElevation.high,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   const Icon(Icons.menu_book),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
                       tr('select_bible'),
-                      style: const TextStyle(
+                      style: theme.textTheme.titleMedium!.copyWith(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
                       ),
                     ),
                   ),
@@ -705,12 +720,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: Colors.orange.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                       child: Text(
                         tr('temporarily_disabled'),
-                        style: TextStyle(
-                          fontSize: 11,
+                        style: theme.textTheme.labelSmall!.copyWith(
                           color: Colors.orange.shade800,
                           fontWeight: FontWeight.w600,
                         ),
@@ -718,18 +732,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               _isLoadingBible
                   ? const Center(child: CircularProgressIndicator())
                   : DropdownButtonFormField<String>(
-                      value: _selectedBible,
+                      initialValue: _selectedBible,
                       onChanged: isSlovak
                           ? _onBibleChanged
                           : null, // Aktívne len pre SK
                       isExpanded: true,
                       decoration: InputDecoration(
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -739,11 +753,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       items: _buildBibleDropdownItems(),
                     ),
               if (!isSlovak) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
                   tr('bible_selection_info'),
-                  style: TextStyle(
-                    fontSize: 12,
+                  style: theme.textTheme.bodySmall!.copyWith(
                     color: Colors.grey.shade600,
                     fontStyle: FontStyle.italic,
                   ),

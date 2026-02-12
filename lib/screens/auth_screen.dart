@@ -11,7 +11,9 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/credentials_service.dart';
+import '../utils/app_logger.dart';
 import 'home_screen.dart';
+import '../shared/app_spacing.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -55,7 +57,7 @@ class _AuthScreenState extends State<AuthScreen> {
         });
       }
     } catch (e) {
-      // Error loading saved credentials
+      appLogger.w('Failed to load saved credentials', error: e);
     }
   }
 
@@ -68,7 +70,7 @@ class _AuthScreenState extends State<AuthScreen> {
         _handleDeepLink(initialLink);
       }
     } catch (e) {
-      // Error getting initial app link
+      appLogger.w('Failed to get initial app link', error: e);
     }
 
     _linkSubscription = _appLinks.uriLinkStream.listen(
@@ -76,7 +78,7 @@ class _AuthScreenState extends State<AuthScreen> {
         _handleDeepLink(uri);
       },
       onError: (Object err) {
-        // Error listening to app links
+        appLogger.w('Error listening to app links', error: err);
       },
     );
   }
@@ -165,6 +167,7 @@ class _AuthScreenState extends State<AuthScreen> {
         );
       }
     } catch (e) {
+      appLogger.e('Sign in failed', error: e);
       if (!mounted) return;
       if (e is AuthApiException && e.statusCode == '400') {
         setState(() {
@@ -233,6 +236,7 @@ class _AuthScreenState extends State<AuthScreen> {
         );
       }
     } on AuthApiException catch (e) {
+      appLogger.w('Sign up AuthApiException: ${e.statusCode}', error: e);
       if (!mounted) return;
       if (e.statusCode == '400' &&
           e.message.toLowerCase().contains('user already registered')) {
@@ -250,6 +254,7 @@ class _AuthScreenState extends State<AuthScreen> {
         });
       }
     } catch (e) {
+      appLogger.e('Sign up failed', error: e);
       if (!mounted) return;
       setState(() {
         _error = tr('register_failed_retry');
@@ -286,10 +291,10 @@ class _AuthScreenState extends State<AuthScreen> {
       // Monitoruj zmeny v auth state s dlhším timeout
       _monitorAuthState();
     } catch (e) {
+      appLogger.e('Google OAuth sign in failed', error: e);
       if (!mounted) return;
-      // Supabase Google OAuth error
       setState(() {
-        _error = 'Google Sign-In chyba: ${e.toString()}';
+        _error = '${tr('google_sign_in_error')}: ${e.toString()}';
       });
     } finally {
       if (mounted) {
@@ -358,23 +363,25 @@ class _AuthScreenState extends State<AuthScreen> {
         );
       }
     } on SignInWithAppleAuthorizationException catch (e) {
-      // Používateľ zrušil prihlásenie
       if (e.code == AuthorizationErrorCode.canceled) {
+        appLogger.d('Apple sign in canceled by user');
         if (mounted) {
           setState(() => _isLoading = false);
         }
         return;
       }
+      appLogger.w('Apple sign in authorization error', error: e);
       if (mounted) {
         setState(() {
-          _error = 'Apple Sign-In chyba: ${e.message}';
+          _error = '${tr('apple_sign_in_error')}: ${e.message}';
           _isLoading = false;
         });
       }
     } catch (e) {
+      appLogger.e('Apple sign in failed', error: e);
       if (mounted) {
         setState(() {
-          _error = 'Apple Sign-In chyba: ${e.toString()}';
+          _error = '${tr('apple_sign_in_error')}: ${e.toString()}';
           _isLoading = false;
         });
       }
@@ -437,7 +444,7 @@ class _AuthScreenState extends State<AuthScreen> {
         subscription.cancel();
         setState(() {
           _isLoading = false;
-          _error = 'Google Sign-In timeout. Skúste to znovu.';
+          _error = tr('google_sign_in_timeout');
         });
         // Auth monitoring timeout after 120 seconds
       }
@@ -471,11 +478,13 @@ class _AuthScreenState extends State<AuthScreen> {
         _resetInfo = tr('reset_email_sent');
       });
     } on AuthApiException catch (e) {
+      appLogger.w('Reset password AuthApiException', error: e);
       if (!mounted) return;
       setState(() {
         _resetInfo = e.message;
       });
     } catch (e) {
+      appLogger.e('Reset password failed', error: e);
       if (!mounted) return;
       setState(() {
         _resetInfo = tr('something_went_wrong');
@@ -504,6 +513,7 @@ class _AuthScreenState extends State<AuthScreen> {
     required Color textColor,
     required Color borderColor,
   }) {
+    final theme = Theme.of(context);
     return SizedBox(
       width: double.infinity,
       height: 48,
@@ -512,19 +522,20 @@ class _AuthScreenState extends State<AuthScreen> {
         style: OutlinedButton.styleFrom(
           backgroundColor: backgroundColor,
           side: BorderSide(color: borderColor),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             icon,
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             Text(
               label,
-              style: TextStyle(
+              style: theme.textTheme.bodyLarge!.copyWith(
                 color: textColor,
-                fontSize: 15,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -536,11 +547,12 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(_isRegister ? tr('register') : tr('login'))),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.xxl),
           child: _showResetPassword
               ? _buildResetPassword(context)
               : Column(
@@ -551,7 +563,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       width: 80,
                       height: 80,
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xxl),
                     if (_isRegister)
                       TextField(
                         controller: _fullNameController,
@@ -559,21 +571,21 @@ class _AuthScreenState extends State<AuthScreen> {
                         autofillHints: const [AutofillHints.name],
                         textCapitalization: TextCapitalization.words,
                       ),
-                    if (_isRegister) const SizedBox(height: 12),
+                    if (_isRegister) const SizedBox(height: AppSpacing.md),
                     TextField(
                       controller: _emailController,
                       decoration: InputDecoration(labelText: tr('email')),
                       keyboardType: TextInputType.emailAddress,
                       autofillHints: const [AutofillHints.email],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                     TextField(
                       controller: _passwordController,
                       obscureText: true,
                       decoration: InputDecoration(labelText: tr('password')),
                       autofillHints: const [AutofillHints.password],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                     CheckboxListTile(
                       title: Text(tr('remember_me')),
                       value: _rememberMe,
@@ -585,7 +597,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       controlAffinity: ListTileControlAffinity.leading,
                       contentPadding: EdgeInsets.zero,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                     if (_error != null)
                       Text(
                         _error!,
@@ -640,24 +652,25 @@ class _AuthScreenState extends State<AuthScreen> {
                         child: Text(tr('forgot_password')),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xxl),
                     Row(
                       children: [
                         const Expanded(child: Divider()),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg,
+                          ),
                           child: Text(
                             tr('or'),
-                            style: TextStyle(
+                            style: theme.textTheme.bodySmall!.copyWith(
                               color: Colors.grey[500],
-                              fontSize: 13,
                             ),
                           ),
                         ),
                         const Expanded(child: Divider()),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: AppSpacing.xl),
                     // Google Sign-In
                     _buildSocialButton(
                       onPressed: _isLoading ? null : _signInWithGoogle,
@@ -676,7 +689,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                     // Apple Sign-In (iOS / macOS only)
                     if (!Platform.isAndroid) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.md),
                       _buildSocialButton(
                         onPressed: _isLoading ? null : _signInWithApple,
                         icon: const Icon(
@@ -690,7 +703,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         borderColor: Colors.black,
                       ),
                     ],
-                    const SizedBox(height: 20),
+                    const SizedBox(height: AppSpacing.xl),
                     SizedBox(
                       width: double.infinity,
                       child: TextButton(
@@ -709,6 +722,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Widget _buildResetPassword(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -725,14 +739,14 @@ class _AuthScreenState extends State<AuthScreen> {
             color: Theme.of(context).primaryColor,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
         Text(
           tr('reset_password_title'),
           style: Theme.of(
             context,
           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         Text(
           'Zadajte svoj email a pošleme vám odkaz na obnovenie hesla na webovej stránke.',
           style: Theme.of(
@@ -740,7 +754,7 @@ class _AuthScreenState extends State<AuthScreen> {
           ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.xxl),
         TextField(
           controller: _resetEmailController,
           decoration: InputDecoration(
@@ -752,10 +766,10 @@ class _AuthScreenState extends State<AuthScreen> {
           keyboardType: TextInputType.emailAddress,
           autofillHints: const [AutofillHints.email],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.xxl),
         if (_resetInfo != null)
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               color: _resetInfo == tr('reset_email_sent')
                   ? Colors.green.shade50
@@ -765,7 +779,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ? Colors.green.shade200
                     : Colors.red.shade200,
               ),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: Row(
               children: [
@@ -777,7 +791,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ? Colors.green.shade600
                       : Colors.red.shade600,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -791,11 +805,10 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                       ),
                       if (_resetInfo == tr('reset_email_sent')) ...[
-                        const SizedBox(height: 4),
+                        const SizedBox(height: AppSpacing.xs),
                         Text(
                           'Kliknite na odkaz v emaili ihneď (platnosť 1 hodina), zmeňte heslo na webovej stránke a potom sa vráťte do aplikácie.',
-                          style: TextStyle(
-                            fontSize: 12,
+                          style: theme.textTheme.bodySmall!.copyWith(
                             color: Colors.green.shade600,
                           ),
                         ),
@@ -806,13 +819,13 @@ class _AuthScreenState extends State<AuthScreen> {
               ],
             ),
           ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
             onPressed: _isLoading ? null : _resetPassword,
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
             ),
             child: _isLoading
                 ? const SizedBox(
@@ -822,11 +835,11 @@ class _AuthScreenState extends State<AuthScreen> {
                   )
                 : Text(
                     tr('reset_password'),
-                    style: const TextStyle(fontSize: 16),
+                    style: theme.textTheme.titleMedium,
                   ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
         TextButton(
           onPressed: _isLoading
               ? null

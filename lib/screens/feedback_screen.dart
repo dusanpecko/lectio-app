@@ -8,6 +8,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../utils/app_logger.dart';
+import '../shared/app_spacing.dart';
 
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
@@ -68,7 +69,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       final session = supabase.auth.currentSession;
 
       final backendUrl =
-          dotenv.env['NEXT_PUBLIC_BACKEND_URL'] ?? 'https://lectio.one';
+          dotenv.env['NEXT_PUBLIC_BACKEND_URL'] ?? 'https://www.lectio.one';
 
       appLogger.d('📤 Sending feedback to: $backendUrl/api/feedback');
       appLogger.d('📱 Type: $_feedbackType, Version: $_appVersion');
@@ -135,7 +136,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         foregroundColor: theme.appBarTheme.foregroundColor,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Form(
           key: _formKey,
           child: Column(
@@ -143,7 +144,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             children: [
               // Header
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(AppSpacing.xl),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -151,15 +152,15 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                       theme.colorScheme.secondary.withValues(alpha: 0.05),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       child: const Icon(
                         Icons.feedback_outlined,
@@ -167,7 +168,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                         size: 28,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: AppSpacing.lg),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,7 +179,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSpacing.xs),
                           Text(
                             'feedback.subtitle'.tr(),
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -194,7 +195,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxxl),
 
               // Feedback Type
               Text(
@@ -203,7 +204,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -235,7 +236,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 ],
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xxl),
 
               // Message
               Text(
@@ -244,7 +245,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               TextFormField(
                 controller: _messageController,
                 maxLines: 6,
@@ -254,11 +255,11 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   fillColor: theme.colorScheme.surfaceContainerHighest
                       .withValues(alpha: 0.3),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     borderSide: BorderSide(
                       color: theme.colorScheme.primary,
                       width: 2,
@@ -276,7 +277,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 },
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               // App Info
               Text(
@@ -286,7 +287,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxxl),
 
               // Submit Button
               SizedBox(
@@ -311,9 +312,11 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.lg,
+                    ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                   ),
                 ),
@@ -357,7 +360,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         color: isSelected ? Colors.white : theme.colorScheme.onSurface,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+      ),
       side: BorderSide(color: isSelected ? color : Colors.transparent),
     );
   }

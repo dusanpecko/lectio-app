@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lectio_divina/controllers/lectio_audio_controller.dart';
 import 'package:lectio_divina/models/lectio_audio_track.dart';
 import 'package:lectio_divina/shared/app_colors.dart';
+import '../shared/app_spacing.dart';
 
 class MiniAudioPlayer extends StatefulWidget {
   const MiniAudioPlayer({super.key});
@@ -21,12 +22,11 @@ class _MiniAudioPlayerState extends State<MiniAudioPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     // Using ListenableBuilder to rebuild when controller changes
     return ListenableBuilder(
       listenable: _audioController,
       builder: (context, child) {
+        final theme = Theme.of(context);
         // Ak prehrávač nie je viditeľný (napr. užívateľ ho zatvoril alebo nehrá), nezobrazuj nič
         // NOTE: Pôvodne LectioScreen používal _showAudioPlayer.
         // Teraz to čítame z controllera.
@@ -132,7 +132,7 @@ class _MiniAudioPlayerState extends State<MiniAudioPlayer> {
               ), // Max width for tablets
               decoration: BoxDecoration(
                 color: theme.cardColor.withValues(alpha: 0.98),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(AppRadius.xl),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.2),
@@ -153,7 +153,7 @@ class _MiniAudioPlayerState extends State<MiniAudioPlayer> {
                     decoration: const BoxDecoration(
                       color: AppColors.primary,
                       borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(20),
+                        top: Radius.circular(AppRadius.xl),
                       ),
                     ),
                     child: Row(
@@ -182,7 +182,7 @@ class _MiniAudioPlayerState extends State<MiniAudioPlayer> {
                                 _audioController.setPlayerMinimized(true);
                               },
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: AppSpacing.lg),
                             // Close button
                             IconButton(
                               icon: const Icon(
@@ -205,7 +205,7 @@ class _MiniAudioPlayerState extends State<MiniAudioPlayer> {
 
                   // Plný obsah prehrávača
                   Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     child: Column(
                       children: [
                         // Audio Mode Selector
@@ -217,13 +217,13 @@ class _MiniAudioPlayerState extends State<MiniAudioPlayer> {
                               Icons.music_off,
                               theme,
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: AppSpacing.md),
                             _buildAudioModeIconButton(
                               'short',
                               Icons.music_note,
                               theme,
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: AppSpacing.md),
                             _buildAudioModeIconButton(
                               'long',
                               Icons.queue_music,
@@ -231,7 +231,7 @@ class _MiniAudioPlayerState extends State<MiniAudioPlayer> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
 
                         // Now Playing
                         if (_audioController.currentAudioSection != null)
@@ -287,7 +287,7 @@ class _MiniAudioPlayerState extends State<MiniAudioPlayer> {
                             ),
                           ),
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSpacing.lg),
 
                         // Controls
                         Row(
@@ -355,7 +355,9 @@ class _MiniAudioPlayerState extends State<MiniAudioPlayer> {
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                          ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -364,15 +366,13 @@ class _MiniAudioPlayerState extends State<MiniAudioPlayer> {
                                   _dragPosition ??
                                       _audioController.currentPosition,
                                 ),
-                                style: TextStyle(
-                                  fontSize: 12,
+                                style: theme.textTheme.bodySmall!.copyWith(
                                   color: Colors.grey[600],
                                 ),
                               ),
                               Text(
                                 _formatDuration(_audioController.totalDuration),
-                                style: TextStyle(
-                                  fontSize: 12,
+                                style: theme.textTheme.bodySmall!.copyWith(
                                   color: Colors.grey[600],
                                 ),
                               ),
@@ -420,7 +420,7 @@ class _MiniAudioPlayerState extends State<MiniAudioPlayer> {
       borderRadius: BorderRadius.circular(30),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primary.withValues(alpha: 0.1)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../shared/app_colors.dart';
+import '../shared/app_spacing.dart';
 
 /// Widget pre ovládacie prvky audio playera v Lectio Divina
 class LectioAudioControls extends StatelessWidget {
@@ -43,7 +44,7 @@ class LectioAudioControls extends StatelessWidget {
           onPressed: canGoPrevious ? onPrevious : null,
           tooltip: 'Predchádzajúca',
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: AppSpacing.lg),
 
         // Play/Pause button
         _PlayPauseButton(
@@ -54,7 +55,7 @@ class LectioAudioControls extends StatelessWidget {
           onPause: onPause,
         ),
 
-        const SizedBox(width: 16),
+        const SizedBox(width: AppSpacing.lg),
 
         // Next track button
         IconButton(
@@ -115,10 +116,7 @@ class _PlayPauseButton extends StatelessWidget {
       return const SizedBox(
         width: 24,
         height: 24,
-        child: CircularProgressIndicator(
-          color: Colors.white,
-          strokeWidth: 2,
-        ),
+        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
       );
     }
     return Icon(isPlaying ? Icons.pause : Icons.play_arrow);
@@ -150,21 +148,16 @@ class LectioAudioProgressBar extends StatelessWidget {
       children: [
         Text(
           _formatDuration(currentPosition),
-          style: theme.textTheme.bodySmall?.copyWith(
+          style: theme.textTheme.labelSmall?.copyWith(
             color: Colors.grey.shade600,
-            fontSize: 11,
           ),
         ),
         Expanded(
           child: SliderTheme(
             data: SliderTheme.of(context).copyWith(
               trackHeight: 4.0,
-              thumbShape: const RoundSliderThumbShape(
-                enabledThumbRadius: 6,
-              ),
-              overlayShape: const RoundSliderOverlayShape(
-                overlayRadius: 12,
-              ),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
             ),
             child: Slider(
               value: currentValue.clamp(0, maxValue > 0 ? maxValue : 1),
@@ -179,9 +172,8 @@ class LectioAudioProgressBar extends StatelessWidget {
         ),
         Text(
           _formatDuration(totalDuration),
-          style: theme.textTheme.bodySmall?.copyWith(
+          style: theme.textTheme.labelSmall?.copyWith(
             color: Colors.grey.shade600,
-            fontSize: 11,
           ),
         ),
       ],
@@ -212,10 +204,10 @@ class LectioAudioModeSelector extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,7 +219,7 @@ class LectioAudioModeSelector extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Row(
             children: [
               Expanded(
@@ -239,7 +231,7 @@ class LectioAudioModeSelector extends StatelessWidget {
                   onTap: () => onModeChanged('none'),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: _AudioModeButton(
                   mode: 'short',
@@ -249,7 +241,7 @@ class LectioAudioModeSelector extends StatelessWidget {
                   onTap: () => onModeChanged('short'),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: _AudioModeButton(
                   mode: 'long',
@@ -288,12 +280,15 @@ class _AudioModeButton extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.sm,
+          horizontal: AppSpacing.xs,
+        ),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           border: Border.all(
             color: isSelected ? AppColors.primary : Colors.grey.shade300,
             width: 1.5,
@@ -306,13 +301,12 @@ class _AudioModeButton extends StatelessWidget {
               color: isSelected ? Colors.white : Colors.grey.shade600,
               size: 20,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               label,
-              style: theme.textTheme.bodySmall?.copyWith(
+              style: theme.textTheme.labelSmall?.copyWith(
                 color: isSelected ? Colors.white : Colors.grey.shade600,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 11,
               ),
               textAlign: TextAlign.center,
             ),
@@ -322,4 +316,3 @@ class _AudioModeButton extends StatelessWidget {
     );
   }
 }
-

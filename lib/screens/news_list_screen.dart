@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'news_detail_screen.dart';
+import '../shared/app_spacing.dart';
 
 class NewsListScreen extends StatefulWidget {
   const NewsListScreen({super.key});
@@ -86,10 +87,11 @@ class _NewsListScreenState extends State<NewsListScreen> {
               onRefresh: _onRefresh,
               child: ListView.separated(
                 itemCount: news.length,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 separatorBuilder: (context, index) =>
                     const SizedBox(height: 18),
                 itemBuilder: (context, index) {
+                  final theme = Theme.of(context);
                   final article = news[index];
                   final imageUrl = article['image_url'] as String?;
                   final title = article['title'] as String? ?? '';
@@ -100,11 +102,11 @@ class _NewsListScreenState extends State<NewsListScreen> {
 
                   return Card(
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
                     ),
-                    elevation: 3,
+                    elevation: AppElevation.medium,
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
                       onTap: () async {
                         final result = await Navigator.push(
                           context,
@@ -124,8 +126,8 @@ class _NewsListScreenState extends State<NewsListScreen> {
                           if (imageUrl != null && imageUrl.isNotEmpty)
                             ClipRRect(
                               borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(16),
-                                topRight: Radius.circular(16),
+                                topLeft: Radius.circular(AppRadius.lg),
+                                topRight: Radius.circular(AppRadius.lg),
                               ),
                               child: CachedNetworkImage(
                                 imageUrl: imageUrl,
@@ -157,25 +159,24 @@ class _NewsListScreenState extends State<NewsListScreen> {
                               ),
                             ),
                           Padding(
-                            padding: const EdgeInsets.all(16.0),
+                            padding: const EdgeInsets.all(AppSpacing.lg),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   title,
-                                  style: const TextStyle(
-                                    fontSize: 18,
+                                  style: theme.textTheme.titleMedium!.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: AppSpacing.sm),
                                 Text(
                                   summary.length > 250
                                       ? '${summary.substring(0, 247)}...'
                                       : summary,
-                                  style: const TextStyle(fontSize: 15),
+                                  style: theme.textTheme.bodyLarge,
                                 ),
-                                const SizedBox(height: 12),
+                                const SizedBox(height: AppSpacing.md),
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
@@ -190,7 +191,7 @@ class _NewsListScreenState extends State<NewsListScreen> {
                                         const SizedBox(width: 5),
                                         Text(
                                           likes.toString(),
-                                          style: const TextStyle(fontSize: 14),
+                                          style: theme.textTheme.bodyMedium,
                                         ),
                                       ],
                                     ),

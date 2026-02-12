@@ -1,6 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../shared/app_spacing.dart';
+import '../shared/app_colors.dart';
 
 class PrivacyScreen extends StatefulWidget {
   const PrivacyScreen({super.key});
@@ -43,18 +45,18 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(tr('privacy.page_title'))),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header Card
             Card(
-              elevation: 2,
+              elevation: AppElevation.medium,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -65,24 +67,22 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                           color: theme.colorScheme.primary,
                           size: 28,
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Text(
                             tr('privacy.header.app_name'),
-                            style: const TextStyle(
-                              fontSize: 18,
+                            style: theme.textTheme.titleMedium!.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                     Text(
                       tr('privacy.last_updated'),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
+                      style: theme.textTheme.bodySmall!.copyWith(
+                        color: AppColors.adaptiveCardSubtitle(context),
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -90,7 +90,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             // Sekcie
             _buildSection(
@@ -105,12 +105,12 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                     tr('privacy.intro.description'),
                     style: const TextStyle(height: 1.5),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   Text(
                     tr('privacy.intro.purpose'),
                     style: const TextStyle(height: 1.5),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   Text(
                     tr('privacy.intro.commitment'),
                     style: const TextStyle(
@@ -134,13 +134,19 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                     tr('privacy.token.description'),
                     style: const TextStyle(height: 1.5),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade300),
+                      color: AppColors.isDark(context)
+                          ? AppColors.darkCard
+                          : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      border: Border.all(
+                        color: AppColors.isDark(context)
+                            ? Colors.grey.shade700
+                            : Colors.grey.shade300,
+                      ),
                     ),
                     child: Text(
                       tr('privacy.token.notice'),
@@ -150,7 +156,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   Text(
                     tr('privacy.token.generator'),
                     style: const TextStyle(height: 1.5),
@@ -174,7 +180,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   ...List.generate(
                     (context.locale.languageCode == 'sk' ? 4 : 4),
                     (index) => Text(
@@ -182,12 +188,12 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                       style: const TextStyle(height: 1.5),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   Text(
                     tr('privacy.personal.purpose'),
                     style: const TextStyle(height: 1.5),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   Text(
                     tr('privacy.personal.additional_title'),
                     style: const TextStyle(
@@ -195,7 +201,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   Text(
                     tr('privacy.personal.location_title'),
                     style: const TextStyle(
@@ -205,9 +211,9 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                   ),
                   Text(
                     tr('privacy.personal.location_desc'),
-                    style: const TextStyle(height: 1.5, fontSize: 13),
+                    style: theme.textTheme.bodySmall!.copyWith(height: 1.5),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     tr('privacy.personal.photos_title'),
                     style: const TextStyle(
@@ -217,9 +223,9 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                   ),
                   Text(
                     tr('privacy.personal.photos_desc'),
-                    style: const TextStyle(height: 1.5, fontSize: 13),
+                    style: theme.textTheme.bodySmall!.copyWith(height: 1.5),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     tr('privacy.personal.app_info_title'),
                     style: const TextStyle(
@@ -229,9 +235,9 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                   ),
                   Text(
                     tr('privacy.personal.app_info_desc'),
-                    style: const TextStyle(height: 1.5, fontSize: 13),
+                    style: theme.textTheme.bodySmall!.copyWith(height: 1.5),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     tr('privacy.personal.identifiers_title'),
                     style: const TextStyle(
@@ -241,7 +247,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                   ),
                   Text(
                     tr('privacy.personal.identifiers_desc'),
-                    style: const TextStyle(height: 1.5, fontSize: 13),
+                    style: theme.textTheme.bodySmall!.copyWith(height: 1.5),
                   ),
                 ],
               ),
@@ -256,16 +262,22 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green.shade200),
+                      color: AppColors.isDark(context)
+                          ? Colors.green.shade900.withValues(alpha: 0.3)
+                          : Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      border: Border.all(
+                        color: AppColors.isDark(context)
+                            ? Colors.green.shade700
+                            : Colors.green.shade200,
+                      ),
                     ),
                     child: Row(
                       children: [
                         Icon(Icons.check_circle, color: Colors.green.shade700),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Text(
                             tr('privacy.cookies.notice'),
@@ -278,7 +290,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   Text(
                     tr('privacy.cookies.web_note'),
                     style: const TextStyle(height: 1.5),
@@ -302,7 +314,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   ...List.generate(
                     5,
                     (index) => Text(
@@ -310,7 +322,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                       style: const TextStyle(height: 1.5),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   Text(
                     tr('privacy.rights.request'),
                     style: const TextStyle(
@@ -337,7 +349,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   Text(
                     tr('privacy.contact.organization'),
                     style: const TextStyle(
@@ -345,7 +357,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     tr('privacy.contact.email'),
                     style: const TextStyle(height: 1.5),
@@ -358,7 +370,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
 
             // Footer
             Center(
@@ -368,30 +380,30 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                     Text(
                       '${tr('privacy.footer.version')} $_version',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
+                        color: AppColors.adaptiveCardSubtitle(context),
                         fontStyle: FontStyle.italic,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                   ],
                   Text(
                     tr('privacy.footer.copyright'),
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
+                      color: AppColors.adaptiveCardSubtitle(context),
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     tr('privacy.footer.rights'),
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
+                      color: AppColors.adaptiveCardSubtitle(context),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
           ],
         ),
       ),
@@ -408,25 +420,26 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
     final isExpanded = _expandedSections.contains(id);
 
     return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: AppElevation.medium,
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
       child: Column(
         children: [
           InkWell(
             onTap: () => _toggleSection(id),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Row(
                 children: [
                   Icon(icon, color: theme.colorScheme.primary, size: 24),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Text(
                       title,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: theme.textTheme.titleMedium!.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),

@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 import 'privacy_screen.dart';
+import '../shared/app_spacing.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -45,7 +46,7 @@ class _AboutScreenState extends State<AboutScreen> {
         slivers: [
           // Hero App Bar
           SliverAppBar(
-            expandedHeight: 280,
+            expandedHeight: 300,
             floating: false,
             pinned: true,
             backgroundColor: theme.colorScheme.primary,
@@ -79,15 +80,15 @@ class _AboutScreenState extends State<AboutScreen> {
                   SafeArea(
                     child: Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(24.0),
+                        padding: const EdgeInsets.all(AppSpacing.xxl),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(AppSpacing.lg),
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(AppRadius.xl),
                               ),
                               child: const Icon(
                                 Icons.info_outline_rounded,
@@ -95,7 +96,7 @@ class _AboutScreenState extends State<AboutScreen> {
                                 color: Colors.white,
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: AppSpacing.lg),
                             Text(
                               'about.hero_title'.tr(),
                               style: theme.textTheme.headlineMedium?.copyWith(
@@ -104,7 +105,7 @@ class _AboutScreenState extends State<AboutScreen> {
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: AppSpacing.sm),
                             Text(
                               'about.hero_subtitle'.tr(),
                               style: theme.textTheme.titleLarge?.copyWith(
@@ -126,11 +127,11 @@ class _AboutScreenState extends State<AboutScreen> {
           // Content
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
 
                   // O aplikácii
                   _buildSection(
@@ -171,11 +172,11 @@ class _AboutScreenState extends State<AboutScreen> {
                         InkWell(
                           onTap: () => _launchUrl('mailto:info@lectio.one'),
                           child: const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 4.0),
+                            padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
                             child: Row(
                               children: [
                                 Icon(Icons.email_outlined, size: 20),
-                                SizedBox(width: 8),
+                                SizedBox(width: AppSpacing.sm),
                                 Text(
                                   'info@lectio.one',
                                   style: TextStyle(
@@ -187,15 +188,15 @@ class _AboutScreenState extends State<AboutScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         InkWell(
                           onTap: () => _launchUrl('https://lectio.one'),
                           child: const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 4.0),
+                            padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
                             child: Row(
                               children: [
                                 Icon(Icons.language_outlined, size: 20),
-                                SizedBox(width: 8),
+                                SizedBox(width: AppSpacing.sm),
                                 Text(
                                   'https://lectio.one',
                                   style: TextStyle(
@@ -242,7 +243,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     title: 'about.bible_title'.tr(),
                     content: Text(
                       'about.bible_copyrights'.tr(),
-                      style: const TextStyle(height: 1.6, fontSize: 13),
+                      style: theme.textTheme.bodySmall!.copyWith(height: 1.6),
                     ),
                   ),
 
@@ -323,7 +324,7 @@ class _AboutScreenState extends State<AboutScreen> {
                           'about.privacy_description'.tr(),
                           style: const TextStyle(height: 1.6),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         OutlinedButton.icon(
                           onPressed: () {
                             Navigator.push(
@@ -354,7 +355,7 @@ class _AboutScreenState extends State<AboutScreen> {
                           'about.opensource_description'.tr(),
                           style: const TextStyle(height: 1.6),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         OutlinedButton.icon(
                           onPressed: () {
                             showLicensePage(
@@ -362,7 +363,7 @@ class _AboutScreenState extends State<AboutScreen> {
                               applicationName: 'Lectio Divina',
                               applicationVersion: _version,
                               applicationIcon: Padding(
-                                padding: const EdgeInsets.all(16.0),
+                                padding: const EdgeInsets.all(AppSpacing.lg),
                                 child: Image.asset(
                                   'assets/icon/icon.png',
                                   width: 64,
@@ -382,7 +383,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.xxl),
                 ],
               ),
             ),
@@ -400,11 +401,11 @@ class _AboutScreenState extends State<AboutScreen> {
     return SizedBox(
       width: double.infinity,
       child: Card(
-        margin: const EdgeInsets.only(bottom: 16),
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+        elevation: AppElevation.medium,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -415,7 +416,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   color: theme.colorScheme.primary,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               content,
             ],
           ),

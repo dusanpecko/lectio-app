@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../utils/app_logger.dart';
+import '../shared/app_spacing.dart';
 
 class DonationScreen extends StatefulWidget {
   const DonationScreen({super.key});
@@ -347,17 +348,21 @@ class _DonationScreenState extends State<DonationScreen> {
                         SafeArea(
                           child: Center(
                             child: Padding(
-                              padding: const EdgeInsets.all(24.0),
+                              padding: const EdgeInsets.all(AppSpacing.xxl),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.all(16),
+                                    padding: const EdgeInsets.all(
+                                      AppSpacing.lg,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.white.withValues(
                                         alpha: 0.15,
                                       ),
-                                      borderRadius: BorderRadius.circular(20),
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.xl,
+                                      ),
                                     ),
                                     child: const Icon(
                                       Icons.favorite_outline_rounded,
@@ -365,7 +370,7 @@ class _DonationScreenState extends State<DonationScreen> {
                                       color: Colors.white,
                                     ),
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: AppSpacing.lg),
                                   Text(
                                     'Podporte lectio.one',
                                     style: theme.textTheme.headlineMedium
@@ -375,7 +380,7 @@ class _DonationScreenState extends State<DonationScreen> {
                                         ),
                                     textAlign: TextAlign.center,
                                   ),
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: AppSpacing.sm),
                                   Text(
                                     'Priestor ticha pre Božie slovo',
                                     style: theme.textTheme.titleLarge?.copyWith(
@@ -397,49 +402,51 @@ class _DonationScreenState extends State<DonationScreen> {
                 // Content
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // Header
-                        const Text(
+                        Text(
                           'lectio.one vzniká z túžby vytvorať priestor ticha pre Božie slovo v digitálnom svete.\n'
                           'Každý deň sa ľudia modlia, rozjímajú a nachádzajú pokoj vďaka tejto službe.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 15, height: 1.5),
+                          style: theme.textTheme.bodyLarge!.copyWith(
+                            height: 1.5,
+                          ),
                         ),
-                        const SizedBox(height: 12),
-                        const Text(
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
                           'Ak cítite, že chcete toto dielo niesť spolu s nami, môžete si vybrať spôsob podpory, ktorý je vám blízky.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                          style: theme.textTheme.bodyMedium!.copyWith(
+                            color: Colors.grey,
+                          ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: AppSpacing.xxl),
 
-                        const Text(
+                        Text(
                           '🌿 Spôsoby podpory',
-                          style: TextStyle(
-                            fontSize: 20,
+                          style: theme.textTheme.titleLarge!.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSpacing.lg),
 
                         // One-time donation section
                         Card(
                           child: Padding(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(AppSpacing.lg),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   '💰 Jednorazový dar',
-                                  style: TextStyle(
-                                    fontSize: 18,
+                                  style: theme.textTheme.titleMedium!.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: AppSpacing.lg),
                                 TextField(
                                   controller: _amountController,
                                   keyboardType: TextInputType.number,
@@ -449,7 +456,7 @@ class _DonationScreenState extends State<DonationScreen> {
                                     border: OutlineInputBorder(),
                                   ),
                                 ),
-                                const SizedBox(height: 12),
+                                const SizedBox(height: AppSpacing.md),
                                 TextField(
                                   controller: _messageController,
                                   maxLines: 2,
@@ -458,16 +465,15 @@ class _DonationScreenState extends State<DonationScreen> {
                                     border: OutlineInputBorder(),
                                   ),
                                 ),
-                                const SizedBox(height: 12),
+                                const SizedBox(height: AppSpacing.md),
                                 CheckboxListTile(
-                                  title: const Text(
+                                  title: Text(
                                     '🕶️ Anonymný dar (bez potvrdzovacieho e-mailu)',
-                                    style: TextStyle(fontSize: 14),
+                                    style: theme.textTheme.bodyMedium,
                                   ),
-                                  subtitle: const Text(
+                                  subtitle: Text(
                                     'Platba bude spracovaná, ale nedostanete potvrdenie.',
-                                    style: TextStyle(
-                                      fontSize: 12,
+                                    style: theme.textTheme.bodySmall!.copyWith(
                                       color: Colors.grey,
                                     ),
                                   ),
@@ -479,7 +485,7 @@ class _DonationScreenState extends State<DonationScreen> {
                                       ListTileControlAffinity.leading,
                                   contentPadding: EdgeInsets.zero,
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: AppSpacing.lg),
                                 SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton(
@@ -496,11 +502,11 @@ class _DonationScreenState extends State<DonationScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: AppSpacing.xxl),
 
                         // Subscription tiers - Horizontal slider
                         SizedBox(
-                          height: 520,
+                          height: 560,
                           child: PageView.builder(
                             controller: PageController(
                               initialPage: 1, // Start with "Priateľ" tier
@@ -520,14 +526,18 @@ class _DonationScreenState extends State<DonationScreen> {
                                   vertical: 4,
                                 ),
                                 child: Card(
-                                  elevation: isPopular ? 4 : 2,
+                                  elevation: isPopular
+                                      ? AppElevation.high
+                                      : AppElevation.medium,
                                   color: isPopular
                                       ? Theme.of(
                                           context,
                                         ).colorScheme.primaryContainer
                                       : null,
                                   child: Padding(
-                                    padding: const EdgeInsets.all(20),
+                                    padding: const EdgeInsets.all(
+                                      AppSpacing.xl,
+                                    ),
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
@@ -536,7 +546,7 @@ class _DonationScreenState extends State<DonationScreen> {
                                         if (isPopular)
                                           Container(
                                             margin: const EdgeInsets.only(
-                                              bottom: 12,
+                                              bottom: AppSpacing.md,
                                             ),
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 10,
@@ -547,57 +557,59 @@ class _DonationScreenState extends State<DonationScreen> {
                                                 context,
                                               ).colorScheme.primary,
                                               borderRadius:
-                                                  BorderRadius.circular(12),
+                                                  BorderRadius.circular(
+                                                    AppRadius.md,
+                                                  ),
                                             ),
                                             child: Text(
                                               'Najpopulárnejšie',
-                                              style: TextStyle(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.onPrimary,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                              style: theme.textTheme.bodySmall!
+                                                  .copyWith(
+                                                    color: Theme.of(
+                                                      context,
+                                                    ).colorScheme.onPrimary,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                             ),
                                           ),
 
                                         // Tier name
                                         Text(
                                           tierData['name'] as String,
-                                          style: TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                            color: isPopular
-                                                ? Colors.white
-                                                : null,
-                                          ),
+                                          style: theme.textTheme.titleLarge!
+                                              .copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color: isPopular
+                                                    ? Colors.white
+                                                    : null,
+                                              ),
                                         ),
-                                        const SizedBox(height: 4),
+                                        const SizedBox(height: AppSpacing.xs),
 
                                         // Subtitle
                                         Text(
                                           tierData['subtitle'] as String,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: isPopular
-                                                ? Colors.white70
-                                                : Colors.grey[600],
-                                          ),
+                                          style: theme.textTheme.bodySmall!
+                                              .copyWith(
+                                                color: isPopular
+                                                    ? Colors.white70
+                                                    : Colors.grey[600],
+                                              ),
                                         ),
-                                        const SizedBox(height: 12),
+                                        const SizedBox(height: AppSpacing.md),
 
                                         // Price
                                         Text(
                                           tierData['price'] as String,
-                                          style: TextStyle(
-                                            fontSize: 28,
-                                            color: isPopular
-                                                ? Colors.white
-                                                : Theme.of(
-                                                    context,
-                                                  ).colorScheme.primary,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                          style: theme.textTheme.headlineMedium!
+                                              .copyWith(
+                                                color: isPopular
+                                                    ? Colors.white
+                                                    : Theme.of(
+                                                        context,
+                                                      ).colorScheme.primary,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                         ),
 
                                         // Monthly price alternative
@@ -606,76 +618,97 @@ class _DonationScreenState extends State<DonationScreen> {
                                         ))
                                           Padding(
                                             padding: const EdgeInsets.only(
-                                              top: 4,
+                                              top: AppSpacing.xs,
                                             ),
                                             child: Text(
                                               'alebo ${tierData['monthlyPrice']}',
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: isPopular
-                                                    ? Colors.white70
-                                                    : Colors.grey[700],
-                                              ),
+                                              style: theme.textTheme.bodyMedium!
+                                                  .copyWith(
+                                                    color: isPopular
+                                                        ? Colors.white70
+                                                        : Colors.grey[700],
+                                                  ),
                                             ),
                                           ),
 
-                                        const SizedBox(height: 16),
+                                        const SizedBox(height: AppSpacing.lg),
 
                                         // Features
-                                        ...features.map(
-                                          (feature) => Padding(
-                                            padding: const EdgeInsets.only(
-                                              bottom: 8,
-                                            ),
-                                            child: Row(
+                                        Flexible(
+                                          child: SingleChildScrollView(
+                                            child: Column(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  '• ',
-                                                  style: TextStyle(
-                                                    fontSize: 16,
-                                                    color: isPopular
-                                                        ? Colors.white
-                                                        : Theme.of(
-                                                            context,
-                                                          ).colorScheme.primary,
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  child: Text(
-                                                    feature,
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      height: 1.4,
-                                                      color: isPopular
-                                                          ? Colors.white
-                                                          : null,
+                                              children: features
+                                                  .map(
+                                                    (feature) => Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                            bottom:
+                                                                AppSpacing.sm,
+                                                          ),
+                                                      child: Row(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Text(
+                                                            '• ',
+                                                            style: theme
+                                                                .textTheme
+                                                                .titleMedium!
+                                                                .copyWith(
+                                                                  color:
+                                                                      isPopular
+                                                                      ? Colors
+                                                                            .white
+                                                                      : Theme.of(
+                                                                          context,
+                                                                        ).colorScheme.primary,
+                                                                ),
+                                                          ),
+                                                          Expanded(
+                                                            child: Text(
+                                                              feature,
+                                                              style: theme
+                                                                  .textTheme
+                                                                  .bodyMedium!
+                                                                  .copyWith(
+                                                                    height: 1.4,
+                                                                    color:
+                                                                        isPopular
+                                                                        ? Colors
+                                                                              .white
+                                                                        : null,
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
                                                     ),
-                                                  ),
-                                                ),
-                                              ],
+                                                  )
+                                                  .toList(),
                                             ),
                                           ),
                                         ),
 
-                                        const SizedBox(height: 12),
+                                        const SizedBox(height: AppSpacing.md),
 
                                         // Description
                                         Text(
                                           tierData['description'] as String,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontStyle: FontStyle.italic,
-                                            color: isPopular
-                                                ? Colors.white70
-                                                : Colors.grey[600],
-                                          ),
+                                          style: theme.textTheme.bodySmall!
+                                              .copyWith(
+                                                fontStyle: FontStyle.italic,
+                                                color: isPopular
+                                                    ? Colors.white70
+                                                    : Colors.grey[600],
+                                              ),
                                         ),
 
                                         // Action buttons (only for non-prayer tiers)
                                         if (!isPrayer) ...[
-                                          const SizedBox(height: 16),
+                                          const SizedBox(height: AppSpacing.lg),
                                           Row(
                                             children: [
                                               Expanded(
@@ -701,7 +734,9 @@ class _DonationScreenState extends State<DonationScreen> {
                                               if (tierData.containsKey(
                                                 'monthlyPrice',
                                               )) ...[
-                                                const SizedBox(width: 8),
+                                                const SizedBox(
+                                                  width: AppSpacing.sm,
+                                                ),
                                                 Expanded(
                                                   child: OutlinedButton(
                                                     onPressed: () =>
@@ -739,48 +774,50 @@ class _DonationScreenState extends State<DonationScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 32),
+                        const SizedBox(height: AppSpacing.xxxl),
 
                         // Bank transfer section
                         Card(
                           color: Colors.green[50],
                           child: Padding(
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.all(AppSpacing.xl),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   '🏦 Podpora bankovým prevodom',
-                                  style: TextStyle(
-                                    fontSize: 18,
+                                  style: theme.textTheme.titleMedium!.copyWith(
                                     fontWeight: FontWeight.bold,
+                                    color: Colors.green[900],
                                   ),
                                 ),
-                                const SizedBox(height: 12),
-                                const Text(
+                                const SizedBox(height: AppSpacing.md),
+                                Text(
                                   'Ak chcete podporiť lectio.one priamo prevodom na účet:',
-                                  style: TextStyle(fontSize: 14, height: 1.5),
+                                  style: theme.textTheme.bodyMedium!.copyWith(
+                                    height: 1.5,
+                                    color: Colors.black87,
+                                  ),
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: AppSpacing.lg),
                                 const _CopyRow(
                                   label: 'Názov účtu:',
                                   value: 'lectio.one',
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: AppSpacing.sm),
                                 const _CopyRow(
                                   label: 'IBAN:',
                                   value: 'SK42 7500 0000 0040 3515 6222',
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: AppSpacing.sm),
                                 const _CopyRow(
                                   label: 'BIC (SWIFT):',
                                   value: 'CEKOSKBX',
                                 ),
-                                const SizedBox(height: 16),
-                                const Text(
+                                const SizedBox(height: AppSpacing.lg),
+                                Text(
                                   'Ďakujeme za vašu dôveru a podporu.',
-                                  style: TextStyle(
-                                    fontSize: 14,
+                                  style: theme.textTheme.bodyMedium!.copyWith(
                                     fontStyle: FontStyle.italic,
                                     color: Colors.black87,
                                   ),
@@ -790,99 +827,110 @@ class _DonationScreenState extends State<DonationScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 32),
+                        const SizedBox(height: AppSpacing.xxxl),
 
                         // Tax support section
                         Card(
                           color: Colors.blue[50],
                           child: Padding(
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.all(AppSpacing.xl),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   '🌾 Podpora cez 2 % alebo 3 % z daní',
-                                  style: TextStyle(
-                                    fontSize: 18,
+                                  style: theme.textTheme.titleMedium!.copyWith(
                                     fontWeight: FontWeight.bold,
+                                    color: Colors.blue[900],
                                   ),
                                 ),
-                                const SizedBox(height: 12),
-                                const Text(
+                                const SizedBox(height: AppSpacing.md),
+                                Text(
                                   'lectio.one je občianske združenie.\n'
                                   'Ak chcete podporiť túto službu, môžete nám venovať 2 % (alebo 3 % pri dobrovoľníctve) z vašich daní.',
-                                  style: TextStyle(fontSize: 14, height: 1.5),
-                                ),
-                                const SizedBox(height: 16),
-                                const Text(
-                                  'Údaje prijímateľa',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
+                                  style: theme.textTheme.bodyMedium!.copyWith(
+                                    height: 1.5,
+                                    color: Colors.black87,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
-                                const Text(
+                                const SizedBox(height: AppSpacing.lg),
+                                Text(
+                                  'Údaje prijímateľa',
+                                  style: theme.textTheme.bodyLarge!.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                Text(
                                   'Názov: lectio.one\n'
                                   'Právna forma: Občianske združenie\n'
                                   'IČO: 55971521\n'
                                   'Sídlo: Jána Kalinčiaka 3098/1, 010 01 Žilina',
-                                  style: TextStyle(fontSize: 13, height: 1.6),
-                                ),
-                                const SizedBox(height: 16),
-                                const Text(
-                                  'Dôležité termíny',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
+                                  style: theme.textTheme.bodySmall!.copyWith(
+                                    height: 1.6,
+                                    color: Colors.black87,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
-                                const Text(
+                                const SizedBox(height: AppSpacing.lg),
+                                Text(
+                                  'Dôležité termíny',
+                                  style: theme.textTheme.bodyLarge!.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                Text(
                                   'do 31. marca – podanie daňového priznania\n'
                                   'do 30. apríla – podanie vyhlásenia zamestnancami\n'
                                   '(Ak ste dobrovoľníčili aspoň 40 hodín, môžete poukázať 3 %.)',
-                                  style: TextStyle(fontSize: 13, height: 1.6),
+                                  style: theme.textTheme.bodySmall!.copyWith(
+                                    height: 1.6,
+                                    color: Colors.black87,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                         ),
 
-                        const SizedBox(height: 32),
+                        const SizedBox(height: AppSpacing.xxxl),
 
                         // Footer
-                        const Text(
+                        Text(
                           '🙏 Ďakujeme',
-                          style: TextStyle(
-                            fontSize: 20,
+                          style: theme.textTheme.titleLarge!.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 12),
-                        const Text(
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
                           'Vaša podpora nám umožňuje rozvíjať lectio.one\n'
                           'a prinášať viac pokoja, nádeje a radosti do života ľudí.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 14, height: 1.6),
+                          style: theme.textTheme.bodyMedium!.copyWith(
+                            height: 1.6,
+                          ),
                         ),
-                        const SizedBox(height: 12),
-                        const Text(
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
                           'Aplikácia je bez reklám, bez rozptyľovania a dostupná bezplatne.\n'
                           'Ak chcete, môžete jej rozvoj podporiť svojím darom.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
+                          style: theme.textTheme.bodySmall!.copyWith(
                             color: Colors.grey,
                             height: 1.5,
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        const Text(
+                        const SizedBox(height: AppSpacing.xxl),
+                        Text(
                           '💳 Platba je zabezpečená cez Stripe',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                          style: theme.textTheme.bodySmall!.copyWith(
+                            color: Colors.grey,
+                          ),
                         ),
                       ],
                     ),
@@ -910,22 +958,25 @@ class _CopyRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final color = Theme.of(context).colorScheme.primary;
     return Row(
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: theme.textTheme.bodyMedium!.copyWith(
             fontWeight: FontWeight.w600,
             color: color,
-            fontSize: 14,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
+            style: theme.textTheme.bodyMedium!.copyWith(
+              fontFamily: 'monospace',
+              color: Colors.black87,
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         ),

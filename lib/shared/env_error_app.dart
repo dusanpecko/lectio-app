@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lectio_divina/shared/app_theme.dart';
+import 'app_spacing.dart';
 
 class EnvErrorApp extends StatelessWidget {
   const EnvErrorApp({super.key});
@@ -17,7 +18,7 @@ class EnvErrorApp extends StatelessWidget {
           title: const Text('Konfigurácia chýba / Missing config'),
         ),
         body: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(AppSpacing.xxl),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 600),
@@ -25,13 +26,13 @@ class EnvErrorApp extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.error_outline, size: 64),
-                  SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.lg),
                   Text(
                     'Chýba konfigurácia / Missing configuration',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),
-                  SizedBox(height: 8),
+                  SizedBox(height: AppSpacing.sm),
                   Text(
                     'V súbore .env chýbajú kľúče SUPABASE_URL alebo SUPABASE_ANON_KEY.\n\n'
                     'Missing SUPABASE_URL or SUPABASE_ANON_KEY in .env file.',

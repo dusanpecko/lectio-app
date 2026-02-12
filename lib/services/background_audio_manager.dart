@@ -1,15 +1,11 @@
 // Compatibility layer - redirects to new LectioAudioPlayer
 // This file exists for backwards compatibility with lectio_screen.dart
 
-import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 
 import '../utils/app_logger.dart';
 import 'lectio_audio_player.dart';
-
-// Global audio handler for compatibility
-AudioHandler? globalAudioHandler;
 
 class BackgroundAudioManager {
   static final BackgroundAudioManager _instance =
@@ -113,9 +109,6 @@ class BackgroundAudioManager {
 
   /// Get duration stream for UI updates
   Stream<Duration?> get durationStream => _player.player.durationStream;
-
-  /// Playback state stream (compatibility - empty for now)
-  Stream<PlaybackState> get playbackStateStream => Stream.empty();
 
   /// Play URL (find track by URL and play)
   Future<void> play(String url, {String? title, String? artist}) async {

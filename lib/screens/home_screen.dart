@@ -27,6 +27,7 @@ import 'spiritual_exercise_detail_screen.dart';
 import 'spiritual_exercises_list_screen.dart';
 import 'donation_screen.dart';
 import 'adoration_screen.dart';
+import '../shared/app_spacing.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -664,10 +665,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       // Lectio Divina Calendar
                       _buildLectioCalendar(),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       // Daily quote
                       _buildQuoteCard(),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       // Navigation buttons
                       _buildNavigationButtons(),
                       const SizedBox(height: 15),
@@ -688,7 +689,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         // SpeedDial FAB
         floatingActionButton: Padding(
-          padding: const EdgeInsets.only(bottom: 20), // Mierne vyššie
+          padding: const EdgeInsets.only(
+            bottom: AppSpacing.xl,
+          ), // Mierne vyššie
           child: SpeedDialFAB(
             onPrimaryAction: _openTodaysLectio,
             onSecondaryAction: _handleSpeedDialAction,
@@ -701,12 +704,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Build hero slider
   Widget _buildHeroSlider() {
+    final theme = Theme.of(context);
     return Container(
       height: 350,
       decoration: const BoxDecoration(
         boxShadow: [
           BoxShadow(
-            color: Color(0x1A000000),
+            color: AppColors.shadowLight,
             blurRadius: 6,
             offset: Offset(0, 3),
           ),
@@ -749,15 +753,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 left: 0,
                 right: 0,
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(AppSpacing.xl),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         slideTitleKeys[index].tr(),
-                        style: const TextStyle(
-                          fontSize: 28,
+                        style: theme.textTheme.headlineMedium!.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                           shadows: [
@@ -769,11 +772,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       Text(
                         slideSubtitleKeys[index].tr(),
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: theme.textTheme.titleMedium!.copyWith(
                           color: Colors.white,
                           shadows: [
                             Shadow(
@@ -799,14 +801,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildSliderDots() {
     return Container(
       height: 24,
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(imagePaths.length, (index) {
           final isActive = _currentPage == index;
           return AnimatedContainer(
             duration: const Duration(milliseconds: 300),
-            margin: const EdgeInsets.symmetric(horizontal: 4),
+            margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
             width: isActive ? 12 : 8,
             height: isActive ? 12 : 8,
             decoration: BoxDecoration(
@@ -821,12 +823,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Build Offline Banner
   Widget _buildOfflineBanner() {
+    final theme = Theme.of(context);
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
       decoration: BoxDecoration(
         color: Colors.orange.shade50,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: Colors.orange.shade200),
       ),
       child: Row(
@@ -836,12 +845,11 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Colors.orange.shade700,
             size: 22,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
               tr('offline.offline_banner'),
-              style: TextStyle(
-                fontSize: 13,
+              style: theme.textTheme.bodySmall!.copyWith(
                 color: Colors.orange.shade800,
                 fontWeight: FontWeight.w500,
               ),
@@ -854,11 +862,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Build Lectio Divina Calendar
   Widget _buildLectioCalendar() {
+    final theme = Theme.of(context);
     final today = DateTime.now();
     final startDate = today.subtract(const Duration(days: 3));
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
       child: Column(
         children: [
           // Header
@@ -875,10 +887,10 @@ class _HomeScreenState extends State<HomeScreen> {
               GestureDetector(
                 onTap: _showDatePickerForLectio,
                 child: Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: const Icon(
                     Icons.calendar_today,
@@ -889,14 +901,14 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
 
           // Calendar slider
           SizedBox(
             height: 90,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
               itemCount: 10,
               itemBuilder: (context, index) {
                 final date = startDate.add(Duration(days: index));
@@ -912,12 +924,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     opacity: isUnavailable ? 0.35 : 1.0,
                     child: Container(
                       width: 70,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xs,
+                      ),
                       decoration: BoxDecoration(
                         color: isToday
                             ? AppColors.primary
+                            : AppColors.isDark(context)
+                            ? AppColors.darkCard
                             : Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
                         border: isCached && !isToday
                             ? Border.all(color: Colors.green.shade400, width: 2)
                             : null,
@@ -938,13 +954,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Text(
                             date.day.toString(),
-                            style: TextStyle(
-                              fontSize: 24,
+                            style: theme.textTheme.headlineSmall!.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: isToday ? Colors.white : Colors.black87,
+                              color: isToday
+                                  ? Colors.white
+                                  : AppColors.adaptiveCardTitle(context),
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSpacing.xs),
                           if (isCached && !isToday)
                             Icon(
                               Icons.cloud_done_outlined,
@@ -954,11 +971,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           else
                             Text(
                               _getDayName(date),
-                              style: TextStyle(
-                                fontSize: 12,
+                              style: theme.textTheme.bodySmall!.copyWith(
                                 color: isToday
                                     ? Colors.white70
-                                    : Colors.grey.shade600,
+                                    : AppColors.adaptiveCardSubtitle(context),
                               ),
                             ),
                         ],
@@ -976,16 +992,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Build quote card - kompaktná verzia
   Widget _buildQuoteCard() {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: () {
         // Naviguj do Lectio screen
         Navigator.pushNamed(context, '/lectio');
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
         width: double.infinity,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.08),
@@ -1000,14 +1020,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         child: Card(
-          elevation: 0, // Vypnuté Card elevation, používame vlastný shadow
+          elevation: AppElevation
+              .none, // Vypnuté Card elevation, používame vlastný shadow
           margin: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -1044,7 +1065,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           size: 20,
                           color: AppColors.primary,
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: AppSpacing.md),
 
                         // Actio content (z lectio_sources)
                         Expanded(
@@ -1054,10 +1075,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               // Actio text
                               Text(
                                 actioText ?? tr('quote_not_available'),
-                                style: const TextStyle(
-                                  fontSize: 14,
+                                style: theme.textTheme.bodyMedium!.copyWith(
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xFF2D3748),
+                                  color: AppColors.adaptiveCardTitle(context),
                                   height: 1.4,
                                   fontStyle: FontStyle.italic,
                                 ),
@@ -1082,7 +1102,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Container(
       height: 60,
-      margin: const EdgeInsets.only(left: 16, right: 16, top: 16),
+      margin: const EdgeInsets.only(
+        left: AppSpacing.lg,
+        right: AppSpacing.lg,
+        top: AppSpacing.lg,
+      ),
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
@@ -1092,21 +1116,21 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icons.article,
             isOffline: _isOffline,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           // 2. Lectio divina
           _ModuleButton(
             labelKey: 'lectio_divina',
             icon: Icons.menu_book,
             isOffline: _isOffline,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           // 3. Aktuality
           _ModuleButton(
             labelKey: 'news',
             icon: Icons.campaign,
             isOffline: _isOffline,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           // 4. Poznámky (len pre prihlásených)
           if (isLoggedIn) ...[
             _ModuleButton(
@@ -1114,7 +1138,7 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.notes,
               isOffline: _isOffline,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
           ],
           // 5. Modlitby
           _ModuleButton(
@@ -1122,28 +1146,28 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icons.favorite,
             isOffline: _isOffline,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           // 6. Adorácie
           _ModuleButton(
             labelKey: 'adoration_title',
             icon: Icons.favorite_rounded,
             isOffline: _isOffline,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           // 7. Ruženec
           _ModuleButton(
             labelKey: 'rosary_title',
             icon: Icons.auto_stories_rounded,
             isOffline: _isOffline,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           // 8. O aplikácii
           _ModuleButton(
             labelKey: 'about_title',
             icon: Icons.info,
             isOffline: _isOffline,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           // 9. Nastavenie
           _ModuleButton(
             labelKey: 'settings',
@@ -1157,9 +1181,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Build support button
   Widget _buildSupportButton() {
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.lg,
+      ),
       child: ElevatedButton(
         onPressed: () {
           Navigator.push(
@@ -1175,12 +1203,14 @@ class _HomeScreenState extends State<HomeScreen> {
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 10),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
         ),
         child: Text(
           tr('support_full'),
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          style: theme.textTheme.bodyMedium!.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -1191,7 +1221,10 @@ class _HomeScreenState extends State<HomeScreen> {
     // Ak sa ešte načítava, zobraz loading
     if (_isLoadingExercise) {
       return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
         height: 300,
         child: const Center(
           child: CircularProgressIndicator(color: AppColors.primary),
@@ -1219,7 +1252,10 @@ class _HomeScreenState extends State<HomeScreen> {
     // Ak je len jedna položka, nezobrazuj dots
     if (carouselItems.length == 1) {
       return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
         height: 300,
         child: carouselItems.first,
       );
@@ -1227,7 +1263,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Carousel s viacerými položkami
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
       child: Column(
         children: [
           // Carousel
@@ -1244,7 +1283,9 @@ class _HomeScreenState extends State<HomeScreen> {
               },
               itemBuilder: (context, index) {
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xs,
+                  ),
                   child: carouselItems[index],
                 );
               },
@@ -1252,14 +1293,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           // Dots indicator
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(carouselItems.length, (index) {
               final isActive = _currentFeaturedPage == index;
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
+                margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
                 width: isActive ? 12 : 8,
                 height: isActive ? 12 : 8,
                 decoration: BoxDecoration(
@@ -1276,6 +1317,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Build Spiritual Exercise card content (bez margin pre carousel)
   Widget _buildSpiritualExerciseCardContent(SpiritualExercise exercise) {
+    final theme = Theme.of(context);
     final dateFormat = DateFormat('d. MMM', context.locale.languageCode);
     final dateRange =
         '${dateFormat.format(exercise.startDate)} - ${dateFormat.format(exercise.endDate)}';
@@ -1292,15 +1334,19 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
       child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: AppElevation.high,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
         child: Container(
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
           child: Stack(
             children: [
               // Background image
               ClipRRect(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 child:
                     exercise.homeImageUrl != null || exercise.imageUrl != null
                     ? CachedNetworkImage(
@@ -1320,7 +1366,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // Gradient overlay
               Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -1340,12 +1386,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 left: 0,
                 right: 0,
                 child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(16),
-                      bottomRight: Radius.circular(16),
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(AppRadius.lg),
+                      bottomRight: Radius.circular(AppRadius.lg),
                     ),
                   ),
                   child: Column(
@@ -1359,14 +1405,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             size: 16,
                             color: AppColors.primary,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.sm),
                           Expanded(
                             child: Text(
                               exercise.title,
-                              style: const TextStyle(
-                                fontSize: 18,
+                              style: theme.textTheme.titleMedium!.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF2D3748),
+                                color: AppColors.adaptiveCardTitle(context),
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -1374,35 +1419,33 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.calendar_today,
                             size: 14,
-                            color: Color(0xFF718096),
+                            color: AppColors.adaptiveCardSubtitle(context),
                           ),
                           const SizedBox(width: 6),
                           Text(
                             dateRange,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF718096),
+                            style: theme.textTheme.bodySmall!.copyWith(
+                              color: AppColors.adaptiveCardSubtitle(context),
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          const Icon(
+                          const SizedBox(width: AppSpacing.lg),
+                          Icon(
                             Icons.location_on,
                             size: 14,
-                            color: Color(0xFF718096),
+                            color: AppColors.adaptiveCardSubtitle(context),
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: AppSpacing.xs),
                           Expanded(
                             child: Text(
                               exercise.locationDisplay,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF718096),
+                              style: theme.textTheme.bodySmall!.copyWith(
+                                color: AppColors.adaptiveCardSubtitle(context),
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -1424,7 +1467,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildExerciseFallbackBackground() {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -1436,6 +1479,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Build Rosary card content (bez margin pre carousel)
   Widget _buildRosaryCardContent() {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -1447,15 +1491,19 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
       child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: AppElevation.high,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
         child: Container(
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
           child: Stack(
             children: [
               // Background image
               ClipRRect(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 child: Image.asset(
                   'assets/images/rosary_bg.webp',
                   width: double.infinity,
@@ -1465,7 +1513,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Fallback ak sa obrázok nenačíta
                     return Container(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -1483,7 +1531,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // Gradient overlay pre lepšiu čitateľnosť textu
               Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -1503,12 +1551,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 left: 0,
                 right: 0,
                 child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(16),
-                      bottomRight: Radius.circular(16),
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(AppRadius.lg),
+                      bottomRight: Radius.circular(AppRadius.lg),
                     ),
                   ),
                   child: Column(
@@ -1522,23 +1570,21 @@ class _HomeScreenState extends State<HomeScreen> {
                             size: 16,
                             color: AppColors.primary,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.sm),
                           Text(
                             tr('rosary_title'),
-                            style: const TextStyle(
-                              fontSize: 18,
+                            style: theme.textTheme.titleMedium!.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF2D3748),
+                              color: AppColors.adaptiveCardTitle(context),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       Text(
                         tr('rosary_description'),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF718096),
+                        style: theme.textTheme.bodyMedium!.copyWith(
+                          color: AppColors.adaptiveCardSubtitle(context),
                           height: 1.4,
                         ),
                         maxLines: 2,
@@ -1557,6 +1603,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Build Adoration card content (bez margin pre carousel)
   Widget _buildAdorationCardContent() {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -1568,15 +1615,19 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
       child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: AppElevation.high,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
         child: Container(
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
           child: Stack(
             children: [
               // Background image
               ClipRRect(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 child: Image.asset(
                   'assets/images/adoration_bg.webp',
                   width: double.infinity,
@@ -1586,13 +1637,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Fallback ak sa obrázok nenačíta
                     return Container(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            const Color(0xFFD32F2F).withValues(alpha: 0.8),
-                            const Color(0xFFD32F2F),
+                            AppColors.liveRed.withValues(alpha: 0.8),
+                            AppColors.liveRed,
                           ],
                         ),
                       ),
@@ -1604,7 +1655,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // Gradient overlay pre lepšiu čitateľnosť textu
               Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -1624,12 +1675,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 left: 0,
                 right: 0,
                 child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(16),
-                      bottomRight: Radius.circular(16),
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(AppRadius.lg),
+                      bottomRight: Radius.circular(AppRadius.lg),
                     ),
                   ),
                   child: Column(
@@ -1643,23 +1694,21 @@ class _HomeScreenState extends State<HomeScreen> {
                             size: 16,
                             color: AppColors.primary,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.sm),
                           Text(
                             tr('adoration_title'),
-                            style: const TextStyle(
-                              fontSize: 18,
+                            style: theme.textTheme.titleMedium!.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF2D3748),
+                              color: AppColors.adaptiveCardTitle(context),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       Text(
                         tr('adoration_main_subtitle'),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF718096),
+                        style: theme.textTheme.bodyMedium!.copyWith(
+                          color: AppColors.adaptiveCardSubtitle(context),
                           height: 1.4,
                         ),
                         maxLines: 2,
@@ -1678,8 +1727,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Build News section
   Widget _buildNewsSection() {
+    final theme = Theme.of(context);
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1689,10 +1742,9 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Text(
                 tr('news'),
-                style: const TextStyle(
-                  fontSize: 20,
+                style: theme.textTheme.titleLarge!.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF2D3748),
+                  color: AppColors.adaptiveCardTitle(context),
                 ),
               ),
               GestureDetector(
@@ -1707,8 +1759,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
                 child: Text(
                   tr('see_all'),
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: theme.textTheme.bodyMedium!.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1716,7 +1767,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
 
           // News list
           isLoadingNews
@@ -1730,16 +1781,19 @@ class _HomeScreenState extends State<HomeScreen> {
               ? Container(
                   height: 200,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade200),
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    border: Border.all(
+                      color: AppColors.isDark(context)
+                          ? Colors.grey.shade700
+                          : Colors.grey.shade200,
+                    ),
                   ),
                   child: Center(
                     child: Text(
                       tr('no_news_available'),
-                      style: const TextStyle(
-                        color: Color(0xFF718096),
-                        fontSize: 14,
+                      style: theme.textTheme.bodyMedium!.copyWith(
+                        color: AppColors.adaptiveCardSubtitle(context),
                       ),
                     ),
                   ),
@@ -1753,7 +1807,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       final article = newsArticles[index];
                       return Container(
                         width: 280,
-                        margin: const EdgeInsets.only(right: 16),
+                        margin: const EdgeInsets.only(right: AppSpacing.lg),
                         child: GestureDetector(
                           onTap: () {
                             Navigator.push(
@@ -1768,9 +1822,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             );
                           },
                           child: Card(
-                            elevation: 4,
+                            elevation: AppElevation.high,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(AppRadius.lg),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1778,8 +1832,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 // Image section - fixed height
                                 ClipRRect(
                                   borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(16),
-                                    topRight: Radius.circular(16),
+                                    topLeft: Radius.circular(AppRadius.lg),
+                                    topRight: Radius.circular(AppRadius.lg),
                                   ),
                                   child: SizedBox(
                                     height: 160,
@@ -1818,23 +1872,30 @@ class _HomeScreenState extends State<HomeScreen> {
                                 // Content section
                                 Expanded(
                                   child: Container(
-                                    padding: const EdgeInsets.all(16),
+                                    padding: const EdgeInsets.all(
+                                      AppSpacing.lg,
+                                    ),
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
                                         // Title
-                                        Text(
-                                          article['title'] ??
-                                              tr('untitled_article'),
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF2D3748),
-                                            height: 1.3,
+                                        Flexible(
+                                          child: Text(
+                                            article['title'] ??
+                                                tr('untitled_article'),
+                                            style: theme.textTheme.titleMedium!
+                                                .copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                  color:
+                                                      AppColors.adaptiveCardTitle(
+                                                        context,
+                                                      ),
+                                                  height: 1.3,
+                                                ),
+                                            maxLines: 3,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                          maxLines: 3,
-                                          overflow: TextOverflow.ellipsis,
                                         ),
 
                                         const Spacer(),
@@ -1846,9 +1907,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                             vertical: 6,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: AppColors.primary.withValues(
-                                              alpha: 0.1,
-                                            ),
+                                            color:
+                                                (AppColors.isDark(context)
+                                                        ? AppColors
+                                                              .darkPrimaryLight
+                                                        : AppColors.primary)
+                                                    .withValues(alpha: 0.15),
                                             borderRadius: BorderRadius.circular(
                                               8,
                                             ),
@@ -1858,17 +1922,30 @@ class _HomeScreenState extends State<HomeScreen> {
                                             children: [
                                               Text(
                                                 tr('show_article'),
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: AppColors.primary,
-                                                ),
+                                                style: theme
+                                                    .textTheme
+                                                    .bodySmall!
+                                                    .copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color:
+                                                          AppColors.isDark(
+                                                            context,
+                                                          )
+                                                          ? AppColors
+                                                                .darkPrimaryLight
+                                                          : AppColors.primary,
+                                                    ),
                                               ),
-                                              const SizedBox(width: 4),
-                                              const Icon(
+                                              const SizedBox(
+                                                width: AppSpacing.xs,
+                                              ),
+                                              Icon(
                                                 Icons.arrow_forward,
                                                 size: 14,
-                                                color: AppColors.primary,
+                                                color: AppColors.isDark(context)
+                                                    ? AppColors.darkPrimaryLight
+                                                    : AppColors.primary,
                                               ),
                                             ],
                                           ),
@@ -1910,6 +1987,7 @@ class _ModuleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return SizedBox(
       width: 170,
       child: Opacity(
@@ -1925,12 +2003,11 @@ class _ModuleButton extends StatelessWidget {
             foregroundColor: Colors.white,
             disabledBackgroundColor: Colors.grey.shade300,
             disabledForegroundColor: Colors.grey.shade500,
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
-            textStyle: const TextStyle(
-              fontSize: 14,
+            textStyle: theme.textTheme.bodyMedium!.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),

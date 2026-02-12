@@ -10,6 +10,7 @@ import '../services/adoration_service.dart';
 import '../shared/app_colors.dart';
 import '../widgets/audio/universal_audio_player.dart';
 import '../widgets/audio/audio_player_models.dart';
+import '../shared/app_spacing.dart';
 
 class AdorationDetailScreen extends StatefulWidget {
   final String adorationId;
@@ -177,10 +178,10 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
                       if (_adoration!.commentary?.isNotEmpty == true)
                         _buildComment(theme),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                         child: _buildNavigationButtons(theme),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppSpacing.xl),
                     ],
                   ),
                 ],
@@ -193,6 +194,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
   }
 
   Widget _buildLoadingScreen(ThemeData theme) {
+    final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Container(
@@ -209,10 +211,10 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
         ),
         child: Center(
           child: Container(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(AppSpacing.xxxl),
             decoration: BoxDecoration(
               color: theme.cardColor.withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               boxShadow: [
                 BoxShadow(
                   color: theme.shadowColor.withValues(alpha: 0.1),
@@ -228,14 +230,14 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
                   valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                   strokeWidth: 3,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.xl),
                 Text(
                   tr('loading_adoration'),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
                   tr('preparing_spiritual_journey'),
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -252,12 +254,13 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
   }
 
   Widget _buildErrorScreen(ThemeData theme) {
+    final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(title: Text(tr('adoration_not_found'))),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.xxl),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -266,7 +269,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
                 size: 80,
                 color: theme.colorScheme.error,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xl),
               Text(
                 tr('adoration_not_found'),
                 style: theme.textTheme.headlineSmall?.copyWith(
@@ -275,7 +278,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 _error ?? tr('requested_adoration_not_found'),
                 style: theme.textTheme.bodyLarge?.copyWith(
@@ -283,7 +286,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxxl),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -292,7 +295,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
                     icon: const Icon(Icons.arrow_back_rounded),
                     label: Text(tr('back_to_list')),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.lg),
                   OutlinedButton.icon(
                     onPressed: _loadAdoration,
                     icon: const Icon(Icons.refresh_rounded),
@@ -308,6 +311,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
   }
 
   Widget _buildAppBar(ThemeData theme) {
+    final theme = Theme.of(context);
     return SliverAppBar(
       expandedHeight: 300,
       floating: false,
@@ -352,15 +356,15 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
             ),
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.all(AppSpacing.xxl),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(AppSpacing.lg),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
                       ),
                       child: const Icon(
                         Icons.favorite_rounded,
@@ -368,7 +372,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                     Text(
                       _adoration!.title,
                       style: theme.textTheme.headlineMedium?.copyWith(
@@ -378,7 +382,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
                       textAlign: TextAlign.center,
                     ),
                     if (_adoration!.author?.isNotEmpty == true) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       Text(
                         _adoration!.author!,
                         style: theme.textTheme.titleMedium?.copyWith(
@@ -399,28 +403,29 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
   }
 
   Widget _buildBiblicalText(ThemeData theme) {
+    final theme = Theme.of(context);
     return SizedBox(
       width: double.infinity,
       child: Card(
         margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-        elevation: 2,
+        elevation: AppElevation.medium,
         color: AppColors.primary.withValues(alpha: 0.05),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           side: BorderSide(
             color: AppColors.primary.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
@@ -431,7 +436,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
                       size: 20,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Text(
                       _adoration!.biblicalText,
@@ -452,6 +457,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
   }
 
   Widget _buildIntroduction(ThemeData theme) {
+    final theme = Theme.of(context);
     if (_adoration!.introduction.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -459,12 +465,12 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
     return SizedBox(
       width: double.infinity,
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        elevation: 2,
+        margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.lg),
+        elevation: AppElevation.medium,
         color: theme.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -475,7 +481,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
                   color: AppColors.primary,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Html(
                 data: _adoration!.introduction,
                 style: {
@@ -509,15 +515,16 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
   }
 
   Widget _buildIntroductoryPrayers(ThemeData theme) {
+    final theme = Theme.of(context);
     return SizedBox(
       width: double.infinity,
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        elevation: 2,
+        margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.lg),
+        elevation: AppElevation.medium,
         color: theme.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -528,7 +535,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
                   color: AppColors.primary,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Html(
                 data: _adoration!.introductoryPrayers!,
                 style: {
@@ -623,15 +630,16 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
     Map<String, dynamic> sectionInfo,
     String content,
   ) {
+    final theme = Theme.of(context);
     return SizedBox(
       width: double.infinity,
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        elevation: 2,
+        margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.lg),
+        elevation: AppElevation.medium,
         color: theme.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -652,7 +660,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
                   ),
                 ),
               ],
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Html(
                 data: content,
                 style: {
@@ -686,15 +694,16 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
   }
 
   Widget _buildComment(ThemeData theme) {
+    final theme = Theme.of(context);
     return SizedBox(
       width: double.infinity,
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        elevation: 2,
+        margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.lg),
+        elevation: AppElevation.medium,
         color: theme.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -705,7 +714,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
                   color: AppColors.accent,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Html(
                 data: _adoration!.commentary!,
                 style: {
@@ -749,7 +758,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
     return Container(
       decoration: BoxDecoration(
         color: theme.cardColor.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         boxShadow: [
           BoxShadow(
             color: theme.shadowColor.withValues(alpha: 0.1),
@@ -758,7 +767,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
           ),
         ],
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl, vertical: AppSpacing.lg),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -791,7 +800,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
           else
             const Expanded(child: SizedBox.shrink()),
 
-          if (hasPrevious && hasNext) const SizedBox(width: 12),
+          if (hasPrevious && hasNext) const SizedBox(width: AppSpacing.md),
 
           // Next Button
           if (hasNext)

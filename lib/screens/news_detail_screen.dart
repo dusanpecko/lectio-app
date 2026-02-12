@@ -6,6 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../utils/app_logger.dart';
+import '../shared/app_spacing.dart';
+import '../shared/app_colors.dart';
 
 class NewsDetailScreen extends StatefulWidget {
   final Map<String, dynamic> newsData;
@@ -310,6 +312,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final data = widget.newsData;
     final imageUrl = data['image_url'] ?? '';
     final title = data['title'] ?? '';
@@ -318,17 +321,17 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(tr('news_detail'))),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Card(
-              elevation: 4,
+              elevation: AppElevation.high,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(AppSpacing.xl),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -346,15 +349,14 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                               const Icon(Icons.error),
                         ),
                       ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: theme.textTheme.titleLarge!.copyWith(
                         fontWeight: FontWeight.bold,
-                        fontSize: 22,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                     Html(
                       data: htmlContent,
                       style: {
@@ -378,7 +380,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                         ),
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                     Row(
                       children: [
                         ElevatedButton.icon(
@@ -398,7 +400,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                                 : Theme.of(context).colorScheme.primary,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
+                              borderRadius: BorderRadius.circular(AppRadius.lg),
                             ),
                             textStyle: const TextStyle(
                               fontWeight: FontWeight.w600,
@@ -407,7 +409,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                         ),
                         if (loading)
                           const Padding(
-                            padding: EdgeInsets.only(left: 12),
+                            padding: EdgeInsets.only(left: AppSpacing.md),
                             child: SizedBox(
                               height: 16,
                               width: 16,
@@ -423,14 +425,14 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
 
             // EasyForms Button
             if (_formUrl != null) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xxl),
               Card(
-                elevation: 4,
+                elevation: AppElevation.high,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(AppSpacing.xl),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -438,28 +440,29 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                         children: [
                           const Icon(
                             Icons.assignment,
-                            color: Color(0xFF40467b),
+                            color: AppColors.primaryDark,
                             size: 24,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.sm),
                           Expanded(
                             child: Text(
                               tr('interactive_form'),
-                              style: const TextStyle(
+                              style: theme.textTheme.titleLarge!.copyWith(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 20,
-                                color: Color(0xFF40467b),
+                                color: AppColors.adaptiveCardTitle(context),
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       Text(
                         tr('fill_form_below'),
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        style: theme.textTheme.bodyMedium!.copyWith(
+                          color: AppColors.adaptiveCardSubtitle(context),
+                        ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.lg),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
@@ -467,22 +470,21 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                           icon: const Icon(Icons.open_in_browser, size: 20),
                           label: Text(
                             tr('open_form'),
-                            style: const TextStyle(
-                              fontSize: 16,
+                            style: theme.textTheme.titleMedium!.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF40467b),
+                            backgroundColor: AppColors.primaryDark,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
                               vertical: 16,
                               horizontal: 24,
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
-                            elevation: 2,
+                            elevation: AppElevation.medium,
                           ),
                         ),
                       ),
@@ -491,22 +493,22 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                 ),
               ),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
             Text(
               tr('comments'),
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleMedium!.copyWith( fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
 
             for (final comment in comments)
               Card(
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
-                elevation: 2,
+                elevation: AppElevation.medium,
                 color: comment['users']?['role'] == 'admin'
                     ? Colors.orange.withValues(alpha: 0.08)
-                    : Colors.white,
+                    : Theme.of(context).cardColor,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     vertical: 10,
@@ -525,7 +527,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                             ? const Icon(Icons.person, color: Colors.white)
                             : null,
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -540,29 +542,27 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                                   ),
                                 ),
                                 if (comment['users']?['role'] == 'admin')
-                                  const Padding(
+                                  Padding(
                                     padding: EdgeInsets.only(left: 6),
                                     child: Text(
                                       '(admin)',
-                                      style: TextStyle(
-                                        fontSize: 12,
+                                      style: theme.textTheme.bodySmall!.copyWith(
                                         color: Colors.deepOrange,
                                       ),
                                     ),
                                   ),
                               ],
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: AppSpacing.xs),
                             Text(
                               comment['content'] ?? '',
-                              style: const TextStyle(fontSize: 16),
+                              style: theme.textTheme.titleMedium,
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: AppSpacing.xs),
                             Text(
                               _formatCommentDate(comment['created_at']),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
+                              style: theme.textTheme.bodySmall!.copyWith(
+                                color: AppColors.adaptiveCardSubtitle(context),
                               ),
                             ),
                           ],
@@ -578,26 +578,28 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                 ),
               ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             TextField(
               controller: commentController,
               maxLines: null,
               decoration: InputDecoration(
                 hintText: tr('write_comment'),
                 filled: true,
-                fillColor: Colors.grey[100],
+                fillColor: AppColors.isDark(context)
+                    ? AppColors.darkInputFill
+                    : Colors.grey[100],
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   borderSide: BorderSide.none,
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
               icon: sendingComment

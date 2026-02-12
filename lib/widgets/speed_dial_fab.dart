@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 import '../shared/app_colors.dart';
 import '../utils/app_logger.dart';
+import '../shared/app_spacing.dart';
 
 class SpeedDialFAB extends StatefulWidget {
   final VoidCallback onPrimaryAction;
@@ -135,6 +137,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
           return AnimatedBuilder(
             animation: _animation,
             builder: (context, child) {
+              final theme = Theme.of(context);
               return Transform.scale(
                 scale: _animation.value,
                 child: Transform.translate(
@@ -142,35 +145,43 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
                   child: Opacity(
                     opacity: _animation.value,
                     child: Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
+                      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           // Label
                           if (_animation.value > 0.5)
-                            Container(
-                              margin: const EdgeInsets.only(right: 16),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
+                            Flexible(
+                              child: Container(
+                                margin: const EdgeInsets.only(
+                                  right: AppSpacing.lg,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.lg,
                                   ),
-                                ],
-                              ),
-                              child: Text(
-                                action['label'],
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black87,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Text(
+                                  action['label'],
+                                  style: theme.textTheme.bodySmall!.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black87,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ),
@@ -212,6 +223,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
             }
           },
           onLongPress: () {
+            HapticFeedback.mediumImpact();
             debugPrint('🔄 Long press - toggling menu');
             _toggle();
           },

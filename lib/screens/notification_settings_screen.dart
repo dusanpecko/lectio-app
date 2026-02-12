@@ -6,6 +6,7 @@ import '../services/fcm_service.dart';
 import '../services/local_notifications_service.dart';
 import '../shared/app_colors.dart';
 import '../utils/app_logger.dart';
+import '../shared/app_spacing.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -289,7 +290,7 @@ class _NotificationSettingsScreenState
   Widget _buildPermissionRequest() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -298,19 +299,19 @@ class _NotificationSettingsScreenState
               size: 64,
               color: Theme.of(context).colorScheme.primary,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
             Text(
               'notifications.permission.title'.tr(),
               style: Theme.of(context).textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               'notifications.permission.description'.tr(),
               style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xxxl),
             ElevatedButton.icon(
               onPressed: _requestPermissions,
               icon: const Icon(Icons.notifications_active),
@@ -333,7 +334,7 @@ class _NotificationSettingsScreenState
   Widget _buildErrorState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -342,19 +343,19 @@ class _NotificationSettingsScreenState
               size: 64,
               color: Theme.of(context).colorScheme.error,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
             Text(
               'notifications.error.title'.tr(),
               style: Theme.of(context).textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               _errorMessage ?? 'notifications.error.unknown'.tr(),
               style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xxxl),
             ElevatedButton.icon(
               onPressed: _initializeNotificationSettings,
               icon: const Icon(Icons.refresh),
@@ -367,6 +368,7 @@ class _NotificationSettingsScreenState
   }
 
   Widget _buildTopicTile(NotificationTopic topic) {
+    final theme = Theme.of(context);
     final currentLanguage = context.locale.languageCode;
     final topicName = topic.getNameByLanguage(currentLanguage);
 
@@ -381,13 +383,16 @@ class _NotificationSettingsScreenState
     final hasChanges = _pendingChanges.containsKey(topic.id);
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xs,
+      ),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: Theme.of(context).colorScheme.primaryContainer,
           child: Text(
             _getIconEmoji(topic.emoji),
-            style: const TextStyle(fontSize: 20),
+            style: theme.textTheme.titleLarge,
           ),
         ),
         title: Text(
@@ -446,6 +451,7 @@ class _NotificationSettingsScreenState
   }
 
   Widget _buildLocalNotificationsSection() {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -463,11 +469,14 @@ class _NotificationSettingsScreenState
 
         // Denné lectio
         Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          margin: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.xs,
+          ),
           child: ListTile(
-            leading: const CircleAvatar(
+            leading: CircleAvatar(
               backgroundColor: AppColors.primary,
-              child: Text('📖', style: TextStyle(fontSize: 20)),
+              child: Text('📖', style: theme.textTheme.titleLarge),
             ),
             title: Text('notifications.local.daily_lectio_title'.tr()),
             subtitle: Text('notifications.local.daily_lectio_subtitle'.tr()),
@@ -482,11 +491,14 @@ class _NotificationSettingsScreenState
 
         // Pripomenutie modlitby
         Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          margin: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.xs,
+          ),
           child: ListTile(
-            leading: const CircleAvatar(
+            leading: CircleAvatar(
               backgroundColor: AppColors.primary,
-              child: Text('🙏', style: TextStyle(fontSize: 20)),
+              child: Text('🙏', style: theme.textTheme.titleLarge),
             ),
             title: Text('notifications.local.prayer_title'.tr()),
             subtitle: Text(
@@ -535,7 +547,7 @@ class _NotificationSettingsScreenState
         children: [
           // Header s popisom
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -543,7 +555,7 @@ class _NotificationSettingsScreenState
                   'notifications.settings.title'.tr(),
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
                   'notifications.settings.description'.tr(),
                   style: Theme.of(context).textTheme.bodyMedium,

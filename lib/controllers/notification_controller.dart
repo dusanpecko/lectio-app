@@ -20,6 +20,7 @@ import 'package:lectio_divina/screens/settings_screen.dart';
 import 'package:lectio_divina/shared/app_colors.dart';
 
 import 'package:lectio_divina/utils/app_logger.dart';
+import 'package:lectio_divina/shared/app_spacing.dart';
 
 class NotificationController {
   // Navigator Key - owned by the controller to avoid circular dependency with main.dart
@@ -257,11 +258,11 @@ class NotificationController {
                   color: AppColors.primary,
                   size: 24,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -271,10 +272,10 @@ class NotificationController {
             ),
             content: Text(
               body,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 height: 1.4,
-                color: Color(0xFF2D3748),
+                color: AppColors.adaptiveCardTitle(context),
               ),
             ),
             actions: [
@@ -282,7 +283,7 @@ class NotificationController {
                 onPressed: () => Navigator.of(dialogContext).pop(),
                 child: Text(
                   'close'.tr(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.grey,
                     fontWeight: FontWeight.w500,
                   ),
@@ -300,7 +301,7 @@ class NotificationController {
                   ),
                   child: Text(
                     'notifications.dialog.open'.tr(),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
             ],
@@ -347,11 +348,11 @@ class NotificationController {
                   color: AppColors.primary,
                   size: 24,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -368,7 +369,7 @@ class NotificationController {
                     Container(
                       height: 150,
                       width: double.infinity,
-                      margin: const EdgeInsets.only(bottom: 16),
+                      margin: const EdgeInsets.only(bottom: AppSpacing.lg),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
                         color: Colors.grey.shade100,
@@ -389,10 +390,10 @@ class NotificationController {
                   ],
                   Text(
                     body,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       height: 1.4,
-                      color: Color(0xFF2D3748),
+                      color: AppColors.adaptiveCardTitle(context),
                     ),
                   ),
                 ],
@@ -403,7 +404,7 @@ class NotificationController {
                 onPressed: () => Navigator.of(dialogContext).pop(),
                 child: Text(
                   'close'.tr(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.grey,
                     fontWeight: FontWeight.w500,
                   ),
@@ -421,7 +422,7 @@ class NotificationController {
                   ),
                   child: Text(
                     'notifications.dialog.open'.tr(),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
             ],

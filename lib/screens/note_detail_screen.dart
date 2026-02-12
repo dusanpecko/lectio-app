@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../shared/app_spacing.dart';
 
 class NoteDetailScreen extends StatefulWidget {
   final Map<String, dynamic>? note;
@@ -60,14 +61,14 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     final shouldLeave = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
         title: Row(
           children: [
             Icon(
               Icons.warning_amber_rounded,
               color: Theme.of(context).colorScheme.error,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             const Text('Neuložené zmeny'),
           ],
         ),
@@ -104,7 +105,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
             content: Row(
               children: [
                 Icon(Icons.error, color: Colors.white),
-                SizedBox(width: 8),
+                SizedBox(width: AppSpacing.sm),
                 Text('Nie ste prihlásený'),
               ],
             ),
@@ -144,7 +145,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
             content: Row(
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Text(
                   isInsert
                       ? 'Poznámka bola vytvorená'
@@ -163,7 +164,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
             content: Row(
               children: [
                 const Icon(Icons.error, color: Colors.white),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Text('Chyba pri ukladaní: ${e.toString()}'),
               ],
             ),
@@ -191,7 +192,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
               content: Row(
                 children: [
                   Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 8),
+                  SizedBox(width: AppSpacing.sm),
                   Text('Poznámka bola zmazaná'),
                 ],
               ),
@@ -206,7 +207,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
               content: Row(
                 children: [
                   const Icon(Icons.error, color: Colors.white),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Text('Chyba pri mazaní: ${e.toString()}'),
                 ],
               ),
@@ -226,14 +227,14 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
         title: Row(
           children: [
             Icon(
               Icons.warning_amber_rounded,
               color: Theme.of(context).colorScheme.error,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             const Text('Zmazať poznámku'),
           ],
         ),
@@ -277,10 +278,10 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     Color? iconColor,
   }) {
     return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: AppElevation.low,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -292,7 +293,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                     size: 20,
                     color: iconColor ?? Theme.of(context).colorScheme.primary,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                 ],
                 Text(
                   title,
@@ -303,7 +304,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             child,
           ],
         ),
@@ -333,7 +334,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(isEditing ? 'Upraviť poznámku' : 'Nová poznámka'),
-          elevation: 0,
+          elevation: AppElevation.none,
           actions: [
             if (_hasChanges && !_isSaving)
               TextButton.icon(
@@ -362,7 +363,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                           Icons.delete_outline,
                           color: Theme.of(context).colorScheme.error,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         const Text('Zmazať poznámku'),
                       ],
                     ),
@@ -374,7 +375,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
         body: Form(
           key: _formKey,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -394,7 +395,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                     textCapitalization: TextCapitalization.sentences,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
 
                 _buildInputCard(
                   title: 'Biblická citácia',
@@ -410,7 +411,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                     textCapitalization: TextCapitalization.words,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
 
                 _buildInputCard(
                   title: 'Biblický verš',
@@ -428,7 +429,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                     textCapitalization: TextCapitalization.sentences,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
 
                 _buildInputCard(
                   title: 'Poznámka',
@@ -449,7 +450,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                     textCapitalization: TextCapitalization.sentences,
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xxl),
 
                 Row(
                   children: [
@@ -478,13 +479,13 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                             ).colorScheme.error.withValues(alpha: 0.3),
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(AppSpacing.lg),
                         ),
                         tooltip: 'Zmazať poznámku',
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: AppSpacing.lg),
                     ],
                     Expanded(
                       flex: 2,
@@ -511,16 +512,16 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                           isEditing ? 'Uložiť zmeny' : 'Vytvoriť poznámku',
                         ),
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xxl),
               ],
             ),
           ),

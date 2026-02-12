@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/prayer_focus_service.dart';
+import '../shared/app_spacing.dart';
 
 class PrayerFocusIndicator extends StatefulWidget {
   const PrayerFocusIndicator({super.key});
@@ -89,7 +90,7 @@ class _PrayerFocusIndicatorState extends State<PrayerFocusIndicator>
                   color: _getIndicatorColor().withValues(
                     alpha: _fadeAnimation.value,
                   ),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
                   boxShadow: [
                     BoxShadow(
                       color: _getIndicatorColor().withValues(alpha: 0.3),

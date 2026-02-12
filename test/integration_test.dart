@@ -165,19 +165,15 @@ void main() {
 
     // Audio - BAM
     when(() => mockBackgroundAudioManager.isInitialized).thenReturn(true);
-    // Use BehaviorSubject for ValueStream
-    final playbackStateSubject = BehaviorSubject<PlaybackState>.seeded(
-      PlaybackState(playing: false),
-    );
-    when(
-      () => mockBackgroundAudioManager.playbackStateStream,
-    ).thenAnswer((_) => playbackStateSubject.stream);
 
     when(
       () => mockBackgroundAudioManager.audioHandler,
     ).thenReturn(mockLectioAudioHandler);
 
     // AudioHandler
+    final playbackStateSubject = BehaviorSubject<PlaybackState>.seeded(
+      PlaybackState(playing: false),
+    );
     final mediaItemSubject = BehaviorSubject<MediaItem?>.seeded(null);
     when(
       () => mockLectioAudioHandler.mediaItem,

@@ -37,7 +37,7 @@ class SettingsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: AppRadius.card),
-      elevation: 4,
+      elevation: AppElevation.high,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -59,6 +59,7 @@ class SettingsCard extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Icon(icon),
@@ -66,7 +67,9 @@ class SettingsCard extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: theme.textTheme.titleMedium!.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         if (trailing != null) trailing!,
@@ -98,7 +101,7 @@ class SettingsSwitchCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: AppRadius.card),
-      elevation: 4,
+      elevation: AppElevation.high,
       child: SwitchListTile(
         secondary: Icon(icon),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -170,6 +173,7 @@ class SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -177,8 +181,7 @@ class SettingsSection extends StatelessWidget {
           padding: padding,
           child: Text(
             title,
-            style: TextStyle(
-              fontSize: 14,
+            style: theme.textTheme.bodyMedium!.copyWith(
               fontWeight: FontWeight.w600,
               color: Theme.of(context).colorScheme.primary,
               letterSpacing: 0.5,

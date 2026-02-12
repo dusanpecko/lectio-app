@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'intention_submit_screen.dart';
+import '../shared/app_spacing.dart';
 
 class IntentionsListScreen extends StatefulWidget {
   const IntentionsListScreen({super.key});
@@ -255,6 +256,7 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text('intentions_title'.tr()),
@@ -269,21 +271,21 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(AppSpacing.sm),
                 child: Column(
                   children: [
                     // Card s obrázkom a textom
                     Card(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
-                      elevation: 2,
+                      elevation: AppElevation.medium,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           ClipRRect(
                             borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(12),
+                              top: Radius.circular(AppRadius.md),
                             ),
                             child: Image.asset(
                               'assets/images/modlitba.jpg',
@@ -292,22 +294,22 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.all(12.0),
+                            padding: const EdgeInsets.all(AppSpacing.md),
                             child: Text(
                               'intention_intro'.tr(),
-                              style: const TextStyle(fontSize: 16),
+                              style: theme.textTheme.titleMedium,
                               textAlign: TextAlign.justify,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
 
                     // Zoznam úmyslov
                     if (intentions.isEmpty)
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
                         child: Center(child: Text('no_intentions'.tr())),
                       )
                     else
@@ -384,12 +386,13 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
   }
 
   Widget _buildIntentionCard(Map<String, dynamic> item, bool isAuthor) {
+    final theme = Theme.of(context);
     final intentionId = item['id'] as int;
     final prayerCount = prayerCounts[intentionId] ?? 0;
     final alreadyPrayed = prayedIntentions.contains(intentionId);
 
     return Card(
-      //margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      //margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
       child: ListTile(
         title: Text(item['intention'] ?? ''),
         subtitle: Column(
@@ -398,7 +401,7 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
             if (item['name'] != null)
               Text(
                 'from'.tr(args: [item['name']]),
-                style: const TextStyle(fontSize: 12),
+                style: theme.textTheme.bodySmall,
               ),
             if (role == 'admin')
               Text(
@@ -407,12 +410,11 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
                     item['approved'] ? 'approved_yes'.tr() : 'approved_no'.tr(),
                   ],
                 ),
-                style: TextStyle(
-                  fontSize: 12,
+                style: theme.textTheme.bodySmall!.copyWith(
                   color: item['approved'] ? Colors.green : Colors.red,
                 ),
               ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             // Nahradené FutureBuilder lokálnymi dátami
             Text('prayed_count'.tr(args: [prayerCount.toString()])),
             TextButton.icon(

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'audio_player_models.dart';
+import '../../shared/app_spacing.dart';
 
 class AudioPlayerControls extends StatelessWidget {
   final AudioPlayer audioPlayer;
@@ -44,7 +45,7 @@ class AudioPlayerControls extends StatelessWidget {
             _buildMainControls(context, status, effectiveAccentColor, theme),
 
             if (config.showStopButton) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               _buildStopButton(context, status, effectiveAccentColor, theme),
             ],
           ],
@@ -73,7 +74,7 @@ class AudioPlayerControls extends StatelessWidget {
             accentColor: accentColor,
             theme: theme,
           ),
-          const SizedBox(width: 20),
+          const SizedBox(width: AppSpacing.xl),
         ],
 
         // Play/Pause button
@@ -86,7 +87,7 @@ class AudioPlayerControls extends StatelessWidget {
 
         // Skip forward button
         if (config.showSkipButtons) ...[
-          const SizedBox(width: 20),
+          const SizedBox(width: AppSpacing.xl),
           _buildSkipButton(
             context: context,
             icon: _getSkipForwardIcon(),
@@ -318,7 +319,7 @@ class AudioPlayerControlsAdvanced extends StatelessWidget {
 
         // Rozšírené ovládanie
         if (showPlaybackSpeed || showVolumeControl) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           _buildAdvancedControls(context, effectiveAccentColor, theme),
         ],
       ],
@@ -361,8 +362,8 @@ class AudioPlayerControlsAdvanced extends StatelessWidget {
                       if (currentSpeed == speed)
                         Icon(Icons.check, color: accentColor, size: 16)
                       else
-                        const SizedBox(width: 16),
-                      const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.lg),
+                      const SizedBox(width: AppSpacing.sm),
                       Text('${speed}x'),
                     ],
                   ),
@@ -379,6 +380,7 @@ class AudioPlayerControlsAdvanced extends StatelessWidget {
     Color accentColor,
     ThemeData theme,
   ) {
+    final theme = Theme.of(context);
     return StreamBuilder<double>(
       stream: audioPlayer.volumeStream,
       builder: (context, snapshot) {
@@ -401,7 +403,7 @@ class AudioPlayerControlsAdvanced extends StatelessWidget {
                 child: Column(
                   children: [
                     Text('Hlasitosť', style: theme.textTheme.bodySmall),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                     SliderTheme(
                       data: SliderTheme.of(context).copyWith(
                         activeTrackColor: accentColor,

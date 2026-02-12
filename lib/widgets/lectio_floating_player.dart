@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/lectio_audio_player.dart';
 import '../shared/app_colors.dart';
+import '../shared/app_spacing.dart';
 
 /// Floating audio player widget for Lectio screen
 class LectioFloatingPlayer extends StatefulWidget {
@@ -160,6 +161,7 @@ class _LectioFloatingPlayerState extends State<LectioFloatingPlayer> {
   }
 
   Widget _buildFullPlayer(ThemeData theme) {
+    final theme = Theme.of(context);
     final duration = _audioPlayer.duration ?? Duration.zero;
     final position = _audioPlayer.position;
     final currentKey = _audioPlayer.currentTrackKey;
@@ -171,7 +173,7 @@ class _LectioFloatingPlayerState extends State<LectioFloatingPlayer> {
       child: Container(
         decoration: BoxDecoration(
           color: theme.cardColor.withValues(alpha: 0.98),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.2),
@@ -185,10 +187,10 @@ class _LectioFloatingPlayerState extends State<LectioFloatingPlayer> {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
               decoration: const BoxDecoration(
                 color: AppColors.primary,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -213,7 +215,7 @@ class _LectioFloatingPlayerState extends State<LectioFloatingPlayer> {
                         constraints: const BoxConstraints(),
                         onPressed: () => setState(() => _isMinimized = true),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: AppSpacing.lg),
                       IconButton(
                         icon: const Icon(
                           Icons.close,
@@ -234,7 +236,7 @@ class _LectioFloatingPlayerState extends State<LectioFloatingPlayer> {
             ),
 
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
                 children: [
                   // Audio Mode Selector
@@ -242,13 +244,13 @@ class _LectioFloatingPlayerState extends State<LectioFloatingPlayer> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _buildModeButton('none', Icons.music_off, theme),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: AppSpacing.md),
                       _buildModeButton('short', Icons.music_note, theme),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: AppSpacing.md),
                       _buildModeButton('long', Icons.queue_music, theme),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
 
                   // Now Playing
                   if (currentKey != null)
@@ -296,7 +298,7 @@ class _LectioFloatingPlayerState extends State<LectioFloatingPlayer> {
                       ),
                     ),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
 
                   // Controls
                   Row(
@@ -307,7 +309,7 @@ class _LectioFloatingPlayerState extends State<LectioFloatingPlayer> {
                         color: AppColors.primary,
                         onPressed: () => _audioPlayer.skipPrevious(),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.sm),
                       Container(
                         decoration: BoxDecoration(
                           color: AppColors.primary,
@@ -337,7 +339,7 @@ class _LectioFloatingPlayerState extends State<LectioFloatingPlayer> {
                           },
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.sm),
                       IconButton(
                         icon: const Icon(Icons.skip_next),
                         color: AppColors.primary,
@@ -347,7 +349,7 @@ class _LectioFloatingPlayerState extends State<LectioFloatingPlayer> {
                   ),
 
                   // Progress bar
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Row(
                     children: [
                       Text(
@@ -388,7 +390,7 @@ class _LectioFloatingPlayerState extends State<LectioFloatingPlayer> {
                     ],
                   ),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   const Divider(),
 
                   // Playlist
@@ -411,7 +413,7 @@ class _LectioFloatingPlayerState extends State<LectioFloatingPlayer> {
                         final isCurrentTrack = track['key'] == currentKey;
 
                         return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                           child: GestureDetector(
                             onTap: () => _audioPlayer.playTrackByIndex(index),
                             child: Container(
@@ -431,7 +433,7 @@ class _LectioFloatingPlayerState extends State<LectioFloatingPlayer> {
                                 color: isCurrentTrack
                                     ? null
                                     : Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(AppRadius.xl),
                                 border: Border.all(
                                   color: isCurrentTrack
                                       ? AppColors.primary.withValues(alpha: 0.5)
@@ -458,7 +460,7 @@ class _LectioFloatingPlayerState extends State<LectioFloatingPlayer> {
                                         size: 24,
                                       ),
                                     ),
-                                    const SizedBox(width: 12),
+                                    const SizedBox(width: AppSpacing.md),
                                     Expanded(
                                       child: Column(
                                         mainAxisAlignment:

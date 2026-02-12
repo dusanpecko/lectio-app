@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../shared/app_colors.dart';
 import 'intro_step_screen.dart';
 import 'intro_translations.dart';
+import '../shared/app_spacing.dart';
 
 class IntroScreen extends StatefulWidget {
   const IntroScreen({super.key});
@@ -60,15 +61,15 @@ class _IntroScreenState extends State<IntroScreen> {
                   ),
                   SafeArea(
                     child: Padding(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: const EdgeInsets.all(AppSpacing.xxl),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(AppSpacing.lg),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(AppRadius.xl),
                             ),
                             child: Icon(
                               Icons.menu_book_rounded,
@@ -76,7 +77,7 @@ class _IntroScreenState extends State<IntroScreen> {
                               color: Colors.white,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.lg),
                           Text(
                             t['heroTitle'],
                             style: theme.textTheme.headlineMedium?.copyWith(
@@ -85,7 +86,7 @@ class _IntroScreenState extends State<IntroScreen> {
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpacing.sm),
                           Text(
                             t['heroSubtitle'],
                             style: theme.textTheme.titleLarge?.copyWith(
@@ -106,16 +107,16 @@ class _IntroScreenState extends State<IntroScreen> {
           // Content
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // Hero Description
                   Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(20.0),
+                      padding: const EdgeInsets.all(AppSpacing.xl),
                       child: Text(
                         t['heroDescription'],
                         style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
@@ -124,7 +125,7 @@ class _IntroScreenState extends State<IntroScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: AppSpacing.xxxl),
 
                   // Start Button
                   SizedBox(
@@ -134,23 +135,24 @@ class _IntroScreenState extends State<IntroScreen> {
                       icon: const Icon(Icons.play_arrow_rounded, size: 24),
                       label: Text(
                         t['startLectio'],
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: theme.textTheme.titleMedium!.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.accent,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.lg,
+                        ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
                         ),
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: AppSpacing.xxxl),
 
                   // What is Lectio Divina section
                   _buildSection(
@@ -162,7 +164,7 @@ class _IntroScreenState extends State<IntroScreen> {
                         t['whatIsText1'],
                         style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.lg),
                       Text(
                         t['whatIsText2'],
                         style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
@@ -170,7 +172,7 @@ class _IntroScreenState extends State<IntroScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: AppSpacing.xxxl),
 
                   // Five Steps section
                   _buildSection(
@@ -182,12 +184,12 @@ class _IntroScreenState extends State<IntroScreen> {
                         t['fiveStepsText'],
                         style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppSpacing.xl),
                       _buildStepsGrid(context, t),
                     ],
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: AppSpacing.xxxl),
 
                   // Benefits section
                   _buildSection(
@@ -199,12 +201,12 @@ class _IntroScreenState extends State<IntroScreen> {
                         t['benefitsText'],
                         style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppSpacing.xl),
                       _buildBenefitsGrid(context, t),
                     ],
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: AppSpacing.xxxl),
 
                   // How to start section
                   _buildSection(
@@ -216,18 +218,18 @@ class _IntroScreenState extends State<IntroScreen> {
                         t['howToText'],
                         style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppSpacing.xl),
                       _buildGuideGrid(context, t),
                     ],
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: AppSpacing.xxxl),
 
                   // Closing Quote
                   Card(
                     color: theme.colorScheme.primaryContainer,
                     child: Padding(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: const EdgeInsets.all(AppSpacing.xxl),
                       child: Column(
                         children: [
                           Icon(
@@ -235,7 +237,7 @@ class _IntroScreenState extends State<IntroScreen> {
                             size: 48,
                             color: theme.colorScheme.onPrimary,
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.lg),
                           Text(
                             t['closingQuote'],
                             style: theme.textTheme.titleMedium?.copyWith(
@@ -245,7 +247,7 @@ class _IntroScreenState extends State<IntroScreen> {
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.lg),
                           Text(
                             t['closingText'],
                             style: theme.textTheme.bodyLarge?.copyWith(
@@ -259,7 +261,7 @@ class _IntroScreenState extends State<IntroScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: AppSpacing.xxxl),
 
                   // Final CTA
                   SizedBox(
@@ -269,21 +271,22 @@ class _IntroScreenState extends State<IntroScreen> {
                       icon: const Icon(Icons.auto_stories_rounded, size: 24),
                       label: Text(
                         t['startFirstStep'],
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: theme.textTheme.titleMedium!.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.lg,
+                        ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
                         ),
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.xxl),
                 ],
               ),
             ),
@@ -303,21 +306,21 @@ class _IntroScreenState extends State<IntroScreen> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Icon(icon, color: theme.colorScheme.primary, size: 24),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: AppSpacing.lg),
                 Expanded(
                   child: Text(
                     title,
@@ -328,7 +331,7 @@ class _IntroScreenState extends State<IntroScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.xl),
             ...children,
           ],
         ),
@@ -355,14 +358,14 @@ class _IntroScreenState extends State<IntroScreen> {
         final colors = stepColors[colorIndex];
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: const EdgeInsets.only(bottom: AppSpacing.md),
           child: Card(
-            elevation: 2,
+            elevation: AppElevation.medium,
             child: InkWell(
               onTap: () => _navigateToStep(context, stepData['slug']),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Row(
                   children: [
                     Container(
@@ -374,7 +377,7 @@ class _IntroScreenState extends State<IntroScreen> {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       child: Center(
                         child: Icon(
@@ -384,7 +387,7 @@ class _IntroScreenState extends State<IntroScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: AppSpacing.lg),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -396,21 +399,21 @@ class _IntroScreenState extends State<IntroScreen> {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSpacing.xs),
                           Text(
                             stepData['title'],
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSpacing.xs),
                           Text(
                             stepData['subtitle'],
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpacing.sm),
                           Text(
                             stepData['description'],
                             style: theme.textTheme.bodyMedium?.copyWith(
@@ -457,25 +460,25 @@ class _IntroScreenState extends State<IntroScreen> {
         final index = benefits.indexOf(benefit);
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: const EdgeInsets.only(bottom: AppSpacing.md),
           child: Card(
-            elevation: 1,
+            elevation: AppElevation.low,
             color: theme.colorScheme.surfaceContainerHighest.withValues(
               alpha: 0.3,
             ),
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
                       color: colors[index].withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: Icon(icons[index], color: colors[index], size: 24),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.lg),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -486,7 +489,7 @@ class _IntroScreenState extends State<IntroScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: AppSpacing.xs),
                         Text(
                           benefitData['description'],
                           style: theme.textTheme.bodyMedium?.copyWith(
@@ -521,11 +524,11 @@ class _IntroScreenState extends State<IntroScreen> {
         final index = guide.indexOf(item);
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: const EdgeInsets.only(bottom: AppSpacing.md),
           child: Card(
-            elevation: 1,
+            elevation: AppElevation.low,
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -534,7 +537,7 @@ class _IntroScreenState extends State<IntroScreen> {
                     color: theme.colorScheme.primary,
                     size: 24,
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.lg),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -545,7 +548,7 @@ class _IntroScreenState extends State<IntroScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: AppSpacing.xs),
                         Text(
                           itemData['description'],
                           style: theme.textTheme.bodyMedium?.copyWith(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../shared/app_spacing.dart';
 
 class AppCard extends StatelessWidget {
   final Widget child;
@@ -9,7 +10,7 @@ class AppCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: padding ?? const EdgeInsets.all(16),
+        padding: padding ?? const EdgeInsets.all(AppSpacing.lg),
         child: child,
       ),
     );
