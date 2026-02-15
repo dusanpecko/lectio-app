@@ -55,6 +55,8 @@
 	<string>Lectio Divina potrebuje prístup ku kamere pre vytvorenie profilovej fotky.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app uses local network to communicate with development tools and debugging services.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Lectio Divina môže potrebovať prístup k mikrofónu pre audio funkcie.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Lectio Divina potrebuje prístup k fotogalérii pre výber profilovej fotky.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
