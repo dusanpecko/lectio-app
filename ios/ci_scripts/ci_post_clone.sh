@@ -1,42 +1,48 @@
 #!/bin/sh
 
-# Xcode Cloud post-clone script
-# Installs CocoaPods dependencies and generates Flutter build files
+# Xcode Cloud post-clone script for Flutter
+# Installs Flutter, generates config files, and runs pod install
 
 set -e
 
-echo "=== ci_post_clone.sh ==="
+echo "=== ci_post_clone.sh START ==="
+echo "CI_PRIMARY_REPOSITORY_PATH: $CI_PRIMARY_REPOSITORY_PATH"
+echo "CI_WORKSPACE: $CI_WORKSPACE"
 
-# Navigate to the ios directory
-cd "$CI_PRIMARY_REPOSITORY_PATH/ios"
-
-# Install Flutter
-# Check if flutter is already available
-if ! command -v flutter &> /dev/null; then
-    echo "Installing Flutter..."
-    git clone https://github.com/flutter/flutter.git --depth 1 -b stable "$HOME/flutter"
-    export PATH="$HOME/flutter/bin:$PATH"
+# ---- Install Flutter SDK ----
+FLUTTER_HOME="$HOME/flutter"
+if [ ! -d "$FLUTTER_HOME" ]; then
+    echo "Installing Flutter SDK..."
+    git clone https://github.com/flutter/flutter.git --depth 1 -b stable "$FLUTTER_HOME"
 fi
+export PATH="$FLUTTER_HOME/bin:$FLUTTER_HOME/bin/cache/dart-sdk/bin:$PATH"
 
 echo "Flutter version:"
 flutter --version
 
-# Navigate back to project root for Flutter commands
+# Precache iOS artifacts
+flutter precache --ios
+
+# ---- Navigate to project root ----
 cd "$CI_PRIMARY_REPOSITORY_PATH"
 
-# Get Flutter dependencies
+# ---- Create .env if missing (it's in .gitignore) ----
+if [ ! -f ".env" ]; then
+    echo "Creating empty .env file..."
+    touch .env
+fi
+
+# ---- Flutter pub get ----
 echo "Running flutter pub get..."
 flutter pub get
 
-# Generate Flutter build config files
-echo "Running flutter build ios --config-only..."
-flutter build ios --config-only
+# ---- Generate Flutter build files (Generated.xcconfig etc.) ----
+echo "Generating Flutter build config..."
+flutter build ios --config-only --release --no-codesign
 
-# Navigate to ios directory for pod install
+# ---- CocoaPods ----
 cd "$CI_PRIMARY_REPOSITORY_PATH/ios"
-
-# Install CocoaPods dependencies
 echo "Running pod install..."
 pod install
 
-echo "=== ci_post_clone.sh completed ==="
+echo "=== ci_post_clone.sh DONE ==="
