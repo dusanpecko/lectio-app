@@ -63,7 +63,7 @@ Projekt je v **veľmi dobrom stave** a blízko produkčnej pripravenosti.
 - [x] **Android permissions** - POST_NOTIFICATIONS, SCHEDULE_EXACT_ALARM, RECEIVE_BOOT_COMPLETED
 - [x] **iOS config** - remote-notification background mode
 - [x] **Battery optimization exemption**
-- [ ] **Duplicitná plugin inštancia** - `fcm_service.dart` globálna vs `LocalNotificationsService` singleton
+- [x] **Duplicitná plugin inštancia** - `fcm_service.dart` globálna odstránená, background handler inicializuje lokálnu inštanciu ✅
 
 ### Kvalita kódu
 - [x] **Lint** - 0 varovaní
@@ -97,7 +97,20 @@ Projekt je v **veľmi dobrom stave** a blízko produkčnej pripravenosti.
 
 ## 🔵 NÍZKA PRIORITA - Budúcnosť
 
+### Pred finálnym releaseom
+- [ ] **Vrátiť cron na `0 * * * *`** - po dokončení testovania notifikácií (aktuálne `* * * * *`)
+- [ ] **Onboarding (First Launch)** - 6 slidov, len pri prvom spustení, skip tlačidlo
+  - [ ] Slide 1 – Uvítanie: logo, motto, citát (Ž 119,105)
+  - [ ] Slide 2 – Čo je Lectio Divina: 4 kroky (Lectio, Meditatio, Oratio, Contemplatio)
+  - [ ] Slide 3 – Čo appka ponúka: denné čítania, audio, poznámky, pripomienky
+  - [ ] Slide 4 – Pripomienky: výber času dennej pripomienky na modlitbu (retencie)
+  - [ ] Slide 5 – Personalizácia: preklad Biblie, povolenie notifikácií, prihlásenie
+  - [ ] Slide 6 – Začni svoju cestu: CTA „Začať modlitbu", motivačný citát
+  - [ ] Ilustrácie ku každému slidu (Matúš)
+  - [ ] `shared_preferences` flag `onboarding_completed`
+
 ### Roadmap v10.1+
+- [ ] **FCM Token Cleanup Cron** - periodická očista starých/neplatných tokenov (90+ dní neaktívne)
 - [ ] **Ruženec - záložky a zdieľanie** - zakomentované (TODO)
 - [ ] **Ruženec - background audio** - nemá mini player ani background playback
 - [ ] **Základné modlitby** - zoznam (Otčenáš, Zdravas'...)

@@ -33,6 +33,7 @@ class _NotificationSettingsScreenState
   bool _dailyLectioEnabled = false;
   bool _prayerReminderEnabled = false;
   TimeOfDay? _prayerReminderTime;
+  TimeOfDay? _dailyLectioTime;
 
   @override
   void initState() {
@@ -75,12 +76,17 @@ class _NotificationSettingsScreenState
       // Načítaj lokálne nastavenia
       final localSettings = await _localNotifications.getSettings();
 
+      // Načítaj preferovaný čas denného lectia zo servera
+      final preferredLectioTime = await _fcmService.getPreferredLectioTime();
+
       setState(() {
         _preferencesData = preferencesData;
-        _dailyLectioEnabled = localSettings['daily_lectio_enabled'] ?? false;
+        // Daily lectio teraz beží cez FCM topic 'daily-readings'
+        _dailyLectioEnabled = _isDailyReadingsTopicEnabled(preferencesData);
         _prayerReminderEnabled =
             localSettings['prayer_reminder_enabled'] ?? false;
         _prayerReminderTime = localSettings['prayer_reminder_time'];
+        _dailyLectioTime = preferredLectioTime;
         _isLoading = false;
       });
 
@@ -181,18 +187,39 @@ class _NotificationSettingsScreenState
   }
 
   // Lokálne notifikácie handlers
+
+  /// Zistí či je FCM topic 'daily-readings' zapnutý
+  bool _isDailyReadingsTopicEnabled(NotificationPreferencesResponse? prefs) {
+    if (prefs == null) return true; // Default: zapnuté (opt-out model)
+    final topicId = _getDailyReadingsTopicId(prefs);
+    if (topicId == null) return true;
+    return prefs.isTopicEnabled(topicId);
+  }
+
+  /// Nájde UUID topicu 'daily-readings' podľa slug
+  String? _getDailyReadingsTopicId(NotificationPreferencesResponse? prefs) {
+    if (prefs == null) return null;
+    try {
+      final topic = prefs.topics.firstWhere((t) => t.slug == 'daily-readings');
+      return topic.id;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _onDailyLectioChanged(bool enabled) async {
     try {
-      // 🔥 NOVÉ: Pri zapnutí notifikácií požiadaj o potrebné povolenia
-      if (enabled) {
-        _logger.i('🔔 Requesting battery optimization exemption...');
-        await _localNotifications.requestIgnoreBatteryOptimizations();
-
-        _logger.i('🔔 Requesting exact alarm permission...');
-        await _localNotifications.requestExactAlarmPermission();
+      // Nájdi topic ID pre 'daily-readings'
+      final topicId = _getDailyReadingsTopicId(_preferencesData);
+      if (topicId == null) {
+        _logger.w('⚠️ daily-readings topic not found');
+        return;
       }
 
-      await _localNotifications.setDailyLectioEnabled(enabled);
+      // Aktualizuj preferenciu na serveri cez FCM topic systém
+      final success = await _fcmService.updateTopicPreference(topicId, enabled);
+      if (!success) throw Exception('Failed to update topic preference');
+
       setState(() => _dailyLectioEnabled = enabled);
 
       if (!mounted) return;
@@ -215,6 +242,50 @@ class _NotificationSettingsScreenState
           backgroundColor: Colors.red,
         ),
       );
+    }
+  }
+
+  Future<void> _onDailyLectioTimeChanged() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _dailyLectioTime ?? const TimeOfDay(hour: 8, minute: 0),
+    );
+
+    if (picked != null) {
+      // Zaokrúhli na celú hodinu — backend cron beží každú hodinu
+      final roundedTime = TimeOfDay(hour: picked.hour, minute: 0);
+
+      try {
+        final success = await _fcmService.updatePreferredLectioTime(
+          roundedTime,
+        );
+        if (!success) throw Exception('Failed to update preferred lectio time');
+
+        setState(() {
+          _dailyLectioTime = roundedTime;
+        });
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'notifications.local.daily_lectio_time_set'.tr(
+                args: ['${roundedTime.hour}:00'],
+              ),
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        _logger.e('Error setting daily lectio time: $e');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('notifications.local.daily_lectio_error'.tr()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -479,12 +550,29 @@ class _NotificationSettingsScreenState
               child: Text('📖', style: theme.textTheme.titleLarge),
             ),
             title: Text('notifications.local.daily_lectio_title'.tr()),
-            subtitle: Text('notifications.local.daily_lectio_subtitle'.tr()),
-            trailing: Switch(
-              value: _dailyLectioEnabled,
-              onChanged: _isLoading
-                  ? null
-                  : (value) => _onDailyLectioChanged(value),
+            subtitle: Text(
+              _dailyLectioEnabled && _dailyLectioTime != null
+                  ? 'notifications.local.daily_lectio_time_subtitle'.tr(
+                      args: ['${_dailyLectioTime!.hour}:00'],
+                    )
+                  : 'notifications.local.daily_lectio_subtitle'.tr(),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_dailyLectioEnabled)
+                  IconButton(
+                    icon: const Icon(Icons.access_time),
+                    onPressed: _onDailyLectioTimeChanged,
+                    tooltip: 'notifications.local.set_time_tooltip'.tr(),
+                  ),
+                Switch(
+                  value: _dailyLectioEnabled,
+                  onChanged: _isLoading
+                      ? null
+                      : (value) => _onDailyLectioChanged(value),
+                ),
+              ],
             ),
           ),
         ),

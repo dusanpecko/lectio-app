@@ -146,9 +146,6 @@ void main() {
     ).thenReturn(null);
 
     when(
-      () => mockLocalNotificationsService.refreshCacheIfNeeded(),
-    ).thenAnswer((_) async {});
-    when(
       () => mockLocalNotificationsService.setupRegistrationNotification(),
     ).thenAnswer((_) async {});
 

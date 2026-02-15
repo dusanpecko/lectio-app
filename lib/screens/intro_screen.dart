@@ -28,7 +28,9 @@ class _IntroScreenState extends State<IntroScreen> {
         slivers: [
           // Hero App Bar
           SliverAppBar(
-            expandedHeight: 300,
+            expandedHeight: MediaQuery.of(context).size.width >= 600
+                ? 450.0
+                : 300.0,
             floating: false,
             pinned: true,
             backgroundColor: theme.colorScheme.primary,
@@ -61,38 +63,64 @@ class _IntroScreenState extends State<IntroScreen> {
                   ),
                   SafeArea(
                     child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.xxl),
+                      padding: EdgeInsets.all(
+                        MediaQuery.of(context).size.width >= 600
+                            ? AppSpacing.xxl * 1.5
+                            : AppSpacing.xxl,
+                      ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            padding: EdgeInsets.all(
+                              MediaQuery.of(context).size.width >= 600
+                                  ? AppSpacing.xl
+                                  : AppSpacing.lg,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(AppRadius.xl),
                             ),
                             child: Icon(
                               Icons.menu_book_rounded,
-                              size: 48,
+                              size: MediaQuery.of(context).size.width >= 600
+                                  ? 64
+                                  : 48,
                               color: Colors.white,
                             ),
                           ),
-                          const SizedBox(height: AppSpacing.lg),
+                          SizedBox(
+                            height: MediaQuery.of(context).size.width >= 600
+                                ? AppSpacing.xl
+                                : AppSpacing.lg,
+                          ),
                           Text(
                             t['heroTitle'],
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style:
+                                (MediaQuery.of(context).size.width >= 600
+                                        ? theme.textTheme.headlineLarge
+                                        : theme.textTheme.headlineMedium)
+                                    ?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: AppSpacing.sm),
+                          SizedBox(
+                            height: MediaQuery.of(context).size.width >= 600
+                                ? AppSpacing.md
+                                : AppSpacing.sm,
+                          ),
                           Text(
                             t['heroSubtitle'],
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              color: Colors.white70,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style:
+                                (MediaQuery.of(context).size.width >= 600
+                                        ? theme.textTheme.headlineMedium
+                                        : theme.textTheme.titleLarge)
+                                    ?.copyWith(
+                                      color: Colors.white70,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                             textAlign: TextAlign.center,
                           ),
                         ],

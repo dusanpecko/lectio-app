@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -12,10 +13,6 @@ import '../models/notification_models.dart';
 import '../utils/app_logger.dart';
 import 'local_notifications_service.dart';
 import 'notification_api.dart';
-
-/// Global instance pre local notifications (potrebné pre background handler)
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
 
 /// Logger pre background handler (musí byť top-level kvôli izolovanému kontextu)
 final _backgroundLogger = appLogger;
@@ -35,10 +32,21 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 /// Helper funkcia pre zobrazenie lokálnej notifikácie
+/// V background isolate nemáme prístup k LocalNotificationsService singleton,
+/// preto vytvárame a inicializujeme lokálnu inštanciu pluginu.
 Future<void> _showLocalNotification(RemoteMessage message) async {
   try {
     final notification = message.notification;
     if (notification == null) return;
+
+    // Inicializuj lokálnu inštanciu — v background isolate nie je dostupný singleton
+    final plugin = FlutterLocalNotificationsPlugin();
+    await plugin.initialize(
+      const InitializationSettings(
+        android: AndroidInitializationSettings('@mipmap/launcher_icon'),
+        iOS: DarwinInitializationSettings(),
+      ),
+    );
 
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
@@ -71,7 +79,7 @@ Future<void> _showLocalNotification(RemoteMessage message) async {
       macOS: macOSPlatformChannelSpecifics,
     );
 
-    await flutterLocalNotificationsPlugin.show(
+    await plugin.show(
       message.hashCode,
       notification.title,
       notification.body,
@@ -297,6 +305,9 @@ class FcmService {
 
       _logger.i('Registering with locale: $code, platform: $platform');
 
+      // Získaj IANA timezone pre timezone-aware push notifikácie
+      final timezone = LocalNotificationsService.instance.currentTimezoneName;
+
       // Registruj token na backend API (Supabase)
       // Používame SPRÁVNU tabuľku: user_fcm_tokens (nie push_tokens)
       try {
@@ -308,6 +319,7 @@ class FcmService {
           'locale_code': code,
           'app_version': appVersion,
           'user_id': userId,
+          'timezone': timezone,
           'is_active': true,
           'last_used_at': DateTime.now().toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),
@@ -476,5 +488,66 @@ class FcmService {
   /// Nastaví callback pre spracovanie notifikácií
   void setNotificationCallback(Function(RemoteMessage) callback) {
     _onNotificationCallback = callback;
+  }
+
+  /// Aktualizuje preferovaný čas denného lectia v user_fcm_tokens
+  /// [time] je TimeOfDay alebo null (reset na default 08:00)
+  Future<bool> updatePreferredLectioTime(TimeOfDay? time) async {
+    try {
+      final token = _currentToken ?? await getCurrentToken();
+      if (token == null) {
+        _logger.w('Cannot update preferred lectio time: no FCM token');
+        return false;
+      }
+
+      final timeStr = time != null
+          ? '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}'
+          : '08:00';
+
+      await Supabase.instance.client
+          .from('user_fcm_tokens')
+          .update({
+            'preferred_lectio_time': timeStr,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('token', token);
+
+      _logger.i('✅ Preferred lectio time updated to $timeStr');
+      return true;
+    } catch (e) {
+      _logger.e('❌ Failed to update preferred lectio time: $e');
+      return false;
+    }
+  }
+
+  /// Získa preferovaný čas denného lectia z user_fcm_tokens
+  Future<TimeOfDay?> getPreferredLectioTime() async {
+    try {
+      final token = _currentToken ?? await getCurrentToken();
+      if (token == null) return null;
+
+      final result = await Supabase.instance.client
+          .from('user_fcm_tokens')
+          .select('preferred_lectio_time')
+          .eq('token', token)
+          .maybeSingle();
+
+      if (result == null) return null;
+
+      final timeStr = result['preferred_lectio_time'] as String?;
+      if (timeStr == null) return null;
+
+      final parts = timeStr.split(':');
+      if (parts.length >= 2) {
+        return TimeOfDay(
+          hour: int.parse(parts[0]),
+          minute: int.parse(parts[1]),
+        );
+      }
+      return null;
+    } catch (e) {
+      _logger.e('Failed to get preferred lectio time: $e');
+      return null;
+    }
   }
 }

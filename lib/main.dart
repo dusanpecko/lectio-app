@@ -10,14 +10,15 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:lectio_divina/screens/auth_screen.dart';
 import 'package:lectio_divina/screens/home_screen.dart';
 import 'package:lectio_divina/screens/lectio_screen.dart';
+import 'package:lectio_divina/screens/onboarding_screen.dart';
 import 'package:lectio_divina/shared/app_theme.dart';
 import 'package:lectio_divina/utils/app_logger.dart';
 import 'package:lectio_divina/utils/umami_navigation_observer.dart';
 import 'package:lectio_divina/widgets/global_mini_player.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
 
 import 'controllers/notification_controller.dart';
 import 'firebase_options.dart';
@@ -51,6 +52,12 @@ Future<Locale> _getStartLocale(String languageCode) async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Uzamkni orientáciu na portrait mode
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
   // Edge-to-edge display - obsah sa roztiahne za status bar aj navigation bar
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(
@@ -82,8 +89,6 @@ Future<void> main() async {
   _logger.i('✅ JustAudioBackground initialized');
 
   tz.initializeTimeZones();
-  tz.setLocalLocation(tz.getLocation('Europe/Bratislava'));
-  _logger.i('✅ Timezone set to Europe/Bratislava');
 
   // .env
   try {
@@ -134,12 +139,6 @@ Future<void> main() async {
 
     await LocalNotificationsService.instance.initialize();
     _logger.i('✅ LocalNotificationsService initialized successfully');
-
-    // 🔥 NOVÉ: Refresh notifikácií pri štarte aplikácie
-    // Toto zabezpečí, že ak používateľ neotvoril appku dlhšie ako 7 dní,
-    // notifikácie sa znova naplánujú
-    await LocalNotificationsService.instance.refreshCacheIfNeeded();
-    _logger.i('✅ Notifications cache refreshed on startup');
 
     // NOTE: Audio initialization moved to main() with JustAudioBackground.init()
 
@@ -290,17 +289,6 @@ class _FCMInitializerState extends State<FCMInitializer>
       _logger.i('✅ App RESUMED from background');
       NotificationController.instance.clearAppBadge();
 
-      // 🔥 KRITICKÉ: Re-scheduluj notifikácie pri každom resume
-      // Toto zabezpečí, že notifikácie budú vždy naplánované na najbližších 7 dní
-      LocalNotificationsService.instance
-          .refreshCacheIfNeeded()
-          .then((_) {
-            _logger.i('✅ Notifications refreshed on app resume');
-          })
-          .catchError((e) {
-            _logger.e('❌ Failed to refresh notifications: $e');
-          });
-
       // Kontrola pending notifikácie keď aplikácia prejde do popredia
       NotificationController.instance.checkPendingNotification(mounted);
     } else if (state == AppLifecycleState.paused) {
@@ -345,6 +333,8 @@ class SessionHandler extends StatefulWidget {
 class _SessionHandlerState extends State<SessionHandler> {
   Session? session;
   late final StreamSubscription<AuthState> _authSubscription;
+  bool _showOnboarding = false;
+  bool _loading = true;
 
   @override
   void initState() {
@@ -357,6 +347,8 @@ class _SessionHandlerState extends State<SessionHandler> {
     _logger.i(
       '🔐 Current session: ${session != null ? "LOGGED IN" : "NOT LOGGED IN"}',
     );
+
+    _checkOnboarding();
 
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
       data,
@@ -390,6 +382,27 @@ class _SessionHandlerState extends State<SessionHandler> {
     });
   }
 
+  Future<void> _checkOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    final seen = prefs.getBool('onboarding_completed') ?? false;
+    if (mounted) {
+      setState(() {
+        _showOnboarding = !seen;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _completeOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboarding_completed', true);
+    if (mounted) {
+      setState(() {
+        _showOnboarding = false;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _authSubscription.cancel();
@@ -398,6 +411,14 @@ class _SessionHandlerState extends State<SessionHandler> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_showOnboarding) {
+      return OnboardingScreen(onComplete: _completeOnboarding);
+    }
+
     if (session == null) {
       return const AuthScreen();
     } else {

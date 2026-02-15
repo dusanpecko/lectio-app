@@ -80,7 +80,9 @@ class _AdorationScreenState extends State<AdorationScreen> {
               slivers: [
                 // Hero App Bar
                 SliverAppBar(
-                  expandedHeight: 300,
+                  expandedHeight: MediaQuery.of(context).size.width >= 600
+                      ? 450.0
+                      : 300.0,
                   floating: false,
                   pinned: true,
                   backgroundColor: AppColors.primary,
@@ -126,39 +128,69 @@ class _AdorationScreenState extends State<AdorationScreen> {
                         ),
                         SafeArea(
                           child: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.xxl),
+                            padding: EdgeInsets.all(
+                              MediaQuery.of(context).size.width >= 600
+                                  ? AppSpacing.xxl * 1.5
+                                  : AppSpacing.xxl,
+                            ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.all(AppSpacing.lg),
+                                  padding: EdgeInsets.all(
+                                    MediaQuery.of(context).size.width >= 600
+                                        ? AppSpacing.xl
+                                        : AppSpacing.lg,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(AppRadius.xl),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.xl,
+                                    ),
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.favorite_rounded,
-                                    size: 48,
+                                    size:
+                                        MediaQuery.of(context).size.width >= 600
+                                        ? 64
+                                        : 48,
                                     color: Colors.white,
                                   ),
                                 ),
-                                const SizedBox(height: AppSpacing.lg),
+                                SizedBox(
+                                  height:
+                                      MediaQuery.of(context).size.width >= 600
+                                      ? AppSpacing.xl
+                                      : AppSpacing.lg,
+                                ),
                                 Text(
                                   tr('adoration_main_title'),
-                                  style: theme.textTheme.headlineMedium
-                                      ?.copyWith(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  style:
+                                      (MediaQuery.of(context).size.width >= 600
+                                              ? theme.textTheme.headlineLarge
+                                              : theme.textTheme.headlineMedium)
+                                          ?.copyWith(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                   textAlign: TextAlign.center,
                                 ),
-                                const SizedBox(height: AppSpacing.sm),
+                                SizedBox(
+                                  height:
+                                      MediaQuery.of(context).size.width >= 600
+                                      ? AppSpacing.md
+                                      : AppSpacing.sm,
+                                ),
                                 Text(
                                   tr('adoration_main_subtitle'),
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    color: Colors.white70,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                  style:
+                                      (MediaQuery.of(context).size.width >= 600
+                                              ? theme.textTheme.headlineMedium
+                                              : theme.textTheme.titleMedium)
+                                          ?.copyWith(
+                                            color: Colors.white70,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                   textAlign: TextAlign.center,
                                 ),
                               ],
@@ -370,7 +402,8 @@ class _AdorationScreenState extends State<AdorationScreen> {
                                 ),
                               ),
                             if (adoration.hasImage) ...[
-                              if (adoration.hasAudio) const SizedBox(width: AppSpacing.sm),
+                              if (adoration.hasAudio)
+                                const SizedBox(width: AppSpacing.sm),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,

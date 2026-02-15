@@ -659,7 +659,9 @@ class _LectioScreenState extends State<LectioScreen> {
       builder: (context) => Container(
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadius.xl),
+          ),
         ),
         padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
@@ -2247,7 +2249,9 @@ class _LectioScreenState extends State<LectioScreen> {
                 slivers: [
                   // Hero SliverAppBar s obrázkom
                   SliverAppBar(
-                    expandedHeight: 300,
+                    expandedHeight: MediaQuery.of(context).size.width >= 600
+                        ? 450.0
+                        : 300.0,
                     floating: false,
                     pinned: true,
                     centerTitle:
@@ -2266,14 +2270,20 @@ class _LectioScreenState extends State<LectioScreen> {
                             opacity: isDndActive ? 1.0 : 0.0,
                             duration: const Duration(milliseconds: 300),
                             child: Container(
-                              margin: const EdgeInsets.only(right: AppSpacing.sm, top: AppSpacing.sm, bottom: AppSpacing.sm),
+                              margin: const EdgeInsets.only(
+                                right: AppSpacing.sm,
+                                top: AppSpacing.sm,
+                                bottom: AppSpacing.sm,
+                              ),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(AppRadius.xl),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.xl,
+                                ),
                                 border: Border.all(
                                   color: Colors.white.withValues(alpha: 0.3),
                                   width: 1,
@@ -2330,28 +2340,34 @@ class _LectioScreenState extends State<LectioScreen> {
                         ),
                     ],
                     flexibleSpace: FlexibleSpaceBar(
-                      titlePadding: const EdgeInsets.fromLTRB(
+                      titlePadding: EdgeInsets.fromLTRB(
                         72,
                         16,
                         72,
-                        16,
-                      ), // Viac priestoru pre centrálne zarovnanie
+                        MediaQuery.of(context).size.width >= 600 ? 24 : 16,
+                      ),
                       title: Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                        ),
                         child: Text(
                           "Lectio Divina",
-                          style: theme.textTheme.titleMedium!.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black26,
-                                blurRadius: 4,
-                                offset: Offset(0, 1),
-                              ),
-                            ],
-                          ),
+                          style:
+                              (MediaQuery.of(context).size.width >= 600
+                                      ? theme.textTheme.titleLarge
+                                      : theme.textTheme.titleMedium)!
+                                  .copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black26,
+                                        blurRadius: 4,
+                                        offset: Offset(0, 1),
+                                      ),
+                                    ],
+                                  ),
                           textAlign: TextAlign.center,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -2403,7 +2419,9 @@ class _LectioScreenState extends State<LectioScreen> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.9),
-                                  borderRadius: BorderRadius.circular(AppRadius.xl),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.xl,
+                                  ),
                                   border: Border.all(
                                     color: Colors.white.withValues(alpha: 0.3),
                                   ),
@@ -2476,7 +2494,9 @@ class _LectioScreenState extends State<LectioScreen> {
                                     color: AppColors.primary.withValues(
                                       alpha: 0.1,
                                     ),
-                                    borderRadius: BorderRadius.circular(AppRadius.md),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.md,
+                                    ),
                                   ),
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -2593,7 +2613,9 @@ class _LectioScreenState extends State<LectioScreen> {
                               // Title and Bible Reference
                               if ((lectioData?['hlava'] ?? '').isNotEmpty)
                                 Padding(
-                                  padding: const EdgeInsets.only(top: AppSpacing.lg),
+                                  padding: const EdgeInsets.only(
+                                    top: AppSpacing.lg,
+                                  ),
                                   child: Center(
                                     child: Text(
                                       lectioData?['hlava'] ?? '',
@@ -2609,7 +2631,10 @@ class _LectioScreenState extends State<LectioScreen> {
                               if ((lectioData?['suradnice_pismo'] ?? '')
                                   .isNotEmpty)
                                 Padding(
-                                  padding: const EdgeInsets.only(top: AppSpacing.xs, bottom: AppSpacing.sm),
+                                  padding: const EdgeInsets.only(
+                                    top: AppSpacing.xs,
+                                    bottom: AppSpacing.sm,
+                                  ),
                                   child: Center(
                                     child: Text(
                                       lectioData?['suradnice_pismo'] ?? '',

@@ -78,12 +78,6 @@ class NotificationConstants {
   /// Počet dní dopredu pre plánovanie notifikácií
   static const int scheduleDaysAhead = 7;
 
-  /// Čas pre denné lectio notifikácie (hodina)
-  static const int dailyLectioHour = 9;
-
-  /// Čas pre denné lectio notifikácie (minúty)
-  static const int dailyLectioMinute = 0;
-
   /// Predvolený čas pre welcome notifikáciu (hodina)
   static const int welcomeNotificationHour = 10;
 
@@ -92,8 +86,4 @@ class NotificationConstants {
 
   /// Maximálna dĺžka textu pre notifikáciu
   static const int maxNotificationTextLength = 100;
-
-  /// Cache platnosť v hodinách
-  static const int cacheValidityHours = 12;
 }
-

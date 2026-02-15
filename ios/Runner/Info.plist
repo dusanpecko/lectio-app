@@ -43,6 +43,8 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSBonjourServices</key>
@@ -51,14 +53,12 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Lectio Divina potrebuje prístup ku kamere pre vytvorenie profilovej fotky.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Lectio Divina potrebuje prístup k fotogalérii pre výber profilovej fotky.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app uses local network to communicate with development tools and debugging services.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Lectio Divina potrebuje prístup k fotogalérii pre výber profilovej fotky.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
@@ -75,10 +75,10 @@
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 </dict>
 </plist>

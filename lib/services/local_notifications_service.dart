@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -52,17 +51,13 @@ class LocalNotificationsService {
 
   // Notification IDs
   static const int welcomeNotificationId = 1000;
-  static const int dailyLectioBaseId = 2000; // 2000-2006 pre 7 dní
   static const int prayerReminderBaseId = 3000; // 3000+ pre rôzne časy
 
   // SharedPreferences keys
   static const String _registrationDateKey = 'registration_date';
   static const String _welcomeNotificationSent = 'welcome_notification_sent';
-  static const String _dailyLectioEnabled = 'daily_lectio_enabled';
   static const String _prayerReminderEnabled = 'prayer_reminder_enabled';
   static const String _prayerReminderTime = 'prayer_reminder_time';
-  static const String _cachedLectioData = 'cached_lectio_data';
-  static const String _lastCacheUpdate = 'last_cache_update';
 
   /// Detekcia a inicializácia lokálnej timezone
   Future<void> _initializeLocalTimezone() async {
@@ -229,6 +224,9 @@ class LocalNotificationsService {
 
   /// Získa aktuálnu timezone location (cached)
   tz.Location get _currentTimezone => _localTimezone ?? tz.UTC;
+
+  /// Verejný prístup k IANA timezone názvu (pre FCM token registráciu)
+  String get currentTimezoneName => _currentTimezone.name;
 
   /// Inicializácia lokálnych notifikácií
   Future<bool> initialize() async {
@@ -657,22 +655,6 @@ class LocalNotificationsService {
     }
   }
 
-  /// Zapnutie/vypnutie denných lectio notifikácií
-  Future<void> setDailyLectioEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_dailyLectioEnabled, enabled);
-
-    if (enabled) {
-      await _scheduleDailyLectioNotifications();
-    } else {
-      await _cancelDailyLectioNotifications();
-    }
-
-    _logger.i(
-      '📱 Daily lectio notifications ${enabled ? 'enabled' : 'disabled'}',
-    );
-  }
-
   /// Skontroluj či má aplikácia povolenie na presné alarmy (Android 13+)
   Future<bool> canScheduleExactAlarms() async {
     try {
@@ -698,206 +680,6 @@ class LocalNotificationsService {
           ?.requestExactAlarmsPermission();
     } catch (e) {
       _logger.e('❌ Error requesting exact alarm permission: $e');
-    }
-  }
-
-  /// Naplánovanie denných lectio notifikácií
-  Future<void> _scheduleDailyLectioNotifications() async {
-    try {
-      // Skontroluj povolenie pre presné alarmy (Android 13+)
-      final canSchedule = await canScheduleExactAlarms();
-      if (!canSchedule) {
-        _logger.w(
-          '⚠️ Cannot schedule exact alarms - permission not granted. Using inexact scheduling.',
-        );
-        // Môžeme buď použiť inexact scheduling alebo informovať používateľa
-        // Pre teraz budeme pokračovať s inexact
-      }
-
-      // Zruš existujúce notifikácie
-      await _cancelDailyLectioNotifications();
-
-      // Načítaj cached dáta alebo stiahni nové
-      final lectioData = await _getCachedLectioData();
-
-      for (int i = 0; i < NotificationConstants.scheduleDaysAhead; i++) {
-        final notificationDate = DateTime.now().add(Duration(days: i));
-        final scheduledTime = DateTime(
-          notificationDate.year,
-          notificationDate.month,
-          notificationDate.day,
-          NotificationConstants.dailyLectioHour,
-          NotificationConstants.dailyLectioMinute,
-        );
-
-        // Preskočíme ak je čas v minulosti
-        if (scheduledTime.isBefore(DateTime.now())) continue;
-
-        final dateKey = DateFormat('yyyy-MM-dd').format(notificationDate);
-        final dayData = lectioData[dateKey];
-
-        String title = _getNotificationText('daily_title');
-        String body = _getNotificationText('daily_body');
-
-        if (dayData != null) {
-          title = dayData['hlava'] ?? title;
-          body = dayData['actio_preview'] ?? body;
-        }
-
-        final payload = jsonEncode({
-          'type': 'daily_lectio',
-          'date': notificationDate.toIso8601String(),
-        });
-
-        // Použij exact alebo inexact scheduling podľa dostupnosti povolenia
-        final scheduleMode = canSchedule
-            ? AndroidScheduleMode.exactAllowWhileIdle
-            : AndroidScheduleMode.inexactAllowWhileIdle;
-
-        await _notifications.zonedSchedule(
-          dailyLectioBaseId + i,
-          title,
-          body,
-          tz.TZDateTime.from(scheduledTime, _currentTimezone),
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'daily_lectio_channel',
-              'Denné zamyslenie',
-              channelDescription: 'Denné lectio divina notifikácie',
-              importance: Importance.high,
-              priority: Priority.high,
-              icon: '@mipmap/launcher_icon',
-              fullScreenIntent: true,
-              number: 1,
-            ),
-            iOS: DarwinNotificationDetails(
-              presentAlert: true,
-              presentBadge: true,
-              presentSound: true,
-              badgeNumber: 1,
-            ),
-            macOS: DarwinNotificationDetails(
-              presentAlert: true,
-              presentBadge: true,
-              presentSound: true,
-              badgeNumber: 1,
-            ),
-          ),
-          androidScheduleMode: scheduleMode,
-          payload: payload,
-        );
-      }
-
-      _logger.i('📅 Scheduled ${7} daily lectio notifications');
-    } catch (e) {
-      _logger.e('❌ Error scheduling daily lectio notifications: $e');
-    }
-  }
-
-  /// Zrušenie denných lectio notifikácií
-  Future<void> _cancelDailyLectioNotifications() async {
-    for (int i = 0; i < NotificationConstants.scheduleDaysAhead; i++) {
-      await _notifications.cancel(dailyLectioBaseId + i);
-    }
-    _logger.i('🗑️ Cancelled daily lectio notifications');
-  }
-
-  /// Načítanie cached lectio dát alebo stiahnutie nových
-  Future<Map<String, dynamic>> _getCachedLectioData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final currentLang = _getCurrentLanguage();
-    final lastUpdateStr = prefs.getString('${_lastCacheUpdate}_$currentLang');
-    final cachedDataStr = prefs.getString('${_cachedLectioData}_$currentLang');
-
-    // Kontrola či cache nie je starý (viac ako 12 hodín)
-    if (lastUpdateStr != null && cachedDataStr != null) {
-      DateTime? lastUpdate;
-      try {
-        lastUpdate = DateTime.parse(lastUpdateStr);
-      } catch (e) {
-        _logger.w(
-          '⚠️ Invalid cache timestamp format: $lastUpdateStr, refreshing cache',
-        );
-        // Neplatný timestamp - stiahneme nové dáta
-        return await _downloadAndCacheLectioData();
-      }
-      final cacheAge = DateTime.now().difference(lastUpdate);
-
-      if (cacheAge.inHours < NotificationConstants.cacheValidityHours) {
-        _logger.i(
-          '📦 Using cached lectio data for $currentLang (age: ${cacheAge.inHours}h)',
-        );
-        return Map<String, dynamic>.from(jsonDecode(cachedDataStr));
-      }
-    }
-
-    // Stiahni nové dáta
-    return await _downloadAndCacheLectioData();
-  }
-
-  /// Stiahnutie a cachovanie lectio dát
-  Future<Map<String, dynamic>> _downloadAndCacheLectioData() async {
-    try {
-      final supabase = Supabase.instance.client;
-      final currentLang = _getCurrentLanguage();
-      final Map<String, dynamic> lectioData = {};
-
-      _logger.i('🌍 Downloading lectio data for language: $currentLang');
-
-      for (int i = 0; i < NotificationConstants.scheduleDaysAhead; i++) {
-        final date = DateTime.now().add(Duration(days: i));
-        final dateStr = DateFormat('yyyy-MM-dd').format(date);
-
-        // Načítaj dáta pre daný deň (použij tú istú logiku ako v lectio_screen)
-        final calendarResponse = await supabase
-            .from('liturgical_calendar')
-            .select('*, liturgical_years(*)')
-            .eq('datum', dateStr)
-            .eq('locale_code', currentLang)
-            .maybeSingle();
-
-        if (calendarResponse != null) {
-          final lectioHlava = calendarResponse['lectio_hlava'];
-          if (lectioHlava != null) {
-            // Získaj lectio source
-            final lectioSource = await supabase
-                .from('lectio_sources')
-                .select()
-                .eq('hlava', lectioHlava)
-                .eq('lang', currentLang)
-                .eq('rok', 'N') // Defaultne všedné dni
-                .maybeSingle();
-
-            if (lectioSource != null) {
-              lectioData[dateStr] = {
-                'hlava': lectioSource['hlava'],
-                'actio_preview': _truncateText(
-                  lectioSource['actio_text'] ?? '',
-                  NotificationConstants.maxNotificationTextLength,
-                ),
-                'reference': lectioSource['reference'],
-              };
-            }
-          }
-        }
-      }
-
-      // Ulož do cache s jazykom
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        '${_cachedLectioData}_$currentLang',
-        jsonEncode(lectioData),
-      );
-      await prefs.setString(
-        '${_lastCacheUpdate}_$currentLang',
-        DateTime.now().toIso8601String(),
-      );
-
-      _logger.i('💾 Downloaded and cached lectio data for 7 days');
-      return lectioData;
-    } catch (e) {
-      _logger.e('❌ Error downloading lectio data: $e');
-      return {};
     }
   }
 
@@ -1009,12 +791,6 @@ class LocalNotificationsService {
     _logger.i('🗑️ Cancelled prayer reminders');
   }
 
-  /// Skrátenie textu pre notifikáciu
-  String _truncateText(String text, int maxLength) {
-    if (text.length <= maxLength) return text;
-    return '${text.substring(0, maxLength)}...';
-  }
-
   /// Získanie aktuálnych nastavení
   Future<Map<String, dynamic>> getSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -1031,64 +807,11 @@ class LocalNotificationsService {
     }
 
     return {
-      'daily_lectio_enabled': prefs.getBool(_dailyLectioEnabled) ?? false,
       'prayer_reminder_enabled': prefs.getBool(_prayerReminderEnabled) ?? false,
       'prayer_reminder_time': prayerTime,
       'welcome_notification_sent':
           prefs.getBool(_welcomeNotificationSent) ?? false,
     };
-  }
-
-  /// Refresh cache - volať pri spustení aplikácie ak je internet
-  Future<void> refreshCacheIfNeeded() async {
-    final prefs = await SharedPreferences.getInstance();
-    final dailyEnabled = prefs.getBool(_dailyLectioEnabled) ?? false;
-
-    if (dailyEnabled) {
-      _logger.i('🔄 Refreshing lectio cache for daily notifications');
-      await _downloadAndCacheLectioData();
-      // Re-schedule notifikácie s novými dátami
-      await _scheduleDailyLectioNotifications();
-    }
-  }
-
-  /// Invaliduje cache a re-scheduluje notifikácie pri zmene jazyka
-  /// Volať z main.dart alebo settings pri zmene jazyka
-  Future<void> onLanguageChanged(String newLanguageCode) async {
-    _logger.i('🌍 Language changed to: $newLanguageCode');
-
-    final prefs = await SharedPreferences.getInstance();
-
-    // Invaliduj cache pre všetky jazyky (vymaž staré dáta)
-    final supportedLanguages = ['sk', 'en', 'cs', 'de', 'es'];
-    for (final lang in supportedLanguages) {
-      await prefs.remove('${_cachedLectioData}_$lang');
-      await prefs.remove('${_lastCacheUpdate}_$lang');
-    }
-    _logger.i('🗑️ Cache invalidated for all languages');
-
-    // Ak sú denné notifikácie zapnuté, stiahni nové dáta a re-scheduluj
-    final dailyEnabled = prefs.getBool(_dailyLectioEnabled) ?? false;
-    if (dailyEnabled) {
-      _logger.i('🔄 Re-scheduling daily notifications for new language');
-      await _downloadAndCacheLectioData();
-      await _scheduleDailyLectioNotifications();
-    }
-  }
-
-  /// Validuje či je cache konzistentná s aktuálnym jazykom
-  Future<bool> validateCacheLanguage() async {
-    final prefs = await SharedPreferences.getInstance();
-    final currentLang = _getCurrentLanguage();
-    final cachedData = prefs.getString('${_cachedLectioData}_$currentLang');
-
-    if (cachedData == null) {
-      _logger.w('⚠️ No cache found for current language: $currentLang');
-      return false;
-    }
-
-    _logger.i('✅ Cache valid for language: $currentLang');
-    return true;
   }
 
   /// ⚡ Žiada vypnutie Battery Optimization (nutné pre scheduled notifications na Android 13+)

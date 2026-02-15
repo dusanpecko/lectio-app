@@ -90,6 +90,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Offline state
   bool _isOffline = false;
+
+  // FAB menu state
+  bool _isFabOpen = false;
+  VoidCallback? _closeFabMenu;
   StreamSubscription<bool>? _connectivitySubscription;
   final Set<String> _cachedDates = {};
 
@@ -642,62 +646,87 @@ class _HomeScreenState extends State<HomeScreen> {
         statusBarBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        body: RefreshIndicator(
-          onRefresh: _onRefresh,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(bottom: 15), // Priestor pre FAB
-            child: Column(
-              children: [
-                // Hero Slider Section
-                _buildHeroSlider(),
+        body: Stack(
+          children: [
+            // Main content
+            RefreshIndicator(
+              onRefresh: _onRefresh,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 15), // Priestor pre FAB
+                child: Column(
+                  children: [
+                    // Hero Slider Section
+                    _buildHeroSlider(),
 
-                // Main Content
-                SafeArea(
-                  top: false,
-                  child: Column(
-                    children: [
-                      // Slider dots
-                      _buildSliderDots(),
+                    // Main Content
+                    SafeArea(
+                      top: false,
+                      child: Column(
+                        children: [
+                          // Slider dots
+                          _buildSliderDots(),
 
-                      // Offline banner
-                      if (_isOffline) _buildOfflineBanner(),
+                          // Offline banner
+                          if (_isOffline) _buildOfflineBanner(),
 
-                      // Lectio Divina Calendar
-                      _buildLectioCalendar(),
-                      const SizedBox(height: AppSpacing.sm),
-                      // Daily quote
-                      _buildQuoteCard(),
-                      const SizedBox(height: AppSpacing.sm),
-                      // Navigation buttons
-                      _buildNavigationButtons(),
-                      const SizedBox(height: 15),
-                      // Rosary section
-                      if (!_isOffline) _buildRosarySection(),
+                          // Lectio Divina Calendar
+                          _buildLectioCalendar(),
+                          const SizedBox(height: AppSpacing.sm),
+                          // Daily quote
+                          _buildQuoteCard(),
+                          const SizedBox(height: AppSpacing.sm),
+                          // Navigation buttons
+                          _buildNavigationButtons(),
+                          const SizedBox(height: 15),
+                          // Rosary section
+                          if (!_isOffline) _buildRosarySection(),
 
-                      // Support button
-                      if (!_isOffline) _buildSupportButton(),
+                          // Support button
+                          if (!_isOffline) _buildSupportButton(),
 
-                      // News section
-                      if (!_isOffline) _buildNewsSection(),
-                    ],
-                  ),
+                          // News section
+                          if (!_isOffline) _buildNewsSection(),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
+            // Backdrop pre FAB menu - zachytáva kliky mimo menu
+            if (_isFabOpen)
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () {
+                    debugPrint('🔄 Backdrop tapped - closing FAB menu');
+                    _closeFabMenu?.call();
+                  },
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(color: Colors.transparent),
+                ),
+              ),
+            // SpeedDial FAB
+            Positioned(
+              right: 16,
+              bottom: AppSpacing.xl + MediaQuery.of(context).padding.bottom,
+              child: SpeedDialFAB(
+                onPrimaryAction: _openTodaysLectio,
+                onSecondaryAction: _handleSpeedDialAction,
+                onOpenChanged: (isOpen) {
+                  if (mounted) {
+                    setState(() {
+                      _isFabOpen = isOpen;
+                    });
+                  }
+                },
+                onCloseCallback: (closeFunc) {
+                  _closeFabMenu = closeFunc;
+                },
+              ),
+            ),
+          ],
         ),
-        // SpeedDial FAB
-        floatingActionButton: Padding(
-          padding: const EdgeInsets.only(
-            bottom: AppSpacing.xl,
-          ), // Mierne vyššie
-          child: SpeedDialFAB(
-            onPrimaryAction: _openTodaysLectio,
-            onSecondaryAction: _handleSpeedDialAction,
-          ),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }
@@ -705,8 +734,15 @@ class _HomeScreenState extends State<HomeScreen> {
   // Build hero slider
   Widget _buildHeroSlider() {
     final theme = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= 600;
+
+    // Responsive sizing
+    final sliderHeight = isTablet ? 500.0 : 350.0;
+    final textPadding = isTablet ? AppSpacing.xxl * 1.5 : AppSpacing.xl;
+
     return Container(
-      height: 350,
+      height: sliderHeight,
       decoration: const BoxDecoration(
         boxShadow: [
           BoxShadow(
@@ -753,14 +789,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 left: 0,
                 right: 0,
                 child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  padding: EdgeInsets.all(textPadding),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         slideTitleKeys[index].tr(),
-                        style: theme.textTheme.headlineMedium!.copyWith(
+                        style: TextStyle(
+                          fontSize: isTablet ? 34 : 28,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                           shadows: [
@@ -772,19 +809,25 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.sm),
+                      SizedBox(
+                        height: isTablet ? AppSpacing.md : AppSpacing.sm,
+                      ),
                       Text(
                         slideSubtitleKeys[index].tr(),
-                        style: theme.textTheme.titleMedium!.copyWith(
-                          color: Colors.white,
-                          shadows: [
-                            Shadow(
-                              offset: Offset(0, 1),
-                              blurRadius: 2,
-                              color: Colors.black54,
-                            ),
-                          ],
-                        ),
+                        style:
+                            (isTablet
+                                    ? theme.textTheme.titleLarge
+                                    : theme.textTheme.titleMedium)!
+                                .copyWith(
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      offset: Offset(0, 1),
+                                      blurRadius: 2,
+                                      color: Colors.black54,
+                                    ),
+                                  ],
+                                ),
                       ),
                     ],
                   ),
@@ -799,8 +842,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Build slider dots
   Widget _buildSliderDots() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= 600;
+
+    final dotSize = isTablet ? 16.0 : 12.0;
+    final dotSizeInactive = isTablet ? 12.0 : 8.0;
+    final containerHeight = isTablet ? 32.0 : 24.0;
+
     return Container(
-      height: 24,
+      height: containerHeight,
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -808,9 +858,11 @@ class _HomeScreenState extends State<HomeScreen> {
           final isActive = _currentPage == index;
           return AnimatedContainer(
             duration: const Duration(milliseconds: 300),
-            margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-            width: isActive ? 12 : 8,
-            height: isActive ? 12 : 8,
+            margin: EdgeInsets.symmetric(
+              horizontal: isTablet ? AppSpacing.sm : AppSpacing.xs,
+            ),
+            width: isActive ? dotSize : dotSizeInactive,
+            height: isActive ? dotSize : dotSizeInactive,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isActive ? AppColors.primary : Colors.grey.shade400,
@@ -1210,6 +1262,7 @@ class _HomeScreenState extends State<HomeScreen> {
           tr('support_full'),
           style: theme.textTheme.bodyMedium!.copyWith(
             fontWeight: FontWeight.w600,
+            color: Colors.white,
           ),
         ),
       ),
@@ -1232,6 +1285,9 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= 600;
+
     // Vytvor zoznam kariet pre carousel
     final List<Widget> carouselItems = [];
 
@@ -1249,19 +1305,65 @@ class _HomeScreenState extends State<HomeScreen> {
     // 4. Tu môžeš pridať ďalšie položky v budúcnosti
     // carouselItems.add(_buildOtherCardContent());
 
-    // Ak je len jedna položka, nezobrazuj dots
-    if (carouselItems.length == 1) {
+    // Pre tablety: zoskup karty po 2
+    List<Widget> pages = [];
+    if (isTablet) {
+      for (int i = 0; i < carouselItems.length; i += 2) {
+        if (i + 1 < carouselItems.length) {
+          // Dvojica kariet
+          pages.add(
+            Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.xs),
+                    child: carouselItems[i],
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: AppSpacing.xs),
+                    child: carouselItems[i + 1],
+                  ),
+                ),
+              ],
+            ),
+          );
+        } else {
+          // Posledná karta je sama
+          pages.add(
+            Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.xs),
+                    child: carouselItems[i],
+                  ),
+                ),
+                const Expanded(child: SizedBox()), // Prázdny priestor
+              ],
+            ),
+          );
+        }
+      }
+    } else {
+      // Pre mobily: jedna karta na page
+      pages = carouselItems;
+    }
+
+    // Ak je len jedna page (mobil s 1 kartou alebo tablet s 1-2 kartami), nezobrazuj dots
+    if (pages.length == 1) {
       return Container(
         margin: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.sm,
         ),
         height: 300,
-        child: carouselItems.first,
+        child: pages.first,
       );
     }
 
-    // Carousel s viacerými položkami
+    // Carousel s viacerými pages
     return Container(
       margin: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
@@ -1274,7 +1376,7 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 300,
             child: PageView.builder(
               controller: _featuredCarouselController,
-              itemCount: carouselItems.length,
+              itemCount: pages.length,
               onPageChanged: (index) {
                 if (!mounted) return;
                 setState(() {
@@ -1282,12 +1384,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 });
               },
               itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xs,
-                  ),
-                  child: carouselItems[index],
-                );
+                return isTablet
+                    ? pages[index]
+                    : Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xs,
+                        ),
+                        child: pages[index],
+                      );
               },
             ),
           ),
@@ -1296,7 +1400,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: AppSpacing.md),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(carouselItems.length, (index) {
+            children: List.generate(pages.length, (index) {
               final isActive = _currentFeaturedPage == index;
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
@@ -1798,169 +1902,190 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 )
-              : SizedBox(
-                  height: 320,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: newsArticles.length,
-                    itemBuilder: (context, index) {
-                      final article = newsArticles[index];
-                      return Container(
-                        width: 280,
-                        margin: const EdgeInsets.only(right: AppSpacing.lg),
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    NewsDetailScreen(newsData: article),
-                                settings: const RouteSettings(
-                                  name: '/news-detail',
-                                ),
-                              ),
-                            );
-                          },
-                          child: Card(
-                            elevation: AppElevation.high,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.lg),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Image section - fixed height
-                                ClipRRect(
-                                  borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(AppRadius.lg),
-                                    topRight: Radius.circular(AppRadius.lg),
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isTablet = MediaQuery.of(context).size.width >= 600;
+                    return SizedBox(
+                      height: isTablet ? 420 : 320,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: newsArticles.length,
+                        itemBuilder: (context, index) {
+                          final article = newsArticles[index];
+                          return Container(
+                            width: isTablet ? 380 : 280,
+                            margin: const EdgeInsets.only(right: AppSpacing.lg),
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        NewsDetailScreen(newsData: article),
+                                    settings: const RouteSettings(
+                                      name: '/news-detail',
+                                    ),
                                   ),
-                                  child: SizedBox(
-                                    height: 160,
-                                    width: double.infinity,
-                                    child: article['image_url'] != null
-                                        ? CachedNetworkImage(
-                                            imageUrl: article['image_url'],
-                                            fit: BoxFit.cover,
-                                            placeholder: (context, url) =>
-                                                const Center(
-                                                  child:
-                                                      CircularProgressIndicator(),
-                                                ),
-                                            errorWidget: (context, url, error) {
-                                              return Container(
+                                );
+                              },
+                              child: Card(
+                                elevation: AppElevation.high,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.lg,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Image section - fixed height
+                                    ClipRRect(
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(AppRadius.lg),
+                                        topRight: Radius.circular(AppRadius.lg),
+                                      ),
+                                      child: SizedBox(
+                                        height: isTablet ? 200 : 160,
+                                        width: double.infinity,
+                                        child: article['image_url'] != null
+                                            ? CachedNetworkImage(
+                                                imageUrl: article['image_url'],
+                                                fit: BoxFit.cover,
+                                                placeholder: (context, url) =>
+                                                    const Center(
+                                                      child:
+                                                          CircularProgressIndicator(),
+                                                    ),
+                                                errorWidget:
+                                                    (context, url, error) {
+                                                      return Container(
+                                                        color: Colors
+                                                            .grey
+                                                            .shade200,
+                                                        child: const Icon(
+                                                          Icons
+                                                              .image_not_supported,
+                                                          color: Colors.grey,
+                                                          size: 50,
+                                                        ),
+                                                      );
+                                                    },
+                                              )
+                                            : Container(
                                                 color: Colors.grey.shade200,
                                                 child: const Icon(
-                                                  Icons.image_not_supported,
+                                                  Icons.article,
                                                   color: Colors.grey,
                                                   size: 50,
                                                 ),
-                                              );
-                                            },
-                                          )
-                                        : Container(
-                                            color: Colors.grey.shade200,
-                                            child: const Icon(
-                                              Icons.article,
-                                              color: Colors.grey,
-                                              size: 50,
-                                            ),
-                                          ),
-                                  ),
-                                ),
-
-                                // Content section
-                                Expanded(
-                                  child: Container(
-                                    padding: const EdgeInsets.all(
-                                      AppSpacing.lg,
+                                              ),
+                                      ),
                                     ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // Title
-                                        Flexible(
-                                          child: Text(
-                                            article['title'] ??
-                                                tr('untitled_article'),
-                                            style: theme.textTheme.titleMedium!
-                                                .copyWith(
-                                                  fontWeight: FontWeight.bold,
-                                                  color:
-                                                      AppColors.adaptiveCardTitle(
-                                                        context,
-                                                      ),
-                                                  height: 1.3,
-                                                ),
-                                            maxLines: 3,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
+
+                                    // Content section
+                                    Expanded(
+                                      child: Container(
+                                        padding: const EdgeInsets.all(
+                                          AppSpacing.lg,
                                         ),
-
-                                        const Spacer(),
-
-                                        // "Zobraziť článok" button
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color:
-                                                (AppColors.isDark(context)
-                                                        ? AppColors
-                                                              .darkPrimaryLight
-                                                        : AppColors.primary)
-                                                    .withValues(alpha: 0.15),
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                tr('show_article'),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            // Title
+                                            Flexible(
+                                              child: Text(
+                                                article['title'] ??
+                                                    tr('untitled_article'),
                                                 style: theme
                                                     .textTheme
-                                                    .bodySmall!
+                                                    .titleMedium!
                                                     .copyWith(
                                                       fontWeight:
-                                                          FontWeight.w600,
+                                                          FontWeight.bold,
                                                       color:
-                                                          AppColors.isDark(
+                                                          AppColors.adaptiveCardTitle(
                                                             context,
-                                                          )
-                                                          ? AppColors
-                                                                .darkPrimaryLight
-                                                          : AppColors.primary,
+                                                          ),
+                                                      height: 1.4,
                                                     ),
+                                                maxLines: isTablet ? 5 : 3,
+                                                overflow: TextOverflow.ellipsis,
                                               ),
-                                              const SizedBox(
-                                                width: AppSpacing.xs,
+                                            ),
+
+                                            const Spacer(),
+
+                                            // "Zobraziť článok" button
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 6,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color:
+                                                    (AppColors.isDark(context)
+                                                            ? AppColors
+                                                                  .darkPrimaryLight
+                                                            : AppColors.primary)
+                                                        .withValues(
+                                                          alpha: 0.15,
+                                                        ),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                               ),
-                                              Icon(
-                                                Icons.arrow_forward,
-                                                size: 14,
-                                                color: AppColors.isDark(context)
-                                                    ? AppColors.darkPrimaryLight
-                                                    : AppColors.primary,
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    tr('show_article'),
+                                                    style: theme
+                                                        .textTheme
+                                                        .bodySmall!
+                                                        .copyWith(
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color:
+                                                              AppColors.isDark(
+                                                                context,
+                                                              )
+                                                              ? AppColors
+                                                                    .darkPrimaryLight
+                                                              : AppColors
+                                                                    .primary,
+                                                        ),
+                                                  ),
+                                                  const SizedBox(
+                                                    width: AppSpacing.xs,
+                                                  ),
+                                                  Icon(
+                                                    Icons.arrow_forward,
+                                                    size: 14,
+                                                    color:
+                                                        AppColors.isDark(
+                                                          context,
+                                                        )
+                                                        ? AppColors
+                                                              .darkPrimaryLight
+                                                        : AppColors.primary,
+                                                  ),
+                                                ],
                                               ),
-                                            ],
-                                          ),
+                                            ),
+                                          ],
                                         ),
-                                      ],
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                          );
+                        },
+                      ),
+                    );
+                  },
                 ),
         ],
       ),

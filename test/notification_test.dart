@@ -41,30 +41,42 @@ void main() {
     mockAndroidPlugin = MockAndroidFlutterLocalNotificationsPlugin();
 
     // Setup mocks
-    when(() => mockNotificationsPlugin.resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>())
-        .thenReturn(mockAndroidPlugin);
+    when(
+      () => mockNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >(),
+    ).thenReturn(mockAndroidPlugin);
 
-    when(() => mockNotificationsPlugin.initialize(
-          any(),
-          onDidReceiveNotificationResponse:
-              any(named: 'onDidReceiveNotificationResponse'),
-          onDidReceiveBackgroundNotificationResponse:
-              any(named: 'onDidReceiveBackgroundNotificationResponse'),
-        )).thenAnswer((_) async => true);
+    when(
+      () => mockNotificationsPlugin.initialize(
+        any(),
+        onDidReceiveNotificationResponse: any(
+          named: 'onDidReceiveNotificationResponse',
+        ),
+        onDidReceiveBackgroundNotificationResponse: any(
+          named: 'onDidReceiveBackgroundNotificationResponse',
+        ),
+      ),
+    ).thenAnswer((_) async => true);
 
-    when(() => mockAndroidPlugin.createNotificationChannel(any()))
-        .thenAnswer((_) async {});
-    when(() => mockAndroidPlugin.requestExactAlarmsPermission())
-        .thenAnswer((_) async => true);
+    when(
+      () => mockAndroidPlugin.createNotificationChannel(any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockAndroidPlugin.requestExactAlarmsPermission(),
+    ).thenAnswer((_) async => true);
 
-    when(() => mockNotificationsPlugin.getNotificationAppLaunchDetails())
-        .thenAnswer((_) async => null);
+    when(
+      () => mockNotificationsPlugin.getNotificationAppLaunchDetails(),
+    ).thenAnswer((_) async => null);
 
     // Inject mock into service
     LocalNotificationsService.setInstanceForTesting(
-        LocalNotificationsService.internal(
-            notifications: mockNotificationsPlugin));
+      LocalNotificationsService.internal(
+        notifications: mockNotificationsPlugin,
+      ),
+    );
     service = LocalNotificationsService.instance;
   });
 
@@ -74,28 +86,36 @@ void main() {
 
     // Assert
     expect(result, true);
-    verify(() => mockNotificationsPlugin.initialize(
-          any(),
-          onDidReceiveNotificationResponse:
-              any(named: 'onDidReceiveNotificationResponse'),
-        )).called(1);
+    verify(
+      () => mockNotificationsPlugin.initialize(
+        any(),
+        onDidReceiveNotificationResponse: any(
+          named: 'onDidReceiveNotificationResponse',
+        ),
+      ),
+    ).called(1);
 
     // Check Android channels creation
     verify(() => mockAndroidPlugin.createNotificationChannel(any())).called(3);
   });
 
-  test('setupRegistrationNotification schedules welcome notification',
-      () async {
+  test('setupRegistrationNotification schedules welcome notification', () async {
     // Arrange
 
     // Mock zonedSchedule
     // Removing problematic parameter named: uiLocalNotificationDateInterpretation
-    when(() => mockNotificationsPlugin.zonedSchedule(
-            any(), any(), any(), any(), any(),
-            androidScheduleMode: any(named: 'androidScheduleMode'),
-            payload: any(named: 'payload'),
-            matchDateTimeComponents: any(named: 'matchDateTimeComponents')))
-        .thenAnswer((_) async {}); // void return, future
+    when(
+      () => mockNotificationsPlugin.zonedSchedule(
+        any(),
+        any(),
+        any(),
+        any(),
+        any(),
+        androidScheduleMode: any(named: 'androidScheduleMode'),
+        payload: any(named: 'payload'),
+        matchDateTimeComponents: any(named: 'matchDateTimeComponents'),
+      ),
+    ).thenAnswer((_) async {}); // void return, future
 
     // Act
     // initialize() calls setupRegistrationNotification internally
@@ -108,27 +128,16 @@ void main() {
     // Assert
     // Check if zonedSchedule was called with welcome ID (1000)
     // It should be called twice (once by init, once explicitly)
-    verify(() => mockNotificationsPlugin.zonedSchedule(
-          1000, // ID
-          any(), // title
-          any(), // body
-          any(), // scheduledDate
-          any(), // notificationDetails
-          androidScheduleMode: any(named: 'androidScheduleMode'),
-          payload: any(named: 'payload'),
-        )).called(2);
-  });
-
-  test('setDailyLectioEnabled(false) cancels notifications', () async {
-    // Arrange
-    when(() => mockNotificationsPlugin.cancel(any())).thenAnswer((_) async {});
-
-    // Act
-    await service.setDailyLectioEnabled(false);
-
-    // Assert
-    // Should cancel 7 notifications (dailyLectioBaseId to baseId + 6)
-    // 2000 to 2006
-    verify(() => mockNotificationsPlugin.cancel(any())).called(7);
+    verify(
+      () => mockNotificationsPlugin.zonedSchedule(
+        1000, // ID
+        any(), // title
+        any(), // body
+        any(), // scheduledDate
+        any(), // notificationDetails
+        androidScheduleMode: any(named: 'androidScheduleMode'),
+        payload: any(named: 'payload'),
+      ),
+    ).called(2);
   });
 }

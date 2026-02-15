@@ -19,7 +19,7 @@ documentation: https://github.com/dusanpecko/lectio-app/wiki
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 10.0.0+5000001
+version: 10.0.0+5000004
 
 environment:
   sdk: ^3.8.0
@@ -77,6 +77,7 @@ dependencies:
   provider: ^6.1.2
   cached_network_image: ^3.4.1
   connectivity_plus: ^6.1.0
+  video_player: ^2.9.3
 
 dev_dependencies:
   flutter_test:
@@ -101,6 +102,7 @@ flutter:
     - assets/translations/
     - assets/images/
     - assets/icon/
+    - assets/video/
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

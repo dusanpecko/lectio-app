@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -157,7 +156,11 @@ class NotificationController {
     try {
       clearAppBadge();
 
-      if (navigatorKey.currentContext != null) {
+      // Priamo naviguj podľa screen parametra, bez dialógu
+      final screen = message.data['screen'] as String?;
+      final screenParams = message.data['screen_params'] as String?;
+
+      if (screen != null && navigatorKey.currentContext != null) {
         final currentRoute = ModalRoute.of(
           navigatorKey.currentContext!,
         )?.settings.name;
@@ -169,13 +172,9 @@ class NotificationController {
           );
         }
 
-        Future.delayed(const Duration(milliseconds: 800), () {
-          if (navigatorKey.currentContext != null) {
-            _showRemoteNotificationDialog(
-              navigatorKey.currentContext!,
-              message,
-            );
-          }
+        // Počkaj na dokončenie navigácie na home, potom naviguj na cieľovú obrazovku
+        Future.delayed(const Duration(milliseconds: 500), () {
+          navigateToScreen(screen, screenParams: screenParams);
         });
       }
     } catch (e) {
@@ -190,20 +189,34 @@ class NotificationController {
     try {
       clearAppBadge();
 
-      // Ulož payload
-      _pendingNotificationPayload = payload;
+      if (payload == null || navigatorKey.currentContext == null) return;
 
-      // Ak máme dostupný context, zobraz dialóg
-      if (navigatorKey.currentContext != null) {
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (navigatorKey.currentContext != null) {
-            final tempPayload = _pendingNotificationPayload;
-            _pendingNotificationPayload = null;
-            _showLocalNotificationDialog(
-              navigatorKey.currentContext!,
-              tempPayload,
-            );
-          }
+      // Parse payload
+      final data = jsonDecode(payload);
+
+      // FCM notifikácie majú 'screen' field — naviguj priamo
+      final screen = data['screen'] as String?;
+      if (screen != null) {
+        final screenParams = data['screen_params'] as String?;
+        _logger.i('📱 FCM notification tap - navigating to $screen');
+
+        Future.delayed(const Duration(milliseconds: 300), () {
+          navigateToScreen(screen, screenParams: screenParams);
+        });
+        return;
+      }
+
+      // Lokálne notifikácie majú 'type' field (daily_lectio, prayer_reminder)
+      final type = data['type'] as String?;
+      if (type == 'daily_lectio' || type == 'prayer_reminder') {
+        final dateStr = data['date'] as String?;
+        _logger.i('📱 Local notification tap - type: $type, date: $dateStr');
+
+        Future.delayed(const Duration(milliseconds: 300), () {
+          navigateToScreen(
+            'lectio',
+            screenParams: dateStr != null ? '{"date":"$dateStr"}' : null,
+          );
         });
       }
     } catch (e) {
@@ -262,10 +275,7 @@ class NotificationController {
                 Expanded(
                   child: Text(
                     title,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -313,127 +323,6 @@ class NotificationController {
       );
     } catch (e) {
       _logger.e('Error showing local notification dialog: $e');
-    }
-  }
-
-  /// Zobrazí dialóg so skutočnou správou z notifikácie (Remote)
-  void _showRemoteNotificationDialog(
-    BuildContext context,
-    RemoteMessage message,
-  ) {
-    try {
-      if (!context.mounted) return;
-
-      final title =
-          message.notification?.title ?? message.data['title'] ?? 'Notifikácia';
-
-      final body =
-          message.notification?.body ??
-          message.data['body'] ??
-          'Správa nemá obsah.';
-
-      final imageUrl = message.data['image_url'];
-      final screen = message.data['screen'] as String?;
-      final screenParams = message.data['screen_params'] as String?;
-
-      showDialog(
-        context: context,
-        barrierDismissible: true,
-        builder: (dialogContext) {
-          return AlertDialog(
-            title: Row(
-              children: [
-                const Icon(
-                  Icons.notifications,
-                  color: AppColors.primary,
-                  size: 24,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (imageUrl != null && imageUrl.toString().isNotEmpty) ...[
-                    Container(
-                      height: 150,
-                      width: double.infinity,
-                      margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.grey.shade100,
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: CachedNetworkImage(
-                          imageUrl: imageUrl.toString(),
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) =>
-                              const Center(child: CircularProgressIndicator()),
-                          errorWidget: (context, url, error) => const Center(
-                            child: Icon(Icons.image_not_supported),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                  Text(
-                    body,
-                    style: TextStyle(
-                      fontSize: 16,
-                      height: 1.4,
-                      color: AppColors.adaptiveCardTitle(context),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: Text(
-                  'close'.tr(),
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              if (screen != null)
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(dialogContext).pop();
-                    navigateToScreen(screen, screenParams: screenParams);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: Text(
-                    'notifications.dialog.open'.tr(),
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-            ],
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          );
-        },
-      );
-    } catch (e) {
-      _logger.e('Error showing notification dialog: $e');
     }
   }
 }

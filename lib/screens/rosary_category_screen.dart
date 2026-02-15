@@ -204,8 +204,9 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
     Color categoryColor,
   ) {
     final theme = Theme.of(context);
+    final isTablet = MediaQuery.of(context).size.width >= 600;
     return SliverAppBar(
-      expandedHeight: 300,
+      expandedHeight: isTablet ? 450.0 : 300.0,
       floating: false,
       pinned: true,
       backgroundColor: categoryColor,
@@ -252,38 +253,50 @@ class _RosaryCategoryScreenState extends State<RosaryCategoryScreen> {
             ),
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xxl),
+                padding: EdgeInsets.all(
+                  isTablet ? AppSpacing.xxl * 1.5 : AppSpacing.xxl,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      padding: EdgeInsets.all(
+                        isTablet ? AppSpacing.xl : AppSpacing.lg,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(AppRadius.xl),
                       ),
                       child: Icon(
                         categoryInfo.icon,
-                        size: 48,
+                        size: isTablet ? 64 : 48,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.lg),
+                    SizedBox(height: isTablet ? AppSpacing.xl : AppSpacing.lg),
                     Text(
                       categoryInfo.name,
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style:
+                          (isTablet
+                                  ? theme.textTheme.headlineLarge
+                                  : theme.textTheme.headlineMedium)
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: AppSpacing.sm),
+                    SizedBox(height: isTablet ? AppSpacing.md : AppSpacing.sm),
                     Text(
                       categoryInfo.description,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style:
+                          (isTablet
+                                  ? theme.textTheme.headlineMedium
+                                  : theme.textTheme.titleMedium)
+                              ?.copyWith(
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w500,
+                              ),
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,

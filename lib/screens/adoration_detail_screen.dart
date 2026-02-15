@@ -178,7 +178,9 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
                       if (_adoration!.commentary?.isNotEmpty == true)
                         _buildComment(theme),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                        ),
                         child: _buildNavigationButtons(theme),
                       ),
                       const SizedBox(height: AppSpacing.xl),
@@ -313,7 +315,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
   Widget _buildAppBar(ThemeData theme) {
     final theme = Theme.of(context);
     return SliverAppBar(
-      expandedHeight: 300,
+      expandedHeight: MediaQuery.of(context).size.width >= 600 ? 450.0 : 300.0,
       floating: false,
       pinned: true,
       backgroundColor: AppColors.primary,
@@ -356,39 +358,65 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
             ),
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xxl),
+                padding: EdgeInsets.all(
+                  MediaQuery.of(context).size.width >= 600
+                      ? AppSpacing.xxl * 1.5
+                      : AppSpacing.xxl,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      padding: EdgeInsets.all(
+                        MediaQuery.of(context).size.width >= 600
+                            ? AppSpacing.xl
+                            : AppSpacing.lg,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(AppRadius.xl),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.favorite_rounded,
-                        size: 48,
+                        size: MediaQuery.of(context).size.width >= 600
+                            ? 64
+                            : 48,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.lg),
+                    SizedBox(
+                      height: MediaQuery.of(context).size.width >= 600
+                          ? AppSpacing.xl
+                          : AppSpacing.lg,
+                    ),
                     Text(
                       _adoration!.title,
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style:
+                          (MediaQuery.of(context).size.width >= 600
+                                  ? theme.textTheme.headlineLarge
+                                  : theme.textTheme.headlineMedium)
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                       textAlign: TextAlign.center,
                     ),
                     if (_adoration!.author?.isNotEmpty == true) ...[
-                      const SizedBox(height: AppSpacing.sm),
+                      SizedBox(
+                        height: MediaQuery.of(context).size.width >= 600
+                            ? AppSpacing.md
+                            : AppSpacing.sm,
+                      ),
                       Text(
                         _adoration!.author!,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style:
+                            (MediaQuery.of(context).size.width >= 600
+                                    ? theme.textTheme.headlineMedium
+                                    : theme.textTheme.titleMedium)
+                                ?.copyWith(
+                                  color: Colors.white70,
+                                  fontWeight: FontWeight.w500,
+                                ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -465,10 +493,15 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
     return SizedBox(
       width: double.infinity,
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.lg),
+        margin: const EdgeInsets.symmetric(
+          vertical: AppSpacing.sm,
+          horizontal: AppSpacing.lg,
+        ),
         elevation: AppElevation.medium,
         color: theme.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
@@ -519,10 +552,15 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
     return SizedBox(
       width: double.infinity,
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.lg),
+        margin: const EdgeInsets.symmetric(
+          vertical: AppSpacing.sm,
+          horizontal: AppSpacing.lg,
+        ),
         elevation: AppElevation.medium,
         color: theme.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
@@ -634,10 +672,15 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
     return SizedBox(
       width: double.infinity,
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.lg),
+        margin: const EdgeInsets.symmetric(
+          vertical: AppSpacing.sm,
+          horizontal: AppSpacing.lg,
+        ),
         elevation: AppElevation.medium,
         color: theme.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
@@ -698,10 +741,15 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
     return SizedBox(
       width: double.infinity,
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.lg),
+        margin: const EdgeInsets.symmetric(
+          vertical: AppSpacing.sm,
+          horizontal: AppSpacing.lg,
+        ),
         elevation: AppElevation.medium,
         color: theme.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
@@ -767,7 +815,10 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
           ),
         ],
       ),
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl, vertical: AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xxl,
+        vertical: AppSpacing.lg,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

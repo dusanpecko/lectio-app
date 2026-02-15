@@ -39,7 +39,9 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
         slivers: [
           // Hero App Bar with step indicator
           SliverAppBar(
-            expandedHeight: 300,
+            expandedHeight: MediaQuery.of(context).size.width >= 600
+                ? 450.0
+                : 300.0,
             floating: false,
             pinned: true,
             backgroundColor: _getStepColor(widget.step),
@@ -77,15 +79,24 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                   // Content
                   SafeArea(
                     child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.xxl),
+                      padding: EdgeInsets.all(
+                        MediaQuery.of(context).size.width >= 600
+                            ? AppSpacing.xxl * 1.5
+                            : AppSpacing.xxl,
+                      ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           // Step indicator
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
+                            padding: EdgeInsets.symmetric(
+                              horizontal:
+                                  MediaQuery.of(context).size.width >= 600
+                                  ? 24
+                                  : 16,
+                              vertical: MediaQuery.of(context).size.width >= 600
+                                  ? 12
+                                  : 8,
                             ),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.15),
@@ -93,36 +104,58 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                             ),
                             child: Text(
                               t['stepIndicator'] ?? 'Krok',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w500,
+                                fontSize:
+                                    MediaQuery.of(context).size.width >= 600
+                                    ? 18
+                                    : 14,
                               ),
                             ),
                           ),
-                          const SizedBox(height: AppSpacing.lg),
+                          SizedBox(
+                            height: MediaQuery.of(context).size.width >= 600
+                                ? AppSpacing.xl
+                                : AppSpacing.lg,
+                          ),
 
                           // Step icon
                           Container(
-                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            padding: EdgeInsets.all(
+                              MediaQuery.of(context).size.width >= 600
+                                  ? AppSpacing.xl
+                                  : AppSpacing.lg,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(AppRadius.xl),
                             ),
                             child: Icon(
                               _getStepIcon(widget.step),
-                              size: 48,
+                              size: MediaQuery.of(context).size.width >= 600
+                                  ? 64
+                                  : 48,
                               color: Colors.white,
                             ),
                           ),
-                          const SizedBox(height: AppSpacing.lg),
+                          SizedBox(
+                            height: MediaQuery.of(context).size.width >= 600
+                                ? AppSpacing.xl
+                                : AppSpacing.lg,
+                          ),
 
                           // Step title
                           Text(
                             t['stepTitle'] ?? 'Step Title',
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style:
+                                (MediaQuery.of(context).size.width >= 600
+                                        ? theme.textTheme.headlineMedium
+                                        : theme.textTheme.headlineSmall)
+                                    ?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                             textAlign: TextAlign.center,
                           ),
                         ],

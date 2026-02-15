@@ -10,11 +10,15 @@ import '../shared/app_spacing.dart';
 class SpeedDialFAB extends StatefulWidget {
   final VoidCallback onPrimaryAction;
   final Function(String) onSecondaryAction;
+  final ValueChanged<bool>? onOpenChanged;
+  final ValueChanged<VoidCallback>? onCloseCallback;
 
   const SpeedDialFAB({
     super.key,
     required this.onPrimaryAction,
     required this.onSecondaryAction,
+    this.onOpenChanged,
+    this.onCloseCallback,
   });
 
   @override
@@ -38,6 +42,8 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
       parent: _animationController,
       curve: Curves.easeInOut,
     );
+    // Expose close function to parent
+    widget.onCloseCallback?.call(closeMenu);
   }
 
   @override
@@ -46,35 +52,58 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
     super.dispose();
   }
 
+  @override
+  void deactivate() {
+    // Zatvor menu keď sa widget deaktivuje (navigácia preč)
+    if (_isOpen) {
+      _isOpen = false;
+      _animationController.value = 0;
+      // Nevoláme onOpenChanged v deactivate - spôsobuje assertion error
+    }
+    super.deactivate();
+  }
+
   void _toggle() {
-    setState(() {
-      if (_isOpen) {
-        _close();
-      } else {
-        _open();
-      }
-    });
+    if (_isOpen) {
+      _close();
+    } else {
+      _open();
+    }
   }
 
   void _open() {
-    _animationController.forward();
-    _isOpen = true;
+    setState(() {
+      _animationController.forward();
+      _isOpen = true;
+    });
+    widget.onOpenChanged?.call(true);
   }
 
   void _close() {
-    _animationController.reverse();
-    _isOpen = false;
+    setState(() {
+      _isOpen = false;
+      _animationController.reverse();
+    });
+    widget.onOpenChanged?.call(false);
+  }
+
+  /// Volané externe z home_screen cez GlobalKey
+  void closeMenu() {
+    if (_isOpen) _close();
   }
 
   void _handleSecondaryAction(String action) {
     appLogger.d('🎯 Secondary action triggered: $action');
-    _close();
 
-    // Malé oneskorenie pre smooth animáciu
-    Future.delayed(const Duration(milliseconds: 200), () {
-      appLogger.i('🚀 Executing action: $action');
-      widget.onSecondaryAction(action);
+    // Zatvor menu okamžite bez animácie pred navigáciou
+    setState(() {
+      _isOpen = false;
+      _animationController.value = 0;
     });
+    widget.onOpenChanged?.call(false);
+
+    appLogger.i('🚀 Executing action: $action');
+    widget.onSecondaryAction(action);
   }
 
   List<Map<String, dynamic>> _getSecondaryActions() {
@@ -90,7 +119,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
       {
         'key': 'support',
         'icon': Icons.volunteer_activism_rounded,
-        'label': tr('support_full'),
+        'label': tr('support'),
         'color': Colors.red,
       },
       if (isLoggedIn)
@@ -146,63 +175,70 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
                     opacity: _animation.value,
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Label
-                          if (_animation.value > 0.5)
-                            Flexible(
-                              child: Container(
-                                margin: const EdgeInsets.only(
-                                  right: AppSpacing.lg,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.lg,
+                      child: GestureDetector(
+                        onTap: () {
+                          debugPrint('🔥 Action pressed: ${action['key']}');
+                          _handleSecondaryAction(action['key']);
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Label
+                            if (_animation.value > 0.5)
+                              Flexible(
+                                child: Container(
+                                  margin: const EdgeInsets.only(
+                                    right: AppSpacing.lg,
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.1,
-                                      ),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.lg,
                                     ),
-                                  ],
-                                ),
-                                child: Text(
-                                  action['label'],
-                                  style: theme.textTheme.bodySmall!.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black87,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
                                   ),
-                                  overflow: TextOverflow.ellipsis,
+                                  child: Text(
+                                    action['label'],
+                                    style: theme.textTheme.bodySmall!.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black87,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ),
+                            // Mini FAB
+                            FloatingActionButton(
+                              mini: true,
+                              onPressed: () {
+                                debugPrint(
+                                  '🔥 Mini FAB pressed: ${action['key']}',
+                                );
+                                _handleSecondaryAction(action['key']);
+                              },
+                              backgroundColor: action['color'],
+                              heroTag:
+                                  action['key'], // Dôležité pre viacero FAB
+                              child: Icon(
+                                action['icon'],
+                                color: Colors.white,
+                                size: 20,
+                              ),
                             ),
-                          // Mini FAB
-                          FloatingActionButton(
-                            mini: true,
-                            onPressed: () {
-                              debugPrint(
-                                '🔥 Mini FAB pressed: ${action['key']}',
-                              );
-                              _handleSecondaryAction(action['key']);
-                            },
-                            backgroundColor: action['color'],
-                            heroTag: action['key'], // Dôležité pre viacero FAB
-                            child: Icon(
-                              action['icon'],
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),

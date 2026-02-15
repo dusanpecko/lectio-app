@@ -235,7 +235,9 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
                       _buildIntroduction(theme, categoryColor),
                       _buildLectioDivinaSections(theme, categoryColor),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                        ),
                         child: _buildNavigationButtons(theme, categoryColor),
                       ),
                       const SizedBox(height: AppSpacing.xl),
@@ -375,8 +377,9 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
     Color categoryColor,
   ) {
     final theme = Theme.of(context);
+    final isTablet = MediaQuery.of(context).size.width >= 600;
     return SliverAppBar(
-      expandedHeight: 300,
+      expandedHeight: isTablet ? 450.0 : 300.0,
       floating: false,
       pinned: true,
       backgroundColor: categoryColor,
@@ -418,38 +421,50 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
             ),
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xxl),
+                padding: EdgeInsets.all(
+                  isTablet ? AppSpacing.xxl * 1.5 : AppSpacing.xxl,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      padding: EdgeInsets.all(
+                        isTablet ? AppSpacing.xl : AppSpacing.lg,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(AppRadius.xl),
                       ),
                       child: Icon(
                         categoryInfo.icon,
-                        size: 48,
+                        size: isTablet ? 64 : 48,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.lg),
+                    SizedBox(height: isTablet ? AppSpacing.xl : AppSpacing.lg),
                     Text(
                       _decade!.title,
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style:
+                          (isTablet
+                                  ? theme.textTheme.headlineLarge
+                                  : theme.textTheme.headlineMedium)
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: AppSpacing.sm),
+                    SizedBox(height: isTablet ? AppSpacing.md : AppSpacing.sm),
                     Text(
                       '${categoryInfo.name} · ${widget.decadeOrder}/5',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style:
+                          (isTablet
+                                  ? theme.textTheme.headlineMedium
+                                  : theme.textTheme.titleMedium)
+                              ?.copyWith(
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w500,
+                              ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -498,10 +513,15 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
     return SizedBox(
       width: double.infinity,
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.lg),
+        margin: const EdgeInsets.symmetric(
+          vertical: AppSpacing.sm,
+          horizontal: AppSpacing.lg,
+        ),
         elevation: AppElevation.medium,
         color: theme.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
@@ -538,10 +558,15 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
     return SizedBox(
       width: double.infinity,
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.lg),
+        margin: const EdgeInsets.symmetric(
+          vertical: AppSpacing.sm,
+          horizontal: AppSpacing.lg,
+        ),
         elevation: AppElevation.medium,
         color: theme.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
@@ -644,10 +669,15 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
     return SizedBox(
       width: double.infinity,
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.lg),
+        margin: const EdgeInsets.symmetric(
+          vertical: AppSpacing.sm,
+          horizontal: AppSpacing.lg,
+        ),
         elevation: AppElevation.medium,
         color: theme.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
@@ -700,7 +730,10 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
           ),
         ],
       ),
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl, vertical: AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xxl,
+        vertical: AppSpacing.lg,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [

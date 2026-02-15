@@ -70,7 +70,6 @@ Future<void> bootstrap(AppBuilder builder) async {
       NotificationController.instance.handleLocalNotificationTap,
     );
     await LocalNotificationsService.instance.initialize();
-    await LocalNotificationsService.instance.refreshCacheIfNeeded();
     logger.i('✅ Local Notifications initialized');
   } catch (e) {
     logger.e('❌ Local Notifications init failed: $e');

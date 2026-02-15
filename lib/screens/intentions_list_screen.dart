@@ -290,7 +290,9 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
                             child: Image.asset(
                               'assets/images/modlitba.jpg',
                               fit: BoxFit.cover,
-                              height: 180,
+                              height: MediaQuery.of(context).size.width >= 600
+                                  ? 280.0
+                                  : 180.0,
                             ),
                           ),
                           Padding(
@@ -309,7 +311,9 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
                     // Zoznam úmyslov
                     if (intentions.isEmpty)
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.xxl,
+                        ),
                         child: Center(child: Text('no_intentions'.tr())),
                       )
                     else

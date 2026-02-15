@@ -3,6 +3,7 @@ import 'dart:convert';
 /// Model pre notification topics z backend API
 class NotificationTopic {
   final String id;
+  final String? slug;
   final String nameSk;
   final String nameEn;
   final String nameCs;
@@ -17,6 +18,7 @@ class NotificationTopic {
 
   NotificationTopic({
     required this.id,
+    this.slug,
     required this.nameSk,
     required this.nameEn,
     required this.nameCs,
@@ -53,6 +55,7 @@ class NotificationTopic {
   factory NotificationTopic.fromJson(Map<String, dynamic> json) {
     return NotificationTopic(
       id: json['id'] as String,
+      slug: json['slug'] as String?,
       nameSk: json['name_sk'] as String,
       nameEn: json['name_en'] as String? ?? json['name_sk'] as String,
       nameCs: json['name_cs'] as String? ?? json['name_sk'] as String,
@@ -86,6 +89,7 @@ class NotificationTopic {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'slug': slug,
       'name_sk': nameSk,
       'name_en': nameEn,
       'name_cs': nameCs,
