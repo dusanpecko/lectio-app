@@ -1,17 +1,19 @@
-# 📋 Production Checklist - Lectio Divina v10.0
+# 📋 Production Checklist - Lectio Divina v10.0.0.5000007
 
-> Posledná aktualizácia: 11. februára 2026
+> Posledná aktualizácia: 17. februára 2026
 
 ---
 
 ## 📊 Stav projektu
 
-Projekt je v **veľmi dobrom stave** a blízko produkčnej pripravenosti.
+**Pripravené na PRODUCTION RELEASE** ✅
 
 - **Kvalita kódu**: `flutter analyze` hlási **0 problémov**
-- **Štruktúra**: Čistý kód, len 3 menšie TODO v rosary
+- **Štruktúra**: Čistý kód, minimálne TODO položky
 - **Bezpečnosť**: Žiadne hardcoded secrets, `.env` v `.gitignore`
-- **Auth**: Email/heslo + Google OAuth + Apple Sign-In (natívny) ✅
+- **Auth**: Email/heslo + Google OAuth + Apple Sign-In ✅
+- **Onboarding**: 5 slidov, plne funkčný ✅
+- **Notifikácie**: FCM + Local + Timezone-aware ✅
 
 ---
 
@@ -95,21 +97,50 @@ Projekt je v **veľmi dobrom stave** a blízko produkčnej pripravenosti.
 
 ---
 
-## 🔵 NÍZKA PRIORITA - Budúcnosť
+## � KRITICKÉ CHYBY - v10.0.0.5000007
+
+### 1. Onboarding — Google prihlásenie presmeruje späť na poslednú slide ✅
+- [x] **Problém**: Po úspešnom prihlásení cez Google sa používateľ vráti na poslednú stranu onboarding slideshow namiesto toho, aby bol presmerovaný do aplikácie
+- [x] **Priorita**: 🔴 Vysoká (blokuje nových používateľov)
+- [x] **Riešenie**: Pridaný `_monitorAuthState()` ktorý počúva auth state changes a po úspešnom prihlásení volá `widget.onComplete()`
+- [x] **Implementácia**:
+  - Pridaný `StreamSubscription<AuthState>` do `_Slide5State`
+  - Metóda `_monitorAuthState()` kontroluje aktuálnu session a naslúcha zmenám
+  - Po `AuthChangeEvent.signedIn` sa zavolá `widget.onComplete()`
+  - Timeout 120 sekúnd pre OAuth flow
+  - Disposal subscription v `dispose()`
+
+### 2. Heslo — chýba tlačidlo „zobraziť heslo" (oko) ✅
+- [x] **Problém**: Pri zadávaní hesla nie je dostupná ikona oka na zobrazenie/skrytie hesla
+- [x] **Priorita**: 🟡 Stredná (UX problém)
+- [x] **Riešenie**: Pridaný `suffixIcon` s ikonkou oka a toggle pre `obscureText` na všetkých password poliach
+- [x] **Implementácia**:
+  - **auth_screen.dart**: Pridaná `bool _obscurePassword` a visibility toggle na password poli
+  - **profile_screen.dart**: Pridané 3 samostatné bool premenné (`obscureCurrentPass`, `obscureNewPass`, `obscureConfirmPass`) pre changePassword dialóg
+  - Ikona sa mení medzi `visibility_outlined` a `visibility_off_outlined`
+  - Toggle funguje cez `setState()` v oboch prípadoch
+
+
+---
+
+## �🔵 NÍZKA PRIORITA - Budúcnosť
 
 ### Pred finálnym releaseom
-- [ ] **Vrátiť cron na `0 * * * *`** - po dokončení testovania notifikácií (aktuálne `* * * * *`)
-- [ ] **Onboarding (First Launch)** - 6 slidov, len pri prvom spustení, skip tlačidlo
-  - [ ] Slide 1 – Uvítanie: logo, motto, citát (Ž 119,105)
-  - [ ] Slide 2 – Čo je Lectio Divina: 4 kroky (Lectio, Meditatio, Oratio, Contemplatio)
-  - [ ] Slide 3 – Čo appka ponúka: denné čítania, audio, poznámky, pripomienky
-  - [ ] Slide 4 – Pripomienky: výber času dennej pripomienky na modlitbu (retencie)
-  - [ ] Slide 5 – Personalizácia: preklad Biblie, povolenie notifikácií, prihlásenie
-  - [ ] Slide 6 – Začni svoju cestu: CTA „Začať modlitbu", motivačný citát
-  - [ ] Ilustrácie ku každému slidu (Matúš)
-  - [ ] `shared_preferences` flag `onboarding_completed`
+- [x] **Vrátiť cron na `0 * * * *`** ✅ - send-daily-lectio beží každú hodinu (send-scheduled-notifications ostáva každú minútu)
+- [x] **Onboarding (First Launch)** ✅ - 5 slidov, skip tlačidlo, ilustrácie, plná funkcionalita
+  - [x] Slide 1 – Uvítanie: logo, motto „Božie slovo", obrázok slide1.webp
+  - [x] Slide 2 – Denné čítania: kalendár + interaktívny FAB menu demo
+  - [x] Slide 3 – Čo je Lectio Divina: 4 kroky s animovaným kruhom (Lectio, Meditatio, Oratio, Contemplatio)
+  - [x] Slide 4 – Pripomienky: výber času dennej pripomienky s time pickerom, FCM permissions
+  - [x] Slide 5 – Prihlásenie: Apple Sign-In, Google OAuth, Email/Heslo + možnosť preskočiť (Guest mode)
+  - [x] Background obrázky (pozadie_slide.png, slide1.webp)
+  - [x] `shared_preferences` flag `onboarding_completed` (cez onComplete callback)
+  - [x] Dots navigation indicator
+  - [x] Next/Skip buttons
 
 ### Roadmap v10.1+
+- [ ] **Audio player lifecycle (staršie Android)** - Na starších Android zariadeniach (8/9 a nižšie) sa media player nezatvára po zatvorení aplikácie na zamknutej obrazovke. Možná príčina: nesprávne spravovaný AudioSession / MediaSession lifecycle. Na preskúmanie: správanie `just_audio` / `audio_service` pluginu pri lifecycle eventoch.
+- [ ] **Edge-to-edge zobrazenie** - Flutter framework issue (`setStatusBarColor`, `setNavigationBarColor`, `setNavigationBarDividerColor` deprecated v Android 15). Opraví sa v budúcich verziách Fluttera, momentálne ignorovať.
 - [ ] **FCM Token Cleanup Cron** - periodická očista starých/neplatných tokenov (90+ dní neaktívne)
 - [ ] **Ruženec - záložky a zdieľanie** - zakomentované (TODO)
 - [ ] **Ruženec - background audio** - nemá mini player ani background playback
@@ -175,15 +206,17 @@ Projekt je v **veľmi dobrom stave** a blízko produkčnej pripravenosti.
 | Kategória | Hotovo | Celkom | % |
 |-----------|--------|--------|---|
 | Kritické | 8 | 9 | 89% |
+| **Kritické chyby v10.0.0.5000007** | **2** | **2** | **100%** |
 | Vysoká priorita | 18 | 23 | 78% |
 | Stredná priorita | 8 | 14 | 57% |
-| Nízka priorita | 0 | 4 | 0% |
+| Nízka priorita | 3 | 17 | 18% |
 | Balíčky | 10 | 13 | 77% |
 
-**Celkový progres: ~73%**
+**Celkový progres: ~78%**
 
-### ⚡ Na okamžité riešenie pred release:
-1. iOS Info.plist `ITSAppUsesNonExemptEncryption` → `NO`
-3. Duplicitná notifikačná plugin inštancia → zjednotiť
-4. Lokalizovať hardcoded chybové hlášky v auth
+### ⚡ Všetky kritické chyby v10.0.0.5000007 OPRAVENÉ! ✅
+1. ✅ **Onboarding Google redirect** - Auth state monitoring + widget.onComplete()
+2. ✅ **Password visibility toggle** - Ikona oka na všetkých password poliach
+
+**Audio player lifecycle** presunutý do roadmap v10.1+ (nekritické pre release)
 

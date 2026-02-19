@@ -91,7 +91,7 @@ class _LectioSpeedDialFABState extends State<LectioSpeedDialFAB>
     actions.add({
       'key': 'refresh',
       'icon': Icons.refresh,
-      'label': 'Obnoviť',
+      'label': tr('common.refresh'),
       'color': AppColors.primary,
       'onTap': widget.onRefresh,
     });
@@ -114,7 +114,7 @@ class _LectioSpeedDialFABState extends State<LectioSpeedDialFAB>
         'icon': widget.showAudioPlayer
             ? Icons.music_note
             : Icons.music_note_outlined,
-        'label': 'Audio prehrávač',
+        'label': tr('audio_player'),
         'color': AppColors.primary,
         'onTap': widget.onAudioToggle,
       });
@@ -127,7 +127,7 @@ class _LectioSpeedDialFABState extends State<LectioSpeedDialFAB>
         'icon': widget.isDndActive
             ? Icons.do_not_disturb_on
             : Icons.do_not_disturb_off_outlined,
-        'label': widget.isDndActive ? 'Zrušiť Nerušiť' : 'Aktivovať Nerušiť',
+        'label': widget.isDndActive ? tr('dnd.turn_off') : tr('dnd.turn_on'),
         'color': widget.isDndActive ? Colors.orange : AppColors.primary,
         'onTap': widget.onDndToggle,
       });
@@ -138,7 +138,7 @@ class _LectioSpeedDialFABState extends State<LectioSpeedDialFAB>
       actions.add({
         'key': 'note',
         'icon': Icons.note_add_outlined,
-        'label': 'Pridať poznámku',
+        'label': tr('add_note'),
         'color': AppColors.primary,
         'onTap': widget.onAddNote,
       });

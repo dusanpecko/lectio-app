@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -1298,6 +1299,13 @@ class _Slide5 extends StatefulWidget {
 class _Slide5State extends State<_Slide5> {
   bool _isLoading = false;
   String? _error;
+  StreamSubscription<AuthState>? _authSubscription;
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
 
   String _generateNonce([int length = 32]) {
     const charset =
@@ -1328,11 +1336,10 @@ class _Slide5State extends State<_Slide5> {
         authScreenLaunchMode: LaunchMode.externalApplication,
       );
 
-      // Po návrate z browsera Supabase session sa nastaví cez deep link
-      // SessionHandler to zachytí automaticky
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (!mounted) return;
+
+      // Monitoruj zmeny v auth state - po návrate z browsera sa session nastaví
+      _monitorAuthState();
     } catch (e) {
       appLogger.e('Onboarding Google sign in failed', error: e);
       if (mounted) {
@@ -1342,6 +1349,53 @@ class _Slide5State extends State<_Slide5> {
         });
       }
     }
+  }
+
+  void _monitorAuthState() {
+    // Kontrola aktuálnej session hneď na začiatku
+    final currentSession = Supabase.instance.client.auth.currentSession;
+    if (currentSession != null && mounted) {
+      appLogger.i('Onboarding: User already signed in via OAuth');
+      setState(() => _isLoading = false);
+      widget.onComplete();
+      return;
+    }
+
+    // Naslúchaj zmenám auth stavu
+    _authSubscription?.cancel(); // Zruš predchádzajúcu ak existuje
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+      data,
+    ) async {
+      final AuthChangeEvent event = data.event;
+      final Session? session = data.session;
+
+      if (event == AuthChangeEvent.signedIn && session != null && mounted) {
+        appLogger.i(
+          'Onboarding: User signed in via OAuth, completing onboarding',
+        );
+        _authSubscription?.cancel();
+
+        // Malé oneskorenie pre stabilitu
+        await Future.delayed(const Duration(milliseconds: 300));
+
+        if (mounted) {
+          setState(() => _isLoading = false);
+          widget.onComplete();
+        }
+      }
+    });
+
+    // Timeout pre OAuth flow
+    Timer(const Duration(seconds: 120), () {
+      if (mounted && _isLoading) {
+        _authSubscription?.cancel();
+        setState(() {
+          _isLoading = false;
+          _error = tr('google_sign_in_timeout');
+        });
+        appLogger.w('Onboarding: OAuth monitoring timeout after 120 seconds');
+      }
+    });
   }
 
   Future<void> _signInWithApple() async {

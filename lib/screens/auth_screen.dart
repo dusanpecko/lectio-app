@@ -32,6 +32,8 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _isRegister = false;
   bool _showResetPassword = false;
   bool _rememberMe = false;
+  bool _newsletterConsent = false;
+  bool _obscurePassword = true;
   final _resetEmailController = TextEditingController();
   String? _resetInfo;
 
@@ -223,6 +225,7 @@ class _AuthScreenState extends State<AuthScreen> {
           'id': userId,
           'full_name': fullName,
           'email': email,
+          'newsletter_consent': _newsletterConsent,
         });
 
         if (_rememberMe) {
@@ -581,8 +584,22 @@ class _AuthScreenState extends State<AuthScreen> {
                     const SizedBox(height: AppSpacing.md),
                     TextField(
                       controller: _passwordController,
-                      obscureText: true,
-                      decoration: InputDecoration(labelText: tr('password')),
+                      obscureText: _obscurePassword,
+                      decoration: InputDecoration(
+                        labelText: tr('password'),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
+                      ),
                       autofillHints: const [AutofillHints.password],
                     ),
                     const SizedBox(height: AppSpacing.lg),
@@ -597,6 +614,18 @@ class _AuthScreenState extends State<AuthScreen> {
                       controlAffinity: ListTileControlAffinity.leading,
                       contentPadding: EdgeInsets.zero,
                     ),
+                    if (_isRegister)
+                      CheckboxListTile(
+                        title: Text(tr('newsletter_consent_label')),
+                        value: _newsletterConsent,
+                        onChanged: (value) {
+                          setState(() {
+                            _newsletterConsent = value ?? false;
+                          });
+                        },
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                      ),
                     const SizedBox(height: AppSpacing.sm),
                     if (_error != null)
                       Text(

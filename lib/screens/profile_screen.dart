@@ -223,6 +223,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   DateTime? _registeredAt;
   bool _isSaving = false;
   bool _isUploading = false;
+  bool _newsletterConsent = false;
 
   // New data
   List<Subscription> _subscriptions = [];
@@ -301,7 +302,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (user == null) return;
     final data = await supabase
         .from('users')
-        .select('full_name, avatar_url, variable_symbol')
+        .select('full_name, avatar_url, variable_symbol, newsletter_consent')
         .eq('id', user.id)
         .maybeSingle();
     if (data != null && mounted) {
@@ -309,6 +310,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _nameCtrl.text = data['full_name'] ?? '';
         _avatarUrl = data['avatar_url'];
         _variableSymbol = data['variable_symbol'];
+        _newsletterConsent = data['newsletter_consent'] ?? false;
       });
     }
   }
@@ -560,7 +562,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       await supabase
           .from('users')
-          .update({'full_name': _nameCtrl.text.trim()})
+          .update({
+            'full_name': _nameCtrl.text.trim(),
+            'newsletter_consent': _newsletterConsent,
+          })
           .eq('id', user.id);
       await supabase.auth.updateUser(
         UserAttributes(email: _emailCtrl.text.trim()),
@@ -670,6 +675,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final formKey = GlobalKey<FormState>();
     String? error;
     bool isLoading = false;
+    bool obscureCurrentPass = true;
+    bool obscureNewPass = true;
+    bool obscureConfirmPass = true;
 
     await showDialog(
       context: context,
@@ -686,9 +694,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     TextFormField(
                       controller: currentPassCtrl,
-                      obscureText: true,
+                      obscureText: obscureCurrentPass,
                       decoration: InputDecoration(
                         labelText: 'profile.password2.current'.tr(),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscureCurrentPass
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              obscureCurrentPass = !obscureCurrentPass;
+                            });
+                          },
+                        ),
                       ),
                       validator: (v) => v == null || v.isEmpty
                           ? 'profile.password2.current_required'.tr()
@@ -697,9 +717,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: AppSpacing.md),
                     TextFormField(
                       controller: newPassCtrl,
-                      obscureText: true,
+                      obscureText: obscureNewPass,
                       decoration: InputDecoration(
                         labelText: 'profile.password2.new'.tr(),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscureNewPass
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              obscureNewPass = !obscureNewPass;
+                            });
+                          },
+                        ),
                       ),
                       validator: (v) {
                         if (v == null || v.length < 6) {
@@ -714,9 +746,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: AppSpacing.md),
                     TextFormField(
                       controller: confirmPassCtrl,
-                      obscureText: true,
+                      obscureText: obscureConfirmPass,
                       decoration: InputDecoration(
                         labelText: 'profile.password2.confirm'.tr(),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscureConfirmPass
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              obscureConfirmPass = !obscureConfirmPass;
+                            });
+                          },
+                        ),
                       ),
                       validator: (v) => v != newPassCtrl.text
                           ? 'profile.password2.not_match'.tr()
@@ -1516,6 +1560,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onTap: _isSaving ? null : downloadUserData,
               contentPadding: EdgeInsets.zero,
             ),
+            const Divider(height: 1),
+            CheckboxListTile(
+              secondary: Icon(Icons.email, color: theme.colorScheme.primary),
+              title: Text(tr('newsletter_consent_label')),
+              subtitle: Text(tr('newsletter_consent_description')),
+              value: _newsletterConsent,
+              onChanged: (value) {
+                setState(() {
+                  _newsletterConsent = value ?? false;
+                });
+              },
+              controlAffinity: ListTileControlAffinity.trailing,
+              contentPadding: EdgeInsets.zero,
+            ),
           ],
         ),
       ),
@@ -1597,12 +1655,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: AppSpacing.sm),
           Text(
             '€${sub.amount.toStringAsFixed(2)}/${sub.interval == 'month' ? 'profile.subscription.monthly'.tr() : 'profile.subscription.yearly'.tr()}',
-            style: theme.textTheme.titleLarge!.copyWith( fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleLarge!.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
             '${'profile.subscription.next_payment'.tr()}: ${DateFormat('dd.MM.yyyy').format(sub.currentPeriodEnd)}',
-            style: theme.textTheme.bodySmall!.copyWith( color: Colors.grey.shade600),
+            style: theme.textTheme.bodySmall!.copyWith(
+              color: Colors.grey.shade600,
+            ),
           ),
           if (sub.cancelAtPeriodEnd) ...[
             const SizedBox(height: AppSpacing.sm),
@@ -1615,7 +1677,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Text(
                 '${'profile.subscription.cancels_on'.tr()} ${DateFormat('dd.MM.yyyy').format(sub.currentPeriodEnd)}',
-                style: theme.textTheme.bodySmall!.copyWith( color: Colors.yellow.shade800),
+                style: theme.textTheme.bodySmall!.copyWith(
+                  color: Colors.yellow.shade800,
+                ),
               ),
             ),
           ],
@@ -1680,7 +1744,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   DateFormat('dd.MM.yyyy').format(donation.createdAt),
-                  style: theme.textTheme.bodySmall!.copyWith( color: Colors.grey.shade600),
+                  style: theme.textTheme.bodySmall!.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
                 ),
                 if (donation.message != null &&
                     donation.message!.isNotEmpty) ...[
@@ -1894,7 +1960,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     '${reg.firstName} ${reg.lastName} • ${reg.roomType}',
-                    style: theme.textTheme.bodySmall!.copyWith( color: Colors.grey.shade500),
+                    style: theme.textTheme.bodySmall!.copyWith(
+                      color: Colors.grey.shade500,
+                    ),
                   ),
                 ],
               ),
@@ -2405,7 +2473,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 2),
                 Text(
                   DateFormat('dd.MM.yyyy').format(payment.transactionDate),
-                  style: theme.textTheme.bodySmall!.copyWith( color: Colors.grey.shade600),
+                  style: theme.textTheme.bodySmall!.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
                 ),
                 if (payment.payerReference != null) ...[
                   const SizedBox(height: 2),
@@ -2530,7 +2600,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 Text(
                   DateFormat('dd.MM.yyyy').format(payment.date),
-                  style: theme.textTheme.bodySmall!.copyWith( color: Colors.grey.shade600),
+                  style: theme.textTheme.bodySmall!.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
                 ),
               ],
             ),

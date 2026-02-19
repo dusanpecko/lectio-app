@@ -44,19 +44,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _lastLocale = currentLocale;
   }
 
-  /// Ošetrí zmenu jazyka - resetuje bibliu na biblia_1 ak nie je SK
+  /// Ošetrí zmenu jazyka - nastaví predvolenú bibliu pre daný jazyk
   Future<void> _handleLanguageChange(String newLocale) async {
-    // Ak nový jazyk nie je slovenčina a máme nastavenú bibliu 2 alebo 3
-    if (newLocale != 'sk' &&
-        (_selectedBible == 'biblia_2' || _selectedBible == 'biblia_3')) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('selectedBible', 'biblia_1');
+    // Zisti, ktoré biblie sú dostupné pre nový jazyk a nastav prvú (defaultnú)
+    final availableBibles = _getAvailableBiblesForLocale(newLocale);
+    final defaultBible = availableBibles.first;
 
-      if (mounted) {
-        setState(() {
-          _selectedBible = 'biblia_1';
-        });
-      }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selectedBible', defaultBible);
+
+    // Synchronne updatneme state aby sa zabránilo flashu
+    if (mounted) {
+      _selectedBible = defaultBible;
+      // Použijeme scheduleMicrotask aby sa state aktualizoval až po dokončení build cycle
+      Future.microtask(() {
+        if (mounted) {
+          setState(() {});
+        }
+      });
+    }
+  }
+
+  /// Vráti zoznam dostupných biblií pre daný jazyk
+  List<String> _getAvailableBiblesForLocale(String locale) {
+    switch (locale) {
+      case 'sk':
+        return ['biblia_1', 'biblia_2', 'biblia_3'];
+      case 'es':
+        return ['biblia_3'];
+      case 'en':
+        return ['biblia_2'];
+      default:
+        return ['biblia_1'];
     }
   }
 
@@ -71,10 +90,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Komplexná migrácia starých hodnôt na nový formát
     bible = _migrateBibleValue(bible);
 
-    // Kontrola: ak nie je SK jazyk a biblia je 2 alebo 3, nastav na 1
+    // Kontrola: ak biblia nie je dostupná pre aktuálny jazyk, nastav na prvú dostupnú
     final currentLocale = context.locale.languageCode;
-    if (currentLocale != 'sk' && (bible == 'biblia_2' || bible == 'biblia_3')) {
-      bible = 'biblia_1';
+    final availableBibles = _getAvailableBiblesForLocale(currentLocale);
+    if (!availableBibles.contains(bible)) {
+      bible = availableBibles.first;
     }
 
     await prefs.setString('selectedBible', bible);
@@ -162,24 +182,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final themeProvider = context.read<ThemeProvider>();
     await themeProvider.setLanguageCode(language, context);
 
-    // Resetuj bibliu na biblia_1 ak nie je slovenčina a máme nastavenú bibliu 2 alebo 3
-    String effectiveLocale = language;
-    if (language == 'system') {
-      effectiveLocale =
-          WidgetsBinding.instance.platformDispatcher.locale.languageCode;
-    }
-
-    if (effectiveLocale != 'sk' &&
-        (_selectedBible == 'biblia_2' || _selectedBible == 'biblia_3')) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('selectedBible', 'biblia_1');
-
-      if (mounted) {
-        setState(() {
-          _selectedBible = 'biblia_1';
-        });
-      }
-    }
+    // Biblia sa automaticky nastaví cez didChangeDependencies → _handleLanguageChange
   }
 
   /// Vráti správny TextStyle pre preview podľa zvoleného fontu
@@ -594,10 +597,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// Vytvorí dropdown items pre biblické preklady z databázy
-  List<DropdownMenuItem<String>> _buildBibleDropdownItems() {
-    // Lokalizované názvy biblií
-    return [
+  /// Vytvorí dropdown items pre biblické preklady podľa jazyka
+  List<DropdownMenuItem<String>> _buildBibleDropdownItems(String locale) {
+    final availableBibles = _getAvailableBiblesForLocale(locale);
+
+    final allItems = [
       DropdownMenuItem(
         value: 'biblia_1',
         child: Text(
@@ -623,6 +627,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
     ];
+
+    // Vráť len položky dostupné pre daný jazyk
+    return allItems
+        .where((item) => availableBibles.contains(item.value))
+        .toList();
   }
 
   Widget _buildAboutAndPrivacyCard() {
@@ -685,85 +694,87 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildBibleCard() {
     final theme = Theme.of(context);
     final locale = context.locale.languageCode;
-    final isSlovak = locale == 'sk';
+    final availableBibles = _getAvailableBiblesForLocale(locale);
+    final hasMultipleOptions = availableBibles.length > 1;
+    final isDisabled = availableBibles.length == 1;
 
-    return Opacity(
-      opacity: isSlovak ? 1.0 : 0.5,
-      child: Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-        elevation: AppElevation.high,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.menu_book),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      tr('select_bible'),
-                      style: theme.textTheme.titleMedium!.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      elevation: AppElevation.high,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.menu_book),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    tr('select_bible'),
+                    style: theme.textTheme.titleMedium!.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
-                  ),
-                  // Badge/info že je to dočasne vypnuté (len pre non-SK jazyky)
-                  if (!isSlovak)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: Text(
-                        tr('temporarily_disabled'),
-                        style: theme.textTheme.labelSmall!.copyWith(
-                          color: Colors.orange.shade800,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _isLoadingBible
-                  ? const Center(child: CircularProgressIndicator())
-                  : DropdownButtonFormField<String>(
-                      initialValue: _selectedBible,
-                      onChanged: isSlovak
-                          ? _onBibleChanged
-                          : null, // Aktívne len pre SK
-                      isExpanded: true,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
-                      ),
-                      items: _buildBibleDropdownItems(),
-                    ),
-              if (!isSlovak) ...[
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  tr('bible_selection_info'),
-                  style: theme.textTheme.bodySmall!.copyWith(
-                    color: Colors.grey.shade600,
-                    fontStyle: FontStyle.italic,
                   ),
                 ),
               ],
+            ),
+            // Badge pre jazyky s len jednou dostupnou bibliou
+            if (isDisabled) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                  ),
+                  child: Text(
+                    tr('temporarily_disabled'),
+                    style: theme.textTheme.labelSmall!.copyWith(
+                      color: Colors.orange.shade800,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
             ],
-          ),
+            const SizedBox(height: AppSpacing.md),
+            _isLoadingBible
+                ? const Center(child: CircularProgressIndicator())
+                : DropdownButtonFormField<String>(
+                    initialValue: _selectedBible,
+                    onChanged: hasMultipleOptions ? _onBibleChanged : null,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                    ),
+                    items: _buildBibleDropdownItems(locale),
+                  ),
+            if (isDisabled) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                tr('bible_selection_info'),
+                style: theme.textTheme.bodySmall!.copyWith(
+                  color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

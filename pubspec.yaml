@@ -19,7 +19,7 @@ documentation: https://github.com/dusanpecko/lectio-app/wiki
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 10.0.0+5000004
+version: 10.0.1+5000008
 
 environment:
   sdk: ^3.8.0
