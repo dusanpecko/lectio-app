@@ -1,6 +1,6 @@
-# 📋 Production Checklist - Lectio Divina v10.0.0.5000007
+# 📋 Production Checklist - Lectio Divina v10.0.1+5000008
 
-> Posledná aktualizácia: 17. februára 2026
+> Posledná aktualizácia: 19. februára 2026
 
 ---
 
@@ -97,6 +97,33 @@
 
 ---
 
+## 🐛 OPRAVY V v10.0.1+5000008
+
+### 1. FAB menu preklady ✅
+- [x] **Problém**: V FAB menu boli hardkódované slovenské texty namiesto prekladových kľúčov
+- [x] **Priorita**: 🟡 Stredná (UX problém v internacionálnej verzii)
+- [x] **Riešenie**: Nahradené hardcoded stringy prekladovými kľúčmi (`tr()`)
+- [x] **Implementácia**:
+  - **lectio_speed_dial_fab.dart**: Zmenené `'Obnoviť'` → `tr('common.refresh')`, `'Audio prehrávač'` → `tr('audio_player')`, `'Zrušiť Nerušiť'` → `tr('dnd.turn_off')`, `'Aktivovať Nerušiť'` → `tr('dnd.turn_on')`, `'Pridať poznámku'` → `tr('add_note')`
+
+### 2. Likes a komentáre v novinkách ✅
+- [x] **Problém**: PostgrestException 42501 - RLS polícia blokovala INSERT do `news_likes` a `news_comments`
+- [x] **Priorita**: 🔴 Vysoká (blokuje funkciu pre všetkých používateľov)
+- [x] **Riešenie**: Pridané RLS politiky pre authenticated users
+- [x] **Implementácia (Backend)**:
+  - **sql/fix_news_likes_rls.sql**: Pridané `authenticated_insert_news_likes`, `users_delete_own_likes`
+  - **sql/fix_news_comments_rls.sql**: Pridané `authenticated_insert_news_comments`, `users_delete_own_comments`, `admins_delete_any_comments`
+  - **sql/run-fix-news-rls.sh**: Helper script pre spustenie SQL
+
+### 3. Language switch flash ✅
+- [x] **Problém**: Červená error obrazovka preblikla pri zmene jazyka v nastaveniach
+- [x] **Priorita**: 🟡 Stredná (vizuálny bug)
+- [x] **Riešenie**: Odstránené duplicitné `setState` volania, použitý `Future.microtask()` pre odloženie state update
+- [x] **Implementácia**:
+  - **settings_screen.dart**: `_handleLanguageChange()` - state update cez microtask, `_onLanguageChanged()` - odstránená duplicitná logika nastavenia biblie
+
+---
+
 ## � KRITICKÉ CHYBY - v10.0.0.5000007
 
 ### 1. Onboarding — Google prihlásenie presmeruje späť na poslednú slide ✅
@@ -141,18 +168,28 @@
 ### Roadmap v10.1+
 - [ ] **Audio player lifecycle (staršie Android)** - Na starších Android zariadeniach (8/9 a nižšie) sa media player nezatvára po zatvorení aplikácie na zamknutej obrazovke. Možná príčina: nesprávne spravovaný AudioSession / MediaSession lifecycle. Na preskúmanie: správanie `just_audio` / `audio_service` pluginu pri lifecycle eventoch.
 - [ ] **Edge-to-edge zobrazenie** - Flutter framework issue (`setStatusBarColor`, `setNavigationBarColor`, `setNavigationBarDividerColor` deprecated v Android 15). Opraví sa v budúcich verziách Fluttera, momentálne ignorovať.
+
+### Roadmap v10.2+
 - [ ] **FCM Token Cleanup Cron** - periodická očista starých/neplatných tokenov (90+ dní neaktívne)
 - [ ] **Ruženec - záložky a zdieľanie** - zakomentované (TODO)
 - [ ] **Ruženec - background audio** - nemá mini player ani background playback
 - [ ] **Základné modlitby** - zoznam (Otčenáš, Zdravas'...)
+
+### Roadmap v10.3+
 - [ ] **Streak & Stats** - sledovanie pokroku, kalendár aktivity
 - [ ] **Liturgický kalendár** - svätec dňa na home screene
 - [ ] **Inbox** - systém správ od administrátorov
 - [ ] **Semantics labels pre screen reader** - obrázky (`semanticLabel`), tlačidlá (`Semantics` widgety)
+
+### Roadmap v10.4+
 - [ ] **Banner na home screen** - dynamický widget s backend admin
 - [ ] **Internacionalizácia** - infraštruktúra pre FR, PT, DE, PL, IT, CZ + export textov
 - [ ] **Refactoring** - profile_screen (~2551), home_screen (~2054), lectio_screen rozdelenie
 
+### Roadmap v10.5+ 🎓
+- [ ] **Teologické prehĺbenie (Magisterium AI)** - Voliteľná sekcia pod Actio s AI-generovaným teologickým komentárom k dennému evanjeliu. Integrácia Magisterium API (28 000+ cirkevných dokumentov) + ChatGPT/Claude pre prepis do štruktúrovaných 4 blokov: Teologické jadro, Cirkevní Otcovia, KKC, Dokumenty Cirkvi. Generovanie 1x denne per jazyk, cache v DB, editovateľné adminom. **Nie chatbot interface** - len akademické prehĺbenie s povinnými zdrojmi. Detaily: `docs/TEOLOGICKE_PREHLBENIE_MAGISTERIUM.md`  - ✅ **Bude teologická validácia** - Draft → Teológ schvaľuje → Publikácia
+  - ✅ **Budget pokryje API costs** - Kalkulácia 365 dní × 5 jazykov, premium model €2-3/mesiac
+  - ✅ **Users to budú skutočne používať** - Pilot 100-200 users, 2-4 týždne, meranie engagement
 ### Vyčistenie
 - [x] Odstrániť `.bak` súbory z repo ✅
 - [ ] Android namespace `com.example.lectio_divina` → zmeniť na produkčný (neblokuje publikáciu)
@@ -207,6 +244,7 @@
 |-----------|--------|--------|---|
 | Kritické | 8 | 9 | 89% |
 | **Kritické chyby v10.0.0.5000007** | **2** | **2** | **100%** |
+| **Opravy v10.0.1+5000008** | **3** | **3** | **100%** |
 | Vysoká priorita | 18 | 23 | 78% |
 | Stredná priorita | 8 | 14 | 57% |
 | Nízka priorita | 3 | 17 | 18% |
@@ -217,6 +255,11 @@
 ### ⚡ Všetky kritické chyby v10.0.0.5000007 OPRAVENÉ! ✅
 1. ✅ **Onboarding Google redirect** - Auth state monitoring + widget.onComplete()
 2. ✅ **Password visibility toggle** - Ikona oka na všetkých password poliach
+
+### 🐛 Všetky opravy v10.0.1+5000008 IMPLEMENTOVANÉ! ✅
+1. ✅ **FAB menu preklady** - Hardcoded SK texty nahradené tr() kľúčmi
+2. ✅ **Likes a komentáre RLS** - PostgrestException 42501 opravený na backend
+3. ✅ **Language switch flash** - Odstránený červený flash efekt
 
 **Audio player lifecycle** presunutý do roadmap v10.1+ (nekritické pre release)
 

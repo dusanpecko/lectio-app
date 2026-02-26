@@ -1093,5 +1093,18 @@
       "slide5_google": "Pokračovať s Google",
       "slide5_email": "Pokračovať cez E-mail",
       "slide5_skip": "Zatiaľ preskočiť a začať modlitbu"
-  }
+  },
+
+  "stations_of_cross_title": "Krížové cesty",
+  "stations_of_cross_main_title": "Krížová cesta",
+  "stations_of_cross_subtitle": "Sprevádzajte Ježiša na ceste kríža",
+  "stations_of_cross_loading_detail": "Načítavanie krížovej cesty...",
+  "stations_count": "zastavení",
+  "station_intro": "Úvod",
+  "station_conclusion": "Záver",
+  "station_number": "Zastavenie",
+  "stations_not_found": "Krížová cesta nebola nájdená",
+  "stations_expand_all": "Rozbaliť všetky",
+  "stations_collapse_all": "Zbaliť všetky",
+  "stations_of_cross_explore": "Modlite sa Krížovú cestu"
 }

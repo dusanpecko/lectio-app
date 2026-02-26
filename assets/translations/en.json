@@ -1093,5 +1093,18 @@
       "slide5_google": "Continue with Google",
       "slide5_email": "Continue with E-mail",
       "slide5_skip": "Skip for now and start praying"
-  }
+  },
+
+  "stations_of_cross_title": "Stations of the Cross",
+  "stations_of_cross_main_title": "Stations of the Cross",
+  "stations_of_cross_subtitle": "Accompany Jesus on the Way of the Cross",
+  "stations_of_cross_loading_detail": "Loading stations of the cross...",
+  "stations_count": "stations",
+  "station_intro": "Introduction",
+  "station_conclusion": "Conclusion",
+  "station_number": "Station",
+  "stations_not_found": "Stations of the Cross not found",
+  "stations_expand_all": "Expand all",
+  "stations_collapse_all": "Collapse all",
+  "stations_of_cross_explore": "Pray the Stations of the Cross"
 }

@@ -1093,5 +1093,18 @@
       "slide5_google": "Continuar con Google",
       "slide5_email": "Continuar con E-mail",
       "slide5_skip": "Omitir por ahora y empezar a orar"
-  }
+  },
+
+  "stations_of_cross_title": "Vía Crucis",
+  "stations_of_cross_main_title": "Vía Crucis",
+  "stations_of_cross_subtitle": "Acompaña a Jesús en el Camino de la Cruz",
+  "stations_of_cross_loading_detail": "Cargando el vía crucis...",
+  "stations_count": "estaciones",
+  "station_intro": "Introducción",
+  "station_conclusion": "Conclusión",
+  "station_number": "Estación",
+  "stations_not_found": "Vía Crucis no encontrado",
+  "stations_expand_all": "Expandir todo",
+  "stations_collapse_all": "Colapsar todo",
+  "stations_of_cross_explore": "Reza el Vía Crucis"
 }

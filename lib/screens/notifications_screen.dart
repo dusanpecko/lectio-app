@@ -71,28 +71,55 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try {
       final supabase = Supabase.instance.client;
       final locale = context.locale.languageCode;
+      final userId = supabase.auth.currentUser?.id;
 
       // Mapovanie jazyka na locale_id (hardcoded pre výkon a bez RLS problémov)
       // sk = 1, en = 2, es = 3
       final localeIdMap = {'sk': 1, 'en': 2, 'es': 3};
       final localeId = localeIdMap[locale] ?? 1; // Default: slovenčina
 
-      // Načítaj notifikácie pre daný jazyk, zoradené od najnovších
-      final response = await supabase
+      // Načítaj broadcast notifikácie pre daný jazyk
+      final broadcastResponse = await supabase
           .from('notification_logs')
           .select(
             'id, title, body, topic, sent_at, image_url, subscriber_count',
           )
           .eq('locale_id', localeId)
+          .eq('is_targeted', false)
           .order('sent_at', ascending: false)
           .limit(50);
 
-      final notifications = (response as List)
+      final broadcastNotifications = (broadcastResponse as List)
           .map((json) => NotificationLog.fromJson(json))
           .toList();
 
+      // Načítaj targeted notifikácie pre aktuálneho usera (cez RLS)
+      List<NotificationLog> targetedNotifications = [];
+      if (userId != null) {
+        final targetedResponse = await supabase
+            .from('notification_logs')
+            .select(
+              'id, title, body, topic, sent_at, image_url, subscriber_count',
+            )
+            .eq('is_targeted', true)
+            .order('sent_at', ascending: false)
+            .limit(20);
+
+        targetedNotifications = (targetedResponse as List)
+            .map((json) => NotificationLog.fromJson(json))
+            .toList();
+      }
+
+      // Zlúčiť a zoradiť podľa dátumu
+      final allNotifications = [
+        ...broadcastNotifications,
+        ...targetedNotifications,
+      ];
+      allNotifications.sort((a, b) => b.sentAt.compareTo(a.sentAt));
+      final notifications = allNotifications.take(50).toList();
+
       appLogger.i(
-        'Loaded ${notifications.length} notifications for locale $locale',
+        'Loaded ${notifications.length} notifications (${broadcastNotifications.length} broadcast, ${targetedNotifications.length} targeted) for locale $locale',
       );
 
       if (mounted) {

@@ -64,7 +64,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1013914441659',
     projectId: 'lectio-divina-ef223',
     storageBucket: 'lectio-divina-ef223.firebasestorage.app',
-    iosBundleId: 'com.example.lectioDivina',
+    iosBundleId: 'sk.dpapp.app.ios604688a889d93',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -73,7 +73,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1013914441659',
     projectId: 'lectio-divina-ef223',
     storageBucket: 'lectio-divina-ef223.firebasestorage.app',
-    iosBundleId: 'com.example.lectioDivina',
+    iosBundleId: 'sk.dpapp.app.ios604688a889d93',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
@@ -85,5 +85,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'lectio-divina-ef223.firebasestorage.app',
     measurementId: 'G-6DTH3EJ8PH',
   );
-
 }

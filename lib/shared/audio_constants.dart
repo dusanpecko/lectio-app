@@ -7,7 +7,7 @@ class AudioConstants {
 
   /// Base URL pre Supabase storage
   static const String _supabaseStorageBase =
-      'https://unnijykbupxguogrkolj.supabase.co/storage/v1/object/public';
+      'https://core.lectio.one/storage/v1/object/public';
 
   /// Priečinok pre lectio audio súbory
   static const String _lectioAudioPath = 'audio-files/lectio';

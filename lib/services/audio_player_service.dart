@@ -27,9 +27,9 @@ class AudioPlayerService extends ChangeNotifier {
 
   // URLs pre meditačnú hudbu
   static const String _shortInterludeUrl =
-      'https://unnijykbupxguogrkolj.supabase.co/storage/v1/object/public/audio-files/lectio/audio_null.mp3';
+      'https://core.lectio.one/storage/v1/object/public/audio-files/lectio/audio_null.mp3';
   static const String _longInterludeUrl =
-      'https://unnijykbupxguogrkolj.supabase.co/storage/v1/object/public/audio-files/lectio/lectio_full.mp3';
+      'https://core.lectio.one/storage/v1/object/public/audio-files/lectio/lectio_full.mp3';
 
   AudioPlayerService() {
     _setupListeners();

@@ -27,6 +27,7 @@ import 'spiritual_exercise_detail_screen.dart';
 import 'spiritual_exercises_list_screen.dart';
 import 'donation_screen.dart';
 import 'adoration_screen.dart';
+import 'stations_of_cross_screen.dart';
 import '../shared/app_spacing.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -1213,6 +1214,13 @@ class _HomeScreenState extends State<HomeScreen> {
             isOffline: _isOffline,
           ),
           const SizedBox(width: AppSpacing.md),
+          // 7b. Krížové cesty
+          _ModuleButton(
+            labelKey: 'stations_of_cross_title',
+            icon: Icons.add_rounded,
+            isOffline: _isOffline,
+          ),
+          const SizedBox(width: AppSpacing.md),
           // 8. O aplikácii
           _ModuleButton(
             labelKey: 'about_title',
@@ -1302,8 +1310,8 @@ class _HomeScreenState extends State<HomeScreen> {
     // 3. Pridaj Adorácie
     carouselItems.add(_buildAdorationCardContent());
 
-    // 4. Tu môžeš pridať ďalšie položky v budúcnosti
-    // carouselItems.add(_buildOtherCardContent());
+    // 4. Pridaj Krížové cesty
+    carouselItems.add(_buildStationsOfCrossCardContent());
 
     // Pre tablety: zoskup karty po 2
     List<Widget> pages = [];
@@ -1829,6 +1837,131 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Build Stations of the Cross card content (pre carousel)
+  Widget _buildStationsOfCrossCardContent() {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const StationsOfCrossScreen(),
+            settings: const RouteSettings(name: '/stations-of-cross'),
+          ),
+        );
+      },
+      child: Card(
+        elevation: AppElevation.high,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          child: Stack(
+            children: [
+              // Gradient background
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF5C1018),
+                        Color(0xFF4A5085),
+                        Color(0xFF2D1B4E),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Gradient overlay pre lepšiu čitateľnosť textu
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.3),
+                      Colors.black.withValues(alpha: 0.6),
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
+                  ),
+                ),
+              ),
+
+              // Cross icon centered
+              Center(
+                child: Icon(
+                  Icons.add_rounded,
+                  size: 120,
+                  color: Colors.white.withValues(alpha: 0.15),
+                ),
+              ),
+
+              // Bottom content with radius
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(AppRadius.lg),
+                      bottomRight: Radius.circular(AppRadius.lg),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.add_rounded,
+                            size: 16,
+                            color: Color(0xFF5C1018),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Text(
+                            tr('stations_of_cross_title'),
+                            style: theme.textTheme.titleMedium!.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.adaptiveCardTitle(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        tr('stations_of_cross_explore'),
+                        style: theme.textTheme.bodyMedium!.copyWith(
+                          color: AppColors.adaptiveCardSubtitle(context),
+                          height: 1.4,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // Build News section
   Widget _buildNewsSection() {
     final theme = Theme.of(context);
@@ -2179,6 +2312,16 @@ class _ModuleButton extends StatelessWidget {
           MaterialPageRoute(
             builder: (context) => const AdorationScreen(),
             settings: const RouteSettings(name: '/adoration'),
+          ),
+        );
+        break;
+
+      case 'stations_of_cross_title':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const StationsOfCrossScreen(),
+            settings: const RouteSettings(name: '/stations-of-cross'),
           ),
         );
         break;
