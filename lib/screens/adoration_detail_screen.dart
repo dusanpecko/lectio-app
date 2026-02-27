@@ -1,16 +1,20 @@
 // lib/screens/adoration_detail_screen.dart
 
+import 'dart:async';
+
+import 'package:audio_service/audio_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/adoration_model.dart';
 import '../services/adoration_service.dart';
 import '../shared/app_colors.dart';
-import '../widgets/audio/universal_audio_player.dart';
-import '../widgets/audio/audio_player_models.dart';
+import '../shared/audio_constants.dart';
 import '../shared/app_spacing.dart';
+import '../widgets/lectio_floating_audio_player.dart';
 
 class AdorationDetailScreen extends StatefulWidget {
   final String adorationId;
@@ -26,6 +30,13 @@ class AdorationDetailScreen extends StatefulWidget {
   State<AdorationDetailScreen> createState() => _AdorationDetailScreenState();
 }
 
+// ── Audio constants ──
+const _kAdorationMusicUrl1 =
+    'https://core.lectio.one/storage/v1/object/public/rosary/lectio-divina-audios/freepik-pure-beauty.mp3';
+const _kAdorationMusicUrl2 =
+    'https://core.lectio.one/storage/v1/object/public/rosary/lectio-divina-audios/freepik-seamlessly-loved.mp3';
+const _kPrefKeyAdorationAudioMode = 'adoration_audio_mode';
+
 class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
   final AdorationService _adorationService = AdorationService();
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -36,19 +47,321 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
   Adoration? _nextAdoration;
   Adoration? _previousAdoration;
 
+  // ── Audio (lectio-style floating player) ──
+  bool _showAudioPlayer = false;
+  bool _isMinimized = false;
+  bool _isPlaying = false;
+  bool _isPlayingInterlude = false;
+  String? _currentAudioSection;
+  Duration _currentPosition = Duration.zero;
+  Duration _totalDuration = Duration.zero;
+  // 'none' = no music, 'short' = music 1, 'long' = music 2
+  String _audioMode = 'short';
+
+  late PageController _playlistPageController;
+  List<Map<String, dynamic>> _tracks = [];
+  // Maps native source index → {type: 'track'|'interlude', trackIndex: int}
+  List<Map<String, dynamic>> _sourceMap = [];
+
+  StreamSubscription<PlayerState>? _playerStateSub;
+  StreamSubscription<Duration>? _positionSub;
+  StreamSubscription<Duration?>? _durationSub;
+  StreamSubscription<int?>? _indexSub;
+
+  /// Artwork URI for lock screen / notification
+  Uri? get _artUri {
+    final img = _adoration?.illustrationImage;
+    if (img != null && img.isNotEmpty) return Uri.tryParse(img);
+    return Uri.parse(AudioConstants.defaultArtworkUrl);
+  }
+
   @override
   void initState() {
     super.initState();
+    _playlistPageController = PageController(viewportFraction: 0.85);
     if (widget.initialAdoration != null) {
       _adoration = widget.initialAdoration;
       _isLoading = false;
     }
+    _setupAudioListeners();
+    _restoreAudioMode();
   }
 
   @override
   void dispose() {
+    _playerStateSub?.cancel();
+    _positionSub?.cancel();
+    _durationSub?.cancel();
+    _indexSub?.cancel();
     _audioPlayer.dispose();
+    _playlistPageController.dispose();
     super.dispose();
+  }
+
+  // ── Audio setup ──
+
+  void _setupAudioListeners() {
+    _playerStateSub = _audioPlayer.playerStateStream.listen((state) {
+      if (!mounted) return;
+      final isComplete = state.processingState == ProcessingState.completed;
+      setState(() {
+        _isPlaying = state.playing && !isComplete;
+      });
+    });
+
+    _positionSub = _audioPlayer.positionStream.listen((pos) {
+      if (!mounted) return;
+      setState(() => _currentPosition = pos);
+    });
+
+    _durationSub = _audioPlayer.durationStream.listen((dur) {
+      if (!mounted) return;
+      setState(() => _totalDuration = dur ?? Duration.zero);
+    });
+
+    _indexSub = _audioPlayer.currentIndexStream.listen((nativeIdx) {
+      if (!mounted || nativeIdx == null) return;
+      if (nativeIdx < 0 || nativeIdx >= _sourceMap.length) return;
+
+      final entry = _sourceMap[nativeIdx];
+      final trackIdx = entry['trackIndex'] as int;
+      final isInterlude = entry['type'] == 'interlude';
+
+      setState(() {
+        _isPlayingInterlude = isInterlude;
+        if (!isInterlude && trackIdx < _tracks.length) {
+          _currentAudioSection = _tracks[trackIdx]['key'] as String;
+        }
+      });
+
+      if (_playlistPageController.hasClients) {
+        _playlistPageController.animateToPage(
+          trackIdx,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _restoreAudioMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_kPrefKeyAdorationAudioMode);
+    if (saved != null && mounted) {
+      setState(() => _audioMode = saved);
+    }
+  }
+
+  Future<void> _saveAudioMode(String mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kPrefKeyAdorationAudioMode, mode);
+    if (mounted) setState(() => _audioMode = mode);
+
+    if (mode == 'none') {
+      await _audioPlayer.stop();
+    } else if (_showAudioPlayer) {
+      await _buildAndPlayPlaylist();
+    }
+  }
+
+  String _getInterludeUrl() {
+    switch (_audioMode) {
+      case 'short':
+        return _kAdorationMusicUrl1;
+      case 'long':
+        return _kAdorationMusicUrl2;
+      default:
+        return '';
+    }
+  }
+
+  void _buildTracks() {
+    if (_adoration == null) return;
+    final a = _adoration!;
+    _tracks = [];
+
+    // Build track list from available audio sections
+    final sections = <Map<String, dynamic>>[
+      if (a.introAudio?.isNotEmpty == true)
+        {
+          'key': 'intro',
+          'label': tr('introduction'),
+          'url': a.introAudio!,
+          'icon': Icons.play_circle_outline,
+          'color': AppColors.primary,
+        },
+      if (a.introductoryPrayersAudio?.isNotEmpty == true)
+        {
+          'key': 'introductory_prayers',
+          'label': tr('introductory_prayers'),
+          'url': a.introductoryPrayersAudio!,
+          'icon': Icons.auto_stories_outlined,
+          'color': AppColors.primary,
+        },
+      if (a.lectioAudio?.isNotEmpty == true)
+        {
+          'key': 'lectio',
+          'label': 'Lectio',
+          'url': a.lectioAudio!,
+          'icon': Icons.menu_book_rounded,
+          'color': AppColors.primary,
+        },
+      if (a.commentaryAudio?.isNotEmpty == true)
+        {
+          'key': 'commentary',
+          'label': tr('comment'),
+          'url': a.commentaryAudio!,
+          'icon': Icons.comment_outlined,
+          'color': AppColors.accent,
+        },
+      if (a.meditatioAudio?.isNotEmpty == true)
+        {
+          'key': 'meditatio',
+          'label': 'Meditatio',
+          'url': a.meditatioAudio!,
+          'icon': Icons.self_improvement,
+          'color': AppColors.primary,
+        },
+      if (a.oratioAudio?.isNotEmpty == true)
+        {
+          'key': 'oratio',
+          'label': 'Oratio',
+          'url': a.oratioAudio!,
+          'icon': Icons.favorite_rounded,
+          'color': AppColors.primary,
+        },
+      if (a.contemplatioAudio?.isNotEmpty == true)
+        {
+          'key': 'contemplatio',
+          'label': 'Contemplatio',
+          'url': a.contemplatioAudio!,
+          'icon': Icons.visibility_rounded,
+          'color': AppColors.primary,
+        },
+      if (a.actioAudio?.isNotEmpty == true)
+        {
+          'key': 'actio',
+          'label': 'Actio',
+          'url': a.actioAudio!,
+          'icon': Icons.directions_run_rounded,
+          'color': AppColors.primary,
+        },
+    ];
+
+    _tracks = sections;
+  }
+
+  /// Build ConcatenatingAudioSource from section audios + interludes
+  Future<void> _buildAndPlayPlaylist({int fromTrack = 0}) async {
+    if (_adoration == null || _tracks.isEmpty) return;
+    final interludeUrl = _getInterludeUrl();
+
+    final sources = <AudioSource>[];
+    _sourceMap = [];
+
+    final albumName = tr('eucharistic_adoration');
+    final artist = _adoration?.author ?? albumName;
+
+    for (int i = 0; i < _tracks.length; i++) {
+      final track = _tracks[i];
+      final url = track['url'] as String;
+      final label = track['label'] as String;
+      final key = track['key'] as String;
+
+      sources.add(
+        AudioSource.uri(
+          Uri.parse(url),
+          tag: MediaItem(
+            id: key,
+            album: albumName,
+            title: label,
+            artist: artist,
+            artUri: _artUri,
+          ),
+        ),
+      );
+      _sourceMap.add({'type': 'track', 'trackIndex': i});
+
+      // Interlude between sections (if mode != none)
+      if (interludeUrl.isNotEmpty && i < _tracks.length - 1) {
+        final interludeArtist = _audioMode == 'short' ? 'MudiG' : 'Off Beat';
+        sources.add(
+          AudioSource.uri(
+            Uri.parse(interludeUrl),
+            tag: MediaItem(
+              id: 'interlude_$i',
+              album: albumName,
+              title: 'Meditačná hudba',
+              artist: interludeArtist,
+              artUri: _artUri,
+            ),
+          ),
+        );
+        _sourceMap.add({'type': 'interlude', 'trackIndex': i});
+      }
+    }
+
+    if (sources.isEmpty) return;
+
+    try {
+      await _audioPlayer.stop();
+      final playlist = ConcatenatingAudioSource(children: sources);
+      await _audioPlayer.setAudioSource(playlist);
+
+      if (fromTrack > 0) {
+        final nativeIdx = _sourceMap.indexWhere(
+          (e) => e['type'] == 'track' && e['trackIndex'] == fromTrack,
+        );
+        if (nativeIdx >= 0) {
+          await _audioPlayer.seek(Duration.zero, index: nativeIdx);
+        }
+      }
+
+      await _audioPlayer.play();
+    } catch (e) {
+      debugPrint('Error building adoration playlist: $e');
+    }
+  }
+
+  void _onPlayPause() {
+    if (_isPlaying) {
+      _audioPlayer.pause();
+    } else {
+      if (_audioPlayer.processingState == ProcessingState.idle ||
+          _audioPlayer.processingState == ProcessingState.completed) {
+        _buildAndPlayPlaylist();
+      } else {
+        _audioPlayer.play();
+      }
+    }
+  }
+
+  void _onSkipNext() {
+    final currentNative = _audioPlayer.currentIndex ?? 0;
+    for (int i = currentNative + 1; i < _sourceMap.length; i++) {
+      if (_sourceMap[i]['type'] == 'track') {
+        _audioPlayer.seek(Duration.zero, index: i);
+        return;
+      }
+    }
+  }
+
+  void _onSkipPrevious() {
+    final currentNative = _audioPlayer.currentIndex ?? 0;
+    for (int i = currentNative - 1; i >= 0; i--) {
+      if (_sourceMap[i]['type'] == 'track') {
+        _audioPlayer.seek(Duration.zero, index: i);
+        return;
+      }
+    }
+  }
+
+  int get _currentTrackIndex {
+    final nativeIdx = _audioPlayer.currentIndex ?? 0;
+    if (nativeIdx < _sourceMap.length) {
+      return _sourceMap[nativeIdx]['trackIndex'] as int;
+    }
+    return 0;
   }
 
   @override
@@ -94,6 +407,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
           _previousAdoration = previous;
           _isLoading = false;
         });
+        _buildTracks();
       }
     } catch (e) {
       if (mounted) {
@@ -128,69 +442,138 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
       return _buildErrorScreen(theme);
     }
 
+    final hasSectionAudios = _tracks.isNotEmpty;
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColors.primary.withValues(alpha: 0.1),
-              theme.scaffoldBackgroundColor,
-              AppColors.accent.withValues(alpha: 0.05),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: CustomScrollView(
-          slivers: [
-            _buildAppBar(theme),
-            SliverToBoxAdapter(
-              child: Column(
-                children: [
-                  // Audio Player
-                  if (_adoration!.hasAudio)
-                    UniversalAudioPlayer.rosary(
-                      audioUrl: _adoration!.audioRecording,
-                      title: _adoration!.title,
-                      author: _adoration!.author ?? tr('unknown_author'),
-                      albumName: tr('eucharistic_adoration'),
-                      artworkUrl: _adoration!.hasImage
-                          ? _adoration!.illustrationImage
-                          : null,
-                      id: 'adoration_${_adoration!.id}',
-                      categoryColor: AppColors.primary,
-                      audioPlayer: _audioPlayer,
-                      config: AudioPlayerConfig.rosary.copyWith(
-                        showTitle: false,
-                        showAuthor: true,
-                      ),
-                    ),
-
-                  // Content
-                  Column(
-                    children: [
-                      _buildBiblicalText(theme),
-                      _buildIntroduction(theme),
-                      if (_adoration!.introductoryPrayers?.isNotEmpty == true)
-                        _buildIntroductoryPrayers(theme),
-                      _buildLectioDivinaSections(theme),
-                      if (_adoration!.commentary?.isNotEmpty == true)
-                        _buildComment(theme),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg,
-                        ),
-                        child: _buildNavigationButtons(theme),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                    ],
-                  ),
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.1),
+                  theme.scaffoldBackgroundColor,
+                  AppColors.accent.withValues(alpha: 0.05),
                 ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
             ),
-          ],
-        ),
+            child: CustomScrollView(
+              slivers: [
+                _buildAppBar(theme),
+                SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      // Content
+                      Column(
+                        children: [
+                          _buildBiblicalText(theme),
+                          _buildIntroduction(theme),
+                          if (_adoration!.introductoryPrayers?.isNotEmpty ==
+                              true)
+                            _buildIntroductoryPrayers(theme),
+                          _buildLectioDivinaSections(theme),
+                          if (_adoration!.commentary?.isNotEmpty == true)
+                            _buildComment(theme),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg,
+                            ),
+                            child: _buildNavigationButtons(theme),
+                          ),
+                          // Bottom padding for floating player
+                          SizedBox(
+                            height: _showAudioPlayer
+                                ? 120 + AppSpacing.xl
+                                : AppSpacing.xl,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Lectio-style floating audio player
+          if (_showAudioPlayer && _tracks.isNotEmpty)
+            LectioFloatingAudioPlayer(
+              tracks: _tracks,
+              currentAudioSection: _currentAudioSection,
+              isPlaying: _isPlaying,
+              isPlayingInterlude: _isPlayingInterlude,
+              isMinimized: _isMinimized,
+              currentPosition: _currentPosition,
+              totalDuration: _totalDuration,
+              audioMode: _audioMode,
+              playlistPageController: _playlistPageController,
+              onPlayPause: _onPlayPause,
+              onSkipPrevious: _currentTrackIndex > 0 ? _onSkipPrevious : null,
+              onSkipNext: _currentTrackIndex < _tracks.length - 1
+                  ? _onSkipNext
+                  : null,
+              onSeekStart: () {},
+              onSeekChanged: (pos) {
+                setState(() => _currentPosition = pos);
+              },
+              onSeekEnd: (value) {
+                _audioPlayer.seek(Duration(milliseconds: value.toInt()));
+              },
+              onPlayTrack: (url, key) {
+                final idx = _tracks.indexWhere((t) => t['key'] == key);
+                if (idx >= 0) {
+                  final nativeIdx = _sourceMap.indexWhere(
+                    (e) => e['type'] == 'track' && e['trackIndex'] == idx,
+                  );
+                  if (nativeIdx >= 0 &&
+                      _audioPlayer.processingState != ProcessingState.idle) {
+                    _audioPlayer.seek(Duration.zero, index: nativeIdx);
+                  } else {
+                    _buildAndPlayPlaylist(fromTrack: idx);
+                  }
+                }
+              },
+              onAudioModeChanged: _saveAudioMode,
+              onMinimize: () {
+                setState(() => _isMinimized = !_isMinimized);
+              },
+              onClose: () async {
+                await _audioPlayer.stop();
+                if (mounted) {
+                  setState(() {
+                    _showAudioPlayer = false;
+                    _isPlaying = false;
+                    _currentAudioSection = null;
+                  });
+                }
+              },
+            ),
+          // FAB to open player when closed (only if there are section audios)
+          if (!_showAudioPlayer && hasSectionAudios)
+            Positioned(
+              right: AppSpacing.lg,
+              bottom: AppSpacing.xxl,
+              child: FloatingActionButton(
+                heroTag: 'adoration_open_player',
+                backgroundColor: AppColors.primary,
+                onPressed: () {
+                  setState(() {
+                    _showAudioPlayer = true;
+                    if (_tracks.isNotEmpty) {
+                      _currentAudioSection = _tracks[0]['key'] as String;
+                    }
+                  });
+                  _buildAndPlayPlaylist();
+                },
+                child: const Icon(
+                  Icons.music_note_rounded,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

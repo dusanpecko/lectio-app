@@ -122,19 +122,10 @@ class _StationsOfCrossScreenState extends State<StationsOfCrossScreen> {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            // Gradient background (no image asset needed)
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.primary,
-                    AppColors.primary.withValues(alpha: 0.8),
-                    AppColors.primary.withValues(alpha: 0.6),
-                  ],
-                ),
-              ),
+            // Hero background image
+            Image.asset(
+              'assets/images/station_cross_backround.webp',
+              fit: BoxFit.cover,
             ),
             Container(
               decoration: BoxDecoration(
@@ -142,8 +133,8 @@ class _StationsOfCrossScreenState extends State<StationsOfCrossScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.3),
+                    AppColors.primary.withValues(alpha: 0.6),
+                    AppColors.primary.withValues(alpha: 0.85),
                   ],
                 ),
               ),

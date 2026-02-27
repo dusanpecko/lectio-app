@@ -694,6 +694,7 @@ class _StationPageViewState extends State<_StationPageView> {
     final heroImage = station.hasImage
         ? station.image
         : (widget.data.hasImage ? widget.data.illustrationImage : null);
+    final heroFallbackAsset = 'assets/images/station_cross_backround.webp';
 
     final String stationLabel;
     if (station.isIntro) {
@@ -774,19 +775,7 @@ class _StationPageViewState extends State<_StationPageView> {
                         Container(color: AppColors.primary),
                   )
                 else
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppColors.primary,
-                          AppColors.primary.withValues(alpha: 0.8),
-                          AppColors.primary.withValues(alpha: 0.6),
-                        ],
-                      ),
-                    ),
-                  ),
+                  Image.asset(heroFallbackAsset, fit: BoxFit.cover),
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(

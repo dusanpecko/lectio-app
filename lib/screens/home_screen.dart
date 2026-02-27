@@ -1617,7 +1617,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.lg),
                 child: Image.asset(
-                  'assets/images/rosary_bg.webp',
+                  'assets/images/rosary_backround.webp',
                   width: double.infinity,
                   height: double.infinity,
                   fit: BoxFit.cover,
@@ -1845,7 +1845,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.lg),
                 child: Image.asset(
-                  'assets/images/stations_of_cross_bg.webp',
+                  'assets/images/station_cross_backround.webp',
                   width: double.infinity,
                   height: double.infinity,
                   fit: BoxFit.cover,
