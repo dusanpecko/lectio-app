@@ -2682,7 +2682,7 @@ class _LectioScreenState extends State<LectioScreen> {
                                 text: lectioData?['actio_text'] ?? '',
                                 reference: lectioData?['reference'],
                               ),
-                              const SizedBox(height: 40),
+                              const SizedBox(height: 120),
                             ],
                           ),
                   ),

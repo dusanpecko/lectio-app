@@ -76,35 +76,31 @@ class _StationsOfCrossScreenState extends State<StationsOfCrossScreen> {
       body: _isLoading
           ? _buildLoadingState(theme)
           : _error != null
-              ? _buildErrorState(theme)
-              : CustomScrollView(
-                  slivers: [
-                    _buildHeroAppBar(theme),
-                    SliverPadding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final item = _items[index];
-                            return _buildItemCard(theme, item, index);
-                          },
-                          childCount: _items.length,
-                        ),
-                      ),
-                    ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 100)),
-                  ],
+          ? _buildErrorState(theme)
+          : CustomScrollView(
+              slivers: [
+                _buildHeroAppBar(theme),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final item = _items[index];
+                      return _buildItemCard(theme, item, index);
+                    }, childCount: _items.length),
+                  ),
                 ),
+                const SliverToBoxAdapter(child: SizedBox(height: 100)),
+              ],
+            ),
     );
   }
 
   Widget _buildHeroAppBar(ThemeData theme) {
     return SliverAppBar(
-      expandedHeight:
-          MediaQuery.of(context).size.width >= 600 ? 450.0 : 300.0,
+      expandedHeight: MediaQuery.of(context).size.width >= 600 ? 450.0 : 300.0,
       floating: false,
       pinned: true,
       backgroundColor: AppColors.primary,
@@ -133,9 +129,9 @@ class _StationsOfCrossScreenState extends State<StationsOfCrossScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    const Color(0xFF5C1018),
                     AppColors.primary,
-                    const Color(0xFF2D1B4E),
+                    AppColors.primary.withValues(alpha: 0.8),
+                    AppColors.primary.withValues(alpha: 0.6),
                   ],
                 ),
               ),
@@ -187,13 +183,14 @@ class _StationsOfCrossScreenState extends State<StationsOfCrossScreen> {
                     ),
                     Text(
                       tr('stations_of_cross_main_title'),
-                      style: (MediaQuery.of(context).size.width >= 600
-                              ? theme.textTheme.headlineLarge
-                              : theme.textTheme.headlineMedium)
-                          ?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style:
+                          (MediaQuery.of(context).size.width >= 600
+                                  ? theme.textTheme.headlineLarge
+                                  : theme.textTheme.headlineMedium)
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(
@@ -203,13 +200,14 @@ class _StationsOfCrossScreenState extends State<StationsOfCrossScreen> {
                     ),
                     Text(
                       tr('stations_of_cross_subtitle'),
-                      style: (MediaQuery.of(context).size.width >= 600
-                              ? theme.textTheme.headlineMedium
-                              : theme.textTheme.titleMedium)
-                          ?.copyWith(
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style:
+                          (MediaQuery.of(context).size.width >= 600
+                                  ? theme.textTheme.headlineMedium
+                                  : theme.textTheme.titleMedium)
+                              ?.copyWith(
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w500,
+                              ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -223,9 +221,6 @@ class _StationsOfCrossScreenState extends State<StationsOfCrossScreen> {
   }
 
   Widget _buildItemCard(ThemeData theme, StationsOfCross item, int index) {
-    final stationsCount = item.stations.length;
-    final audioCount = item.stationsWithAudioCount;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Material(
@@ -268,10 +263,8 @@ class _StationsOfCrossScreenState extends State<StationsOfCrossScreen> {
                             size: 28,
                           ),
                         ),
-                        errorWidget: (context, url, error) => _buildNumberBadge(
-                          theme,
-                          index,
-                        ),
+                        errorWidget: (context, url, error) =>
+                            _buildNumberBadge(theme, index),
                       ),
                     )
                   else
@@ -304,8 +297,7 @@ class _StationsOfCrossScreenState extends State<StationsOfCrossScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
-                        if (item.author != null &&
-                            item.author!.isNotEmpty) ...[
+                        if (item.author != null && item.author!.isNotEmpty) ...[
                           const SizedBox(height: AppSpacing.xs),
                           Text(
                             item.author!,
@@ -316,74 +308,6 @@ class _StationsOfCrossScreenState extends State<StationsOfCrossScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
-                        const SizedBox(height: AppSpacing.sm),
-                        Row(
-                          children: [
-                            // Stations count badge
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.format_list_numbered_rounded,
-                                    size: 14,
-                                    color: AppColors.primary,
-                                  ),
-                                  const SizedBox(width: AppSpacing.xs),
-                                  Text(
-                                    '$stationsCount ${tr('stations_count')}',
-                                    style:
-                                        theme.textTheme.bodySmall?.copyWith(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (audioCount > 0) ...[
-                              const SizedBox(width: AppSpacing.sm),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color:
-                                      AppColors.accent.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.headphones_rounded,
-                                      size: 14,
-                                      color: AppColors.accent,
-                                    ),
-                                    const SizedBox(width: AppSpacing.xs),
-                                    Text(
-                                      '$audioCount ${tr('audio')}',
-                                      style:
-                                          theme.textTheme.bodySmall?.copyWith(
-                                        color: AppColors.accent,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
                       ],
                     ),
                   ),
@@ -391,8 +315,9 @@ class _StationsOfCrossScreenState extends State<StationsOfCrossScreen> {
                   // Arrow
                   Icon(
                     Icons.chevron_right_rounded,
-                    color: theme.colorScheme.onSurfaceVariant
-                        .withValues(alpha: 0.5),
+                    color: theme.colorScheme.onSurfaceVariant.withValues(
+                      alpha: 0.5,
+                    ),
                     size: 28,
                   ),
                 ],
@@ -409,19 +334,15 @@ class _StationsOfCrossScreenState extends State<StationsOfCrossScreen> {
       width: 56,
       height: 56,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF5C1018), Color(0xFF8B2030)],
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.7)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Center(
-        child: Icon(
-          Icons.add_rounded,
-          color: Colors.white,
-          size: 28,
-        ),
+        child: Icon(Icons.add_rounded, color: Colors.white, size: 28),
       ),
     );
   }

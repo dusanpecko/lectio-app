@@ -1106,5 +1106,9 @@
   "stations_not_found": "Vía Crucis no encontrado",
   "stations_expand_all": "Expandir todo",
   "stations_collapse_all": "Colapsar todo",
-  "stations_of_cross_explore": "Reza el Vía Crucis"
+  "stations_of_cross_explore": "Reza el Vía Crucis",
+  "stations_music_title": "Música del Vía Crucis",
+  "stations_music_off": "Sin música",
+  "stations_music_1": "Música 1 – Dramatic Signals",
+  "stations_music_2": "Música 2 – Vía Crucis"
 }

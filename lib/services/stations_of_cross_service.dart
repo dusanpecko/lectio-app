@@ -17,9 +17,7 @@ class StationsOfCrossService {
           .order('poradie', ascending: true);
 
       return response
-          .map<StationsOfCross>(
-            (json) => StationsOfCross.fromJson(json),
-          )
+          .map<StationsOfCross>((json) => StationsOfCross.fromJson(json))
           .toList();
     } catch (e) {
       throw Exception('Chyba pri načítavaní krížových ciest: $e');

@@ -1106,5 +1106,9 @@
   "stations_not_found": "Krížová cesta nebola nájdená",
   "stations_expand_all": "Rozbaliť všetky",
   "stations_collapse_all": "Zbaliť všetky",
-  "stations_of_cross_explore": "Modlite sa Krížovú cestu"
+  "stations_of_cross_explore": "Modlite sa Krížovú cestu",
+  "stations_music_title": "Hudba pri krížovej ceste",
+  "stations_music_off": "Bez hudby",
+  "stations_music_1": "Hudba 1 – Dramatic Signals",
+  "stations_music_2": "Hudba 2 – Krížová cesta"
 }

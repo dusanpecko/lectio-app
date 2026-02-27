@@ -166,8 +166,9 @@
   - [x] Next/Skip buttons
 
 ### Roadmap v10.1+
+- [ ] **Krížová cesta** - Nová sekcia s PageView swipe navigáciou, hero obrázkami zastavení, kolapsovateľný SliverAppBar, bodkové indikátory, rímske čísla, HTML obsah s app fontom, lectio-štýlový audio prehrávač s `ConcatenatingAudioSource` playlistom, lock screen artwork, carousel karta na home screene.
 - [ ] **Audio player lifecycle (staršie Android)** - Na starších Android zariadeniach (8/9 a nižšie) sa media player nezatvára po zatvorení aplikácie na zamknutej obrazovke. Možná príčina: nesprávne spravovaný AudioSession / MediaSession lifecycle. Na preskúmanie: správanie `just_audio` / `audio_service` pluginu pri lifecycle eventoch.
-- [ ] **Edge-to-edge zobrazenie** - Flutter framework issue (`setStatusBarColor`, `setNavigationBarColor`, `setNavigationBarDividerColor` deprecated v Android 15). Opraví sa v budúcich verziách Fluttera, momentálne ignorovať.
+- [x] **Edge-to-edge zobrazenie** - ✅ Pridané `values-v35`/`values-night-v35` štýly, odstránené deprecated volania z nášho kódu. Zvyšné deprecated API volania sú interné vo Flutter frameworku (`FlutterFragmentActivity`, `PlatformPlugin`) a Google Play Services — opravia sa v budúcich verziách.
 
 ### Roadmap v10.2+
 - [ ] **FCM Token Cleanup Cron** - periodická očista starých/neplatných tokenov (90+ dní neaktívne)

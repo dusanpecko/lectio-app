@@ -1304,14 +1304,14 @@ class _HomeScreenState extends State<HomeScreen> {
       carouselItems.add(_buildSpiritualExerciseCardContent(_featuredExercise!));
     }
 
-    // 2. Vždy pridaj Rosary
+    // 2. Pridaj Krížové cesty
+    carouselItems.add(_buildStationsOfCrossCardContent());
+
+    // 3. Vždy pridaj Rosary
     carouselItems.add(_buildRosaryCardContent());
 
-    // 3. Pridaj Adorácie
+    // 4. Pridaj Adorácie
     carouselItems.add(_buildAdorationCardContent());
-
-    // 4. Pridaj Krížové cesty
-    carouselItems.add(_buildStationsOfCrossCardContent());
 
     // Pre tablety: zoskup karty po 2
     List<Widget> pages = [];
@@ -1649,15 +1649,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withValues(alpha: 0.3),
-                      Colors.black.withValues(alpha: 0.6),
+                      Colors.black.withValues(alpha: 0.35),
+                      Colors.black.withValues(alpha: 0.7),
                     ],
                     stops: const [0.0, 0.5, 1.0],
                   ),
                 ),
               ),
 
-              // Bottom content with radius
+              // Text overlay
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -1665,7 +1665,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(AppSpacing.xl),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
+                    color: Colors.white.withValues(alpha: 0.18),
                     borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(AppRadius.lg),
                       bottomRight: Radius.circular(AppRadius.lg),
@@ -1675,28 +1675,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.auto_stories_rounded,
-                            size: 16,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Text(
-                            tr('rosary_title'),
-                            style: theme.textTheme.titleMedium!.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.adaptiveCardTitle(context),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        tr('rosary_title'),
+                        style: theme.textTheme.titleMedium!.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
-                      const SizedBox(height: AppSpacing.sm),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         tr('rosary_description'),
-                        style: theme.textTheme.bodyMedium!.copyWith(
-                          color: AppColors.adaptiveCardSubtitle(context),
+                        style: theme.textTheme.bodySmall!.copyWith(
+                          color: Colors.white.withValues(alpha: 0.9),
                           height: 1.4,
                         ),
                         maxLines: 2,
@@ -1773,15 +1763,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withValues(alpha: 0.3),
-                      Colors.black.withValues(alpha: 0.6),
+                      Colors.black.withValues(alpha: 0.35),
+                      Colors.black.withValues(alpha: 0.7),
                     ],
                     stops: const [0.0, 0.5, 1.0],
                   ),
                 ),
               ),
 
-              // Bottom content with radius
+              // Text overlay
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -1789,7 +1779,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(AppSpacing.xl),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
+                    color: Colors.white.withValues(alpha: 0.18),
                     borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(AppRadius.lg),
                       bottomRight: Radius.circular(AppRadius.lg),
@@ -1799,28 +1789,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.favorite_rounded,
-                            size: 16,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Text(
-                            tr('adoration_title'),
-                            style: theme.textTheme.titleMedium!.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.adaptiveCardTitle(context),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        tr('adoration_title'),
+                        style: theme.textTheme.titleMedium!.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
-                      const SizedBox(height: AppSpacing.sm),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         tr('adoration_main_subtitle'),
-                        style: theme.textTheme.bodyMedium!.copyWith(
-                          color: AppColors.adaptiveCardSubtitle(context),
+                        style: theme.textTheme.bodySmall!.copyWith(
+                          color: Colors.white.withValues(alpha: 0.9),
                           height: 1.4,
                         ),
                         maxLines: 2,
@@ -1861,22 +1841,30 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           child: Stack(
             children: [
-              // Gradient background
+              // Background image
               ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.lg),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF5C1018),
-                        Color(0xFF4A5085),
-                        Color(0xFF2D1B4E),
-                      ],
-                    ),
-                  ),
+                child: Image.asset(
+                  'assets/images/stations_of_cross_bg.webp',
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.primary,
+                            AppColors.primary.withValues(alpha: 0.8),
+                            AppColors.primary.withValues(alpha: 0.6),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
 
@@ -1889,24 +1877,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withValues(alpha: 0.3),
-                      Colors.black.withValues(alpha: 0.6),
+                      Colors.black.withValues(alpha: 0.35),
+                      Colors.black.withValues(alpha: 0.7),
                     ],
                     stops: const [0.0, 0.5, 1.0],
                   ),
                 ),
               ),
 
-              // Cross icon centered
-              Center(
-                child: Icon(
-                  Icons.add_rounded,
-                  size: 120,
-                  color: Colors.white.withValues(alpha: 0.15),
-                ),
-              ),
-
-              // Bottom content with radius
+              // Text overlay
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -1914,7 +1893,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(AppSpacing.xl),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
+                    color: Colors.white.withValues(alpha: 0.18),
                     borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(AppRadius.lg),
                       bottomRight: Radius.circular(AppRadius.lg),
@@ -1924,28 +1903,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.add_rounded,
-                            size: 16,
-                            color: Color(0xFF5C1018),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Text(
-                            tr('stations_of_cross_title'),
-                            style: theme.textTheme.titleMedium!.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.adaptiveCardTitle(context),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        tr('stations_of_cross_title'),
+                        style: theme.textTheme.titleMedium!.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
-                      const SizedBox(height: AppSpacing.sm),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         tr('stations_of_cross_explore'),
-                        style: theme.textTheme.bodyMedium!.copyWith(
-                          color: AppColors.adaptiveCardSubtitle(context),
+                        style: theme.textTheme.bodySmall!.copyWith(
+                          color: Colors.white.withValues(alpha: 0.9),
                           height: 1.4,
                         ),
                         maxLines: 2,

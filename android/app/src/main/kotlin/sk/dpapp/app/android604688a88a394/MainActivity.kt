@@ -20,6 +20,7 @@ class MainActivity: AudioServiceActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // Install the splash screen before calling super.onCreate()
         installSplashScreen()
+
         super.onCreate(savedInstanceState)
     }
 

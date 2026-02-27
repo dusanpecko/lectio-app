@@ -34,10 +34,11 @@ class StationsOfCross {
     final stationsJson = json['krizove_cesty_zastavenia'];
     List<Station> stations = [];
     if (stationsJson is List) {
-      stations = stationsJson
-          .map<Station>((s) => Station.fromJson(s as Map<String, dynamic>))
-          .toList()
-        ..sort((a, b) => a.order.compareTo(b.order));
+      stations =
+          stationsJson
+              .map<Station>((s) => Station.fromJson(s as Map<String, dynamic>))
+              .toList()
+            ..sort((a, b) => a.order.compareTo(b.order));
     }
 
     return StationsOfCross(
@@ -58,11 +59,9 @@ class StationsOfCross {
   bool get hasImage =>
       illustrationImage != null && illustrationImage!.isNotEmpty;
 
-  int get stationsWithAudioCount =>
-      stations.where((s) => s.hasAudio).length;
+  int get stationsWithAudioCount => stations.where((s) => s.hasAudio).length;
 
-  int get stationsWithTextCount =>
-      stations.where((s) => s.hasText).length;
+  int get stationsWithTextCount => stations.where((s) => s.hasText).length;
 
   static int? _parseIntSafely(dynamic value) {
     if (value == null) return null;
@@ -129,9 +128,11 @@ class Station {
       content: json['text_obsah']?.toString() ?? '',
       image: json['obrazok']?.toString(),
       audio: json['audio']?.toString(),
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
+      createdAt:
+          DateTime.tryParse(json['created_at']?.toString() ?? '') ??
           DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ??
+      updatedAt:
+          DateTime.tryParse(json['updated_at']?.toString() ?? '') ??
           DateTime.now(),
     );
   }
@@ -148,8 +149,21 @@ class Station {
   String get romanNumeral {
     if (isIntro || isConclusion) return '';
     const romans = [
-      '', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII',
-      'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV'
+      '',
+      'I',
+      'II',
+      'III',
+      'IV',
+      'V',
+      'VI',
+      'VII',
+      'VIII',
+      'IX',
+      'X',
+      'XI',
+      'XII',
+      'XIII',
+      'XIV',
     ];
     if (order >= 1 && order <= 14) return romans[order];
     return order.toString();
