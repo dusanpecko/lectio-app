@@ -2682,7 +2682,11 @@ class _LectioScreenState extends State<LectioScreen> {
                                 text: lectioData?['actio_text'] ?? '',
                                 reference: lectioData?['reference'],
                               ),
-                              const SizedBox(height: 120),
+                              SizedBox(
+                                height:
+                                    120 +
+                                    MediaQuery.of(context).viewPadding.bottom,
+                              ),
                             ],
                           ),
                   ),
@@ -2701,7 +2705,9 @@ class _LectioScreenState extends State<LectioScreen> {
       ), // GestureDetector
       // Floating Action Button Menu
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+        padding: EdgeInsets.only(
+          bottom: AppSpacing.xl + MediaQuery.of(context).viewPadding.bottom,
+        ),
         child: LectioSpeedDialFAB(
           onAddNote: Supabase.instance.client.auth.currentUser != null
               ? _handleAddNote

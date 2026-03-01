@@ -126,8 +126,9 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
   // MINIMALIZOVANÝ REŽIM - Kruh na ľavej strane
   // ============================================
   Widget _buildMinimizedPlayer(BuildContext context) {
+    final navBarHeight = MediaQuery.of(context).viewPadding.bottom;
     return Positioned(
-      bottom: 20,
+      bottom: 20 + navBarHeight,
       left: 16,
       child: GestureDetector(
         onTap: onMinimize,
@@ -187,6 +188,7 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
   // ============================================
   Widget _buildFullPlayer(BuildContext context) {
     final theme = Theme.of(context);
+    final navBarHeight = MediaQuery.of(context).viewPadding.bottom;
     final currentTrackIndex = tracks.indexWhere(
       (t) => t['key'] == currentAudioSection,
     );
@@ -195,7 +197,7 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
         : null;
 
     return Positioned(
-      bottom: 16,
+      bottom: 16 + navBarHeight,
       left: 16,
       right: 16,
       child: Container(

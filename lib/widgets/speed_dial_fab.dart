@@ -57,7 +57,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
     // Zatvor menu keď sa widget deaktivuje (navigácia preč)
     if (_isOpen) {
       _isOpen = false;
-      _animationController.value = 0;
+      _animationController.stop();
       // Nevoláme onOpenChanged v deactivate - spôsobuje assertion error
     }
     super.deactivate();

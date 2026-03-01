@@ -738,7 +738,9 @@ class _SpiritualExerciseDetailScreenState
                     ),
                   ),
 
-                  const SizedBox(height: 100), // Space for FAB
+                  SizedBox(
+                    height: 100 + MediaQuery.of(context).viewPadding.bottom,
+                  ), // Space for FAB + nav bar
                 ],
               ),
             ),

@@ -481,7 +481,8 @@ class _StationsOfCrossDetailScreenState
           if (!_showAudioPlayer)
             Positioned(
               right: AppSpacing.lg,
-              bottom: AppSpacing.xxl,
+              bottom:
+                  AppSpacing.xxl + MediaQuery.of(context).viewPadding.bottom,
               child: FloatingActionButton(
                 heroTag: 'stations_open_player',
                 backgroundColor: AppColors.primary,
@@ -834,10 +835,10 @@ class _StationPageViewState extends State<_StationPageView> {
           ),
         ),
         SliverPadding(
-          padding: const EdgeInsets.only(
+          padding: EdgeInsets.only(
             left: AppSpacing.lg,
             right: AppSpacing.lg,
-            bottom: 120,
+            bottom: 120 + MediaQuery.of(context).viewPadding.bottom,
           ),
           sliver: SliverToBoxAdapter(
             child: station.hasText

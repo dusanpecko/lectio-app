@@ -2,15 +2,41 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 import '../shared/app_spacing.dart';
 import '../shared/app_colors.dart';
 import '../utils/app_logger.dart';
 
-class NewsletterDetailScreen extends StatelessWidget {
+class NewsletterDetailScreen extends StatefulWidget {
   final Map<String, dynamic> newsletterData;
 
   const NewsletterDetailScreen({super.key, required this.newsletterData});
+
+  @override
+  State<NewsletterDetailScreen> createState() => _NewsletterDetailScreenState();
+}
+
+class _NewsletterDetailScreenState extends State<NewsletterDetailScreen> {
+  WebViewController? _webViewController;
+  double _webViewHeight = 400; // Initial estimate, will be updated
+  bool _webViewReady = false;
+  late final bool _isFullDocument;
+  late final String _cleanedHtml;
+
+  @override
+  void initState() {
+    super.initState();
+    final htmlContent = widget.newsletterData['html_content'] as String? ?? '';
+    _isFullDocument = _isFullHtmlDocument(htmlContent);
+
+    if (_isFullDocument) {
+      _cleanedHtml = _cleanFullHtml(htmlContent);
+      _initWebView(_cleanedHtml);
+    } else {
+      _cleanedHtml = _cleanSimpleHtml(htmlContent);
+    }
+  }
 
   String _formatDate(String? dateStr, BuildContext context) {
     if (dateStr == null) return '';
@@ -33,221 +59,317 @@ class NewsletterDetailScreen extends StatelessWidget {
         lower.contains('<head');
   }
 
-  /// Extract body content from a full HTML document
-  String _extractBodyContent(String html) {
-    // Try to extract content between <body> tags
-    final bodyStart = html.indexOf(
-      RegExp(r'<body[^>]*>', caseSensitive: false),
-    );
-    if (bodyStart == -1) return html;
-
-    final bodyTagEnd = html.indexOf('>', bodyStart);
-    if (bodyTagEnd == -1) return html;
-
-    final bodyClose = html.lastIndexOf(
-      RegExp(r'</body>', caseSensitive: false),
-    );
-    if (bodyClose == -1) return html.substring(bodyTagEnd + 1);
-
-    return html.substring(bodyTagEnd + 1, bodyClose);
-  }
-
   /// Remove Brevo template variables and auto-appended unsubscribe footer
-  String _cleanContent(String html) {
-    // Remove the auto-appended unsubscribe footer block
-    // Pattern: <hr style="..."><p style="...">...<a href="{{ unsubscribe }}">...</a>...</p>
-    var cleaned = html.replaceAll(
+  String _cleanFullHtml(String html) {
+    // Remove auto-appended content AFTER </html> tag
+    final htmlCloseIdx = html.lastIndexOf(
+      RegExp(r'</html>', caseSensitive: false),
+    );
+    var cleaned = htmlCloseIdx != -1
+        ? html.substring(0, htmlCloseIdx + 7) // Keep </html>
+        : html;
+
+    // Remove {{ unsubscribe }} from anywhere in the document
+    cleaned = cleaned.replaceAll(RegExp(r'\{\{\s*unsubscribe\s*\}\}'), '');
+
+    // Remove <a href="{{ unsubscribe }}">...</a> links
+    cleaned = cleaned.replaceAll(
       RegExp(
-        r'<hr[^>]*>\s*<p[^>]*>[^<]*<a[^>]*\{\{\s*unsubscribe\s*\}\}[^<]*</a>[^<]*</p>',
+        r'<a[^>]*href\s*=\s*"[^"]*\{\{\s*unsubscribe\s*\}\}[^"]*"[^>]*>.*?</a>',
         caseSensitive: false,
         dotAll: true,
       ),
       '',
     );
-    // Also remove standalone {{ unsubscribe }} text/links
+
+    // Inject viewport meta tag so content scales to device width
+    if (!cleaned.toLowerCase().contains('name="viewport"') &&
+        !cleaned.toLowerCase().contains("name='viewport'")) {
+      final headIdx = cleaned.indexOf(
+        RegExp(r'<head[^>]*>', caseSensitive: false),
+      );
+      if (headIdx != -1) {
+        final headEnd = cleaned.indexOf('>', headIdx) + 1;
+        cleaned =
+            '${cleaned.substring(0, headEnd)}'
+            '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">'
+            '${cleaned.substring(headEnd)}';
+      }
+    }
+
+    // Add CSS to force content to fit within viewport
+    final headCloseIdx = cleaned.indexOf(
+      RegExp(r'</head>', caseSensitive: false),
+    );
+    if (headCloseIdx != -1) {
+      cleaned =
+          '${cleaned.substring(0, headCloseIdx)}'
+          '<style>body, table { max-width: 100% !important; width: 100% !important; } '
+          'img { max-width: 100% !important; height: auto !important; } '
+          'td { word-break: break-word; }</style>'
+          '${cleaned.substring(headCloseIdx)}';
+    }
+
+    return cleaned;
+  }
+
+  /// Remove Brevo variables from simple HTML (visual editor output)
+  String _cleanSimpleHtml(String html) {
+    var cleaned = html;
+    // Remove auto-appended unsubscribe footer block
     cleaned = cleaned.replaceAll(
       RegExp(
-        r'<[^>]*\{\{\s*unsubscribe\s*\}\}[^>]*>[^<]*</[^>]*>',
+        r'<br\s*/?>?\s*<hr[^>]*>\s*<p[^>]*>.*?\{\{\s*unsubscribe\s*\}\}.*?</p>',
         caseSensitive: false,
+        dotAll: true,
       ),
       '',
     );
-    // Remove any remaining {{ unsubscribe }} plain text
+    // Remove remaining {{ unsubscribe }}
+    cleaned = cleaned.replaceAll(RegExp(r'\{\{\s*unsubscribe\s*\}\}'), '');
+    // Remove trailing empty paragraphs
     cleaned = cleaned.replaceAll(
-      RegExp(r'\{\{\s*unsubscribe\s*\}\}'),
-      '',
-    );
-    // Remove trailing empty paragraphs and hrs
-    cleaned = cleaned.replaceAll(
-      RegExp(r'(<hr[^>]*>\s*|<p>\s*</p>\s*)*$', caseSensitive: false),
+      RegExp(r'(<hr[^>]*>\s*|<p>\s*</p>\s*|<br\s*/?>)*$', caseSensitive: false),
       '',
     );
     return cleaned.trim();
   }
 
+  void _initWebView(String htmlContent) {
+    try {
+      final controller = WebViewController();
+      controller
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setBackgroundColor(Colors.transparent)
+        ..setNavigationDelegate(
+          NavigationDelegate(
+            onPageFinished: (_) async {
+              try {
+                final height = await controller.runJavaScriptReturningResult(
+                  'document.documentElement.scrollHeight',
+                );
+                final h = double.tryParse(height.toString()) ?? 400;
+                if (mounted && h > 0) {
+                  setState(() {
+                    _webViewHeight = h + 16;
+                    _webViewReady = true;
+                  });
+                }
+              } catch (e) {
+                appLogger.e('WebView height error: $e');
+                if (mounted) {
+                  setState(() {
+                    _webViewReady = true;
+                  });
+                }
+              }
+            },
+            onNavigationRequest: (request) {
+              if (request.url.startsWith('http')) {
+                _launchUrl(request.url);
+                return NavigationDecision.prevent;
+              }
+              return NavigationDecision.navigate;
+            },
+          ),
+        )
+        ..loadHtmlString(htmlContent);
+
+      _webViewController = controller;
+    } catch (e) {
+      appLogger.e('WebView init error: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final subject = newsletterData['subject'] as String? ?? '';
-    final htmlContent = newsletterData['html_content'] as String? ?? '';
+    final subject = widget.newsletterData['subject'] as String? ?? '';
+    final htmlContent = widget.newsletterData['html_content'] as String? ?? '';
     final senderName =
-        newsletterData['sender_name'] as String? ?? 'Lectio Divina';
-    final sentAt = _formatDate(newsletterData['sent_at'] as String?, context);
-    final isFullDocument = _isFullHtmlDocument(htmlContent);
-
-    // Clean content: extract body if full doc, then strip unsubscribe
-    final displayContent = _cleanContent(
-      isFullDocument ? _extractBodyContent(htmlContent) : htmlContent,
+        widget.newsletterData['sender_name'] as String? ?? 'Lectio Divina';
+    final sentAt = _formatDate(
+      widget.newsletterData['sent_at'] as String?,
+      context,
     );
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(tr('newsletter_detail')),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header: subject, sender, date
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.sm,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      appBar: AppBar(title: Text(tr('newsletter_detail'))),
+      body: _isFullDocument
+          ? _buildWebViewBody(subject, senderName, sentAt, theme)
+          : _buildSimpleBody(subject, senderName, sentAt, htmlContent, theme),
+    );
+  }
+
+  /// Full HTML email — rendered in WebView
+  Widget _buildWebViewBody(
+    String subject,
+    String senderName,
+    String sentAt,
+    ThemeData theme,
+  ) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildHeader(subject, senderName, sentAt, theme),
+          if (_webViewController != null)
+            SizedBox(
+              height: _webViewHeight,
+              child: Stack(
                 children: [
-                  Text(
-                    subject,
-                    style: theme.textTheme.titleLarge!.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.mail_outline,
-                        size: 16,
-                        color: AppColors.adaptiveCardSubtitle(context),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        senderName,
-                        style: theme.textTheme.bodySmall!.copyWith(
-                          color: AppColors.adaptiveCardSubtitle(context),
-                        ),
-                      ),
-                      if (sentAt.isNotEmpty) ...[
-                        Text(
-                          ' · ',
-                          style: theme.textTheme.bodySmall!.copyWith(
-                            color: AppColors.adaptiveCardSubtitle(context),
-                          ),
-                        ),
-                        Flexible(
-                          child: Text(
-                            sentAt,
-                            style: theme.textTheme.bodySmall!.copyWith(
-                              color: AppColors.adaptiveCardSubtitle(context),
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  const Divider(),
+                  WebViewWidget(controller: _webViewController!),
+                  if (!_webViewReady)
+                    const Center(child: CircularProgressIndicator()),
                 ],
               ),
+            )
+          else
+            const Padding(
+              padding: EdgeInsets.all(AppSpacing.xl),
+              child: Center(child: CircularProgressIndicator()),
             ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+      ),
+    );
+  }
 
-            // Show empty state if content was stripped
-            if (displayContent.isEmpty ||
-                displayContent.replaceAll(RegExp(r'<[^>]*>'), '').trim().isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Center(
+  /// Simple HTML (visual editor) — rendered with flutter_html
+  Widget _buildSimpleBody(
+    String subject,
+    String senderName,
+    String sentAt,
+    String htmlContent,
+    ThemeData theme,
+  ) {
+    final displayContent = _cleanSimpleHtml(htmlContent);
+    final hasContent =
+        displayContent.isNotEmpty &&
+        displayContent.replaceAll(RegExp(r'<[^>]*>'), '').trim().isNotEmpty;
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildHeader(subject, senderName, sentAt, theme),
+          if (!hasContent)
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Center(
+                child: Text(
+                  tr('newsletter_empty'),
+                  style: theme.textTheme.bodyMedium!.copyWith(
+                    color: AppColors.adaptiveCardSubtitle(context),
+                  ),
+                ),
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Html(
+                data: displayContent,
+                onLinkTap: (url, _, _) {
+                  if (url != null) _launchUrl(url);
+                },
+                style: {
+                  "body": Style(
+                    margin: Margins.zero,
+                    padding: HtmlPaddings.zero,
+                    fontSize: FontSize(15),
+                  ),
+                  "p": Style(
+                    lineHeight: const LineHeight(1.6),
+                    margin: Margins.only(top: 0, bottom: 8),
+                  ),
+                  "h1": Style(
+                    fontSize: FontSize(22),
+                    fontWeight: FontWeight.bold,
+                  ),
+                  "h2": Style(
+                    fontSize: FontSize(20),
+                    fontWeight: FontWeight.bold,
+                  ),
+                  "a": Style(
+                    color: AppColors.primary,
+                    textDecoration: TextDecoration.underline,
+                  ),
+                  "blockquote": Style(
+                    padding: HtmlPaddings.only(left: 12),
+                    border: const Border(
+                      left: BorderSide(color: AppColors.primary, width: 3),
+                    ),
+                    fontStyle: FontStyle.italic,
+                  ),
+                },
+              ),
+            ),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(
+    String subject,
+    String senderName,
+    String sentAt,
+    ThemeData theme,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            subject,
+            style: theme.textTheme.titleLarge!.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Icon(
+                Icons.mail_outline,
+                size: 16,
+                color: AppColors.adaptiveCardSubtitle(context),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                senderName,
+                style: theme.textTheme.bodySmall!.copyWith(
+                  color: AppColors.adaptiveCardSubtitle(context),
+                ),
+              ),
+              if (sentAt.isNotEmpty) ...[
+                Text(
+                  ' · ',
+                  style: theme.textTheme.bodySmall!.copyWith(
+                    color: AppColors.adaptiveCardSubtitle(context),
+                  ),
+                ),
+                Flexible(
                   child: Text(
-                    tr('newsletter_empty'),
-                    style: theme.textTheme.bodyMedium!.copyWith(
+                    sentAt,
+                    style: theme.textTheme.bodySmall!.copyWith(
                       color: AppColors.adaptiveCardSubtitle(context),
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              )
-            else
-            // HTML content — rendered without Card wrapper for full documents
-            Html(
-              data: displayContent,
-              onLinkTap: (url, _, _) {
-                if (url != null) {
-                  _launchUrl(url);
-                }
-              },
-              style: {
-                "body": Style(
-                  margin: Margins.zero,
-                  padding: HtmlPaddings.zero,
-                  fontSize: FontSize(15),
-                ),
-                "p": Style(
-                  lineHeight: const LineHeight(1.6),
-                  margin: Margins.only(top: 0, bottom: 8),
-                ),
-                "div": Style(
-                  lineHeight: const LineHeight(1.6),
-                  margin: Margins.zero,
-                ),
-                "table": Style(
-                  margin: Margins.zero,
-                  padding: HtmlPaddings.zero,
-                ),
-                "td": Style(padding: HtmlPaddings.zero),
-                "h1": Style(
-                  fontSize: FontSize(22),
-                  fontWeight: FontWeight.bold,
-                  margin: Margins.only(top: 16, bottom: 8),
-                ),
-                "h2": Style(
-                  fontSize: FontSize(20),
-                  fontWeight: FontWeight.bold,
-                  margin: Margins.only(top: 14, bottom: 6),
-                ),
-                "h3": Style(
-                  fontSize: FontSize(18),
-                  fontWeight: FontWeight.bold,
-                  margin: Margins.only(top: 12, bottom: 4),
-                ),
-                "a": Style(
-                  color: AppColors.primary,
-                  textDecoration: TextDecoration.underline,
-                ),
-                "img": Style(margin: Margins.only(top: 8, bottom: 8)),
-                "hr": Style(
-                  margin: Margins.only(top: 8, bottom: 8),
-                  border: const Border(
-                    bottom: BorderSide(color: Colors.grey, width: 1),
-                  ),
-                ),
-                "ul": Style(margin: Margins.only(left: 16, top: 4, bottom: 4)),
-                "ol": Style(margin: Margins.only(left: 16, top: 4, bottom: 4)),
-                "blockquote": Style(
-                  margin: Margins.only(left: 16, top: 8, bottom: 8),
-                  padding: HtmlPaddings.only(left: 12),
-                  border: const Border(
-                    left: BorderSide(color: AppColors.primary, width: 3),
-                  ),
-                  fontStyle: FontStyle.italic,
-                ),
-              },
-            ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-        ),
+              ],
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const Divider(),
+        ],
       ),
     );
   }

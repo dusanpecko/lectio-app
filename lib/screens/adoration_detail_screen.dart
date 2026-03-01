@@ -484,11 +484,13 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
                             ),
                             child: _buildNavigationButtons(theme),
                           ),
-                          // Bottom padding for floating player
+                          // Bottom padding for floating player + nav bar
                           SizedBox(
-                            height: _showAudioPlayer
-                                ? 120 + AppSpacing.xl
-                                : AppSpacing.xl,
+                            height:
+                                (_showAudioPlayer
+                                    ? 120 + AppSpacing.xl
+                                    : AppSpacing.xl) +
+                                MediaQuery.of(context).viewPadding.bottom,
                           ),
                         ],
                       ),
@@ -555,7 +557,8 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
           if (!_showAudioPlayer && hasSectionAudios)
             Positioned(
               right: AppSpacing.lg,
-              bottom: AppSpacing.xxl,
+              bottom:
+                  AppSpacing.xxl + MediaQuery.of(context).viewPadding.bottom,
               child: FloatingActionButton(
                 heroTag: 'adoration_open_player',
                 backgroundColor: AppColors.primary,

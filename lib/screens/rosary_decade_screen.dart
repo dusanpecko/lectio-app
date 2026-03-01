@@ -240,7 +240,11 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
                         ),
                         child: _buildNavigationButtons(theme, categoryColor),
                       ),
-                      const SizedBox(height: AppSpacing.xl),
+                      SizedBox(
+                        height:
+                            AppSpacing.xl +
+                            MediaQuery.of(context).viewPadding.bottom,
+                      ),
                     ],
                   ),
                 ],
