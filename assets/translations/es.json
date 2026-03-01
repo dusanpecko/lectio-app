@@ -942,6 +942,7 @@
   "eucharistic_adoration": "Adoración Eucarística",
   "unknown_author": "Autor desconocido",
   "introductory_prayers": "Oraciones introductorias",
+  "refresh": "Actualizar",
   "image": "Imagen",
   "common": {
     "refresh": "Actualizar",
@@ -1110,5 +1111,10 @@
   "stations_music_title": "Música del Vía Crucis",
   "stations_music_off": "Sin música",
   "stations_music_1": "Música 1 – Dramatic Signals",
-  "stations_music_2": "Música 2 – Vía Crucis"
+  "stations_music_2": "Música 2 – Vía Crucis",
+  "newsletter_title": "Boletines",
+  "newsletter_detail": "Detalle del boletín",
+  "newsletter_empty": "No hay boletines disponibles",
+  "newsletter_load_failed": "Error al cargar boletines",
+  "newsletter_new": "Nuevo boletín"
 }

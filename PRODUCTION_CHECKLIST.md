@@ -165,29 +165,37 @@
   - [x] Dots navigation indicator
   - [x] Next/Skip buttons
 
-### Roadmap v10.1+
-- [ ] **Krížová cesta** - Nová sekcia s PageView swipe navigáciou, hero obrázkami zastavení, kolapsovateľný SliverAppBar, bodkové indikátory, rímske čísla, HTML obsah s app fontom, lectio-štýlový audio prehrávač s `ConcatenatingAudioSource` playlistom, lock screen artwork, carousel karta na home screene.
-- [ ] **Audio player lifecycle (staršie Android)** - Na starších Android zariadeniach (8/9 a nižšie) sa media player nezatvára po zatvorení aplikácie na zamknutej obrazovke. Možná príčina: nesprávne spravovaný AudioSession / MediaSession lifecycle. Na preskúmanie: správanie `just_audio` / `audio_service` pluginu pri lifecycle eventoch.
+### Roadmap v10.1+ - marec 2026
+- [x] **Krížová cesta** - Nová sekcia s PageView swipe navigáciou, hero obrázkami zastavení, kolapsovateľný SliverAppBar, bodkové indikátory, rímske čísla, HTML obsah s app fontom, lectio-štýlový audio prehrávač s `ConcatenatingAudioSource` playlistom, lock screen artwork, carousel karta na home screene.
+- [x] **Audio player lifecycle (staršie Android)** - Na starších Android zariadeniach (8/9 a nižšie) sa media player nezatvára po zatvorení aplikácie na zamknutej obrazovke. Možná príčina: nesprávne spravovaný AudioSession / MediaSession lifecycle. Na preskúmanie: správanie `just_audio` / `audio_service` pluginu pri lifecycle eventoch.
 - [x] **Edge-to-edge zobrazenie** - ✅ Pridané `values-v35`/`values-night-v35` štýly, odstránené deprecated volania z nášho kódu. Zvyšné deprecated API volania sú interné vo Flutter frameworku (`FlutterFragmentActivity`, `PlatformPlugin`) a Google Play Services — opravia sa v budúcich verziách.
+- [ ] **Stránka newsletterov** - Nová sekcia v aplikácii pre zobrazenie newsletterov (zoznam + detail)
+- [ ] **Notifikácie pri novom newsletteri** - Push notifikácia používateľom keď sa objaví nový newsletter
 
-### Roadmap v10.2+
+### Roadmap v10.2+ apríl 2026
 - [ ] **FCM Token Cleanup Cron** - periodická očista starých/neplatných tokenov (90+ dní neaktívne)
 - [ ] **Ruženec - záložky a zdieľanie** - zakomentované (TODO)
 - [ ] **Ruženec - background audio** - nemá mini player ani background playback
 - [ ] **Základné modlitby** - zoznam (Otčenáš, Zdravas'...)
+- [ ] **Brazílska portugalčina (pt-BR) - obsah** - tvorba liturgického kalendára, lectio-sources, krížové cesty, adorácie, modlitby
+- [ ] **Jednoduché návody** - krátke videá alebo pop-up okná „Vedeli ste, že..." (onboarding tipy, feature discovery)
 
-### Roadmap v10.3+
+### Roadmap v10.3+ máj 2026
 - [ ] **Streak & Stats** - sledovanie pokroku, kalendár aktivity
 - [ ] **Liturgický kalendár** - svätec dňa na home screene
 - [ ] **Inbox** - systém správ od administrátorov
 - [ ] **Semantics labels pre screen reader** - obrázky (`semanticLabel`), tlačidlá (`Semantics` widgety)
+- [ ] **Brazílska portugalčina (pt-BR) - web + marketing** - preklad webu parochia + marketingová kampaň zacielená na Brazíliu
+- [ ] **Francúzština (fr-FR) - obsah** - tvorba liturgického kalendára, lectio-sources, krížové cesty, adorácie, modlitby
 
-### Roadmap v10.4+
+### Roadmap v10.4+ jún 2026
 - [ ] **Banner na home screen** - dynamický widget s backend admin
 - [ ] **Internacionalizácia** - infraštruktúra pre FR, PT, DE, PL, IT, CZ + export textov
 - [ ] **Refactoring** - profile_screen (~2551), home_screen (~2054), lectio_screen rozdelenie
+- [ ] **Brazílska portugalčina (pt-BR) - preklad aplikácie** - lokalizácia všetkých stringov v mobilnej aplikácii
+- [ ] **Francúzština (fr-FR) - web + aplikácia + marketing** - preklad webu, lokalizácia mobilnej aplikácie, marketingová kampaň
 
-### Roadmap v10.5+ 🎓
+### Roadmap v10.5+ 🎓 september 2026
 - [ ] **Teologické prehĺbenie (Magisterium AI)** - Voliteľná sekcia pod Actio s AI-generovaným teologickým komentárom k dennému evanjeliu. Integrácia Magisterium API (28 000+ cirkevných dokumentov) + ChatGPT/Claude pre prepis do štruktúrovaných 4 blokov: Teologické jadro, Cirkevní Otcovia, KKC, Dokumenty Cirkvi. Generovanie 1x denne per jazyk, cache v DB, editovateľné adminom. **Nie chatbot interface** - len akademické prehĺbenie s povinnými zdrojmi. Detaily: `docs/TEOLOGICKE_PREHLBENIE_MAGISTERIUM.md`  - ✅ **Bude teologická validácia** - Draft → Teológ schvaľuje → Publikácia
   - ✅ **Budget pokryje API costs** - Kalkulácia 365 dní × 5 jazykov, premium model €2-3/mesiac
   - ✅ **Users to budú skutočne používať** - Pilot 100-200 users, 2-4 týždne, meranie engagement

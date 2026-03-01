@@ -16,6 +16,7 @@ import 'package:lectio_divina/screens/profile_screen.dart';
 import 'package:lectio_divina/screens/rosary_category_screen.dart';
 import 'package:lectio_divina/screens/adoration_screen.dart';
 import 'package:lectio_divina/screens/settings_screen.dart';
+import 'package:lectio_divina/screens/newsletter_list_screen.dart';
 import 'package:lectio_divina/shared/app_colors.dart';
 
 import 'package:lectio_divina/utils/app_logger.dart';
@@ -114,6 +115,9 @@ class NotificationController {
         break;
       case 'news':
         targetScreen = const NewsListScreen();
+        break;
+      case 'newsletters':
+        targetScreen = const NewsletterListScreen();
         break;
       case 'donation':
         targetScreen = const DonationScreen();

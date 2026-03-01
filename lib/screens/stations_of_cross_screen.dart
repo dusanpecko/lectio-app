@@ -59,6 +59,7 @@ class _StationsOfCrossScreenState extends State<StationsOfCrossScreen> {
   void _navigateToDetail(StationsOfCross item) {
     Navigator.of(context).push(
       MaterialPageRoute(
+        settings: RouteSettings(name: '/stations-of-cross/${item.id}'),
         builder: (context) => StationsOfCrossDetailScreen(
           stationsOfCrossId: item.id,
           initialData: item,

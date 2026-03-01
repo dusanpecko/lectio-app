@@ -28,6 +28,7 @@ import 'spiritual_exercises_list_screen.dart';
 import 'donation_screen.dart';
 import 'adoration_screen.dart';
 import 'stations_of_cross_screen.dart';
+import 'newsletter_list_screen.dart';
 import '../shared/app_spacing.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -1221,6 +1222,13 @@ class _HomeScreenState extends State<HomeScreen> {
             isOffline: _isOffline,
           ),
           const SizedBox(width: AppSpacing.md),
+          // 7c. Newslettre
+          _ModuleButton(
+            labelKey: 'newsletter_title',
+            icon: Icons.mail_rounded,
+            isOffline: _isOffline,
+          ),
+          const SizedBox(width: AppSpacing.md),
           // 8. O aplikácii
           _ModuleButton(
             labelKey: 'about_title',
@@ -2208,7 +2216,12 @@ class _ModuleButton extends StatelessWidget {
   final bool isOffline;
 
   // Moduly vyžadujúce internet
-  static const _onlineOnlyModules = {'pray_intentions', 'news', 'notes_title'};
+  static const _onlineOnlyModules = {
+    'pray_intentions',
+    'news',
+    'notes_title',
+    'newsletter_title',
+  };
 
   bool get _isDisabled => isOffline && _onlineOnlyModules.contains(labelKey);
 
@@ -2311,6 +2324,16 @@ class _ModuleButton extends StatelessWidget {
           MaterialPageRoute(
             builder: (context) => const NewsListScreen(),
             settings: const RouteSettings(name: '/news'),
+          ),
+        );
+        break;
+
+      case 'newsletter_title':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const NewsletterListScreen(),
+            settings: const RouteSettings(name: '/newsletters'),
           ),
         );
         break;

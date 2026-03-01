@@ -942,6 +942,7 @@
   "eucharistic_adoration": "Eucharistická adorácia",
   "unknown_author": "Neznámy autor",
   "introductory_prayers": "Úvodné modlitby",
+  "refresh": "Obnoviť",
   "image": "Obrázok",
   "common": {
     "refresh": "Obnoviť",
@@ -1110,5 +1111,10 @@
   "stations_music_title": "Hudba pri krížovej ceste",
   "stations_music_off": "Bez hudby",
   "stations_music_1": "Hudba 1 – Dramatic Signals",
-  "stations_music_2": "Hudba 2 – Krížová cesta"
+  "stations_music_2": "Hudba 2 – Krížová cesta",
+  "newsletter_title": "Newslettre",
+  "newsletter_detail": "Detail newslettra",
+  "newsletter_empty": "Žiadne newslettre nie sú dostupné",
+  "newsletter_load_failed": "Nepodarilo sa načítať newslettre",
+  "newsletter_new": "Nový newsletter"
 }

@@ -185,7 +185,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
       if (a.introAudio?.isNotEmpty == true)
         {
           'key': 'intro',
-          'label': tr('introduction'),
+          'label': tr('audio_intro'),
           'url': a.introAudio!,
           'icon': Icons.play_circle_outline,
           'color': AppColors.primary,
@@ -422,6 +422,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
   void _navigateToAdoration(String adorationId, Adoration adoration) {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
+        settings: RouteSettings(name: '/adoration/$adorationId'),
         builder: (context) => AdorationDetailScreen(
           adorationId: adorationId,
           initialAdoration: adoration,
@@ -891,7 +892,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                tr('introduction'),
+                tr('audio_intro'),
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,

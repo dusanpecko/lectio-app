@@ -942,6 +942,7 @@
   "eucharistic_adoration": "Eucharistic Adoration",
   "unknown_author": "Unknown author",
   "introductory_prayers": "Introductory prayers",
+  "refresh": "Refresh",
   "image": "Image",
   "common": {
     "refresh": "Refresh",
@@ -1110,5 +1111,10 @@
   "stations_music_title": "Stations of the Cross Music",
   "stations_music_off": "No music",
   "stations_music_1": "Music 1 – Dramatic Signals",
-  "stations_music_2": "Music 2 – Way of the Cross"
+  "stations_music_2": "Music 2 – Way of the Cross",
+  "newsletter_title": "Newsletters",
+  "newsletter_detail": "Newsletter detail",
+  "newsletter_empty": "No newsletters available",
+  "newsletter_load_failed": "Failed to load newsletters",
+  "newsletter_new": "New newsletter"
 }
