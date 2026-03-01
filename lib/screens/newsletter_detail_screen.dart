@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../shared/app_spacing.dart';
@@ -53,6 +52,39 @@ class NewsletterDetailScreen extends StatelessWidget {
     return html.substring(bodyTagEnd + 1, bodyClose);
   }
 
+  /// Remove Brevo template variables and auto-appended unsubscribe footer
+  String _cleanContent(String html) {
+    // Remove the auto-appended unsubscribe footer block
+    // Pattern: <hr style="..."><p style="...">...<a href="{{ unsubscribe }}">...</a>...</p>
+    var cleaned = html.replaceAll(
+      RegExp(
+        r'<hr[^>]*>\s*<p[^>]*>[^<]*<a[^>]*\{\{\s*unsubscribe\s*\}\}[^<]*</a>[^<]*</p>',
+        caseSensitive: false,
+        dotAll: true,
+      ),
+      '',
+    );
+    // Also remove standalone {{ unsubscribe }} text/links
+    cleaned = cleaned.replaceAll(
+      RegExp(
+        r'<[^>]*\{\{\s*unsubscribe\s*\}\}[^>]*>[^<]*</[^>]*>',
+        caseSensitive: false,
+      ),
+      '',
+    );
+    // Remove any remaining {{ unsubscribe }} plain text
+    cleaned = cleaned.replaceAll(
+      RegExp(r'\{\{\s*unsubscribe\s*\}\}'),
+      '',
+    );
+    // Remove trailing empty paragraphs and hrs
+    cleaned = cleaned.replaceAll(
+      RegExp(r'(<hr[^>]*>\s*|<p>\s*</p>\s*)*$', caseSensitive: false),
+      '',
+    );
+    return cleaned.trim();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -63,27 +95,14 @@ class NewsletterDetailScreen extends StatelessWidget {
     final sentAt = _formatDate(newsletterData['sent_at'] as String?, context);
     final isFullDocument = _isFullHtmlDocument(htmlContent);
 
+    // Clean content: extract body if full doc, then strip unsubscribe
+    final displayContent = _cleanContent(
+      isFullDocument ? _extractBodyContent(htmlContent) : htmlContent,
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(tr('newsletter_detail')),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () {
-              // Strip HTML tags for share text
-              final plainText = htmlContent
-                  .replaceAll(RegExp(r'<[^>]*>'), '')
-                  .replaceAll(RegExp(r'\s+'), ' ')
-                  .trim();
-              final shareText = plainText.length > 300
-                  ? '${plainText.substring(0, 297)}...'
-                  : plainText;
-              SharePlus.instance.share(
-                ShareParams(text: '$subject\n\n$shareText'),
-              );
-            },
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -146,11 +165,24 @@ class NewsletterDetailScreen extends StatelessWidget {
               ),
             ),
 
+            // Show empty state if content was stripped
+            if (displayContent.isEmpty ||
+                displayContent.replaceAll(RegExp(r'<[^>]*>'), '').trim().isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Center(
+                  child: Text(
+                    tr('newsletter_empty'),
+                    style: theme.textTheme.bodyMedium!.copyWith(
+                      color: AppColors.adaptiveCardSubtitle(context),
+                    ),
+                  ),
+                ),
+              )
+            else
             // HTML content — rendered without Card wrapper for full documents
             Html(
-              data: isFullDocument
-                  ? _extractBodyContent(htmlContent)
-                  : htmlContent,
+              data: displayContent,
               onLinkTap: (url, _, _) {
                 if (url != null) {
                   _launchUrl(url);
