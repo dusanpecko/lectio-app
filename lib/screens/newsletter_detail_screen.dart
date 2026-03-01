@@ -26,6 +26,33 @@ class NewsletterDetailScreen extends StatelessWidget {
     }
   }
 
+  /// Detect if content is a full HTML document (email template)
+  bool _isFullHtmlDocument(String html) {
+    final lower = html.trimLeft().toLowerCase();
+    return lower.startsWith('<!doctype') ||
+        lower.startsWith('<html') ||
+        lower.contains('<head');
+  }
+
+  /// Extract body content from a full HTML document
+  String _extractBodyContent(String html) {
+    // Try to extract content between <body> tags
+    final bodyStart = html.indexOf(
+      RegExp(r'<body[^>]*>', caseSensitive: false),
+    );
+    if (bodyStart == -1) return html;
+
+    final bodyTagEnd = html.indexOf('>', bodyStart);
+    if (bodyTagEnd == -1) return html;
+
+    final bodyClose = html.lastIndexOf(
+      RegExp(r'</body>', caseSensitive: false),
+    );
+    if (bodyClose == -1) return html.substring(bodyTagEnd + 1);
+
+    return html.substring(bodyTagEnd + 1, bodyClose);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -34,6 +61,7 @@ class NewsletterDetailScreen extends StatelessWidget {
     final senderName =
         newsletterData['sender_name'] as String? ?? 'Lectio Divina';
     final sentAt = _formatDate(newsletterData['sent_at'] as String?, context);
+    final isFullDocument = _isFullHtmlDocument(htmlContent);
 
     return Scaffold(
       appBar: AppBar(
@@ -58,137 +86,134 @@ class NewsletterDetailScreen extends StatelessWidget {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header card
-            Card(
-              elevation: AppElevation.high,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.lg),
+            // Header: subject, sender, date
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.sm,
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Subject / title
-                    Text(
-                      subject,
-                      style: theme.textTheme.titleLarge!.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    subject,
+                    style: theme.textTheme.titleLarge!.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    // Sender + date
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.mail_outline,
-                          size: 16,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.mail_outline,
+                        size: 16,
+                        color: AppColors.adaptiveCardSubtitle(context),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        senderName,
+                        style: theme.textTheme.bodySmall!.copyWith(
                           color: AppColors.adaptiveCardSubtitle(context),
                         ),
-                        const SizedBox(width: 4),
+                      ),
+                      if (sentAt.isNotEmpty) ...[
                         Text(
-                          senderName,
+                          ' · ',
                           style: theme.textTheme.bodySmall!.copyWith(
                             color: AppColors.adaptiveCardSubtitle(context),
                           ),
                         ),
-                        if (sentAt.isNotEmpty) ...[
-                          Text(
-                            ' · ',
+                        Flexible(
+                          child: Text(
+                            sentAt,
                             style: theme.textTheme.bodySmall!.copyWith(
                               color: AppColors.adaptiveCardSubtitle(context),
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          Flexible(
-                            child: Text(
-                              sentAt,
-                              style: theme.textTheme.bodySmall!.copyWith(
-                                color: AppColors.adaptiveCardSubtitle(context),
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                        ),
                       ],
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    const Divider(),
-                    const SizedBox(height: AppSpacing.md),
-                    // HTML content
-                    Html(
-                      data: htmlContent,
-                      onLinkTap: (url, _, _) {
-                        if (url != null) {
-                          _launchUrl(url);
-                        }
-                      },
-                      style: {
-                        "body": Style(
-                          margin: Margins.zero,
-                          padding: HtmlPaddings.zero,
-                          fontSize: FontSize(16),
-                        ),
-                        "p": Style(
-                          lineHeight: const LineHeight(1.6),
-                          margin: Margins.only(top: 0, bottom: 8),
-                        ),
-                        "div": Style(
-                          lineHeight: const LineHeight(1.6),
-                          margin: Margins.zero,
-                        ),
-                        "h1": Style(
-                          fontSize: FontSize(22),
-                          fontWeight: FontWeight.bold,
-                          margin: Margins.only(top: 16, bottom: 8),
-                        ),
-                        "h2": Style(
-                          fontSize: FontSize(20),
-                          fontWeight: FontWeight.bold,
-                          margin: Margins.only(top: 14, bottom: 6),
-                        ),
-                        "h3": Style(
-                          fontSize: FontSize(18),
-                          fontWeight: FontWeight.bold,
-                          margin: Margins.only(top: 12, bottom: 4),
-                        ),
-                        "a": Style(
-                          color: AppColors.primary,
-                          textDecoration: TextDecoration.underline,
-                        ),
-                        "img": Style(margin: Margins.only(top: 8, bottom: 8)),
-                        "hr": Style(
-                          margin: Margins.only(top: 8, bottom: 8),
-                          border: const Border(
-                            bottom: BorderSide(color: Colors.grey, width: 1),
-                          ),
-                        ),
-                        "ul": Style(
-                          margin: Margins.only(left: 16, top: 4, bottom: 4),
-                        ),
-                        "ol": Style(
-                          margin: Margins.only(left: 16, top: 4, bottom: 4),
-                        ),
-                        "blockquote": Style(
-                          margin: Margins.only(left: 16, top: 8, bottom: 8),
-                          padding: HtmlPaddings.only(left: 12),
-                          border: const Border(
-                            left: BorderSide(
-                              color: AppColors.primary,
-                              width: 3,
-                            ),
-                          ),
-                          fontStyle: FontStyle.italic,
-                        ),
-                      },
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  const Divider(),
+                ],
               ),
             ),
+
+            // HTML content — rendered without Card wrapper for full documents
+            Html(
+              data: isFullDocument
+                  ? _extractBodyContent(htmlContent)
+                  : htmlContent,
+              onLinkTap: (url, _, _) {
+                if (url != null) {
+                  _launchUrl(url);
+                }
+              },
+              style: {
+                "body": Style(
+                  margin: Margins.zero,
+                  padding: HtmlPaddings.zero,
+                  fontSize: FontSize(15),
+                ),
+                "p": Style(
+                  lineHeight: const LineHeight(1.6),
+                  margin: Margins.only(top: 0, bottom: 8),
+                ),
+                "div": Style(
+                  lineHeight: const LineHeight(1.6),
+                  margin: Margins.zero,
+                ),
+                "table": Style(
+                  margin: Margins.zero,
+                  padding: HtmlPaddings.zero,
+                ),
+                "td": Style(padding: HtmlPaddings.zero),
+                "h1": Style(
+                  fontSize: FontSize(22),
+                  fontWeight: FontWeight.bold,
+                  margin: Margins.only(top: 16, bottom: 8),
+                ),
+                "h2": Style(
+                  fontSize: FontSize(20),
+                  fontWeight: FontWeight.bold,
+                  margin: Margins.only(top: 14, bottom: 6),
+                ),
+                "h3": Style(
+                  fontSize: FontSize(18),
+                  fontWeight: FontWeight.bold,
+                  margin: Margins.only(top: 12, bottom: 4),
+                ),
+                "a": Style(
+                  color: AppColors.primary,
+                  textDecoration: TextDecoration.underline,
+                ),
+                "img": Style(margin: Margins.only(top: 8, bottom: 8)),
+                "hr": Style(
+                  margin: Margins.only(top: 8, bottom: 8),
+                  border: const Border(
+                    bottom: BorderSide(color: Colors.grey, width: 1),
+                  ),
+                ),
+                "ul": Style(margin: Margins.only(left: 16, top: 4, bottom: 4)),
+                "ol": Style(margin: Margins.only(left: 16, top: 4, bottom: 4)),
+                "blockquote": Style(
+                  margin: Margins.only(left: 16, top: 8, bottom: 8),
+                  padding: HtmlPaddings.only(left: 12),
+                  border: const Border(
+                    left: BorderSide(color: AppColors.primary, width: 3),
+                  ),
+                  fontStyle: FontStyle.italic,
+                ),
+              },
+            ),
+            const SizedBox(height: AppSpacing.xl),
           ],
         ),
       ),
