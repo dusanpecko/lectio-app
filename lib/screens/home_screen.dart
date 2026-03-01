@@ -697,8 +697,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             // Backdrop pre FAB menu - zachytáva kliky mimo menu
-            if (_isFabOpen)
-              Positioned.fill(
+            Positioned.fill(
+              child: IgnorePointer(
+                ignoring: !_isFabOpen,
                 child: GestureDetector(
                   onTap: () {
                     debugPrint('🔄 Backdrop tapped - closing FAB menu');
@@ -708,6 +709,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Container(color: Colors.transparent),
                 ),
               ),
+            ),
             // SpeedDial FAB
             Positioned(
               right: 16,
