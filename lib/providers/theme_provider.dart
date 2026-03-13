@@ -16,7 +16,7 @@ class ThemeProvider with ChangeNotifier {
   double _fontSize = 16.0;
 
   // Language Settings
-  String _languageCode = 'system'; // 'system', 'sk', 'en'
+  String _languageCode = 'system'; // 'system', 'sk', 'en', 'es'
 
   // Loading state
   bool _isInitialized = false;
@@ -135,7 +135,7 @@ class ThemeProvider with ChangeNotifier {
     } else {
       // Pre 'system' použij systémový jazyk
       final systemLocale = WidgetsBinding.instance.platformDispatcher.locale;
-      final supportedLanguages = ['sk', 'en'];
+      final supportedLanguages = ['sk', 'en', 'es'];
       final systemLang = supportedLanguages.contains(systemLocale.languageCode)
           ? systemLocale.languageCode
           : 'sk';

@@ -1580,6 +1580,85 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _confirmCancelSubscription(Subscription sub) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('profile.subscription.cancel_title'.tr()),
+        content: Text(
+          'profile.subscription.cancel_message'.tr(args: [
+            DateFormat('dd.MM.yyyy').format(sub.currentPeriodEnd),
+          ]),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('cancel'.tr()),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text('profile.subscription.cancel_confirm'.tr()),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _cancelSubscription(sub);
+    }
+  }
+
+  Future<void> _cancelSubscription(Subscription sub) async {
+    try {
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session == null) return;
+
+      final backendUrl =
+          dotenv.env['NEXT_PUBLIC_BACKEND_URL'] ?? 'https://www.lectio.one';
+
+      final response = await http.post(
+        Uri.parse('$backendUrl/api/cancel-subscription'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${session.accessToken}',
+        },
+        body: jsonEncode({'subscriptionId': sub.id}),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('profile.subscription.cancel_success'.tr()),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Refresh subscriptions
+        await _fetchSubscriptions();
+        setState(() {});
+      } else {
+        final data = jsonDecode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(data['error'] ?? 'profile.subscription.cancel_error'.tr()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('profile.subscription.cancel_error'.tr()),
+          backgroundColor: Colors.red,
+        ),
+      );
+      appLogger.e('Error canceling subscription: $e');
+    }
+  }
+
   Widget _buildSubscriptionsCard(ThemeData theme) {
     final theme = Theme.of(context);
     return Card(
@@ -1679,6 +1758,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 '${'profile.subscription.cancels_on'.tr()} ${DateFormat('dd.MM.yyyy').format(sub.currentPeriodEnd)}',
                 style: theme.textTheme.bodySmall!.copyWith(
                   color: Colors.yellow.shade800,
+                ),
+              ),
+            ),
+          ],
+          if (!sub.cancelAtPeriodEnd && sub.status == 'active') ...[
+            const SizedBox(height: AppSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _confirmCancelSubscription(sub),
+                icon: const Icon(Icons.cancel_outlined, size: 18),
+                label: Text('profile.subscription.cancel_button'.tr()),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red.shade700,
+                  side: BorderSide(color: Colors.red.shade300),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                 ),
               ),
             ),

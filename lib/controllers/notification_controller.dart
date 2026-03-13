@@ -18,6 +18,7 @@ import 'package:lectio_divina/screens/adoration_screen.dart';
 import 'package:lectio_divina/screens/settings_screen.dart';
 import 'package:lectio_divina/screens/newsletter_list_screen.dart';
 import 'package:lectio_divina/shared/app_colors.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:lectio_divina/utils/app_logger.dart';
 import 'package:lectio_divina/shared/app_spacing.dart';
@@ -125,6 +126,13 @@ class NotificationController {
       case 'feedback':
         targetScreen = const FeedbackScreen();
         break;
+      case 'url':
+        // Deep link na externý URL z screen_params
+        final url = params?['url'] as String?;
+        if (url != null) {
+          _openUrl(url);
+        }
+        return;
       default:
         _logger.w('Unknown screen for deep link: $screen');
         return;
@@ -136,6 +144,21 @@ class NotificationController {
         settings: RouteSettings(name: '/$screen'),
       ),
     );
+  }
+
+  /// Otvorí externý URL (deep link z notifikácie)
+  Future<void> _openUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        _logger.i('🔗 Opened URL from notification: $url');
+      } else {
+        _logger.w('Cannot launch URL: $url');
+      }
+    } catch (e) {
+      _logger.e('Error opening URL: $e');
+    }
   }
 
   /// Vyčistí badge na aplikačnej ikone (iOS)
@@ -163,6 +186,13 @@ class NotificationController {
       // Priamo naviguj podľa screen parametra, bez dialógu
       final screen = message.data['screen'] as String?;
       final screenParams = message.data['screen_params'] as String?;
+      final url = message.data['url'] as String?;
+
+      // Ak je URL, otvor priamo
+      if (url != null) {
+        _openUrl(url);
+        return;
+      }
 
       if (screen != null && navigatorKey.currentContext != null) {
         final currentRoute = ModalRoute.of(
@@ -197,6 +227,14 @@ class NotificationController {
 
       // Parse payload
       final data = jsonDecode(payload);
+
+      // Ak je URL, otvor priamo
+      final url = data['url'] as String?;
+      if (url != null) {
+        _logger.i('📱 Notification tap - opening URL: $url');
+        _openUrl(url);
+        return;
+      }
 
       // FCM notifikácie majú 'screen' field — naviguj priamo
       final screen = data['screen'] as String?;

@@ -124,51 +124,9 @@ Future<void> main() async {
   // Supabase
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
 
-  // Lokálne notifikácie - NAJPRV nastav callback, POTOM inicializuj
-  try {
-    _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    _logger.i('🔧 Setting up LocalNotificationsService...');
-    _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
-    // KRITICKÉ: Najprv nastav callback, potom inicializuj!
-    LocalNotificationsService.instance.setNotificationCallback(
-      NotificationController.instance.handleLocalNotificationTap,
-    );
-    _logger.i('✅ Notification callback set BEFORE initialization');
-
-    await LocalNotificationsService.instance.initialize();
-    _logger.i('✅ LocalNotificationsService initialized successfully');
-
-    // NOTE: Audio initialization moved to main() with JustAudioBackground.init()
-
-    // Inicializácia Umami Analytics
-    try {
-      await UmamiAnalyticsService().initialize();
-      _logger.i('✅ UmamiAnalyticsService initialized successfully');
-    } catch (e) {
-      _logger.e('❌ Error initializing UmamiAnalyticsService: $e');
-    }
-
-    // Inicializácia Connectivity Service
-    try {
-      await ConnectivityService.instance.initialize();
-      _logger.i('✅ ConnectivityService initialized successfully');
-    } catch (e) {
-      _logger.e('❌ Error initializing ConnectivityService: $e');
-    }
-
-    // Inicializácia AudioDownloadService
-    try {
-      await AudioDownloadService.instance.initialize();
-      _logger.i('✅ AudioDownloadService initialized successfully');
-    } catch (e) {
-      _logger.e('❌ Error initializing AudioDownloadService: $e');
-    }
-
-    _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  } catch (e) {
-    _logger.e('❌ Error initializing LocalNotificationsService: $e');
-  }
+  // NOTE: LocalNotificationsService, UmamiAnalytics, ConnectivityService,
+  // AudioDownloadService are deferred to _FCMInitializerState to reduce
+  // startup time and avoid ANR on slow GPUs (Impeller shader compilation).
 
   // Inicializuj ThemeProvider
   final themeProvider = ThemeProvider();
@@ -240,6 +198,7 @@ class FCMInitializer extends StatefulWidget {
 class _FCMInitializerState extends State<FCMInitializer>
     with WidgetsBindingObserver {
   StreamSubscription<RemoteMessage>? _openedAppSub;
+  bool _deferredInitDone = false;
 
   @override
   void initState() {
@@ -249,6 +208,48 @@ class _FCMInitializerState extends State<FCMInitializer>
 
     // Vyčisti badge pri štarte
     NotificationController.instance.clearAppBadge();
+
+    // Deferred init — runs after first frame to avoid ANR on slow GPUs
+    _initDeferredServices();
+  }
+
+  /// Initialize non-critical services after runApp() to reduce cold-start time.
+  /// This prevents CPU contention with Impeller shader compilation on the
+  /// raster thread, which was causing ANR on MediaTek and other slow GPUs.
+  Future<void> _initDeferredServices() async {
+    if (_deferredInitDone) return;
+    _deferredInitDone = true;
+
+    try {
+      LocalNotificationsService.instance.setNotificationCallback(
+        NotificationController.instance.handleLocalNotificationTap,
+      );
+      await LocalNotificationsService.instance.initialize();
+      _logger.i('✅ LocalNotificationsService initialized (deferred)');
+    } catch (e) {
+      _logger.e('❌ Error initializing LocalNotificationsService: $e');
+    }
+
+    try {
+      await UmamiAnalyticsService().initialize();
+      _logger.i('✅ UmamiAnalyticsService initialized (deferred)');
+    } catch (e) {
+      _logger.e('❌ Error initializing UmamiAnalyticsService: $e');
+    }
+
+    try {
+      await ConnectivityService.instance.initialize();
+      _logger.i('✅ ConnectivityService initialized (deferred)');
+    } catch (e) {
+      _logger.e('❌ Error initializing ConnectivityService: $e');
+    }
+
+    try {
+      await AudioDownloadService.instance.initialize();
+      _logger.i('✅ AudioDownloadService initialized (deferred)');
+    } catch (e) {
+      _logger.e('❌ Error initializing AudioDownloadService: $e');
+    }
   }
 
   @override

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
@@ -15,6 +16,7 @@ import '../shared/app_colors.dart';
 import '../shared/app_spacing.dart';
 import '../services/local_notifications_service.dart';
 import '../services/fcm_service.dart';
+import '../providers/theme_provider.dart';
 import '../utils/app_logger.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -29,7 +31,7 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  static const int _totalPages = 5;
+  static const int _totalPages = 6;
 
   @override
   void dispose() {
@@ -70,6 +72,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 controller: _pageController,
                 onPageChanged: _onPageChanged,
                 children: [
+                  _LanguageSlide(isDark: isDark, onNext: _nextPage),
                   _Slide1(isDark: isDark),
                   _Slide2(isDark: isDark),
                   _Slide3(isDark: isDark),
@@ -248,6 +251,233 @@ class _SlideBase extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Language Slide: Language selection (first slide)
+// ═══════════════════════════════════════════════════════════════════
+
+class _LanguageSlide extends StatefulWidget {
+  final bool isDark;
+  final VoidCallback onNext;
+  const _LanguageSlide({required this.isDark, required this.onNext});
+
+  @override
+  State<_LanguageSlide> createState() => _LanguageSlideState();
+}
+
+class _LanguageSlideState extends State<_LanguageSlide> {
+  String? _selectedLang;
+
+  static const _activeLanguages = [
+    {'code': 'sk', 'name': 'Slovenčina', 'flag': '🇸🇰'},
+    {'code': 'en', 'name': 'English', 'flag': '🇬🇧'},
+    {'code': 'es', 'name': 'Español', 'flag': '🇪🇸'},
+  ];
+
+  static const _comingSoonLanguages = [
+    {'code': 'fr', 'name': 'Français', 'flag': '🇫🇷'},
+    {'code': 'pt', 'name': 'Português (Brasil)', 'flag': '🇧🇷'},
+  ];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _selectedLang ??= context.locale.languageCode;
+  }
+
+  Future<void> _selectLanguage(String code) async {
+    setState(() => _selectedLang = code);
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    await themeProvider.setLanguageCode(code, context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = widget.isDark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= 600;
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Image.asset(
+            'assets/images/pozadie_slide.png',
+            fit: BoxFit.cover,
+            opacity: AlwaysStoppedAnimation(isDark ? 0.15 : 0.25),
+          ),
+        ),
+        SingleChildScrollView(
+          padding: EdgeInsets.symmetric(
+            horizontal: isTablet ? 48 : 24,
+            vertical: AppSpacing.lg,
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: AppSpacing.xxxl),
+
+              // Globe icon
+              Icon(
+                Icons.language_rounded,
+                size: isTablet ? 72 : 56,
+                color: AppColors.primary,
+              ),
+              const SizedBox(height: AppSpacing.xl),
+
+              // Title
+              Text(
+                tr('onboarding.slide0_title'),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: isTablet ? 28 : 24,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? AppColors.darkText : AppColors.text,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+
+              // Subtitle
+              Text(
+                tr('onboarding.slide0_subtitle'),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: isTablet ? 16 : 14,
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xxl),
+
+              // Active languages
+              ..._activeLanguages.map(
+                (lang) => _buildLanguageTile(
+                  lang,
+                  isSelected: _selectedLang == lang['code'],
+                  enabled: true,
+                  isDark: isDark,
+                ),
+              ),
+
+              // Divider
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Divider(
+                        color: isDark ? Colors.white24 : Colors.grey.shade300,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                      ),
+                      child: Text(
+                        tr('onboarding.slide0_coming_soon'),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? Colors.white38 : Colors.grey.shade500,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Divider(
+                        color: isDark ? Colors.white24 : Colors.grey.shade300,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Coming soon languages
+              ..._comingSoonLanguages.map(
+                (lang) => _buildLanguageTile(
+                  lang,
+                  isSelected: false,
+                  enabled: false,
+                  isDark: isDark,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLanguageTile(
+    Map<String, String> lang, {
+    required bool isSelected,
+    required bool enabled,
+    required bool isDark,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Opacity(
+        opacity: enabled ? 1.0 : 0.45,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: enabled ? () => _selectLanguage(lang['code']!) : null,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.1)
+                    : isDark
+                    ? AppColors.darkCard
+                    : Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.primary
+                      : isDark
+                      ? Colors.white12
+                      : Colors.grey.shade200,
+                  width: isSelected ? 2 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Text(lang['flag']!, style: const TextStyle(fontSize: 28)),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Text(
+                      lang['name']!,
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                        color: isSelected
+                            ? AppColors.primary
+                            : isDark
+                            ? AppColors.darkText
+                            : AppColors.text,
+                      ),
+                    ),
+                  ),
+                  if (isSelected)
+                    Icon(
+                      Icons.check_circle_rounded,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

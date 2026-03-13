@@ -18,6 +18,7 @@ import '../services/connectivity_service.dart';
 import '../services/lectio_cache_service.dart';
 import '../shared/audio_constants.dart';
 import '../services/do_not_disturb_service.dart';
+import '../services/app_engagement_service.dart';
 import '../services/prayer_focus_service.dart';
 import '../shared/app_colors.dart';
 import '../shared/date_limits_config.dart';
@@ -122,6 +123,13 @@ class _LectioScreenState extends State<LectioScreen> {
 
     // Notifikuj Prayer Focus Service o vstupe do Lectio screen
     _prayerFocusService.onSpiritualScreenEntered(SpiritualScreen.lectio);
+
+    // Engagement: rating / support prompt
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        AppEngagementService.instance.onLectioScreenOpened(context);
+      }
+    });
   }
 
   /// Obnoví stav audio prehrávača ak sa vracia na LectioScreen a audio stále hrá

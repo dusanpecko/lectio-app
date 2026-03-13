@@ -259,7 +259,8 @@ enum NotificationCategory {
   educational('educational'),
   news('news'),
   reminders('reminders'),
-  special('special');
+  special('special'),
+  technical('technical');
 
   const NotificationCategory(this.value);
   final String value;

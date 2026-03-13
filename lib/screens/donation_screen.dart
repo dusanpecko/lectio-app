@@ -1,13 +1,27 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:app_links/app_links.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../utils/app_logger.dart';
+import '../shared/app_colors.dart';
 import '../shared/app_spacing.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DONATION SCREEN — Redesigned 10.1.1
+// Segment toggle: Predplatné / Jednorazový dar
+// Subscription tiers in PageView with dots indicator
+// Quick-amount chips for one-time donation
+// "Modlím sa" as bottom banner
+// Bank transfer & 2% daní as collapsible ExpansionTiles
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum _DonationTab { subscription, oneTime }
 
 class DonationScreen extends StatefulWidget {
   const DonationScreen({super.key});
@@ -17,275 +31,233 @@ class DonationScreen extends StatefulWidget {
 }
 
 class _DonationScreenState extends State<DonationScreen> {
+  // ── State ──────────────────────────────────────────────────────────────────
   bool _isLoading = false;
-  bool _isAnonymous = false;
-  final _amountController = TextEditingController(text: '10');
-  final _messageController = TextEditingController();
+  _DonationTab _activeTab = _DonationTab.subscription;
 
-  // Stripe Price IDs
-  static const Map<String, Map<String, String>> _stripePriceIds = {
-    'friend': {
-      'year': 'price_1SVYYiGrGKpSpokkQMrIqRYL', // €30/year
-      // No monthly option for friend tier
-    },
-    'patron': {
-      'year': 'price_1SVYbMGrGKpSpokkP0a2Bbo4', // €200/year
-      'month': 'price_1SQYSSGrGKpSpokkCSnAuMPr', // €20/month
-    },
-    'founder': {
-      'year': 'price_1SVYd9GrGKpSpokkbvQ0nXeG', // €500/year
-      'month': 'price_1SQYauGrGKpSpokkHQhkJUhe', // €50/month
-    },
-  };
+  // IAP
+  static const _baseUrl = 'https://www.lectio.one';
 
-  // Subscription tiers
-  final List<Map<String, dynamic>> _subscriptionTiers = [
-    {
-      'tier': 'prayer',
-      'name': '🙏 Modlím sa',
-      'subtitle': 'Nefinačná podpora',
-      'price': '€0',
-      'description': 'Tichá podpora má veľkú silu.',
-      'features': [
-        'Pridávam sa k modlitbovému reťazcu za lectio.one',
-        'Denne sa modlím Lectio Divina',
-        'Mesačný e-mail s modlitbovými úmyslami (voľiteľné)',
-        'Bez záväzkov, bez platby',
-      ],
-      'isPrayer': true,
-    },
+  // One-time donation
+  int? _selectedQuickAmount;
+  final TextEditingController _customAmountController = TextEditingController();
+  bool _useCustomAmount = false;
+
+  // PageView for tiers
+  late final PageController _tierPageController;
+  int _currentTierPage = 0;
+
+  // Quick amounts for one-time donation
+  static const List<int> _quickAmounts = [5, 10, 25, 50];
+
+  // ── Subscription tiers (only PAID) ────────────────────────────────────────
+  List<Map<String, dynamic>> get _subscriptionTiers => [
     {
       'tier': 'friend',
-      'name': '🤝 Priateľ',
-      'subtitle': 'Ročná podpora projektu',
-      'price': '€30 / rok',
-      'description': 'Pomáhate, aby modlitba zostala dostupná pre všetkých.',
+      'icon': Icons.handshake_rounded,
+      'name': 'donation.tier_friend'.tr(),
+      'subtitle': 'donation.tier_friend_subtitle'.tr(),
+      'price': 'donation.tier_friend_price'.tr(),
+      'interval': 'donation.tier_friend_interval'.tr(),
+      'monthlyPrice': 'donation.tier_friend_monthly'.tr(),
+      'description': 'donation.tier_friend_description'.tr(),
       'features': [
-        'Jednorazový dar na 12 mesiacov',
-        'Označenie „Priateľ“ v profile',
-        'Ďakovný e-mail a krátky ročný report',
-        'Podpora vývoja a lokalizácie',
+        'donation.tier_friend_f1'.tr(),
+        'donation.tier_friend_f2'.tr(),
+        'donation.tier_friend_f3'.tr(),
+        'donation.tier_friend_f4'.tr(),
       ],
-      'yearlyPrice': '€30/rok',
+      'yearlyPrice': '\u20ac30/${'donation.tier_friend_interval'.tr()}',
     },
     {
       'tier': 'patron',
-      'name': '🕊 Patrón',
-      'subtitle': 'Stály pilier projektu',
-      'price': '€200 / rok',
-      'monthlyPrice': '€20 / mesiac',
-      'description': 'Vaša podpora dáva projektu stabilitu a smer.',
+      'icon': Icons.spa_rounded,
+      'name': 'donation.tier_patron'.tr(),
+      'subtitle': 'donation.tier_patron_subtitle'.tr(),
+      'price': 'donation.tier_patron_price'.tr(),
+      'interval': 'donation.tier_patron_interval'.tr(),
+      'monthlyPrice': 'donation.tier_patron_monthly'.tr(),
+      'description': 'donation.tier_patron_description'.tr(),
       'features': [
-        'Označenie „Patrón“ v profile',
-        'Skorší prístup k novému obsahu a funkciám',
-        'Early access k pripravovaným kurzom Lectio Divina',
-        'Možnosť hlasovať o nových funkciách',
+        'donation.tier_patron_f1'.tr(),
+        'donation.tier_patron_f2'.tr(),
+        'donation.tier_patron_f3'.tr(),
+        'donation.tier_patron_f4'.tr(),
       ],
       'popular': true,
-      'yearlyPrice': '€200/rok',
+      'yearlyPrice': '\u20ac200/${'donation.tier_patron_interval'.tr()}',
     },
     {
       'tier': 'founder',
-      'name': '🌟 Zakladateľ',
-      'subtitle': 'Výnimočná podpora projektu',
-      'price': '€500 / rok',
-      'monthlyPrice': '€50 / mesiac',
-      'description': 'Pomáhate niesť toto dielo výrazným spôsobom.',
+      'icon': Icons.star_rounded,
+      'name': 'donation.tier_founder'.tr(),
+      'subtitle': 'donation.tier_founder_subtitle'.tr(),
+      'price': 'donation.tier_founder_price'.tr(),
+      'interval': 'donation.tier_founder_interval'.tr(),
+      'monthlyPrice': 'donation.tier_founder_monthly'.tr(),
+      'description': 'donation.tier_founder_description'.tr(),
       'features': [
-        'Všetko z úrovne Patrón',
-        'Ročný žurnál Lectio (tlačený alebo PDF podľa dostupnosti)',
-        'Osobné poďakovanie',
-        '(Voľiteľne) uvedenie medzi „Zakladateľmi“',
+        'donation.tier_founder_f1'.tr(),
+        'donation.tier_founder_f2'.tr(),
+        'donation.tier_founder_f3'.tr(),
+        'donation.tier_founder_f4'.tr(),
       ],
-      'yearlyPrice': '€500/rok',
+      'yearlyPrice': '\u20ac500/${'donation.tier_founder_interval'.tr()}',
     },
   ];
 
-  Future<void> _makeOneTimeDonation() async {
-    final amount = double.tryParse(_amountController.text);
-    if (amount == null || amount < 1.0) {
-      _showError('Minimálna suma je €1.00');
-      return;
-    }
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
+  // Deep link listener
+  late final AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
 
-    setState(() => _isLoading = true);
+  @override
+  void initState() {
+    super.initState();
+    _tierPageController = PageController(viewportFraction: 0.88);
+    _tierPageController.addListener(() {
+      final page = _tierPageController.page?.round() ?? 0;
+      if (page != _currentTierPage) {
+        setState(() => _currentTierPage = page);
+      }
+    });
+    _initPaymentDeepLink();
+  }
 
-    try {
-      final supabase = Supabase.instance.client;
-      final user = supabase.auth.currentUser;
-
-      // Call backend to create checkout session
-      final baseUrl = const String.fromEnvironment(
-        'API_URL',
-        defaultValue: 'https://www.lectio.one',
-      );
-
-      appLogger.d('🔵 Creating donation checkout: €$amount');
-      appLogger.d('🌐 Target URL: $baseUrl/api/checkout/donation');
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/checkout/donation'),
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'LectioDivina-Mobile/1.0.0',
-        },
-        body: json.encode({
-          'amount': amount,
-          'userId': user?.id ?? '',
-          'email': _isAnonymous ? 'stripe@lectio.one' : (user?.email ?? ''),
-          'message': _messageController.text.trim().isEmpty
-              ? null
-              : _messageController.text.trim(),
-        }),
-      );
-
-      appLogger.d('📡 API Response status: ${response.statusCode}');
-      appLogger.d('📡 API Response body: ${response.body}');
-
-      if (response.statusCode != 200) {
-        final errorData = json.decode(response.body);
-        throw Exception(
-          errorData['error'] ?? 'Failed to create checkout session',
+  void _initPaymentDeepLink() {
+    _appLinks = AppLinks();
+    _linkSubscription = _appLinks.uriLinkStream.listen((Uri uri) {
+      if (uri.scheme == 'lectio-divina' && uri.host == 'payment-success') {
+        if (!mounted) return;
+        final type = uri.queryParameters['type'] ?? 'donation';
+        final message = type == 'subscription'
+            ? 'donation.subscription_success'.tr()
+            : 'donation.donation_success'.tr();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
+          ),
         );
       }
+    });
+  }
 
-      final data = json.decode(response.body);
-      final checkoutUrl = data['url'] as String?;
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    _customAmountController.dispose();
+    _tierPageController.dispose();
+    super.dispose();
+  }
 
-      if (checkoutUrl == null || checkoutUrl.isEmpty) {
-        throw Exception('No checkout URL returned from server');
-      }
-
-      appLogger.d('🌐 Opening Stripe checkout: $checkoutUrl');
-
-      // Open Stripe checkout in external browser
-      final uri = Uri.parse(checkoutUrl);
-      final launched = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
+  // ── API calls ─────────────────────────────────────────────────────────────
+  Future<void> _openMollieCheckout(Map<String, dynamic> body) async {
+    setState(() => _isLoading = true);
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/api/mollie/checkout'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
       );
 
-      if (!launched) {
-        throw Exception('Nepodarilo sa otvoriť prehliadač. Skúste to neskôr.');
-      }
+      if (!mounted) return;
 
-      appLogger.d('✅ Browser opened successfully');
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final url = data['url'] as String?;
+        if (url != null) {
+          await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+        } else {
+          _showError('donation.payment_error'.tr());
+        }
+      } else {
+        final data = jsonDecode(response.body);
+        _showError(
+          data['message'] ?? data['error'] ?? 'donation.payment_error'.tr(),
+        );
+      }
     } catch (e) {
-      if (mounted) {
-        _showError('Chyba pri vytváraní platby: $e');
-      }
+      if (mounted) _showError('donation.payment_error'.tr());
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _makeOneTimeDonation() async {
+    final double amount;
+    if (_useCustomAmount) {
+      final parsed = double.tryParse(
+        _customAmountController.text.replaceAll(',', '.'),
+      );
+      if (parsed == null || parsed < 1) {
+        _showError('donation.min_amount'.tr());
+        return;
+      }
+      if (parsed > 10000) {
+        _showError('donation.max_amount'.tr());
+        return;
+      }
+      amount = parsed;
+    } else {
+      if (_selectedQuickAmount == null) {
+        _showError('donation.select_amount_error'.tr());
+        return;
+      }
+      amount = _selectedQuickAmount!.toDouble();
+    }
+
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+
+    await _openMollieCheckout({
+      'type': 'donation',
+      'amount': amount,
+      'userId': user?.id,
+      'email': user?.email,
+      'platform': 'mobile',
+    });
   }
 
   Future<void> _startSubscription(String tier, String interval) async {
     final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
 
-    // Check if user is logged in - subscription requires account
     if (user == null) {
       _showLoginRequired();
       return;
     }
 
-    // Get Stripe price ID for this tier and interval
-    final priceId = _stripePriceIds[tier]?[interval];
-    if (priceId == null) {
-      _showError('Neplatná kombinácia tier a intervalu');
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      final baseUrl = const String.fromEnvironment(
-        'API_URL',
-        defaultValue: 'https://www.lectio.one',
-      );
-
-      appLogger.d(
-        '🔵 Creating subscription checkout: tier=$tier, interval=$interval, priceId=$priceId',
-      );
-      appLogger.d('🌐 Target URL: $baseUrl/api/checkout/subscription');
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/checkout/subscription'),
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'LectioDivina-Mobile/1.0.0',
-        },
-        body: json.encode({
-          'tier': tier,
-          'priceId': priceId,
-          'userId': user.id,
-          'email': user.email ?? '',
-        }),
-      );
-
-      appLogger.d('📡 API Response status: ${response.statusCode}');
-      appLogger.d('📡 API Response body: ${response.body}');
-
-      if (response.statusCode != 200) {
-        final errorData = json.decode(response.body);
-        throw Exception(
-          errorData['error'] ?? 'Failed to create checkout session',
-        );
-      }
-
-      final data = json.decode(response.body);
-      final checkoutUrl = data['url'] as String?;
-
-      if (checkoutUrl == null || checkoutUrl.isEmpty) {
-        throw Exception('No checkout URL returned from server');
-      }
-
-      appLogger.d('🌐 Opening Stripe checkout: $checkoutUrl');
-
-      // Open Stripe checkout in external browser
-      final uri = Uri.parse(checkoutUrl);
-      final launched = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-
-      if (!launched) {
-        throw Exception('Nepodarilo sa otvoriť prehliadač. Skúste to neskôr.');
-      }
-
-      appLogger.d('✅ Browser opened successfully');
-    } catch (e) {
-      if (mounted) {
-        _showError('Chyba pri vytváraní predplatného: $e');
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+    await _openMollieCheckout({
+      'type': 'subscription',
+      'tier': tier,
+      'userId': user.id,
+      'email': user.email,
+      'platform': 'mobile',
+    });
   }
 
   void _showLoginRequired() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Prihlásenie potrebné'),
-        content: const Text(
-          'Pre vytvorenie predplatného sa musíte najprv prihlásiť.\nJednorazový dar môžete poslať aj bez prihlásenia.',
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
         ),
+        title: Text('donation.login_title'.tr()),
+        content: Text('donation.login_message'.tr()),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Zrušiť'),
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('donation.login_cancel'.tr()),
           ),
           ElevatedButton(
             onPressed: () {
+              Navigator.pop(ctx);
               Navigator.pop(context);
-              Navigator.pop(context); // Close donation screen
-              // Navigate to login/profile screen
-              // You can add navigation to login screen here
             },
-            child: const Text('Prihlásiť sa'),
+            child: Text('donation.login_action'.tr()),
           ),
         ],
       ),
@@ -298,703 +270,930 @@ class _DonationScreenState extends State<DonationScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(title: Text('donation.title'.tr()), centerTitle: true),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : CustomScrollView(
-              slivers: [
-                // Hero App Bar
-                SliverAppBar(
-                  expandedHeight: 280,
-                  floating: false,
-                  pinned: true,
-                  backgroundColor: theme.colorScheme.primary,
-                  title: const Text(
-                    '🤍 Podporte lectio.one',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
+          : SingleChildScrollView(
+              // CustomScrollView + _buildHeroAppBar(theme) — temporarily disabled
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: AppSpacing.xxl),
+
+                  // Intro text
+                  Text(
+                    'donation.intro'.tr(),
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyLarge!.copyWith(
+                      height: 1.6,
+                      color: isDark ? Colors.white70 : Colors.black87,
                     ),
                   ),
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.asset(
-                          'assets/images/donation_bg.webp',
-                          fit: BoxFit.cover,
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                theme.colorScheme.primary.withValues(
-                                  alpha: 0.5,
-                                ),
-                                theme.colorScheme.primary.withValues(
-                                  alpha: 0.8,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SafeArea(
-                          child: Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(AppSpacing.xxl),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(
-                                      AppSpacing.lg,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.15,
-                                      ),
-                                      borderRadius: BorderRadius.circular(
-                                        AppRadius.xl,
-                                      ),
-                                    ),
-                                    child: const Icon(
-                                      Icons.favorite_outline_rounded,
-                                      size: 48,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.lg),
-                                  Text(
-                                    'Podporte lectio.one',
-                                    style: theme.textTheme.headlineMedium
-                                        ?.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: AppSpacing.sm),
-                                  Text(
-                                    'Priestor ticha pre Božie slovo',
-                                    style: theme.textTheme.titleLarge?.copyWith(
-                                      color: Colors.white70,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+
+                  const SizedBox(height: AppSpacing.xxl),
+
+                  // Segment toggle
+                  _buildSegmentToggle(theme),
+
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // Active tab content
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: _activeTab == _DonationTab.subscription
+                        ? _buildSubscriptionSection(theme, isDark)
+                        : _buildOneTimeDonationSection(theme, isDark),
                   ),
-                ),
 
-                // Content
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Header
-                        Text(
-                          'lectio.one vzniká z túžby vytvorať priestor ticha pre Božie slovo v digitálnom svete.\n'
-                          'Každý deň sa ľudia modlia, rozjímajú a nachádzajú pokoj vďaka tejto službe.',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyLarge!.copyWith(
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        Text(
-                          'Ak cítite, že chcete toto dielo niesť spolu s nami, môžete si vybrať spôsob podpory, ktorý je vám blízky.',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium!.copyWith(
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xxl),
+                  const SizedBox(height: AppSpacing.xxxl),
 
-                        Text(
-                          '🌿 Spôsoby podpory',
-                          style: theme.textTheme.titleLarge!.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
+                  // Collapsible: Bank transfer
+                  _buildBankTransferTile(theme, isDark),
 
-                        // One-time donation section
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.lg),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '💰 Jednorazový dar',
-                                  style: theme.textTheme.titleMedium!.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.lg),
-                                TextField(
-                                  controller: _amountController,
-                                  keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Suma (EUR)',
-                                    prefixText: '€ ',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.md),
-                                TextField(
-                                  controller: _messageController,
-                                  maxLines: 2,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Správa (voľiteľné)',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.md),
-                                CheckboxListTile(
-                                  title: Text(
-                                    '🕶️ Anonymný dar (bez potvrdzovacieho e-mailu)',
-                                    style: theme.textTheme.bodyMedium,
-                                  ),
-                                  subtitle: Text(
-                                    'Platba bude spracovaná, ale nedostanete potvrdenie.',
-                                    style: theme.textTheme.bodySmall!.copyWith(
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                  value: _isAnonymous,
-                                  onChanged: (value) => setState(
-                                    () => _isAnonymous = value ?? false,
-                                  ),
-                                  controlAffinity:
-                                      ListTileControlAffinity.leading,
-                                  contentPadding: EdgeInsets.zero,
-                                ),
-                                const SizedBox(height: AppSpacing.lg),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: _makeOneTimeDonation,
-                                    style: ElevatedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 16,
-                                      ),
-                                    ),
-                                    child: const Text('Darovať teraz'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xxl),
+                  const SizedBox(height: AppSpacing.sm),
 
-                        // Subscription tiers - Horizontal slider
-                        SizedBox(
-                          height: 560,
-                          child: PageView.builder(
-                            controller: PageController(
-                              initialPage: 1, // Start with "Priateľ" tier
-                              viewportFraction: 0.9,
-                            ),
-                            itemCount: _subscriptionTiers.length,
-                            itemBuilder: (context, index) {
-                              final tierData = _subscriptionTiers[index];
-                              final isPopular = tierData['popular'] == true;
-                              final isPrayer = tierData['isPrayer'] == true;
-                              final features =
-                                  tierData['features'] as List<String>? ?? [];
+                  // Collapsible: 2% z dani
+                  _buildTaxSupportTile(theme, isDark),
 
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                child: Card(
-                                  elevation: isPopular
-                                      ? AppElevation.high
-                                      : AppElevation.medium,
-                                  color: isPopular
-                                      ? Theme.of(
-                                          context,
-                                        ).colorScheme.primaryContainer
-                                      : null,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(
-                                      AppSpacing.xl,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // Popular badge
-                                        if (isPopular)
-                                          Container(
-                                            margin: const EdgeInsets.only(
-                                              bottom: AppSpacing.md,
-                                            ),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 10,
-                                              vertical: 5,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Theme.of(
-                                                context,
-                                              ).colorScheme.primary,
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                    AppRadius.md,
-                                                  ),
-                                            ),
-                                            child: Text(
-                                              'Najpopulárnejšie',
-                                              style: theme.textTheme.bodySmall!
-                                                  .copyWith(
-                                                    color: Theme.of(
-                                                      context,
-                                                    ).colorScheme.onPrimary,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                            ),
-                                          ),
+                  const SizedBox(height: AppSpacing.xxxl),
 
-                                        // Tier name
-                                        Text(
-                                          tierData['name'] as String,
-                                          style: theme.textTheme.titleLarge!
-                                              .copyWith(
-                                                fontWeight: FontWeight.bold,
-                                                color: isPopular
-                                                    ? Colors.white
-                                                    : null,
-                                              ),
-                                        ),
-                                        const SizedBox(height: AppSpacing.xs),
+                  // "Modlim sa" banner
+                  _buildPrayerBanner(theme, isDark),
 
-                                        // Subtitle
-                                        Text(
-                                          tierData['subtitle'] as String,
-                                          style: theme.textTheme.bodySmall!
-                                              .copyWith(
-                                                color: isPopular
-                                                    ? Colors.white70
-                                                    : Colors.grey[600],
-                                              ),
-                                        ),
-                                        const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.xxl),
 
-                                        // Price
-                                        Text(
-                                          tierData['price'] as String,
-                                          style: theme.textTheme.headlineMedium!
-                                              .copyWith(
-                                                color: isPopular
-                                                    ? Colors.white
-                                                    : Theme.of(
-                                                        context,
-                                                      ).colorScheme.primary,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                        ),
+                  // Footer
+                  _buildFooter(theme),
 
-                                        // Monthly price alternative
-                                        if (tierData.containsKey(
-                                          'monthlyPrice',
-                                        ))
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                              top: AppSpacing.xs,
-                                            ),
-                                            child: Text(
-                                              'alebo ${tierData['monthlyPrice']}',
-                                              style: theme.textTheme.bodyMedium!
-                                                  .copyWith(
-                                                    color: isPopular
-                                                        ? Colors.white70
-                                                        : Colors.grey[700],
-                                                  ),
-                                            ),
-                                          ),
-
-                                        const SizedBox(height: AppSpacing.lg),
-
-                                        // Features
-                                        Flexible(
-                                          child: SingleChildScrollView(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: features
-                                                  .map(
-                                                    (feature) => Padding(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                            bottom:
-                                                                AppSpacing.sm,
-                                                          ),
-                                                      child: Row(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          Text(
-                                                            '• ',
-                                                            style: theme
-                                                                .textTheme
-                                                                .titleMedium!
-                                                                .copyWith(
-                                                                  color:
-                                                                      isPopular
-                                                                      ? Colors
-                                                                            .white
-                                                                      : Theme.of(
-                                                                          context,
-                                                                        ).colorScheme.primary,
-                                                                ),
-                                                          ),
-                                                          Expanded(
-                                                            child: Text(
-                                                              feature,
-                                                              style: theme
-                                                                  .textTheme
-                                                                  .bodyMedium!
-                                                                  .copyWith(
-                                                                    height: 1.4,
-                                                                    color:
-                                                                        isPopular
-                                                                        ? Colors
-                                                                              .white
-                                                                        : null,
-                                                                  ),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  )
-                                                  .toList(),
-                                            ),
-                                          ),
-                                        ),
-
-                                        const SizedBox(height: AppSpacing.md),
-
-                                        // Description
-                                        Text(
-                                          tierData['description'] as String,
-                                          style: theme.textTheme.bodySmall!
-                                              .copyWith(
-                                                fontStyle: FontStyle.italic,
-                                                color: isPopular
-                                                    ? Colors.white70
-                                                    : Colors.grey[600],
-                                              ),
-                                        ),
-
-                                        // Action buttons (only for non-prayer tiers)
-                                        if (!isPrayer) ...[
-                                          const SizedBox(height: AppSpacing.lg),
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: ElevatedButton(
-                                                  onPressed: () =>
-                                                      _startSubscription(
-                                                        tierData['tier'],
-                                                        'year',
-                                                      ),
-                                                  style: isPopular
-                                                      ? ElevatedButton.styleFrom(
-                                                          backgroundColor:
-                                                              Colors.white,
-                                                          foregroundColor:
-                                                              Theme.of(context)
-                                                                  .colorScheme
-                                                                  .primary,
-                                                        )
-                                                      : null,
-                                                  child: const Text('Ročne'),
-                                                ),
-                                              ),
-                                              if (tierData.containsKey(
-                                                'monthlyPrice',
-                                              )) ...[
-                                                const SizedBox(
-                                                  width: AppSpacing.sm,
-                                                ),
-                                                Expanded(
-                                                  child: OutlinedButton(
-                                                    onPressed: () =>
-                                                        _startSubscription(
-                                                          tierData['tier'],
-                                                          'month',
-                                                        ),
-                                                    style: isPopular
-                                                        ? OutlinedButton.styleFrom(
-                                                            foregroundColor:
-                                                                Colors.white,
-                                                            side:
-                                                                const BorderSide(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  width: 1.5,
-                                                                ),
-                                                          )
-                                                        : null,
-                                                    child: const Text(
-                                                      'Mesačne',
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-
-                        const SizedBox(height: AppSpacing.xxxl),
-
-                        // Bank transfer section
-                        Card(
-                          color: Colors.green[50],
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.xl),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '🏦 Podpora bankovým prevodom',
-                                  style: theme.textTheme.titleMedium!.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.green[900],
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.md),
-                                Text(
-                                  'Ak chcete podporiť lectio.one priamo prevodom na účet:',
-                                  style: theme.textTheme.bodyMedium!.copyWith(
-                                    height: 1.5,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.lg),
-                                const _CopyRow(
-                                  label: 'Názov účtu:',
-                                  value: 'lectio.one',
-                                ),
-                                const SizedBox(height: AppSpacing.sm),
-                                const _CopyRow(
-                                  label: 'IBAN:',
-                                  value: 'SK42 7500 0000 0040 3515 6222',
-                                ),
-                                const SizedBox(height: AppSpacing.sm),
-                                const _CopyRow(
-                                  label: 'BIC (SWIFT):',
-                                  value: 'CEKOSKBX',
-                                ),
-                                const SizedBox(height: AppSpacing.lg),
-                                Text(
-                                  'Ďakujeme za vašu dôveru a podporu.',
-                                  style: theme.textTheme.bodyMedium!.copyWith(
-                                    fontStyle: FontStyle.italic,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: AppSpacing.xxxl),
-
-                        // Tax support section
-                        Card(
-                          color: Colors.blue[50],
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.xl),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '🌾 Podpora cez 2 % alebo 3 % z daní',
-                                  style: theme.textTheme.titleMedium!.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue[900],
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.md),
-                                Text(
-                                  'lectio.one je občianske združenie.\n'
-                                  'Ak chcete podporiť túto službu, môžete nám venovať 2 % (alebo 3 % pri dobrovoľníctve) z vašich daní.',
-                                  style: theme.textTheme.bodyMedium!.copyWith(
-                                    height: 1.5,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.lg),
-                                Text(
-                                  'Údaje prijímateľa',
-                                  style: theme.textTheme.bodyLarge!.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.sm),
-                                Text(
-                                  'Názov: lectio.one\n'
-                                  'Právna forma: Občianske združenie\n'
-                                  'IČO: 55971521\n'
-                                  'Sídlo: Jána Kalinčiaka 3098/1, 010 01 Žilina',
-                                  style: theme.textTheme.bodySmall!.copyWith(
-                                    height: 1.6,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.lg),
-                                Text(
-                                  'Dôležité termíny',
-                                  style: theme.textTheme.bodyLarge!.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.sm),
-                                Text(
-                                  'do 31. marca – podanie daňového priznania\n'
-                                  'do 30. apríla – podanie vyhlásenia zamestnancami\n'
-                                  '(Ak ste dobrovoľníčili aspoň 40 hodín, môžete poukázať 3 %.)',
-                                  style: theme.textTheme.bodySmall!.copyWith(
-                                    height: 1.6,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: AppSpacing.xxxl),
-
-                        // Footer
-                        Text(
-                          '🙏 Ďakujeme',
-                          style: theme.textTheme.titleLarge!.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        Text(
-                          'Vaša podpora nám umožňuje rozvíjať lectio.one\n'
-                          'a prinášať viac pokoja, nádeje a radosti do života ľudí.',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium!.copyWith(
-                            height: 1.6,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        Text(
-                          'Aplikácia je bez reklám, bez rozptyľovania a dostupná bezplatne.\n'
-                          'Ak chcete, môžete jej rozvoj podporiť svojím darom.',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodySmall!.copyWith(
-                            color: Colors.grey,
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xxl),
-                        Text(
-                          '💳 Platba je zabezpečená cez Stripe',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodySmall!.copyWith(
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+                  const SizedBox(height: AppSpacing.xxxl),
+                ],
+              ),
             ),
     );
   }
 
-  @override
-  void dispose() {
-    _amountController.dispose();
-    _messageController.dispose();
-    super.dispose();
+  // ═══════════════════════════════════════════════════════════════════════════
+  // WIDGETS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // ── Segment toggle ────────────────────────────────────────────────────────
+  Widget _buildSegmentToggle(ThemeData theme) {
+    return SegmentedButton<_DonationTab>(
+      segments: [
+        ButtonSegment(
+          value: _DonationTab.subscription,
+          label: Text('donation.tab_subscription'.tr()),
+          icon: const Icon(Icons.autorenew_rounded, size: 18),
+        ),
+        ButtonSegment(
+          value: _DonationTab.oneTime,
+          label: Text('donation.tab_one_time'.tr()),
+          icon: const Icon(Icons.volunteer_activism_rounded, size: 18),
+        ),
+      ],
+      selected: {_activeTab},
+      onSelectionChanged: (selected) {
+        setState(() => _activeTab = selected.first);
+      },
+      style: SegmentedButton.styleFrom(
+        selectedBackgroundColor: theme.colorScheme.primary,
+        selectedForegroundColor: Colors.white,
+        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
+  // ── Subscription section ──────────────────────────────────────────────────
+  Widget _buildSubscriptionSection(ThemeData theme, bool isDark) {
+    return Column(
+      key: const ValueKey('subscription'),
+      children: [
+        // Tier PageView
+        SizedBox(
+          height: 440,
+          child: PageView.builder(
+            controller: _tierPageController,
+            itemCount: _subscriptionTiers.length,
+            itemBuilder: (context, index) {
+              return _buildTierCard(
+                theme,
+                isDark,
+                _subscriptionTiers[index],
+                index,
+              );
+            },
+          ),
+        ),
+
+        const SizedBox(height: AppSpacing.md),
+
+        // Page indicator dots
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            _subscriptionTiers.length,
+            (i) => AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: i == _currentTierPage ? 24 : 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: i == _currentTierPage
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.primary.withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Single tier card ──────────────────────────────────────────────────────
+  Widget _buildTierCard(
+    ThemeData theme,
+    bool isDark,
+    Map<String, dynamic> tierData,
+    int index,
+  ) {
+    final isPopular = tierData['popular'] == true;
+    final features = tierData['features'] as List<String>? ?? [];
+    final hasMonthly = tierData.containsKey('monthlyPrice');
+    final tierIcon = tierData['icon'] as IconData;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          gradient: isPopular
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [theme.colorScheme.primary, AppColors.primaryLight],
+                )
+              : null,
+          color: isPopular
+              ? null
+              : (isDark ? AppColors.darkCard : Colors.white),
+          boxShadow: [
+            BoxShadow(
+              color: isPopular
+                  ? theme.colorScheme.primary.withValues(alpha: 0.3)
+                  : Colors.black.withValues(alpha: 0.08),
+              blurRadius: isPopular ? 16 : 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Badge row
+              Row(
+                children: [
+                  // Icon
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isPopular
+                          ? Colors.white.withValues(alpha: 0.15)
+                          : theme.colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: Icon(
+                      tierIcon,
+                      size: 24,
+                      color: isPopular
+                          ? Colors.white
+                          : theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tierData['name'] as String,
+                          style: theme.textTheme.titleLarge!.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: isPopular ? Colors.white : null,
+                          ),
+                        ),
+                        Text(
+                          tierData['subtitle'] as String,
+                          style: theme.textTheme.bodySmall!.copyWith(
+                            color: isPopular
+                                ? Colors.white70
+                                : (isDark
+                                      ? AppColors.darkCardSubtitle
+                                      : AppColors.cardSubtitle),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isPopular)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(AppRadius.full),
+                      ),
+                      child: Text(
+                        'donation.popular'.tr(),
+                        style: theme.textTheme.labelSmall!.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // Price
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    tierData['price'] as String,
+                    style: theme.textTheme.headlineMedium!.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: isPopular
+                          ? Colors.white
+                          : theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '/ ${tierData['interval']}',
+                    style: theme.textTheme.bodyMedium!.copyWith(
+                      color: isPopular ? Colors.white60 : Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+              if (hasMonthly)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    'donation.or'.tr(
+                      args: [tierData['monthlyPrice'] as String],
+                    ),
+                    style: theme.textTheme.bodySmall!.copyWith(
+                      color: isPopular ? Colors.white54 : Colors.grey,
+                    ),
+                  ),
+                ),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // Divider
+              Container(
+                height: 1,
+                color: isPopular
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : (isDark ? Colors.white12 : Colors.grey.shade200),
+              ),
+
+              const SizedBox(height: AppSpacing.md),
+
+              // Features
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: features.map((feature) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.check_circle_outline_rounded,
+                              size: 18,
+                              color: isPopular
+                                  ? Colors.white70
+                                  : theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                feature,
+                                style: theme.textTheme.bodyMedium!.copyWith(
+                                  height: 1.4,
+                                  color: isPopular ? Colors.white : null,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: AppSpacing.md),
+
+              // Description
+              Text(
+                tierData['description'] as String,
+                style: theme.textTheme.bodySmall!.copyWith(
+                  fontStyle: FontStyle.italic,
+                  color: isPopular ? Colors.white60 : Colors.grey,
+                ),
+              ),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () =>
+                          _startSubscription(tierData['tier'], 'year'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: isPopular ? Colors.white : null,
+                        foregroundColor: isPopular
+                            ? theme.colorScheme.primary
+                            : null,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                      ),
+                      child: Text('donation.yearly'.tr()),
+                    ),
+                  ),
+                  if (hasMonthly) ...[
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () =>
+                            _startSubscription(tierData['tier'], 'month'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          foregroundColor: isPopular ? Colors.white : null,
+                          side: BorderSide(
+                            color: isPopular
+                                ? Colors.white70
+                                : theme.colorScheme.primary,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                        ),
+                        child: Text('donation.monthly'.tr()),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── One-time donation section ─────────────────────────────────────────────
+  Widget _buildOneTimeDonationSection(ThemeData theme, bool isDark) {
+    return Container(
+      key: const ValueKey('oneTime'),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Icon(
+                Icons.volunteer_activism_rounded,
+                color: theme.colorScheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                'donation.one_time_title'.tr(),
+                style: theme.textTheme.titleMedium!.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: AppSpacing.lg),
+
+          // Quick amount chips
+          Text(
+            'donation.select_amount'.tr(),
+            style: theme.textTheme.bodySmall!.copyWith(
+              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              ..._quickAmounts.map((amount) {
+                final isSelected =
+                    !_useCustomAmount && _selectedQuickAmount == amount;
+                return ChoiceChip(
+                  label: Text(
+                    '\u20ac$amount',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.white : null,
+                    ),
+                  ),
+                  selected: isSelected,
+                  selectedColor: theme.colorScheme.primary,
+                  onSelected: (selected) {
+                    setState(() {
+                      _useCustomAmount = false;
+                      _selectedQuickAmount = selected ? amount : null;
+                      _customAmountController.clear();
+                    });
+                  },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                );
+              }),
+            ],
+          ),
+
+          const SizedBox(height: AppSpacing.lg),
+
+          // Custom amount
+          Text(
+            'donation.custom_amount'.tr(),
+            style: theme.textTheme.bodySmall!.copyWith(
+              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          TextField(
+            controller: _customAmountController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              prefixText: '\u20ac ',
+              prefixStyle: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.primary,
+                fontSize: 18,
+              ),
+              hintText: '10.00',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                borderSide: BorderSide(
+                  color: theme.colorScheme.primary,
+                  width: 2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            onTap: () {
+              setState(() {
+                _useCustomAmount = true;
+                _selectedQuickAmount = null;
+              });
+            },
+            onChanged: (_) {
+              setState(() {
+                _useCustomAmount = true;
+                _selectedQuickAmount = null;
+              });
+            },
+          ),
+
+          const SizedBox(height: AppSpacing.xl),
+
+          // Donate button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed:
+                  (_selectedQuickAmount != null ||
+                      (_useCustomAmount &&
+                          _customAmountController.text.isNotEmpty))
+                  ? _makeOneTimeDonation
+                  : null,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+              ),
+              child: Text(
+                _selectedQuickAmount != null
+                    ? 'donation.donate_amount'.tr(
+                        args: ['$_selectedQuickAmount'],
+                      )
+                    : (_useCustomAmount &&
+                          _customAmountController.text.isNotEmpty)
+                    ? 'donation.donate_amount'.tr(
+                        args: [_customAmountController.text],
+                      )
+                    : 'donation.donate'.tr(),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: AppSpacing.md),
+
+          // Secure payment badge
+          Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.lock_outline_rounded,
+                  size: 14,
+                  color: Colors.grey.shade400,
+                ),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    'donation.secure_mollie'.tr(),
+                    style: theme.textTheme.bodySmall!.copyWith(
+                      color: Colors.grey.shade400,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Bank transfer tile ────────────────────────────────────────────────────
+  Widget _buildBankTransferTile(ThemeData theme, bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Theme(
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.xs,
+          ),
+          childrenPadding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            0,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
+          leading: Icon(
+            Icons.account_balance_rounded,
+            color: theme.colorScheme.primary,
+          ),
+          title: Text(
+            'donation.bank_title'.tr(),
+            style: theme.textTheme.titleSmall!.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          subtitle: Text(
+            'donation.bank_subtitle'.tr(),
+            style: theme.textTheme.bodySmall!.copyWith(color: Colors.grey),
+          ),
+          children: [
+            const Divider(),
+            const SizedBox(height: AppSpacing.sm),
+            _CopyRow(
+              label: 'donation.account_name'.tr(),
+              value: 'lectio.one',
+              isDark: isDark,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            _CopyRow(
+              label: 'IBAN',
+              value: 'SK42 7500 0000 0040 3515 6222',
+              isDark: isDark,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            _CopyRow(label: 'BIC (SWIFT)', value: 'CEKOSKBX', isDark: isDark),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Tax support tile ──────────────────────────────────────────────────────
+  Widget _buildTaxSupportTile(ThemeData theme, bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Theme(
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.xs,
+          ),
+          childrenPadding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            0,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
+          leading: Icon(Icons.eco_rounded, color: theme.colorScheme.primary),
+          title: Text(
+            'donation.tax_title'.tr(),
+            style: theme.textTheme.titleSmall!.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          subtitle: Text(
+            'donation.tax_subtitle'.tr(),
+            style: theme.textTheme.bodySmall!.copyWith(color: Colors.grey),
+          ),
+          children: [
+            const Divider(),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'donation.tax_description'.tr(),
+              style: theme.textTheme.bodyMedium!.copyWith(height: 1.5),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            _buildInfoRow(theme, 'donation.tax_name'.tr(), 'lectio.one'),
+            _buildInfoRow(
+              theme,
+              'donation.tax_form'.tr(),
+              'donation.tax_form_value'.tr(),
+            ),
+            _buildInfoRow(theme, 'donation.tax_ico'.tr(), '55971521'),
+            _buildInfoRow(
+              theme,
+              'donation.tax_address'.tr(),
+              'Jána Kalinčiaka 3098/1, 010 01 Žilina',
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'donation.tax_deadlines_title'.tr(),
+                    style: theme.textTheme.bodyMedium!.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'donation.tax_deadlines'.tr(),
+                    style: theme.textTheme.bodySmall!.copyWith(height: 1.6),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(ThemeData theme, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 60,
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall!.copyWith(
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: theme.textTheme.bodySmall!.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Prayer banner ─────────────────────────────────────────────────────────
+  Widget _buildPrayerBanner(ThemeData theme, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.2),
+        ),
+        color: isDark
+            ? theme.colorScheme.primary.withValues(alpha: 0.08)
+            : theme.colorScheme.primary.withValues(alpha: 0.04),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.church_rounded,
+            size: 36,
+            color: theme.colorScheme.primary.withValues(alpha: 0.6),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'donation.prayer_title'.tr(),
+            style: theme.textTheme.titleMedium!.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'donation.prayer_description'.tr(),
+            style: theme.textTheme.bodyMedium!.copyWith(
+              color: isDark ? Colors.white60 : Colors.grey.shade600,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Footer ────────────────────────────────────────────────────────────────
+  Widget _buildFooter(ThemeData theme) {
+    return Column(
+      children: [
+        Text(
+          'donation.footer_line1'.tr(),
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall!.copyWith(
+            color: Colors.grey,
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          'donation.footer_line2'.tr(),
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyMedium!.copyWith(
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
   }
 }
 
-// Helper widget for copyable rows
+// ═══════════════════════════════════════════════════════════════════════════════
+// HELPER: Copyable row
+// ═══════════════════════════════════════════════════════════════════════════════
 class _CopyRow extends StatelessWidget {
   final String label;
   final String value;
+  final bool isDark;
 
-  const _CopyRow({required this.label, required this.value});
+  const _CopyRow({
+    required this.label,
+    required this.value,
+    this.isDark = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = Theme.of(context).colorScheme.primary;
-    return Row(
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.bodyMedium!.copyWith(
-            fontWeight: FontWeight.w600,
-            color: color,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Text(
-            value,
-            style: theme.textTheme.bodyMedium!.copyWith(
-              fontFamily: 'monospace',
-              color: Colors.black87,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        IconButton(
-          icon: Icon(Icons.copy, size: 20, color: color),
-          tooltip: "Skopírovať",
-          onPressed: () async {
-            await Clipboard.setData(ClipboardData(text: value));
-            if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('$label $value skopírované'),
-                duration: const Duration(seconds: 2),
+    final primary = theme.colorScheme.primary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall!.copyWith(
+                fontWeight: FontWeight.w600,
+                color: primary,
               ),
-            );
-          },
-        ),
-      ],
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: theme.textTheme.bodySmall!.copyWith(
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          InkWell(
+            onTap: () async {
+              await Clipboard.setData(ClipboardData(text: value));
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('donation.copied'.tr(args: [label])),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Icon(Icons.copy_rounded, size: 18, color: primary),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

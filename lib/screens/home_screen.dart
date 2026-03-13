@@ -10,6 +10,7 @@ import '../models/spiritual_exercise.dart';
 import '../services/connectivity_service.dart';
 import '../services/lectio_cache_service.dart';
 import '../shared/app_colors.dart';
+import '../shared/date_limits_config.dart';
 import '../utils/app_logger.dart';
 import '../widgets/speed_dial_fab.dart';
 import 'about_screen.dart';
@@ -508,8 +509,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      firstDate: DateLimitsConfig.getMinDate(),
+      lastDate: DateLimitsConfig.getMaxDate(),
       locale: context.locale,
       builder: (context, child) {
         final theme = Theme.of(context);
@@ -920,7 +921,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildLectioCalendar() {
     final theme = Theme.of(context);
     final today = DateTime.now();
-    final startDate = today.subtract(const Duration(days: 3));
+    final daysBack = DateLimitsConfig.daysBack;
+    final daysForward = DateLimitsConfig.daysForward;
+    final totalDays = daysBack + daysForward + 1;
+    final startDate = today.subtract(Duration(days: daysBack));
 
     return Container(
       margin: const EdgeInsets.symmetric(
@@ -963,9 +967,12 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(
             height: 90,
             child: ListView.builder(
+              controller: ScrollController(
+                initialScrollOffset: (daysBack - 2) * 78.0,
+              ),
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-              itemCount: 10,
+              itemCount: totalDays,
               itemBuilder: (context, index) {
                 final date = startDate.add(Duration(days: index));
                 final isToday = _isSameDay(date, today);
