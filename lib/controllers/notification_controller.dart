@@ -39,6 +39,7 @@ class NotificationController {
 
   final _logger = appLogger;
   String? _pendingNotificationPayload;
+  RemoteMessage? _pendingRemoteMessage;
 
   // Method channel pre komunikáciu s natívnym iOS kódom
   static const MethodChannel _badgeChannel = MethodChannel(
@@ -55,8 +56,19 @@ class NotificationController {
 
   /// Skontroluje a zobrazí čakajúcu notifikáciu (volané pri Resume alebo Session init)
   void checkPendingNotification(bool mounted) {
+    // 1. Spracuj remote notification uloženú pri cold starte
+    if (_pendingRemoteMessage != null && mounted && navigatorKey.currentContext != null) {
+      _logger.i('🎯 Processing pending remote notification from cold start');
+      final msg = _pendingRemoteMessage!;
+      _pendingRemoteMessage = null;
+      Future.delayed(const Duration(milliseconds: 500), () {
+        handleRemoteNotificationTap(msg);
+      });
+    }
+
+    // 2. Spracuj lokálnu notifikáciu
     if (_pendingNotificationPayload != null && mounted) {
-      _logger.i('🎯 Processing pending notification on resume/init');
+      _logger.i('🎯 Processing pending local notification on resume/init');
       final payload = _pendingNotificationPayload;
       _pendingNotificationPayload = null;
 
@@ -183,34 +195,31 @@ class NotificationController {
     try {
       clearAppBadge();
 
-      // Priamo naviguj podľa screen parametra, bez dialógu
       final screen = message.data['screen'] as String?;
       final screenParams = message.data['screen_params'] as String?;
       final url = message.data['url'] as String?;
 
-      // Ak je URL, otvor priamo
       if (url != null) {
         _openUrl(url);
         return;
       }
 
-      if (screen != null && navigatorKey.currentContext != null) {
-        final currentRoute = ModalRoute.of(
-          navigatorKey.currentContext!,
-        )?.settings.name;
+      if (screen == null) return;
 
-        if (currentRoute != '/') {
-          navigatorKey.currentState?.pushNamedAndRemoveUntil(
-            '/',
-            (route) => false,
-          );
-        }
-
-        // Počkaj na dokončenie navigácie na home, potom naviguj na cieľovú obrazovku
-        Future.delayed(const Duration(milliseconds: 500), () {
-          navigateToScreen(screen, screenParams: screenParams);
-        });
+      // Navigator ešte nie je pripravený (cold start) — ulož správu a spracuj neskôr
+      // z checkPendingNotification() po dokončení inicializácie appky
+      if (navigatorKey.currentContext == null) {
+        _logger.i('🕒 Navigator not ready (cold start), saving for later: $screen');
+        _pendingRemoteMessage = message;
+        return;
       }
+
+      // Navigator je pripravený — naviguj priamo na cieľovú obrazovku
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (navigatorKey.currentContext != null) {
+          navigateToScreen(screen, screenParams: screenParams);
+        }
+      });
     } catch (e) {
       _logger.e('Error handling notification tap: $e');
     }

@@ -20,6 +20,7 @@ import '../shared/audio_constants.dart';
 import '../services/do_not_disturb_service.dart';
 import '../services/app_engagement_service.dart';
 import '../services/prayer_focus_service.dart';
+import '../services/umami_analytics_service.dart';
 import '../shared/app_colors.dart';
 import '../shared/date_limits_config.dart';
 import '../utils/app_logger.dart';
@@ -106,6 +107,7 @@ class _LectioScreenState extends State<LectioScreen> {
 
   // Timer pre pravidelnú aktualizáciu pozície
   Timer? _positionUpdateTimer;
+  Timer? _heartbeatTimer;
 
   @override
   void initState() {
@@ -1094,6 +1096,9 @@ class _LectioScreenState extends State<LectioScreen> {
     // Zobraz globálny mini player (opúšťame LectioScreen)
     GlobalMiniPlayer.hideOnCurrentScreen.value = false;
 
+    // Zrušiť heartbeat timer
+    _heartbeatTimer?.cancel();
+
     // Zrušiť position timer
     _positionUpdateTimer?.cancel();
 
@@ -1136,6 +1141,11 @@ class _LectioScreenState extends State<LectioScreen> {
       setState(() {
         _isPlaying = state.playing;
       });
+      if (state.playing) {
+        _startHeartbeat();
+      } else {
+        _stopHeartbeat();
+      }
       appLogger.d('🎵 ✅ State updated: _isPlaying=$_isPlaying');
 
       // NOTE: Don't call _onAudioCompleted here!
@@ -1171,8 +1181,35 @@ class _LectioScreenState extends State<LectioScreen> {
         setState(() {
           _isPlaying = state.playing;
         });
+        if (state.playing) {
+          _startHeartbeat();
+        } else {
+          _stopHeartbeat();
+        }
       }
     });
+  }
+
+  void _startHeartbeat() {
+    if (_heartbeatTimer != null) return;
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      final lang = context.locale.languageCode;
+      final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+      UmamiAnalyticsService().trackEvent(
+        'audio_heartbeat',
+        eventData: {
+          'content_type': 'lectio',
+          'content_id': dateStr,
+          'language': lang,
+          'position_seconds': _currentPosition.inSeconds,
+        },
+      );
+    });
+  }
+
+  void _stopHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
   }
 
   Future<void> _onAudioCompleted() async {

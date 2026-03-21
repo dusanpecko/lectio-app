@@ -6,7 +6,7 @@ import UIKit
 import UserNotifications
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
 
   // Store channel references for later use
   private var badgeChannel: FlutterMethodChannel?
@@ -25,27 +25,21 @@ import UserNotifications
       GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientId)
     }
 
-    GeneratedPluginRegistrant.register(with: self)
-
-    // Setup platform channels using FlutterPluginRegistry
-    setupPlatformChannels()
-
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
-  private func setupPlatformChannels() {
-    // Get the Flutter view controller - use window property from FlutterAppDelegate
-    guard let window = self.window,
-      let controller = window.rootViewController as? FlutterViewController
-    else {
-      print("⚠️ Failed to get FlutterViewController")
-      return
-    }
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    setupPlatformChannels(engineBridge)
+  }
+
+  private func setupPlatformChannels(_ engineBridge: FlutterImplicitEngineBridge) {
+    let messenger = engineBridge.applicationRegistrar.messenger()
 
     // Badge channel
     badgeChannel = FlutterMethodChannel(
       name: "com.lectio_divina/badge",
-      binaryMessenger: controller.binaryMessenger)
+      binaryMessenger: messenger)
     badgeChannel?.setMethodCallHandler { [weak self] (call, result) in
       if call.method == "clearBadge" {
         DispatchQueue.main.async {
@@ -61,7 +55,7 @@ import UserNotifications
     // Do Not Disturb channel
     dndChannel = FlutterMethodChannel(
       name: "sk.lectio.divina/do_not_disturb",
-      binaryMessenger: controller.binaryMessenger)
+      binaryMessenger: messenger)
     dndChannel?.setMethodCallHandler { [weak self] (call, result) in
       switch call.method {
       case "checkDndPermissions":
@@ -195,9 +189,7 @@ import UserNotifications
 
   // Zobrazí prompt pre aktiváciu Do Not Disturb
   private func showDoNotDisturbPrompt() {
-    guard let window = self.window,
-      let rootViewController = window.rootViewController as? FlutterViewController
-    else {
+    guard let rootViewController = currentRootViewController() else {
       return
     }
 
@@ -223,6 +215,14 @@ import UserNotifications
     alert.addAction(UIAlertAction(title: "Už mám zapnuté", style: .default))
 
     rootViewController.present(alert, animated: true)
+  }
+
+  private func currentRootViewController() -> UIViewController? {
+    let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+    let keyWindow = scenes
+      .flatMap { $0.windows }
+      .first(where: { $0.isKeyWindow })
+    return (keyWindow ?? scenes.first?.windows.first)?.rootViewController
   }
 
   private func deactivateIOSSilent(result: @escaping FlutterResult) {

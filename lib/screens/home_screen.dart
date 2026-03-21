@@ -553,6 +553,60 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showActioDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        final theme = Theme.of(dialogContext);
+
+        return AlertDialog(
+          title: Text(
+            tr('actio'),
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Image.asset(
+                      'assets/icon/lectio_logo.png',
+                      height: 56,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    actioText ?? tr('quote_not_available'),
+                    style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(tr('close')),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _openTodaysLectio();
+              },
+              child: Text(tr('start_lectio_today')),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // Handle Speed Dial secondary actions
   void _handleSpeedDialAction(String action) {
     if (!mounted) return;
@@ -1058,8 +1112,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
     return GestureDetector(
       onTap: () {
-        // Naviguj do Lectio screen
-        Navigator.pushNamed(context, '/lectio');
+        if (isLoading) return;
+        _showActioDialog();
       },
       child: Container(
         margin: const EdgeInsets.symmetric(

@@ -280,9 +280,6 @@ class _FCMInitializerState extends State<FCMInitializer>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     _logger.i('🔄 App Lifecycle State Changed: $state');
-    _logger.i(
-      '🔍 Current _pendingNotificationPayload: ${NotificationController.instance.getPendingNotification()}',
-    );
     _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
     if (state == AppLifecycleState.resumed) {

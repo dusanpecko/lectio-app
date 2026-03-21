@@ -11,6 +11,7 @@ import '../screens/donation_screen.dart';
 import '../shared/app_colors.dart';
 import '../shared/app_spacing.dart';
 import '../utils/app_logger.dart';
+import 'umami_analytics_service.dart';
 
 /// Služba na správu engagementu používateľov:
 /// - App Store / Google Play hodnotenie po 5 otvoreniach LectioScreen
@@ -47,7 +48,14 @@ class AppEngagementService {
   static const bool _testingAlwaysShowRating = false;
 
   /// Supporter tiers - ak má user aktívne predplatné, nezobrazí sa výzva
-  static const List<String> _supporterTiers = ['friend', 'patron', 'founder'];
+  static const List<String> _supporterTiers = [
+    'friend',
+    'friend_plus',
+    'patron_mini',
+    'patron_plus',
+    'patron',
+    'founder',
+  ];
 
   /// Zavolaj pri každom otvorení LectioScreen.
   /// Počká krátku chvíľu aby sa screen stihol načítať.
@@ -144,6 +152,12 @@ class AppEngagementService {
 
     if (!context.mounted) return;
 
+    final lang = context.locale.languageCode;
+    UmamiAnalyticsService().trackEvent(
+      'engagement_rating_shown',
+      eventData: {'language': lang},
+    );
+
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
@@ -167,13 +181,27 @@ class AppEngagementService {
               ),
             ],
           ),
-          content: Text(
-            'engagement.rating.message'.tr(),
-            style: TextStyle(
-              fontSize: 15,
-              height: 1.5,
-              color: AppColors.adaptiveCardTitle(dialogContext),
-            ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Image.asset(
+                  'assets/icon/lectio_logo.png',
+                  height: 56,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'engagement.rating.message'.tr(),
+                style: TextStyle(
+                  fontSize: 15,
+                  height: 1.5,
+                  color: AppColors.adaptiveCardTitle(dialogContext),
+                ),
+              ),
+            ],
           ),
           actionsAlignment: MainAxisAlignment.center,
           actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -229,11 +257,19 @@ class AppEngagementService {
     );
 
     if (result == true) {
+      UmamiAnalyticsService().trackEvent(
+        'engagement_rating_accepted',
+        eventData: {'language': lang},
+      );
       await _openStoreRating();
       if (!_testingAlwaysShowRating) {
         await prefs.setBool(_keyHasRatedApp, true);
       }
     } else {
+      UmamiAnalyticsService().trackEvent(
+        'engagement_rating_dismissed',
+        eventData: {'language': lang},
+      );
       if (!_testingAlwaysShowRating) {
         await prefs.setBool(_keyRatingPromptDismissed, true);
       }
@@ -374,6 +410,12 @@ class AppEngagementService {
 
     if (!context.mounted) return;
 
+    final lang = context.locale.languageCode;
+    UmamiAnalyticsService().trackEvent(
+      'engagement_support_shown',
+      eventData: {'language': lang},
+    );
+
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
@@ -401,6 +443,14 @@ class AppEngagementService {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(
+                child: Image.asset(
+                  'assets/icon/lectio_logo.png',
+                  height: 56,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 'engagement.support.message'.tr(),
                 style: TextStyle(
@@ -476,9 +526,18 @@ class AppEngagementService {
     );
 
     if (result == true && context.mounted) {
+      UmamiAnalyticsService().trackEvent(
+        'engagement_support_accepted',
+        eventData: {'language': lang},
+      );
       Navigator.of(
         context,
       ).push(MaterialPageRoute(builder: (_) => const DonationScreen()));
+    } else {
+      UmamiAnalyticsService().trackEvent(
+        'engagement_support_dismissed',
+        eventData: {'language': lang},
+      );
     }
   }
 }

@@ -11,6 +11,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/adoration_model.dart';
 import '../services/adoration_service.dart';
+import '../services/umami_analytics_service.dart';
 import '../shared/app_colors.dart';
 import '../shared/audio_constants.dart';
 import '../shared/app_spacing.dart';
@@ -67,6 +68,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
   StreamSubscription<Duration>? _positionSub;
   StreamSubscription<Duration?>? _durationSub;
   StreamSubscription<int?>? _indexSub;
+  Timer? _heartbeatTimer;
 
   /// Artwork URI for lock screen / notification
   Uri? get _artUri {
@@ -89,6 +91,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
 
   @override
   void dispose() {
+    _heartbeatTimer?.cancel();
     _playerStateSub?.cancel();
     _positionSub?.cancel();
     _durationSub?.cancel();
@@ -104,9 +107,15 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
     _playerStateSub = _audioPlayer.playerStateStream.listen((state) {
       if (!mounted) return;
       final isComplete = state.processingState == ProcessingState.completed;
+      final playing = state.playing && !isComplete;
       setState(() {
-        _isPlaying = state.playing && !isComplete;
+        _isPlaying = playing;
       });
+      if (playing) {
+        _startHeartbeat();
+      } else {
+        _stopHeartbeat();
+      }
     });
 
     _positionSub = _audioPlayer.positionStream.listen((pos) {
@@ -142,6 +151,27 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
         );
       }
     });
+  }
+
+  void _startHeartbeat() {
+    if (_heartbeatTimer != null) return;
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      final lang = context.locale.languageCode;
+      UmamiAnalyticsService().trackEvent(
+        'audio_heartbeat',
+        eventData: {
+          'content_type': 'adoration',
+          'content_id': widget.adorationId,
+          'language': lang,
+          'position_seconds': _currentPosition.inSeconds,
+        },
+      );
+    });
+  }
+
+  void _stopHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
   }
 
   Future<void> _restoreAudioMode() async {

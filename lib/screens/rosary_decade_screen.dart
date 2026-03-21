@@ -1,5 +1,7 @@
 // lib/screens/rosary_decade_screen.dart
 
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +10,7 @@ import 'package:flutter_html/flutter_html.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/rosary_model.dart';
 import '../services/rosary_service.dart';
+import '../services/umami_analytics_service.dart';
 import '../shared/app_colors.dart';
 import '../shared/rosary_constants.dart';
 import '../widgets/audio/universal_audio_player.dart';
@@ -36,17 +39,57 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
   RosaryNavigation? _navigation;
   bool _isLoading = true;
   String? _error;
+  Timer? _heartbeatTimer;
+  StreamSubscription<PlayerState>? _playerStateSub;
   // bool _isBookmarked = false; // TODO: záložka - zatiaľ zakomentované
 
   @override
   void initState() {
     super.initState();
+    _setupHeartbeat();
   }
 
   @override
   void dispose() {
+    _heartbeatTimer?.cancel();
+    _playerStateSub?.cancel();
     _audioPlayer.dispose();
     super.dispose();
+  }
+
+  void _setupHeartbeat() {
+    _playerStateSub = _audioPlayer.playerStateStream.listen((state) {
+      if (!mounted) return;
+      final playing = state.playing &&
+          state.processingState != ProcessingState.completed;
+      if (playing) {
+        _startHeartbeat();
+      } else {
+        _stopHeartbeat();
+      }
+    });
+  }
+
+  void _startHeartbeat() {
+    if (_heartbeatTimer != null) return;
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      final lang = context.locale.languageCode;
+      UmamiAnalyticsService().trackEvent(
+        'audio_heartbeat',
+        eventData: {
+          'content_type': 'rosary',
+          'content_id':
+              '${widget.category.name}_${widget.decadeOrder}',
+          'language': lang,
+          'position_seconds': _audioPlayer.position.inSeconds,
+        },
+      );
+    });
+  }
+
+  void _stopHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
   }
 
   @override
