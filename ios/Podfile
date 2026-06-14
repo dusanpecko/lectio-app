@@ -42,9 +42,9 @@ post_install do |installer|
     
     # Fix deployment target warnings
     target.build_configurations.each do |config|
-      # Set minimum deployment target to 13.0 for all pods
-      if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 13.0
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      # Set minimum deployment target to 15.0 for all pods
+      if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 15.0
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
       end
       
       # Suppress deprecation warnings for specific pods

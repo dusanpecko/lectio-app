@@ -1,11 +1,15 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -1984,6 +1988,89 @@ class _LectioScreenState extends State<LectioScreen> {
     }
   }
 
+  Future<void> _reportBadAudio() async {
+    // Potvrdzovací dialóg
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Nahlásiť zlé audio?'),
+        content: const Text(
+          'Odpošle sa notifikácia administrátorovi s informáciou o aktuálnej sekcii.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Zrušiť'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Odoslať'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      final session = Supabase.instance.client.auth.currentSession;
+      final packageInfo = await PackageInfo.fromPlatform();
+      final backendUrl =
+          dotenv.env['NEXT_PUBLIC_BACKEND_URL'] ?? 'https://www.lectio.one';
+      final lang = context.locale.languageCode;
+
+      final response = await http.post(
+        Uri.parse('$backendUrl/api/report-audio'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (session != null)
+            'Authorization': 'Bearer ${session.accessToken}',
+        },
+        body: jsonEncode({
+          'lang': lang,
+          'bible': _selectedBible,
+          'date': DateFormat('yyyy-MM-dd').format(selectedDate),
+          'section': _currentAudioSection,
+          'user_email': user?.email,
+          'user_id': user?.id,
+          'app_version':
+              '${packageInfo.version}+${packageInfo.buildNumber}',
+          'platform': Platform.isIOS ? 'ios' : 'android',
+        }),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Nahlásenie odoslané, ďakujeme!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        appLogger.e('❌ Report audio failed: ${response.statusCode} ${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Nepodarilo sa odoslať nahlásenie'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      appLogger.e('❌ Report audio error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Chyba pri odosielaní nahlásenia'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _playNextTrack() async {
     appLogger.d('🎵 === _playNextTrack START ===');
     appLogger.d('🎵 _currentAudioSection: $_currentAudioSection');
@@ -2892,6 +2979,7 @@ class _LectioScreenState extends State<LectioScreen> {
         _playAudio(url, key);
       },
       onAudioModeChanged: _saveAudioMode,
+      onReportBadAudio: _currentAudioSection != null ? _reportBadAudio : null,
       onMinimize: () {
         setState(() {
           _isMinimized = !_isMinimized;

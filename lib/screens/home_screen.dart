@@ -4,10 +4,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/spiritual_exercise.dart';
 import '../services/connectivity_service.dart';
+import '../services/umami_analytics_service.dart';
 import '../services/lectio_cache_service.dart';
 import '../shared/app_colors.dart';
 import '../shared/date_limits_config.dart';
@@ -30,6 +32,7 @@ import 'donation_screen.dart';
 import 'adoration_screen.dart';
 import 'stations_of_cross_screen.dart';
 import 'newsletter_list_screen.dart';
+import 'lectio_survey_screen.dart';
 import '../shared/app_spacing.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -39,7 +42,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   // Slider properties
   final List<String> imagePaths = [
     'assets/images/slide1.webp',
@@ -100,11 +104,34 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription<bool>? _connectivitySubscription;
   final Set<String> _cachedDates = {};
 
+  // Survey bell pulse animation
+  late final AnimationController _pulseController;
+  bool _showSurveyIcon = false;
+
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+    _checkSurveyVisibility();
     _startSliderTimer();
     _initConnectivity();
+  }
+
+  Future<void> _checkSurveyVisibility() async {
+    final prefs = await SharedPreferences.getInstance();
+    final completed = prefs.getBool('survey_completed') ?? false;
+    if (completed) return;
+    final count = (prefs.getInt('survey_launch_count') ?? 0) + 1;
+    await prefs.setInt('survey_launch_count', count);
+    // Zobraziť od 6. spustenia, potom vždy kým nevyplní
+    final show = count >= 6;
+    appLogger.i('📊 Survey launch count: $count, show icon: $show');
+    if (mounted && show) {
+      setState(() => _showSurveyIcon = true);
+    }
   }
 
   void _initConnectivity() {
@@ -176,6 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _pulseController.dispose();
     _timer?.cancel();
     _pageController.dispose();
     _featuredCarouselController.dispose();
@@ -714,7 +742,110 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   children: [
                     // Hero Slider Section
-                    _buildHeroSlider(),
+                    Stack(
+                      children: [
+                        _buildHeroSlider(),
+                        // Survey ikona — zvonček s pulzom
+                        if (_showSurveyIcon)
+                        Positioned(
+                          top: MediaQuery.of(context).padding.top + 8,
+                          right: 16,
+                          child: SafeArea(
+                            top: false,
+                            child: GestureDetector(
+                              onTap: () {
+                                UmamiAnalyticsService().trackEvent(
+                                  'survey_icon_clicked',
+                                  eventData: {'source': 'home_screen'},
+                                );
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const LectioSurveyScreen(),
+                                    settings: const RouteSettings(name: '/survey'),
+                                  ),
+                                );
+                              },
+                              child: SizedBox(
+                                width: 56,
+                                height: 56,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    // Vonkajší pulz 1
+                                    AnimatedBuilder(
+                                      animation: _pulseController,
+                                      builder: (context, child) {
+                                        final scale = 1.0 + _pulseController.value * 0.8;
+                                        final opacity = (1.0 - _pulseController.value).clamp(0.0, 0.5);
+                                        return Transform.scale(
+                                          scale: scale,
+                                          child: Container(
+                                            width: 40,
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: const Color(0xFF800020).withValues(alpha: opacity),
+                                                width: 2,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    // Vonkajší pulz 2 (oneskorený)
+                                    AnimatedBuilder(
+                                      animation: _pulseController,
+                                      builder: (context, child) {
+                                        final delayed = (_pulseController.value + 0.4) % 1.0;
+                                        final scale = 1.0 + delayed * 0.8;
+                                        final opacity = (1.0 - delayed).clamp(0.0, 0.5);
+                                        return Transform.scale(
+                                          scale: scale,
+                                          child: Container(
+                                            width: 40,
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: const Color(0xFF800020).withValues(alpha: opacity),
+                                                width: 2,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    // Hlavná ikona
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF800020),
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xFF800020).withValues(alpha: 0.4),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Icon(
+                                        Icons.circle_notifications,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
 
                     // Main Content
                     SafeArea(

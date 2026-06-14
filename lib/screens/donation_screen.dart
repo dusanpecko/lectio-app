@@ -136,7 +136,6 @@ class _DonationScreenState extends State<DonationScreen> {
         'donation.tier_patron_f3'.tr(),
         'donation.tier_patron_f4'.tr(),
       ],
-      'popular': true,
       'yearlyPrice': '\u20ac200/${'donation.tier_patron_interval'.tr()}',
     },
     {

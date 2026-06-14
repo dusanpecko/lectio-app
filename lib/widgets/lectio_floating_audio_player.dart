@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../shared/app_colors.dart';
 import '../shared/app_spacing.dart';
@@ -29,6 +30,7 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
     required this.onAudioModeChanged,
     required this.onMinimize,
     required this.onClose,
+    this.onReportBadAudio,
   });
 
   /// Dostupné audio stopy
@@ -89,6 +91,9 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
 
   /// Zatvoriť a zastaviť prehrávač
   final VoidCallback onClose;
+
+  /// Nahlásiť zlé audio (null = skryté)
+  final VoidCallback? onReportBadAudio;
 
   // ============ Helpers ============
 
@@ -277,6 +282,25 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Report bad audio button
+              if (onReportBadAudio != null)
+                IconButton(
+                  icon: SvgPicture.asset(
+                    'assets/icon/warning.svg',
+                    width: 20,
+                    height: 20,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white70,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  tooltip: 'Nahlásiť zlé audio',
+                  onPressed: onReportBadAudio,
+                ),
+              if (onReportBadAudio != null)
+                const SizedBox(width: AppSpacing.lg),
               // Minimize button
               IconButton(
                 icon: const Icon(
