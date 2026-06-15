@@ -161,6 +161,17 @@ class LectioCacheService {
     }
   }
 
+  /// Odstráni cache pre konkrétny deň a jazyk.
+  Future<void> removeCachedLectio(String date, String locale) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_getCacheKey(date, locale));
+      appLogger.d('🗑️ Odstránená cache pre $date ($locale)');
+    } catch (e) {
+      appLogger.e('❌ Chyba pri mazaní cache: $e');
+    }
+  }
+
   /// Stiahne a uloží Lectio na najbližších N dní
   Future<DownloadResult> downloadLectioForDays({
     required String locale,

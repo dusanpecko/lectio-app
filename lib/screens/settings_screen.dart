@@ -25,6 +25,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _selectedBible = 'biblia_1';
   bool _isLoadingBible = true; // Začneme s loading stavom
   String? _lastLocale; // Sledovanie posledného jazyka
+  bool _keepScreenOn = true; // Nezhasínať obrazovku počas Lectio
 
   @override
   void initState() {
@@ -99,11 +100,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     await prefs.setString('selectedBible', bible);
 
+    final keepOn = prefs.getBool('keep_screen_on') ?? true;
+
     if (!mounted) return;
     setState(() {
       _selectedBible = bible;
+      _keepScreenOn = keepOn;
       _isLoadingBible = false; // Ukončíme loading
     });
+  }
+
+  Future<void> _setKeepScreenOn(bool value) async {
+    setState(() => _keepScreenOn = value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('keep_screen_on', value);
   }
 
   // Migruje starú hodnotu na nový formát (biblia_1, biblia_2, biblia_3)
@@ -232,7 +242,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildThemeCard(themeProvider),
           const SizedBox(height: AppSpacing.lg),
 
-          // 6. O aplikácii a Ochrana osobných údajov
+          // 6. Nezhasínať obrazovku počas Lectio
+          _buildKeepAwakeCard(),
+          const SizedBox(height: AppSpacing.lg),
+
+          // 7. O aplikácii a Ochrana osobných údajov
           _buildAboutAndPrivacyCard(),
           const SizedBox(height: AppSpacing.lg),
         ],
@@ -632,6 +646,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return allItems
         .where((item) => availableBibles.contains(item.value))
         .toList();
+  }
+
+  Widget _buildKeepAwakeCard() {
+    final theme = Theme.of(context);
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      elevation: AppElevation.high,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        child: SwitchListTile(
+          secondary: const Icon(
+            Icons.brightness_high_rounded,
+            color: AppColors.primary,
+          ),
+          title: Text(
+            tr('keep_screen_on_title'),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          subtitle: Text(tr('keep_screen_on_desc')),
+          value: _keepScreenOn,
+          activeThumbColor: AppColors.primary,
+          onChanged: _setKeepScreenOn,
+        ),
+      ),
+    );
   }
 
   Widget _buildAboutAndPrivacyCard() {
