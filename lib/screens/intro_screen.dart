@@ -1,10 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-import '../shared/app_colors.dart';
 import 'intro_step_screen.dart';
 import 'intro_translations.dart';
 import '../shared/app_spacing.dart';
+import '../widgets/home_v2/home_v2_tokens.dart';
 
 class IntroScreen extends StatefulWidget {
   const IntroScreen({super.key});
@@ -16,307 +17,228 @@ class IntroScreen extends StatefulWidget {
 class _IntroScreenState extends State<IntroScreen> {
   final IntroTranslations translations = IntroTranslations();
 
+  static const Color _stepLight = Color(0xFF6B73A8);
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final lang = context.locale.languageCode;
     final t = translations.getTranslations(lang);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: CustomScrollView(
-        slivers: [
-          // Hero App Bar
-          SliverAppBar(
-            expandedHeight: MediaQuery.of(context).size.width >= 600
-                ? 450.0
-                : 300.0,
-            floating: false,
-            pinned: true,
-            backgroundColor: theme.colorScheme.primary,
-            title: Text(
-              t['heroSubtitle'],
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: HomeV2.background(context),
+        body: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            _buildHero(t),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+                MediaQuery.of(context).viewPadding.bottom + AppSpacing.xxl,
               ),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.asset(
-                    'assets/images/intro_about_bg.webp',
-                    fit: BoxFit.cover,
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          theme.colorScheme.primary.withValues(alpha: 0.6),
-                          theme.colorScheme.primary.withValues(alpha: 0.85),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SafeArea(
-                    child: Padding(
-                      padding: EdgeInsets.all(
-                        MediaQuery.of(context).size.width >= 600
-                            ? AppSpacing.xxl * 1.5
-                            : AppSpacing.xxl,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(
-                              MediaQuery.of(context).size.width >= 600
-                                  ? AppSpacing.xl
-                                  : AppSpacing.lg,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(AppRadius.xl),
-                            ),
-                            child: Icon(
-                              Icons.menu_book_rounded,
-                              size: MediaQuery.of(context).size.width >= 600
-                                  ? 64
-                                  : 48,
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(
-                            height: MediaQuery.of(context).size.width >= 600
-                                ? AppSpacing.xl
-                                : AppSpacing.lg,
-                          ),
-                          Text(
-                            t['heroTitle'],
-                            style:
-                                (MediaQuery.of(context).size.width >= 600
-                                        ? theme.textTheme.headlineLarge
-                                        : theme.textTheme.headlineMedium)
-                                    ?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                            textAlign: TextAlign.center,
-                          ),
-                          SizedBox(
-                            height: MediaQuery.of(context).size.width >= 600
-                                ? AppSpacing.md
-                                : AppSpacing.sm,
-                          ),
-                          Text(
-                            t['heroSubtitle'],
-                            style:
-                                (MediaQuery.of(context).size.width >= 600
-                                        ? theme.textTheme.headlineMedium
-                                        : theme.textTheme.titleLarge)
-                                    ?.copyWith(
-                                      color: Colors.white70,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Content
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Hero Description
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.xl),
-                      child: Text(
-                        t['heroDescription'],
-                        style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
-                        textAlign: TextAlign.center,
+                  // Hero description
+                  _v2Card(
+                    child: Text(
+                      t['heroDescription'],
+                      style: TextStyle(
+                        fontSize: 15,
+                        height: 1.6,
+                        color: HomeV2.textDark(context),
                       ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
-
-                  const SizedBox(height: AppSpacing.xxxl),
-
-                  // Start Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => _navigateToStep(context, 'silencio'),
-                      icon: const Icon(Icons.play_arrow_rounded, size: 24),
-                      label: Text(
-                        t['startLectio'],
-                        style: theme.textTheme.titleMedium!.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.lg,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.lg),
-                        ),
-                      ),
-                    ),
+                  const SizedBox(height: AppSpacing.xl),
+                  _primaryButton(
+                    t['startLectio'],
+                    Icons.play_arrow_rounded,
+                    () => _navigateToStep(context, 'silencio'),
                   ),
+                  const SizedBox(height: AppSpacing.xxl),
 
-                  const SizedBox(height: AppSpacing.xxxl),
-
-                  // What is Lectio Divina section
-                  _buildSection(
-                    context,
+                  _section(
                     title: t['whatIs'],
                     icon: Icons.lightbulb_outline_rounded,
                     children: [
-                      Text(
-                        t['whatIsText1'],
-                        style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      Text(
-                        t['whatIsText2'],
-                        style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
-                      ),
+                      _body(t['whatIsText1']),
+                      const SizedBox(height: AppSpacing.md),
+                      _body(t['whatIsText2']),
                     ],
                   ),
+                  const SizedBox(height: AppSpacing.lg),
 
-                  const SizedBox(height: AppSpacing.xxxl),
-
-                  // Five Steps section
-                  _buildSection(
-                    context,
+                  _section(
                     title: t['fiveStepsTitle'],
                     icon: Icons.stairs_rounded,
                     children: [
-                      Text(
-                        t['fiveStepsText'],
-                        style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                      _buildStepsGrid(context, t),
+                      _body(t['fiveStepsText']),
+                      const SizedBox(height: AppSpacing.lg),
+                      _buildStepsList(t),
                     ],
                   ),
+                  const SizedBox(height: AppSpacing.lg),
 
-                  const SizedBox(height: AppSpacing.xxxl),
-
-                  // Benefits section
-                  _buildSection(
-                    context,
+                  _section(
                     title: t['benefitsTitle'],
                     icon: Icons.favorite_rounded,
                     children: [
-                      Text(
-                        t['benefitsText'],
-                        style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                      _buildBenefitsGrid(context, t),
+                      _body(t['benefitsText']),
+                      const SizedBox(height: AppSpacing.lg),
+                      _buildBenefitsList(t),
                     ],
                   ),
+                  const SizedBox(height: AppSpacing.lg),
 
-                  const SizedBox(height: AppSpacing.xxxl),
-
-                  // How to start section
-                  _buildSection(
-                    context,
+                  _section(
                     title: t['howToTitle'],
                     icon: Icons.rocket_launch_rounded,
                     children: [
-                      Text(
-                        t['howToText'],
-                        style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                      _buildGuideGrid(context, t),
+                      _body(t['howToText']),
+                      const SizedBox(height: AppSpacing.lg),
+                      _buildGuideList(t),
                     ],
                   ),
+                  const SizedBox(height: AppSpacing.xl),
 
-                  const SizedBox(height: AppSpacing.xxxl),
-
-                  // Closing Quote
-                  Card(
-                    color: theme.colorScheme.primaryContainer,
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.xxl),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.format_quote_rounded,
-                            size: 48,
-                            color: theme.colorScheme.onPrimary,
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          Text(
-                            t['closingQuote'],
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontStyle: FontStyle.italic,
-                              color: theme.colorScheme.onPrimaryContainer,
-                              height: 1.6,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          Text(
-                            t['closingText'],
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: theme.colorScheme.onPrimaryContainer,
-                              height: 1.6,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: AppSpacing.xxxl),
-
-                  // Final CTA
-                  SizedBox(
+                  // Closing quote
+                  Container(
                     width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => _navigateToStep(context, 'silencio'),
-                      icon: const Icon(Icons.auto_stories_rounded, size: 24),
-                      label: Text(
-                        t['startFirstStep'],
-                        style: theme.textTheme.titleMedium!.copyWith(
-                          fontWeight: FontWeight.bold,
+                    padding: const EdgeInsets.all(AppSpacing.xxl),
+                    decoration: BoxDecoration(
+                      color: HomeV2.primary.withValues(
+                          alpha: HomeV2.isDark(context) ? 0.16 : 0.07),
+                      borderRadius: BorderRadius.circular(HomeV2.radius),
+                      border: Border.all(
+                          color: HomeV2.primary.withValues(alpha: 0.18)),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(Icons.format_quote_rounded,
+                            size: 40, color: HomeV2.iconAccent(context)),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          t['closingQuote'],
+                          style: HomeV2.serifQuote(context, size: 19, height: 1.5),
+                          textAlign: TextAlign.center,
                         ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.lg,
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          t['closingText'],
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            height: 1.6,
+                            color: HomeV2.textMuted(context),
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.lg),
-                        ),
-                      ),
+                      ],
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.xl),
 
-                  const SizedBox(height: AppSpacing.xxl),
+                  _primaryButton(
+                    t['startFirstStep'],
+                    Icons.auto_stories_rounded,
+                    () => _navigateToStep(context, 'silencio'),
+                  ),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Hero ──────────────────────────────────────────────────────────────────
+  Widget _buildHero(Map<String, dynamic> t) {
+    final topPad = MediaQuery.of(context).padding.top;
+    final isTablet = MediaQuery.of(context).size.width >= 600;
+    final bg = HomeV2.background(context);
+    final halo = <Shadow>[
+      const Shadow(color: Colors.black54, blurRadius: 12),
+      const Shadow(color: Colors.black38, blurRadius: 4),
+    ];
+    const bottomRadius = Radius.circular(HomeV2.radius + 6);
+
+    return SizedBox(
+      height: isTablet ? 340 : 280,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: bottomRadius),
+            child: Image.asset(
+              'assets/images/intro_about_bg.webp',
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) =>
+                  ColoredBox(color: HomeV2.primary.withValues(alpha: 0.4)),
+            ),
+          ),
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: bottomRadius),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.30),
+                    Colors.black.withValues(alpha: 0.10),
+                    HomeV2.primary.withValues(alpha: 0.55),
+                    bg,
+                  ],
+                  stops: const [0.0, 0.35, 0.85, 1.0],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: topPad + AppSpacing.sm,
+            left: AppSpacing.lg,
+            child: _CircleButton(
+              icon: Icons.arrow_back_rounded,
+              onTap: () => Navigator.of(context).maybePop(),
+            ),
+          ),
+          Positioned(
+            left: AppSpacing.xl,
+            right: AppSpacing.xl,
+            bottom: AppSpacing.lg,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  t['heroTitle'],
+                  style: HomeV2.serifTitle(
+                    context,
+                    size: isTablet ? 36 : 30,
+                    color: Colors.white,
+                    height: 1.1,
+                  ).copyWith(shadows: halo),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  t['heroSubtitle'],
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    shadows: halo,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -324,138 +246,173 @@ class _IntroScreenState extends State<IntroScreen> {
     );
   }
 
-  Widget _buildSection(
-    BuildContext context, {
+  // ── Stavebné prvky ──────────────────────────────────────────────────────────
+  Widget _v2Card({required Widget child, EdgeInsets? padding}) {
+    return Container(
+      width: double.infinity,
+      padding: padding ?? const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _body(String text) => Text(
+        text,
+        style: TextStyle(
+          fontSize: 15,
+          height: 1.6,
+          color: HomeV2.textDark(context),
+        ),
+      );
+
+  Widget _section({
     required String title,
     required IconData icon,
     required List<Widget> children,
   }) {
-    final theme = Theme.of(context);
+    return _v2Card(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: HomeV2.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Icon(icon, color: HomeV2.iconAccent(context), size: 22),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text(
+                  title,
+                  style: HomeV2.serifTitle(context, size: 20, height: 1.2),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          ...children,
+        ],
+      ),
+    );
+  }
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  child: Icon(icon, color: theme.colorScheme.primary, size: 24),
-                ),
-                const SizedBox(width: AppSpacing.lg),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            ...children,
-          ],
+  Widget _primaryButton(String label, IconData icon, VoidCallback onTap) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 22),
+        label: Text(
+          label,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: HomeV2.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.full),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildStepsGrid(BuildContext context, Map<String, dynamic> t) {
-    final theme = Theme.of(context);
+  // ── Kroky ─────────────────────────────────────────────────────────────────
+  Widget _buildStepsList(Map<String, dynamic> t) {
     final steps = t['steps'] as List<dynamic>;
-
     return Column(
       children: steps.map<Widget>((step) {
-        final stepData = step as Map<String, dynamic>;
-        final stepColors = [
-          [AppColors.primary, AppColors.accent],
-          [AppColors.primary, AppColors.accent],
-          [AppColors.primary, AppColors.accent],
-          [AppColors.primary, AppColors.accent],
-          [AppColors.primary, AppColors.accent],
-          [AppColors.primary, AppColors.accent],
-        ];
-        final colorIndex = (stepData['number'] as int) - 1;
-        final colors = stepColors[colorIndex];
-
+        final s = step as Map<String, dynamic>;
         return Container(
           margin: const EdgeInsets.only(bottom: AppSpacing.md),
-          child: Card(
-            elevation: AppElevation.medium,
+          decoration: BoxDecoration(
+            color: HomeV2.primary.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+            border: Border.all(color: HomeV2.primary.withValues(alpha: 0.12)),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Material(
+            color: Colors.transparent,
             child: InkWell(
-              onTap: () => _navigateToStep(context, stepData['slug']),
-              borderRadius: BorderRadius.circular(AppRadius.lg),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                _navigateToStep(context, s['slug']);
+              },
               child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 child: Row(
                   children: [
                     Container(
-                      width: 56,
-                      height: 56,
+                      width: 52,
+                      height: 52,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: colors,
+                        gradient: const LinearGradient(
+                          colors: [HomeV2.primary, _stepLight],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       child: Center(
-                        child: Icon(
-                          _getStepIcon(stepData['slug']),
-                          color: Colors.white,
-                          size: 24,
-                        ),
+                        child: Icon(_getStepIcon(s['slug']),
+                            color: Colors.white, size: 24),
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.lg),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '${t['stepLabel']} ${stepData['number']} • ${stepData['duration']}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w500,
+                            '${t['stepLabel']} ${s['number']} • ${s['duration']}',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: HomeV2.textMuted(context),
                             ),
                           ),
-                          const SizedBox(height: AppSpacing.xs),
+                          const SizedBox(height: 2),
                           Text(
-                            stepData['title'],
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
+                            s['title'],
+                            style: TextStyle(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w700,
+                              color: HomeV2.textDark(context),
                             ),
                           ),
-                          const SizedBox(height: AppSpacing.xs),
                           Text(
-                            stepData['subtitle'],
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                            s['subtitle'],
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontStyle: FontStyle.italic,
+                              color: HomeV2.iconAccent(context),
                             ),
                           ),
-                          const SizedBox(height: AppSpacing.sm),
+                          const SizedBox(height: 3),
                           Text(
-                            stepData['description'],
-                            style: theme.textTheme.bodyMedium?.copyWith(
+                            s['description'],
+                            style: TextStyle(
+                              fontSize: 13,
                               height: 1.4,
+                              color: HomeV2.textMuted(context),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 16,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                    Icon(Icons.chevron_right_rounded,
+                        color: HomeV2.textMuted(context)),
                   ],
                 ),
               ),
@@ -466,132 +423,96 @@ class _IntroScreenState extends State<IntroScreen> {
     );
   }
 
-  Widget _buildBenefitsGrid(BuildContext context, Map<String, dynamic> t) {
-    final theme = Theme.of(context);
+  Widget _buildBenefitsList(Map<String, dynamic> t) {
     final benefits = t['benefits'] as List<dynamic>;
-
+    final icons = [
+      Icons.hearing_rounded,
+      Icons.favorite_rounded,
+      Icons.refresh_rounded,
+      Icons.people_rounded,
+    ];
     return Column(
-      children: benefits.map<Widget>((benefit) {
-        final benefitData = benefit as Map<String, dynamic>;
-        final icons = [
-          Icons.hearing_rounded,
-          Icons.favorite_rounded,
-          Icons.refresh_rounded,
-          Icons.people_rounded,
-        ];
-        final colors = [
-          theme.colorScheme.primary,
-          theme.colorScheme.primary,
-          theme.colorScheme.primary,
-          theme.colorScheme.primary,
-        ];
-        final index = benefits.indexOf(benefit);
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: AppSpacing.md),
-          child: Card(
-            elevation: AppElevation.low,
-            color: theme.colorScheme.surfaceContainerHighest.withValues(
-              alpha: 0.3,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: colors[index].withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                    child: Icon(icons[index], color: colors[index], size: 24),
-                  ),
-                  const SizedBox(width: AppSpacing.lg),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          benefitData['title'],
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          benefitData['description'],
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+      children: List.generate(benefits.length, (index) {
+        final b = benefits[index] as Map<String, dynamic>;
+        return _infoRow(
+          icon: icons[index % icons.length],
+          title: b['title'],
+          description: b['description'],
         );
-      }).toList(),
+      }),
     );
   }
 
-  Widget _buildGuideGrid(BuildContext context, Map<String, dynamic> t) {
-    final theme = Theme.of(context);
+  Widget _buildGuideList(Map<String, dynamic> t) {
     final guide = t['guide'] as List<dynamic>;
-
+    final icons = [
+      Icons.access_time_filled_rounded,
+      Icons.bookmark_rounded,
+      Icons.favorite_rounded,
+      Icons.verified_user_rounded,
+    ];
     return Column(
-      children: guide.map<Widget>((item) {
-        final itemData = item as Map<String, dynamic>;
-        final icons = [
-          Icons.access_time_filled,
-          Icons.bookmark_rounded,
-          Icons.favorite_rounded,
-          Icons.verified_user_rounded,
-        ];
-        final index = guide.indexOf(item);
+      children: List.generate(guide.length, (index) {
+        final g = guide[index] as Map<String, dynamic>;
+        return _infoRow(
+          icon: icons[index % icons.length],
+          title: g['title'],
+          description: g['description'],
+        );
+      }),
+    );
+  }
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: AppSpacing.md),
-          child: Card(
-            elevation: AppElevation.low,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    icons[index],
-                    color: theme.colorScheme.primary,
-                    size: 24,
+  Widget _infoRow({
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: HomeV2.primary.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: HomeV2.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Icon(icon, color: HomeV2.iconAccent(context), size: 20),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: HomeV2.textDark(context),
                   ),
-                  const SizedBox(width: AppSpacing.lg),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          itemData['title'],
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          itemData['description'],
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    height: 1.4,
+                    color: HomeV2.textMuted(context),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        );
-      }).toList(),
+        ],
+      ),
     );
   }
 
@@ -618,6 +539,32 @@ class _IntroScreenState extends State<IntroScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => IntroStepScreen(step: step)),
+    );
+  }
+}
+
+class _CircleButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _CircleButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: HomeV2.card(context).withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, color: HomeV2.primary, size: 22),
+        ),
+      ),
     );
   }
 }

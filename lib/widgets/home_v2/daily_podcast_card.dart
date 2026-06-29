@@ -24,13 +24,46 @@ class DailyPodcastCard extends StatelessWidget {
   /// Kompaktnejšia (nižšia) verzia — menší thumbnail a tesnejšie medzery.
   final bool dense;
 
+  /// Vonkajší okraj karty. Default = bočný odstup od kraja obrazovky.
+  /// Pri coach-marku sa nastaví na zero a odstup sa rieši zvonka, aby
+  /// zvýraznenie sadlo presne na bielu kartu.
+  final EdgeInsetsGeometry margin;
+
+  /// Režim prehrávania „celého Lectio" audia (Nastavenia → Lectio audio):
+  /// `'long'` = dlhé s hudbou (default), `'short'` = krátke bez hudby.
+  /// Tlačidlo prehráva kombinovaný súbor z [PodcastEpisode.fullLongAudio] /
+  /// [PodcastEpisode.fullShortAudio]; samotný podcast ostáva len na Spotify.
+  /// Ak kombinovaný súbor chýba, padne späť na podcast audio.
+  final String audioMode;
+
   const DailyPodcastCard({
     super.key,
     required this.episode,
     this.onSpotify,
     this.showPrimaryButton = true,
     this.dense = false,
+    this.margin = const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+    this.audioMode = 'long',
   });
+
+  /// Vyberie audio, ktoré sa má v appke prehrať: preferuje zvolený kombinovaný
+  /// variant (dlhé/krátke), potom druhý variant a až ako poslednú možnosť
+  /// podcast audio. Vracia `(url, variant)` — variant je `'long'`/`'short'`
+  /// pre kombinované audio, alebo `'podcast'` pre fallback.
+  ({String url, String variant}) _resolveAudio() {
+    final long = episode.fullLongAudio;
+    final short = episode.fullShortAudio;
+    bool ok(String? u) => u != null && u.isNotEmpty;
+
+    if (audioMode == 'short') {
+      if (ok(short)) return (url: short!, variant: 'short');
+      if (ok(long)) return (url: long!, variant: 'long');
+    } else {
+      if (ok(long)) return (url: long!, variant: 'long');
+      if (ok(short)) return (url: short!, variant: 'short');
+    }
+    return (url: episode.audioUrl ?? '', variant: 'podcast');
+  }
 
   static String _fmt(Duration d) {
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
@@ -42,20 +75,27 @@ class DailyPodcastCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = MediaPlayerBus.instance;
-    final cover = episode.coverImageUrl ?? PodcastService.channelCover(episode.lang);
-    final mediaId = 'podcast_${episode.id}';
+    final cover =
+        episode.coverImageUrl ?? PodcastService.channelCover(episode.lang);
+    final resolved = _resolveAudio();
+    final usingCombined = resolved.variant != 'podcast';
+    // Pri kombinovanom audiu kódujeme variant do id, aby prepnutie dlhé↔krátke
+    // v bus prehrávači znovu načítalo správny súbor.
+    final mediaId = usingCombined
+        ? 'lectio_audio_${episode.id}_${resolved.variant}'
+        : 'podcast_${episode.id}';
     void togglePlay() => controller.toggle(
-          id: mediaId,
-          url: episode.audioUrl ?? '',
-          title: episode.title ?? tr('daily_lectio_audio'),
-          artUri: cover,
-          contentType: 'podcast',
-          contentId: episode.publishDate ?? episode.id,
-          language: episode.lang,
-        );
+      id: mediaId,
+      url: resolved.url,
+      title: episode.title ?? tr('daily_lectio_audio'),
+      artUri: cover,
+      contentType: usingCombined ? 'lectio' : 'podcast',
+      contentId: episode.publishDate ?? episode.id,
+      language: episode.lang,
+    );
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      margin: margin,
       padding: EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: dense ? AppSpacing.sm : AppSpacing.md,
@@ -80,8 +120,11 @@ class DailyPodcastCard extends StatelessWidget {
                   // Overline + dĺžka vpravo
                   Row(
                     children: [
-                      Icon(Icons.headphones_rounded,
-                          size: 16, color: HomeV2.primary),
+                      Icon(
+                        Icons.headphones_rounded,
+                        size: 16,
+                        color: HomeV2.primary,
+                      ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
@@ -96,10 +139,15 @@ class DailyPodcastCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (episode.durationMinutes > 0) ...[
+                      // Dĺžku z epizódy ukazujeme len pre podcast — pri
+                      // kombinovanom Lectio audiu je iná (reálnu vidno v progrese).
+                      if (!usingCombined && episode.durationMinutes > 0) ...[
                         const SizedBox(width: AppSpacing.sm),
-                        Icon(Icons.schedule_rounded,
-                            size: 13, color: HomeV2.textMuted(context)),
+                        Icon(
+                          Icons.schedule_rounded,
+                          size: 13,
+                          color: HomeV2.textMuted(context),
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${episode.durationMinutes} ${tr('minutes_short')}',
@@ -113,61 +161,72 @@ class DailyPodcastCard extends StatelessWidget {
                   ),
                   SizedBox(height: dense ? AppSpacing.sm : AppSpacing.md),
 
-                  // Thumbnail + názov/podnadpis
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      _Thumbnail(
-                        size: dense ? 52 : 64,
-                        cover: cover,
-                        isPlaying: isPlaying,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          togglePlay();
-                        },
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              episode.displayTitle.isNotEmpty
-                                  ? episode.displayTitle
-                                  : tr('daily_lectio_audio'),
-                              style: HomeV2.serifTitle(context, size: 18),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            if (episode.displaySubtitle != null) ...[
-                              const SizedBox(height: 3),
+                  // Thumbnail + názov/podnadpis — celý riadok (obrázok aj názov)
+                  // spúšťa prehrávanie (na home tak ide play cez obrázok aj button).
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      togglePlay();
+                    },
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        _Thumbnail(
+                          size: dense ? 52 : 64,
+                          cover: cover,
+                          isPlaying: isPlaying,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            togglePlay();
+                          },
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
                               Text(
-                                ScriptureReference.format(
-                                  episode.displaySubtitle,
-                                  context.locale.languageCode,
-                                ),
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  height: 1.3,
-                                  color: HomeV2.textMuted(context),
-                                ),
-                                maxLines: 1,
+                                episode.displayTitle.isNotEmpty
+                                    ? episode.displayTitle
+                                    : tr('daily_lectio_audio'),
+                                style: HomeV2.serifTitle(context, size: 18),
+                                maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
+                              if (episode.displaySubtitle != null) ...[
+                                const SizedBox(height: 3),
+                                Text(
+                                  ScriptureReference.format(
+                                    episode.displaySubtitle,
+                                    context.locale.languageCode,
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    height: 1.3,
+                                    color: HomeV2.textMuted(context),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
 
-                  // Progress bar + časy
+                  // Progress bar + časy. Pri kombinovanom audiu nemáme dopredu
+                  // známu dĺžku → fallback 0 (reálnu doplní stream po spustení).
                   _ProgressBar(
                     controller: controller,
                     isCurrent: isCurrent,
-                    fallbackTotal: episode.duration,
+                    fallbackTotal: usingCombined
+                        ? Duration.zero
+                        : episode.duration,
                   ),
                   // Akcie: (voliteľné) Prehrať/Pozastaviť + Spotify
                   if (showPrimaryButton || onSpotify != null) ...[
@@ -186,7 +245,8 @@ class DailyPodcastCard extends StatelessWidget {
                           ),
                         if (showPrimaryButton && onSpotify != null)
                           const SizedBox(width: AppSpacing.md),
-                        if (onSpotify != null) _SpotifyButton(onTap: onSpotify!),
+                        if (onSpotify != null)
+                          _SpotifyButton(onTap: onSpotify!),
                       ],
                     ),
                   ],
@@ -237,8 +297,11 @@ class _Thumbnail extends StatelessWidget {
                 width: size,
                 height: size,
                 color: HomeV2.primary.withValues(alpha: 0.12),
-                child: Icon(Icons.podcasts_rounded,
-                    color: HomeV2.primary, size: 26),
+                child: Icon(
+                  Icons.podcasts_rounded,
+                  color: HomeV2.primary,
+                  size: 26,
+                ),
               ),
             ),
           ),
@@ -283,10 +346,13 @@ class _ProgressBar extends StatelessWidget {
           stream: controller.durationStream,
           initialData: controller.duration,
           builder: (context, durSnap) {
-            final total = (isCurrent ? durSnap.data : null) ??
+            final total =
+                (isCurrent ? durSnap.data : null) ??
                 (fallbackTotal > Duration.zero ? fallbackTotal : null) ??
                 const Duration(seconds: 1);
-            final pos = isCurrent ? (posSnap.data ?? Duration.zero) : Duration.zero;
+            final pos = isCurrent
+                ? (posSnap.data ?? Duration.zero)
+                : Duration.zero;
             final maxMs = total.inMilliseconds <= 0 ? 1 : total.inMilliseconds;
             final value = pos.inMilliseconds.clamp(0, maxMs).toDouble();
 
@@ -298,11 +364,14 @@ class _ProgressBar extends StatelessWidget {
                     data: SliderThemeData(
                       trackHeight: 3,
                       activeTrackColor: HomeV2.primary,
-                      inactiveTrackColor: HomeV2.primary.withValues(alpha: 0.15),
+                      inactiveTrackColor: HomeV2.primary.withValues(
+                        alpha: 0.15,
+                      ),
                       thumbColor: HomeV2.primary,
                       overlayShape: SliderComponentShape.noOverlay,
-                      thumbShape:
-                          const RoundSliderThumbShape(enabledThumbRadius: 5),
+                      thumbShape: const RoundSliderThumbShape(
+                        enabledThumbRadius: 5,
+                      ),
                       trackShape: const RoundedRectSliderTrackShape(),
                     ),
                     child: Slider(
@@ -310,14 +379,17 @@ class _ProgressBar extends StatelessWidget {
                       min: 0,
                       max: maxMs.toDouble(),
                       onChanged: isCurrent
-                          ? (v) =>
-                              controller.seek(Duration(milliseconds: v.toInt()))
+                          ? (v) => controller.seek(
+                              Duration(milliseconds: v.toInt()),
+                            )
                           : null,
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -403,8 +475,11 @@ class _SpotifyButton extends StatelessWidget {
               color: HomeV2.spotify,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.graphic_eq_rounded,
-                color: Colors.white, size: 18),
+            child: const Icon(
+              Icons.graphic_eq_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
           ),
         ),
       ),

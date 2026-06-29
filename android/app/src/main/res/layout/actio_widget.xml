@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/actio_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/actio_widget_bg"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/actio_overline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="ACTIO"
+        android:textColor="@color/actio_widget_overline"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.15"
+        android:fontFamily="sans-serif-medium" />
+
+    <TextView
+        android:id="@+id/actio_text"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="6dp"
+        android:text="Otvor dnešné Lectio"
+        android:textColor="@color/actio_widget_text"
+        android:textSize="15sp"
+        android:fontFamily="serif"
+        android:textStyle="italic"
+        android:maxLines="6"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/actio_ref"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textColor="@color/actio_widget_ref"
+        android:textSize="11sp"
+        android:fontFamily="serif"
+        android:visibility="gone" />
+</LinearLayout>

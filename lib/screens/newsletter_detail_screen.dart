@@ -1,12 +1,13 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../shared/app_spacing.dart';
-import '../shared/app_colors.dart';
 import '../utils/app_logger.dart';
+import '../widgets/home_v2/home_v2_tokens.dart';
 
 class NewsletterDetailScreen extends StatefulWidget {
   final Map<String, dynamic> newsletterData;
@@ -61,7 +62,6 @@ class _NewsletterDetailScreenState extends State<NewsletterDetailScreen> {
 
   /// Remove Brevo template variables and auto-appended unsubscribe footer
   String _cleanFullHtml(String html) {
-    // Remove auto-appended content AFTER </html> tag
     final htmlCloseIdx = html.lastIndexOf(
       RegExp(r'</html>', caseSensitive: false),
     );
@@ -69,10 +69,8 @@ class _NewsletterDetailScreenState extends State<NewsletterDetailScreen> {
         ? html.substring(0, htmlCloseIdx + 7) // Keep </html>
         : html;
 
-    // Remove {{ unsubscribe }} from anywhere in the document
     cleaned = cleaned.replaceAll(RegExp(r'\{\{\s*unsubscribe\s*\}\}'), '');
 
-    // Remove <a href="{{ unsubscribe }}">...</a> links
     cleaned = cleaned.replaceAll(
       RegExp(
         r'<a[^>]*href\s*=\s*"[^"]*\{\{\s*unsubscribe\s*\}\}[^"]*"[^>]*>.*?</a>',
@@ -82,7 +80,6 @@ class _NewsletterDetailScreenState extends State<NewsletterDetailScreen> {
       '',
     );
 
-    // Inject viewport meta tag so content scales to device width
     if (!cleaned.toLowerCase().contains('name="viewport"') &&
         !cleaned.toLowerCase().contains("name='viewport'")) {
       final headIdx = cleaned.indexOf(
@@ -97,7 +94,6 @@ class _NewsletterDetailScreenState extends State<NewsletterDetailScreen> {
       }
     }
 
-    // Add CSS to force content to fit within viewport
     final headCloseIdx = cleaned.indexOf(
       RegExp(r'</head>', caseSensitive: false),
     );
@@ -116,7 +112,6 @@ class _NewsletterDetailScreenState extends State<NewsletterDetailScreen> {
   /// Remove Brevo variables from simple HTML (visual editor output)
   String _cleanSimpleHtml(String html) {
     var cleaned = html;
-    // Remove auto-appended unsubscribe footer block
     cleaned = cleaned.replaceAll(
       RegExp(
         r'<br\s*/?>?\s*<hr[^>]*>\s*<p[^>]*>.*?\{\{\s*unsubscribe\s*\}\}.*?</p>',
@@ -125,9 +120,7 @@ class _NewsletterDetailScreenState extends State<NewsletterDetailScreen> {
       ),
       '',
     );
-    // Remove remaining {{ unsubscribe }}
     cleaned = cleaned.replaceAll(RegExp(r'\{\{\s*unsubscribe\s*\}\}'), '');
-    // Remove trailing empty paragraphs
     cleaned = cleaned.replaceAll(
       RegExp(r'(<hr[^>]*>\s*|<p>\s*</p>\s*|<br\s*/?>)*$', caseSensitive: false),
       '',
@@ -183,7 +176,6 @@ class _NewsletterDetailScreenState extends State<NewsletterDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final subject = widget.newsletterData['subject'] as String? ?? '';
     final htmlContent = widget.newsletterData['html_content'] as String? ?? '';
     final senderName =
@@ -193,26 +185,82 @@ class _NewsletterDetailScreenState extends State<NewsletterDetailScreen> {
       context,
     );
 
-    return Scaffold(
-      appBar: AppBar(title: Text(tr('newsletter_detail'))),
-      body: _isFullDocument
-          ? _buildWebViewBody(subject, senderName, sentAt, theme)
-          : _buildSimpleBody(subject, senderName, sentAt, htmlContent, theme),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness:
+            HomeV2.isDark(context) ? Brightness.light : Brightness.dark,
+        statusBarBrightness:
+            HomeV2.isDark(context) ? Brightness.dark : Brightness.light,
+      ),
+      child: Scaffold(
+        backgroundColor: HomeV2.background(context),
+        body: Column(
+          children: [
+            _buildHero(),
+            Expanded(
+              child: _isFullDocument
+                  ? _buildWebViewBody(subject, senderName, sentAt)
+                  : _buildSimpleBody(subject, senderName, sentAt, htmlContent),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHero() {
+    final topPad = MediaQuery.of(context).padding.top;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.sm,
+        topPad + AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            HomeV2.primary.withValues(alpha: HomeV2.isDark(context) ? 0.32 : 0.14),
+            HomeV2.background(context),
+          ],
+        ),
+      ),
+      child: Row(
+        children: [
+          _CircleButton(
+            icon: Icons.arrow_back_rounded,
+            onTap: () => Navigator.of(context).maybePop(),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              tr('newsletter_detail'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+                color: HomeV2.textMuted(context),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   /// Full HTML email — rendered in WebView
-  Widget _buildWebViewBody(
-    String subject,
-    String senderName,
-    String sentAt,
-    ThemeData theme,
-  ) {
+  Widget _buildWebViewBody(String subject, String senderName, String sentAt) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildHeader(subject, senderName, sentAt, theme),
+          _buildHeader(subject, senderName, sentAt),
           if (_webViewController != null)
             SizedBox(
               height: _webViewHeight,
@@ -241,7 +289,6 @@ class _NewsletterDetailScreenState extends State<NewsletterDetailScreen> {
     String senderName,
     String sentAt,
     String htmlContent,
-    ThemeData theme,
   ) {
     final displayContent = _cleanSimpleHtml(htmlContent);
     final hasContent =
@@ -252,16 +299,14 @@ class _NewsletterDetailScreenState extends State<NewsletterDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildHeader(subject, senderName, sentAt, theme),
+          _buildHeader(subject, senderName, sentAt),
           if (!hasContent)
             Padding(
               padding: const EdgeInsets.all(AppSpacing.xl),
               child: Center(
                 child: Text(
                   tr('newsletter_empty'),
-                  style: theme.textTheme.bodyMedium!.copyWith(
-                    color: AppColors.adaptiveCardSubtitle(context),
-                  ),
+                  style: TextStyle(color: HomeV2.textMuted(context)),
                 ),
               ),
             )
@@ -277,7 +322,9 @@ class _NewsletterDetailScreenState extends State<NewsletterDetailScreen> {
                   "body": Style(
                     margin: Margins.zero,
                     padding: HtmlPaddings.zero,
-                    fontSize: FontSize(15),
+                    fontSize: FontSize(15.5),
+                    lineHeight: const LineHeight(1.6),
+                    color: HomeV2.textDark(context),
                   ),
                   "p": Style(
                     lineHeight: const LineHeight(1.6),
@@ -292,35 +339,32 @@ class _NewsletterDetailScreenState extends State<NewsletterDetailScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                   "a": Style(
-                    color: AppColors.primary,
+                    color: HomeV2.primary,
                     textDecoration: TextDecoration.underline,
                   ),
                   "blockquote": Style(
                     padding: HtmlPaddings.only(left: 12),
                     border: const Border(
-                      left: BorderSide(color: AppColors.primary, width: 3),
+                      left: BorderSide(color: HomeV2.primary, width: 3),
                     ),
                     fontStyle: FontStyle.italic,
                   ),
                 },
               ),
             ),
-          const SizedBox(height: AppSpacing.xl),
+          SizedBox(
+            height: MediaQuery.of(context).viewPadding.bottom + AppSpacing.xl,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(
-    String subject,
-    String senderName,
-    String sentAt,
-    ThemeData theme,
-  ) {
+  Widget _buildHeader(String subject, String senderName, String sentAt) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
-        AppSpacing.lg,
+        AppSpacing.sm,
         AppSpacing.lg,
         AppSpacing.sm,
       ),
@@ -329,46 +373,31 @@ class _NewsletterDetailScreenState extends State<NewsletterDetailScreen> {
         children: [
           Text(
             subject,
-            style: theme.textTheme.titleLarge!.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: HomeV2.serifTitle(context, size: 25, height: 1.2),
           ),
           const SizedBox(height: AppSpacing.sm),
           Row(
             children: [
               Icon(
-                Icons.mail_outline,
-                size: 16,
-                color: AppColors.adaptiveCardSubtitle(context),
+                Icons.mail_outline_rounded,
+                size: 15,
+                color: HomeV2.textMuted(context),
               ),
-              const SizedBox(width: 4),
-              Text(
-                senderName,
-                style: theme.textTheme.bodySmall!.copyWith(
-                  color: AppColors.adaptiveCardSubtitle(context),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  sentAt.isNotEmpty ? '$senderName · $sentAt' : senderName,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: HomeV2.textMuted(context),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (sentAt.isNotEmpty) ...[
-                Text(
-                  ' · ',
-                  style: theme.textTheme.bodySmall!.copyWith(
-                    color: AppColors.adaptiveCardSubtitle(context),
-                  ),
-                ),
-                Flexible(
-                  child: Text(
-                    sentAt,
-                    style: theme.textTheme.bodySmall!.copyWith(
-                      color: AppColors.adaptiveCardSubtitle(context),
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          const Divider(),
+          Divider(height: 1, color: HomeV2.primary.withValues(alpha: 0.10)),
         ],
       ),
     );
@@ -383,5 +412,31 @@ class _NewsletterDetailScreenState extends State<NewsletterDetailScreen> {
     } catch (e) {
       appLogger.e('Error launching URL: $e');
     }
+  }
+}
+
+class _CircleButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _CircleButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: HomeV2.card(context).withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, color: HomeV2.primary, size: 22),
+        ),
+      ),
+    );
   }
 }

@@ -46,11 +46,16 @@ class SupportService {
     }
 
     try {
+      // Podporovateľ = aktívne predplatné, ktoré EŠTE neskončilo.
+      // Bez kontroly current_period_end by zlatý prstenec ostal aj po vypršaní
+      // (napr. zrušené cancel_at_period_end alebo nedobehnutý renewal webhook).
+      final nowIso = DateTime.now().toUtc().toIso8601String();
       final sub = await _supabase
           .from('subscriptions')
           .select('tier, status, current_period_end')
           .eq('user_id', user.id)
           .eq('status', 'active')
+          .gte('current_period_end', nowIso)
           .order('current_period_end', ascending: false)
           .limit(1)
           .maybeSingle();

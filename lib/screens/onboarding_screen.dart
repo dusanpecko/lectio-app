@@ -3,7 +3,6 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +13,7 @@ import 'dart:math';
 
 import '../shared/app_colors.dart';
 import '../shared/app_spacing.dart';
+import '../widgets/home_v2/home_v2_tokens.dart';
 import '../services/local_notifications_service.dart';
 import '../services/fcm_service.dart';
 import '../providers/theme_provider.dart';
@@ -59,7 +59,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final isDark = AppColors.isDark(context);
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+      backgroundColor: HomeV2.background(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -159,16 +159,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         child: ElevatedButton(
           onPressed: _nextPage,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
+            backgroundColor: HomeV2.primary,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
+              borderRadius: BorderRadius.circular(AppRadius.full),
             ),
-            elevation: 2,
+            elevation: 0,
           ),
           child: Text(
             tr('onboarding.next'),
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
           ),
         ),
       ),
@@ -226,10 +226,10 @@ class _SlideBase extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: isTablet ? 28 : 24,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? AppColors.darkText : AppColors.text,
+                style: HomeV2.serifTitle(
+                  context,
+                  size: isTablet ? 30 : 25,
+                  height: 1.15,
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
@@ -275,11 +275,12 @@ class _LanguageSlideState extends State<_LanguageSlide> {
     {'code': 'sk', 'name': 'Slovenčina', 'flag': '🇸🇰'},
     {'code': 'en', 'name': 'English', 'flag': '🇬🇧'},
     {'code': 'es', 'name': 'Español', 'flag': '🇪🇸'},
+    {'code': 'fr', 'name': 'Français', 'flag': '🇫🇷'},
   ];
 
   static const _comingSoonLanguages = [
-    {'code': 'fr', 'name': 'Français', 'flag': '🇫🇷'},
     {'code': 'pt', 'name': 'Português (Brasil)', 'flag': '🇧🇷'},
+    {'code': 'de', 'name': 'Deutsch', 'flag': '🇩🇪'},
   ];
 
   @override
@@ -292,6 +293,10 @@ class _LanguageSlideState extends State<_LanguageSlide> {
     setState(() => _selectedLang = code);
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     await themeProvider.setLanguageCode(code, context);
+    // Po aplikovaní jazyka (setLocale je async) vynúť rebuild tohto slidu,
+    // aby sa preklady aktualizovali okamžite — inak sa prejavia až pri
+    // ďalšom kliknutí ("o klik pozadu").
+    if (mounted) setState(() {});
   }
 
   @override
@@ -330,10 +335,10 @@ class _LanguageSlideState extends State<_LanguageSlide> {
               Text(
                 tr('onboarding.slide0_title'),
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: isTablet ? 28 : 24,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? AppColors.darkText : AppColors.text,
+                style: HomeV2.serifTitle(
+                  context,
+                  size: isTablet ? 30 : 25,
+                  height: 1.15,
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -594,40 +599,7 @@ class _Slide2 extends StatefulWidget {
   State<_Slide2> createState() => _Slide2State();
 }
 
-class _Slide2State extends State<_Slide2> with SingleTickerProviderStateMixin {
-  bool _isMenuOpen = false;
-  late AnimationController _blinkController;
-  late Animation<double> _blinkAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _blinkController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
-    _blinkAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(parent: _blinkController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _blinkController.dispose();
-    super.dispose();
-  }
-
-  void _toggleMenu() {
-    setState(() {
-      _isMenuOpen = !_isMenuOpen;
-      if (_isMenuOpen) {
-        _blinkController.stop();
-      } else {
-        _blinkController.repeat(reverse: true);
-      }
-    });
-  }
-
+class _Slide2State extends State<_Slide2> {
   @override
   Widget build(BuildContext context) {
     return _SlideBase(
@@ -642,8 +614,6 @@ class _Slide2State extends State<_Slide2> with SingleTickerProviderStateMixin {
           ),
           const SizedBox(height: AppSpacing.lg),
           _buildCalendarMockup(context),
-          const SizedBox(height: AppSpacing.xxl),
-          _buildFabMockup(context),
         ],
       ),
     );
@@ -653,7 +623,7 @@ class _Slide2State extends State<_Slide2> with SingleTickerProviderStateMixin {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 600;
     final now = DateTime.now();
-    final dayNames = ['po', 'ut', 'st', 'st', 'pi', 'so', 'ne'];
+    final locale = context.locale.toString();
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -676,7 +646,7 @@ class _Slide2State extends State<_Slide2> with SingleTickerProviderStateMixin {
         children: [
           // Month header
           Text(
-            DateFormat.MMMM(context.locale.toString()).format(now),
+            DateFormat.MMMM(locale).format(now),
             style: TextStyle(
               fontSize: isTablet ? 18 : 16,
               fontWeight: FontWeight.w600,
@@ -690,7 +660,6 @@ class _Slide2State extends State<_Slide2> with SingleTickerProviderStateMixin {
             children: List.generate(5, (i) {
               final day = now.subtract(Duration(days: 2 - i));
               final isToday = i == 2;
-              final dayOfWeek = day.weekday - 1;
 
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
@@ -730,7 +699,7 @@ class _Slide2State extends State<_Slide2> with SingleTickerProviderStateMixin {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      dayNames[dayOfWeek],
+                      DateFormat.E(locale).format(day),
                       style: TextStyle(
                         fontSize: 12,
                         color: isToday
@@ -750,175 +719,6 @@ class _Slide2State extends State<_Slide2> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget _buildFabMockup(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isTablet = screenWidth >= 600;
-
-    final menuItems = [
-      (Icons.settings_rounded, tr('settings'), AppColors.primary),
-      (Icons.feedback_outlined, tr('feedback.menu_label'), Colors.teal),
-      (Icons.notifications_outlined, tr('notifications.title'), Colors.amber),
-      (Icons.volunteer_activism_rounded, tr('support'), Colors.red),
-    ];
-
-    return Column(
-      children: [
-        // Blinking hint text (visible only when menu is closed)
-        AnimatedOpacity(
-          opacity: _isMenuOpen ? 0.0 : 1.0,
-          duration: const Duration(milliseconds: 300),
-          child: FadeTransition(
-            opacity: _blinkAnimation,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.touch_app_rounded,
-                    size: 18,
-                    color: AppColors.primary.withValues(alpha: 0.7),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Text(
-                    tr('onboarding.slide2_fab_try'),
-                    style: TextStyle(
-                      fontSize: isTablet ? 15 : 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        // FAB button mockup (always visible, long-press to open like in app)
-        GestureDetector(
-          onLongPress: () {
-            HapticFeedback.mediumImpact();
-            _toggleMenu();
-          },
-          onTap: _isMenuOpen ? _toggleMenu : null,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  blurRadius: _isMenuOpen ? 12 : 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: AnimatedRotation(
-              turns: _isMenuOpen ? 0.125 : 0.0,
-              duration: const Duration(milliseconds: 300),
-              child: Icon(
-                _isMenuOpen ? Icons.close : Icons.menu_book_rounded,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-          ),
-        ),
-        // Animated menu card (revealed on tap)
-        AnimatedSize(
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeOutCubic,
-          child: _isMenuOpen
-              ? AnimatedOpacity(
-                  opacity: _isMenuOpen ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 300),
-                  child: Container(
-                    margin: const EdgeInsets.only(top: AppSpacing.lg),
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    decoration: BoxDecoration(
-                      color: widget.isDark ? AppColors.darkCard : Colors.white,
-                      borderRadius: BorderRadius.circular(AppRadius.xl),
-                      boxShadow: [
-                        if (!widget.isDark)
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4),
-                          ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        // Hint text
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.touch_app_rounded,
-                              size: 18,
-                              color: AppColors.primary.withValues(alpha: 0.6),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Text(
-                              tr('onboarding.slide2_fab_hint'),
-                              style: TextStyle(
-                                fontSize: isTablet ? 15 : 13,
-                                fontWeight: FontWeight.w600,
-                                color: widget.isDark
-                                    ? AppColors.darkTextSecondary
-                                    : AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                        // Mini menu items
-                        ...menuItems.map(
-                          (item) => Padding(
-                            padding: const EdgeInsets.only(
-                              bottom: AppSpacing.sm,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: item.$3.withValues(alpha: 0.12),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    item.$1,
-                                    size: 16,
-                                    color: item.$3,
-                                  ),
-                                ),
-                                const SizedBox(width: AppSpacing.md),
-                                Text(
-                                  item.$2,
-                                  style: TextStyle(
-                                    fontSize: isTablet ? 14 : 13,
-                                    color: widget.isDark
-                                        ? AppColors.darkText
-                                        : AppColors.text,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
-      ],
-    );
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════════

@@ -5,6 +5,8 @@ class IntroTranslations {
         return _en;
       case 'es':
         return _es;
+      case 'fr':
+        return _fr;
       case 'cz':
       case 'cs':
         return _cz;
@@ -536,6 +538,139 @@ class IntroTranslations {
         'title': 'Nespěchej',
         'description':
             'Lectio Divina není o rychlosti ani výkonu. Bůh se přizpůsobuje tvému tempu.',
+      },
+    ],
+  };
+
+  // FRENCH (FR)
+  static const Map<String, dynamic> _fr = {
+    'stepLabel': 'Étape',
+    'heroTitle': 'Écoute ce que Dieu veut te dire',
+    'heroSubtitle': 'Découvre la prière de la Lectio Divina',
+    'heroDescription':
+        'Dans un monde effréné où beaucoup parlent mais peu écoutent vraiment, le silence devient plus difficile à trouver. Et pourtant — c\'est dans le silence que la voix de Dieu peut se faire entendre.',
+    'startLectio': 'Commence par la Lectio Divina',
+
+    'whatIs': 'Qu\'est-ce que la Lectio Divina ?',
+    'whatIsText1':
+        'La Lectio Divina est une forme ancienne de prière avec la Bible, mais n\'attends ni explication ni analyse. Ce n\'est pas une conférence. Ce n\'est pas non plus une performance. C\'est une rencontre – silencieuse, personnelle, réelle. À travers la Parole de Dieu, nous entrons en conversation avec Celui qui nous connaît en profondeur.',
+    'whatIsText2':
+        'Cette forme est née dans les premiers monastères et fut ensuite développée par des figures comme saint Benoît, Origène, saint Grégoire de Nysse et le chartreux Guigues II. Aujourd\'hui, des personnes de tous âges se la réapproprient, car elles désirent une relation avec Dieu – même hors des murs des monastères.',
+
+    'fiveStepsTitle': 'Les six étapes de la Lectio Divina',
+    'fiveStepsText':
+        'Chaque étape te rapproche d\'une relation plus profonde avec Dieu. Avance à ton propre rythme, et laisse le Saint-Esprit guider ton cœur.',
+
+    'benefitsTitle': 'La lecture sacrée comme rencontre',
+    'benefitsText':
+        'Une pratique régulière de la Lectio Divina apporte la paix, la clarté et une croissance spirituelle plus profonde. Des milliers de chrétiens à travers le monde ont découvert la puissance transformatrice de cette prière.',
+
+    'howToTitle': 'La Lectio Divina est pour tout le monde',
+    'howToText':
+        'Tu n\'as besoin d\'aucune connaissance particulière. Ouvre simplement ton cœur, choisis un passage et fais le premier pas. Dieu se chargera du reste.',
+    'startFirstStep': 'Commencer par la première étape',
+
+    'closingQuote':
+        'La Parole qui vient à toi aujourd\'hui te cherche. Ouvre ton cœur. Laisse-toi trouver.',
+    'closingText':
+        'La Lectio Divina n\'est pas seulement une méthode ancienne – c\'est un chemin vivant pour l\'homme d\'aujourd\'hui. La Parole de Dieu qui touche ton cœur aujourd\'hui peut changer toute ta journée… et peut-être même toute ta vie.',
+
+    'steps': [
+      {
+        'number': 1,
+        'slug': 'silencio',
+        'title': 'Silencio – Silence',
+        'subtitle': 'Porte d\'entrée de la prière',
+        'description':
+            'Arrête-toi. Fais silence. Crée un espace où Dieu peut parler.',
+        'duration': '5 min',
+      },
+      {
+        'number': 2,
+        'slug': 'lectio',
+        'title': 'Lectio – Lecture',
+        'subtitle': 'Lecture attentive de la Parole de Dieu',
+        'description':
+            'Une écoute lente et concentrée de la voix de Dieu à travers l\'Écriture.',
+        'duration': '10 min',
+      },
+      {
+        'number': 3,
+        'slug': 'meditatio',
+        'title': 'Meditatio – Méditation',
+        'subtitle': 'Méditation profonde sur le texte',
+        'description': 'Nous laissons la Parole pénétrer de la tête au cœur.',
+        'duration': '15 min',
+      },
+      {
+        'number': 4,
+        'slug': 'oratio',
+        'title': 'Oratio – Prière',
+        'subtitle': 'Conversation avec Dieu',
+        'description': 'Un dialogue sincère avec Dieu, inspiré par sa Parole.',
+        'duration': '10 min',
+      },
+      {
+        'number': 5,
+        'slug': 'contemplatio',
+        'title': 'Contemplatio – Contemplation',
+        'subtitle': 'Silence avec Dieu',
+        'description': 'Repos dans la présence de Dieu sans paroles.',
+        'duration': '20 min',
+      },
+      {
+        'number': 6,
+        'slug': 'actio',
+        'title': 'Actio – Vivre la Parole de Dieu',
+        'subtitle': 'Vivre selon la Parole de Dieu',
+        'description': 'Application pratique dans la vie quotidienne.',
+        'duration': '5 min',
+      },
+    ],
+
+    'benefits': [
+      {
+        'title': 'Écoute de la voix de Dieu',
+        'description':
+            'Dans le silence de la Lectio Divina, nous apprenons à reconnaître la voix de Dieu et à lui ouvrir notre cœur.',
+      },
+      {
+        'title': 'Transformation du cœur',
+        'description':
+            'La Lectio Divina n\'est pas seulement une lecture — c\'est un processus de changement intérieur par la Parole de Dieu.',
+      },
+      {
+        'title': 'Renouvellement et paix',
+        'description':
+            'Dans un monde qui va vite, l\'âme trouve le repos dans la rencontre silencieuse avec Dieu.',
+      },
+      {
+        'title': 'Pour tous, partout',
+        'description':
+            'Tu peux la pratiquer seul ou en communauté, aucune préparation théologique n\'est nécessaire.',
+      },
+    ],
+
+    'guide': [
+      {
+        'title': 'Choisis un temps et un lieu',
+        'description':
+            'Il suffit de 10 à 15 minutes par jour dans un environnement calme. L\'important, c\'est la régularité, non la durée.',
+      },
+      {
+        'title': 'Choisis un court passage de la Bible',
+        'description':
+            'Tu n\'as pas besoin de lire des chapitres entiers. Quelques versets des Évangiles ou des Psaumes suffisent.',
+      },
+      {
+        'title': 'Ouvre-toi à Dieu',
+        'description':
+            'Commence par une courte prière : « Seigneur, je veux t\'entendre. Ouvre mon cœur à ta Parole. »',
+      },
+      {
+        'title': 'Ne te précipite pas',
+        'description':
+            'La Lectio Divina n\'est pas une question de vitesse ni de performance. Dieu s\'adapte à ton rythme.',
       },
     ],
   };

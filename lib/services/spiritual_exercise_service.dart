@@ -6,8 +6,7 @@ import '../utils/app_logger.dart';
 /// Načítanie „featured" duchovného cvičenia pre home (v2).
 class SpiritualExerciseService {
   SpiritualExerciseService._();
-  static final SpiritualExerciseService instance =
-      SpiritualExerciseService._();
+  static final SpiritualExerciseService instance = SpiritualExerciseService._();
 
   SupabaseClient get _supabase => Supabase.instance.client;
 
@@ -40,8 +39,11 @@ class SpiritualExerciseService {
 
       if (onlyActive) {
         final today = DateTime.now().toIso8601String().substring(0, 10);
+        // is_live = nový flag pre v11+ a web. is_published ostáva „legacy"
+        // flag, ktorý čítajú len staršie apky (<v11) — takto sa DC v starých
+        // apkách nezobrazia, aj keď ich admin zverejní.
         query = query
-            .eq('is_published', true)
+            .eq('is_live', true)
             .eq('is_active', true)
             .gte('end_date', today);
       }

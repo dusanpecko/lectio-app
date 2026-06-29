@@ -326,7 +326,11 @@ class AudioDownloadService extends ChangeNotifier {
   ) {
     final urls = <MapEntry<String, String>>[];
 
-    // Zoznam audio kľúčov
+    // Zoznam audio kľúčov.
+    // `full_long_audio`/`full_short_audio` = kombinované „celé Lectio" audio,
+    // ktoré prehráva hlavná audio karta (DailyPodcastCard). Bez nich by hlavné
+    // audio offline zlyhalo. Sťahujeme obe varianty, aby fungovalo prepnutie
+    // dlhé↔krátke aj bez siete (chýbajúce sa jednoducho preskočia nižšie).
     final audioKeys = [
       'modlitba_audio',
       'lectio_audio',
@@ -334,6 +338,8 @@ class AudioDownloadService extends ChangeNotifier {
       'oratio_audio',
       'contemplatio_audio',
       'actio_audio',
+      'full_long_audio',
+      'full_short_audio',
     ];
 
     // Bible audio podľa vybranej biblie
@@ -407,15 +413,20 @@ class AudioDownloadService extends ChangeNotifier {
     }
   }
 
-  /// Vymaže stiahnuté audio pre konkrétny dátum
+  /// Vymaže stiahnuté audio pre konkrétny dátum.
+  ///
+  /// Súbory sú pomenované `${date}_${trackKey}.ext` (napr.
+  /// `2026-06-29_lectio_audio.mp3`) a uložené ploché v `offline_audio/`, takže
+  /// porovnávame prefix názvu súboru. Zdieľané súbory (interlude = `shared_…`)
+  /// sa tým nezmažú.
   Future<void> deleteAudioForDate(String date) async {
     final keysToRemove = <String>[];
 
     for (final entry in _downloadedFiles.entries) {
-      final localPath = entry.value;
-      if (localPath.contains('/$date/') || localPath.contains('_${date}_')) {
+      final fileName = entry.value.split('/').last;
+      if (fileName.startsWith('${date}_')) {
         try {
-          final file = File(localPath);
+          final file = File(entry.value);
           if (await file.exists()) {
             await file.delete();
           }

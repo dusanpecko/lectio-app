@@ -485,6 +485,31 @@ class FcmService {
     }
   }
 
+  /// Vráti `true`, ak sú notifikácie zablokované na úrovni systému a OS už
+  /// znova nezobrazí dialóg s povolením — používateľa treba poslať do
+  /// systémových nastavení (cez [openSystemNotificationSettings]).
+  Future<bool> isNotificationPermissionBlocked() async {
+    try {
+      if (Platform.isIOS) {
+        final settings =
+            await FirebaseMessaging.instance.getNotificationSettings();
+        // `denied` = používateľ to už raz zamietol → iOS znova nepýta.
+        // `notDetermined` = ešte sa nepýtalo → dialóg sa dá zobraziť.
+        return settings.authorizationStatus == AuthorizationStatus.denied;
+      } else if (Platform.isAndroid) {
+        // Permanentne zamietnuté (Android 13+) → request() už dialóg nezobrazí.
+        return await Permission.notification.isPermanentlyDenied;
+      }
+      return false;
+    } catch (e) {
+      _logger.e('Failed to check blocked notification permission: $e');
+      return false;
+    }
+  }
+
+  /// Otvorí systémové nastavenia aplikácie (sekcia povolení).
+  Future<bool> openSystemNotificationSettings() => openAppSettings();
+
   /// Nastaví callback pre spracovanie notifikácií
   void setNotificationCallback(Function(RemoteMessage) callback) {
     _onNotificationCallback = callback;

@@ -21,17 +21,24 @@ class GlassBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
 
+  /// Voliteľný obal okolo položky menu (podľa indexu) — používa sa pre coach
+  /// marks (showcase). Ak je null, položka sa vykreslí bez obalu.
+  final Widget Function(int index, Widget child)? wrapItem;
+
   const GlassBottomNav({
     super.key,
     required this.currentIndex,
     required this.onTap,
+    this.wrapItem,
   });
 
   static const List<GlassNavItem> items = [
     GlassNavItem(icon: Icons.menu_book_rounded, labelKey: 'nav_lectio'),
     GlassNavItem(icon: Icons.edit_note_rounded, labelKey: 'notes_title'),
     GlassNavItem(
-        icon: Icons.volunteer_activism_rounded, labelKey: 'nav_prayers'),
+      icon: Icons.volunteer_activism_rounded,
+      labelKey: 'nav_prayers',
+    ),
     GlassNavItem(icon: Icons.article_rounded, labelKey: 'nav_intro'),
     GlassNavItem(icon: Icons.grid_view_rounded, labelKey: 'nav_more'),
   ];
@@ -41,39 +48,49 @@ class GlassBottomNav extends StatelessWidget {
     final bottomInset = MediaQuery.of(context).viewPadding.bottom;
     final isDark = AppColors.isDark(context);
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.lg,
-        right: AppSpacing.lg,
-        bottom: bottomInset > 0 ? bottomInset : AppSpacing.md,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            decoration: BoxDecoration(
-              color: HomeV2.card(context).withValues(alpha: isDark ? 0.55 : 0.72),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: isDark ? 0.10 : 0.45),
+    // Nav bar je kompaktný — globálne škálovanie písma tu NEaplikujeme, inak
+    // sa labely (napr. „Viac") nezmestia. Necháme fixnú veľkosť.
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: AppSpacing.lg,
+          right: AppSpacing.lg,
+          bottom: bottomInset > 0 ? bottomInset : AppSpacing.md,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 26, sigmaY: 26),
+            child: Container(
+              decoration: BoxDecoration(
+                color: HomeV2.card(
+                  context,
+                ).withValues(alpha: isDark ? 0.42 : 0.58),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: isDark ? 0.10 : 0.45),
+                ),
+                boxShadow: HomeV2.softShadow(context),
               ),
-              boxShadow: HomeV2.softShadow(context),
-            ),
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xs, vertical: AppSpacing.sm),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(items.length, (index) {
-                return _NavButton(
-                  item: items[index],
-                  isActive: index == currentIndex,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    onTap(index);
-                  },
-                );
-              }),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xs,
+                vertical: AppSpacing.sm,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: List.generate(items.length, (index) {
+                  final Widget button = _NavButton(
+                    item: items[index],
+                    isActive: index == currentIndex,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      onTap(index);
+                    },
+                  );
+                  return wrapItem?.call(index, button) ?? button;
+                }),
+              ),
             ),
           ),
         ),
@@ -107,7 +124,9 @@ class _NavButton extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.xs, vertical: 4),
+            horizontal: AppSpacing.xs,
+            vertical: 4,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -115,7 +134,9 @@ class _NavButton extends StatelessWidget {
                 duration: HomeV2.anim,
                 curve: HomeV2.curve,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg, vertical: 6),
+                  horizontal: AppSpacing.lg,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: isActive
                       ? activeColor.withValues(alpha: 0.14)

@@ -1,9 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'note_detail_screen.dart';
 import '../shared/app_spacing.dart';
+import '../widgets/home_v2/home_v2_tokens.dart';
 
 class NotesListScreen extends StatefulWidget {
   const NotesListScreen({super.key});
@@ -12,26 +14,16 @@ class NotesListScreen extends StatefulWidget {
   State<NotesListScreen> createState() => _NotesListScreenState();
 }
 
-class _NotesListScreenState extends State<NotesListScreen>
-    with TickerProviderStateMixin {
+class _NotesListScreenState extends State<NotesListScreen> {
   List<Map<String, dynamic>> notes = [];
   List<Map<String, dynamic>> filteredNotes = [];
   bool isLoading = true;
   String searchQuery = "";
-  AnimationController? _animationController;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-  }
+  final _searchController = TextEditingController();
 
   @override
   void dispose() {
-    _animationController?.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -63,19 +55,13 @@ class _NotesListScreenState extends State<NotesListScreen>
 
       setState(() {
         notes = List<Map<String, dynamic>>.from(response);
-        filteredNotes = notes;
+        filteredNotes = _applyQuery(notes, searchQuery);
         isLoading = false;
       });
-      _animationController?.forward();
     } catch (e) {
       setState(() => isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Chyba pri načítaní poznámok: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        _showSnack('${tr('note_load_error')}: $e', isError: true);
       }
     }
   }
@@ -85,28 +71,28 @@ class _NotesListScreenState extends State<NotesListScreen>
       await Supabase.instance.client.from('notes').delete().eq('id', noteId);
       await fetchNotes();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: AppSpacing.sm),
-                Text(tr('note_deleted')),
-              ],
-            ),
-          ),
-        );
+        _showSnack(tr('note_deleted'), isError: false);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Chyba pri mazaní: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        _showSnack('${tr('note_delete_error')}: $e', isError: true);
       }
     }
+  }
+
+  void _showSnack(String message, {required bool isError}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor:
+            isError ? const Color(0xFFC0392B) : const Color(0xFF2E9E5B),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+        ),
+        margin: const EdgeInsets.all(AppSpacing.lg),
+      ),
+    );
   }
 
   String formatDate(String? iso) {
@@ -116,259 +102,343 @@ class _NotesListScreenState extends State<NotesListScreen>
     return DateFormat('d.M.yyyy').format(date);
   }
 
-  void filterNotes(String query) {
-    if (query.isEmpty) {
-      setState(() {
-        filteredNotes = notes;
-        searchQuery = "";
-      });
-      return;
-    }
+  List<Map<String, dynamic>> _applyQuery(
+    List<Map<String, dynamic>> source,
+    String query,
+  ) {
+    if (query.isEmpty) return source;
     final q = query.toLowerCase();
+    return source.where((note) {
+      final title = (note['title'] ?? '').toString().toLowerCase();
+      final content = (note['content'] ?? '').toString().toLowerCase();
+      final ref = (note['bible_reference'] ?? '').toString().toLowerCase();
+      final quote = (note['bible_quote'] ?? '').toString().toLowerCase();
+      return title.contains(q) ||
+          content.contains(q) ||
+          ref.contains(q) ||
+          quote.contains(q);
+    }).toList();
+  }
+
+  void filterNotes(String query) {
     setState(() {
       searchQuery = query;
-      filteredNotes = notes.where((note) {
-        final title = (note['title'] ?? '').toString().toLowerCase();
-        final content = (note['content'] ?? '').toString().toLowerCase();
-        final bibleReference = (note['bible_reference'] ?? '')
-            .toString()
-            .toLowerCase();
-        final bibleQuote = (note['bible_quote'] ?? '').toString().toLowerCase();
-        return title.contains(q) ||
-            content.contains(q) ||
-            bibleReference.contains(q) ||
-            bibleQuote.contains(q);
-      }).toList();
+      filteredNotes = _applyQuery(notes, query);
     });
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxxl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+  Future<void> _openNote([Map<String, dynamic>? note]) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            note == null ? const NoteDetailScreen() : NoteDetailScreen(note: note),
+        settings: RouteSettings(
+          name: note == null ? '/note-detail/new' : '/note-detail/edit',
+        ),
+      ),
+    );
+    fetchNotes();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness:
+            HomeV2.isDark(context) ? Brightness.light : Brightness.dark,
+        statusBarBrightness:
+            HomeV2.isDark(context) ? Brightness.dark : Brightness.light,
+      ),
+      child: Scaffold(
+        backgroundColor: HomeV2.background(context),
+        body: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.xxl),
-              decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(50),
-              ),
-              child: Icon(
-                Icons.note_alt_outlined,
-                size: 64,
-                color: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.6),
+            _buildHero(),
+            _buildSearchBar(),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: fetchNotes,
+                color: HomeV2.primary,
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : filteredNotes.isEmpty
+                        ? _buildEmptyState()
+                        : ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: EdgeInsets.only(
+                              top: AppSpacing.xs,
+                              bottom: MediaQuery.of(context).viewPadding.bottom +
+                                  96,
+                            ),
+                            itemCount: filteredNotes.length,
+                            itemBuilder: (context, index) =>
+                                _buildNoteCard(filteredNotes[index]),
+                          ),
               ),
             ),
-            const SizedBox(height: AppSpacing.xxl),
-            Text(
-              searchQuery.isEmpty
-                  ? tr('no_notes')
-                  : 'Žiadne výsledky vyhľadávania',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            if (searchQuery.isEmpty) ...[
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                'Začnite písaním svojej prvej poznámky',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
           ],
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => _openNote(),
+          backgroundColor: HomeV2.primary,
+          foregroundColor: Colors.white,
+          elevation: 3,
+          icon: const Icon(Icons.add_rounded),
+          label: Text(
+            tr('add_note'),
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          shape: const StadiumBorder(),
         ),
       ),
     );
   }
 
-  Widget _buildSearchBar() {
+  // ── Hero ──────────────────────────────────────────────────────────────────
+  Widget _buildHero() {
+    final topPad = MediaQuery.of(context).padding.top;
     return Container(
-      margin: const EdgeInsets.all(AppSpacing.lg),
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        topPad + AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.xl,
+      ),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).shadowColor.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            HomeV2.primary.withValues(alpha: HomeV2.isDark(context) ? 0.32 : 0.14),
+            HomeV2.background(context),
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (Navigator.canPop(context))
+                _CircleButton(
+                  icon: Icons.arrow_back_rounded,
+                  onTap: () => Navigator.of(context).maybePop(),
+                ),
+              const Spacer(),
+              _CircleButton(
+                icon: Icons.refresh_rounded,
+                onTap: fetchNotes,
+              ),
+            ],
           ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            tr('notes_title'),
+            style: HomeV2.serifTitle(context, size: 30, height: 1.1),
+          ),
+          if (!isLoading) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Row(
+              children: [
+                Icon(
+                  Icons.sticky_note_2_outlined,
+                  size: 15,
+                  color: HomeV2.textMuted(context),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  searchQuery.isEmpty
+                      ? '${notes.length}'
+                      : '${filteredNotes.length} / ${notes.length}',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: HomeV2.textMuted(context),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  // ── Vyhľadávanie ────────────────────────────────────────────────────────────
+  Widget _buildSearchBar() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+        boxShadow: HomeV2.softShadowSm(context),
+      ),
       child: TextField(
+        controller: _searchController,
+        onChanged: filterNotes,
+        style: TextStyle(fontSize: 15, color: HomeV2.textDark(context)),
         decoration: InputDecoration(
           hintText: tr('search_notes'),
+          hintStyle: TextStyle(color: HomeV2.textMuted(context)),
           prefixIcon: Icon(
             Icons.search_rounded,
-            color: Theme.of(context).colorScheme.primary,
+            color: HomeV2.iconAccent(context),
           ),
           suffixIcon: searchQuery.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.clear_rounded),
+                  icon: Icon(
+                    Icons.clear_rounded,
+                    color: HomeV2.textMuted(context),
+                  ),
                   onPressed: () {
+                    _searchController.clear();
                     filterNotes('');
-                    setState(() {});
                   },
                 )
               : null,
           filled: true,
-          fillColor: Theme.of(context).colorScheme.surface,
+          fillColor: Colors.transparent,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.xl),
+            borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(HomeV2.radiusSm),
             borderSide: BorderSide.none,
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.primary,
-              width: 2,
-            ),
+            borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+            borderSide: BorderSide(color: HomeV2.primary, width: 1.5),
           ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 20,
             vertical: 16,
           ),
         ),
-        onChanged: filterNotes,
       ),
     );
   }
 
-  Widget _buildNoteCard(Map<String, dynamic> note, int index) {
+  // ── Prázdny stav ────────────────────────────────────────────────────────────
+  Widget _buildEmptyState() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xxxl),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.xxl),
+                    decoration: BoxDecoration(
+                      color: HomeV2.primary.withValues(alpha: 0.10),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.note_alt_outlined,
+                      size: 60,
+                      color: HomeV2.iconAccent(context),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                  Text(
+                    searchQuery.isEmpty
+                        ? tr('no_notes')
+                        : tr('note_no_results'),
+                    style: HomeV2.serifTitle(context, size: 22),
+                    textAlign: TextAlign.center,
+                  ),
+                  if (searchQuery.isEmpty) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      tr('note_empty_hint'),
+                      style: TextStyle(
+                        fontSize: 15,
+                        height: 1.4,
+                        color: HomeV2.textMuted(context),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ── Karta poznámky ──────────────────────────────────────────────────────────
+  Widget _buildNoteCard(Map<String, dynamic> note) {
     final content = (note['content'] ?? '').toString();
     final createdAt = note['created_at']?.toString();
     final bibleReference = note['bible_reference']?.toString();
-    final title = note['title']?.toString() ?? 'Bez názvu';
+    final title = note['title']?.toString().trim();
+    final hasTitle = title != null && title.isNotEmpty;
 
-    // Jednoduchšia implementácia bez zložitých animácií
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 6),
-      child: Card(
-        elevation: AppElevation.medium,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+      margin: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
+      ),
+      child: Material(
+        color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => NoteDetailScreen(note: note),
-                settings: const RouteSettings(name: '/note-detail/edit'),
-              ),
-            );
-            fetchNotes();
-          },
+          borderRadius: BorderRadius.circular(HomeV2.radius),
+          onTap: () => _openNote(note),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Text(
-                        title,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
+                        hasTitle ? title : tr('note_untitled'),
+                        style: TextStyle(
+                          fontSize: 16.5,
+                          fontWeight: FontWeight.w700,
+                          color: hasTitle
+                              ? HomeV2.textDark(context)
+                              : HomeV2.textMuted(context),
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    PopupMenuButton<String>(
-                      icon: Icon(
-                        Icons.more_vert_rounded,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
-                      onSelected: (value) async {
-                        if (value == 'delete') {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.lg),
-                              ),
-                              title: Row(
-                                children: [
-                                  Icon(
-                                    Icons.warning_amber_rounded,
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
-                                  const SizedBox(width: AppSpacing.sm),
-                                  Text(tr('delete_note')),
-                                ],
-                              ),
-                              content: Text(tr('delete_note_confirm')),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(context, false),
-                                  child: Text(tr('cancel')),
-                                ),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Theme.of(
-                                      context,
-                                    ).colorScheme.error,
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  onPressed: () => Navigator.pop(context, true),
-                                  child: Text(tr('delete')),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (confirm == true) {
-                            await deleteNote(note['id']);
-                          }
-                        }
-                      },
-                      itemBuilder: (BuildContext context) => [
-                        PopupMenuItem<String>(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.delete_outline,
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              Text(tr('delete_note')),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                    _buildMenu(note),
                   ],
                 ),
                 if (content.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    content.length > 100
-                        ? '${content.substring(0, 100)}...'
-                        : content,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.8),
-                      height: 1.4,
+                    content,
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 1.45,
+                      color: HomeV2.textMuted(context),
                     ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
@@ -382,34 +452,29 @@ class _NotesListScreenState extends State<NotesListScreen>
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                      color: HomeV2.gold.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
                       border: Border.all(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.3),
-                        width: 1,
+                        color: HomeV2.gold.withValues(alpha: 0.35),
                       ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.menu_book_rounded,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.primary,
+                          size: 15,
+                          color: Color(0xFFB8862F),
                         ),
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(
                             bibleReference,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFB8862F),
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -423,18 +488,15 @@ class _NotesListScreenState extends State<NotesListScreen>
                     children: [
                       Icon(
                         Icons.access_time_rounded,
-                        size: 14,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.5),
+                        size: 13,
+                        color: HomeV2.textMuted(context),
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       Text(
                         "${tr('created_at')}: ${formatDate(createdAt)}",
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.6),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: HomeV2.textMuted(context),
                         ),
                       ),
                     ],
@@ -448,60 +510,101 @@ class _NotesListScreenState extends State<NotesListScreen>
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(tr('notes_title')),
-        elevation: AppElevation.none,
+  Widget _buildMenu(Map<String, dynamic> note) {
+    return PopupMenuButton<String>(
+      icon: Icon(
+        Icons.more_vert_rounded,
+        color: HomeV2.textMuted(context),
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+      ),
+      onSelected: (value) async {
+        if (value == 'delete') {
+          final confirm = await _confirmDelete();
+          if (confirm == true) {
+            await deleteNote(note['id']);
+          }
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            children: [
+              const Icon(Icons.delete_outline_rounded, color: Color(0xFFC0392B)),
+              const SizedBox(width: AppSpacing.sm),
+              Text(tr('delete_note')),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<bool?> _confirmDelete() {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: HomeV2.card(context),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(HomeV2.radius),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Color(0xFFC0392B)),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(child: Text(tr('delete_note'))),
+          ],
+        ),
+        content: Text(tr('delete_note_confirm')),
         actions: [
-          if (notes.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.refresh_rounded),
-              onPressed: fetchNotes,
-              tooltip: 'Obnoviť',
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              tr('cancel'),
+              style: TextStyle(color: HomeV2.textMuted(context)),
             ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFC0392B),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.full),
+              ),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(tr('delete')),
+          ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: fetchNotes,
-        child: isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  _buildSearchBar(),
-                  Expanded(
-                    child: filteredNotes.isEmpty
-                        ? _buildEmptyState()
-                        : ListView.builder(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            itemCount: filteredNotes.length,
-                            itemBuilder: (context, index) {
-                              return _buildNoteCard(
-                                filteredNotes[index],
-                                index,
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const NoteDetailScreen(),
-              settings: const RouteSettings(name: '/note-detail/new'),
-            ),
-          );
-          fetchNotes();
+    );
+  }
+}
+
+class _CircleButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _CircleButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: HomeV2.card(context).withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
         },
-        tooltip: tr('add_note'),
-        icon: const Icon(Icons.add_rounded),
-        label: Text(tr('add_note')),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, color: HomeV2.primary, size: 22),
+        ),
       ),
     );
   }

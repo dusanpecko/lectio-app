@@ -49,9 +49,14 @@ Future<void> bootstrap(AppBuilder builder) async {
     logger.e('Missing Supabase Config');
     runApp(
       EasyLocalization(
-        supportedLocales: const [Locale('sk'), Locale('en'), Locale('es')],
+        supportedLocales: const [
+          Locale('en'),
+          Locale('sk'),
+          Locale('es'),
+          Locale('fr'),
+        ],
         path: 'assets/translations',
-        fallbackLocale: const Locale('sk'),
+        fallbackLocale: const Locale('en'),
         child: const EnvErrorApp(),
       ),
     );
@@ -101,9 +106,14 @@ Future<void> bootstrap(AppBuilder builder) async {
     ChangeNotifierProvider.value(
       value: themeProvider,
       child: EasyLocalization(
-        supportedLocales: const [Locale('sk'), Locale('en'), Locale('es')],
+        supportedLocales: const [
+          Locale('en'),
+          Locale('sk'),
+          Locale('es'),
+          Locale('fr'),
+        ],
         path: 'assets/translations',
-        fallbackLocale: const Locale('sk'),
+        fallbackLocale: const Locale('en'),
         startLocale: startLocale,
         child: builder(),
       ),
@@ -114,10 +124,10 @@ Future<void> bootstrap(AppBuilder builder) async {
 Future<Locale> _getStartLocale(String languageCode) async {
   if (languageCode == 'system') {
     final systemLocale = WidgetsBinding.instance.platformDispatcher.locale;
-    final supportedLanguages = ['sk', 'en', 'es'];
+    final supportedLanguages = ['en', 'sk', 'es', 'fr'];
     return supportedLanguages.contains(systemLocale.languageCode)
         ? Locale(systemLocale.languageCode)
-        : const Locale('sk');
+        : const Locale('en');
   }
   return Locale(languageCode);
 }

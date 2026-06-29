@@ -1,9 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-import '../shared/app_colors.dart';
 import 'intro_step_translations.dart';
 import '../shared/app_spacing.dart';
+import '../widgets/home_v2/home_v2_tokens.dart';
 
 class IntroStepScreen extends StatefulWidget {
   final String step;
@@ -19,292 +20,124 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final lang = context.locale.languageCode;
     final t = translations.getTranslations(lang, widget.step);
 
     if (t == null) {
       final errorT = translations.getErrorTranslations(lang);
       return Scaffold(
-        appBar: AppBar(title: Text(errorT['notFoundTitle']!)),
+        backgroundColor: HomeV2.background(context),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          foregroundColor: HomeV2.primary,
+          title: Text(errorT['notFoundTitle']!),
+        ),
         body: Center(
           child: Text('${errorT['notFoundMessage']}: "${widget.step}"'),
         ),
       );
     }
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: CustomScrollView(
-        slivers: [
-          // Hero App Bar with step indicator
-          SliverAppBar(
-            expandedHeight: MediaQuery.of(context).size.width >= 600
-                ? 450.0
-                : 300.0,
-            floating: false,
-            pinned: true,
-            backgroundColor: _getStepColor(widget.step),
-            title: Text(
-              t['stepTitle'] ?? 'Lectio Divina',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: HomeV2.background(context),
+        body: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            _buildHero(t),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+                MediaQuery.of(context).viewPadding.bottom + AppSpacing.xxl,
               ),
-            ),
-            iconTheme: const IconThemeData(color: Colors.white),
-            flexibleSpace: FlexibleSpaceBar(
-              title: null, // Disable default title to avoid overlap
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Background image
-                  Image.asset(
-                    _getStepBackgroundImage(widget.step),
-                    fit: BoxFit.cover,
-                  ),
-                  // Gradient overlay for readability
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          _getStepColor(widget.step).withValues(alpha: 0.6),
-                          _getStepColor(widget.step).withValues(alpha: 0.85),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Content
-                  SafeArea(
-                    child: Padding(
-                      padding: EdgeInsets.all(
-                        MediaQuery.of(context).size.width >= 600
-                            ? AppSpacing.xxl * 1.5
-                            : AppSpacing.xxl,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Step indicator
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal:
-                                  MediaQuery.of(context).size.width >= 600
-                                  ? 24
-                                  : 16,
-                              vertical: MediaQuery.of(context).size.width >= 600
-                                  ? 12
-                                  : 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(AppRadius.xl),
-                            ),
-                            child: Text(
-                              t['stepIndicator'] ?? 'Krok',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                                fontSize:
-                                    MediaQuery.of(context).size.width >= 600
-                                    ? 18
-                                    : 14,
-                              ),
-                            ),
-                          ),
-                          SizedBox(
-                            height: MediaQuery.of(context).size.width >= 600
-                                ? AppSpacing.xl
-                                : AppSpacing.lg,
-                          ),
-
-                          // Step icon
-                          Container(
-                            padding: EdgeInsets.all(
-                              MediaQuery.of(context).size.width >= 600
-                                  ? AppSpacing.xl
-                                  : AppSpacing.lg,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(AppRadius.xl),
-                            ),
-                            child: Icon(
-                              _getStepIcon(widget.step),
-                              size: MediaQuery.of(context).size.width >= 600
-                                  ? 64
-                                  : 48,
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(
-                            height: MediaQuery.of(context).size.width >= 600
-                                ? AppSpacing.xl
-                                : AppSpacing.lg,
-                          ),
-
-                          // Step title
-                          Text(
-                            t['stepTitle'] ?? 'Step Title',
-                            style:
-                                (MediaQuery.of(context).size.width >= 600
-                                        ? theme.textTheme.headlineMedium
-                                        : theme.textTheme.headlineSmall)
-                                    ?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Content
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Quote section
+                  // Quote
                   if (t['quoteText'] != null) ...[
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(minHeight: 180),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: Card(
-                          color: theme.colorScheme.primaryContainer.withValues(
-                            alpha: 0.3,
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20.0,
-                              vertical: 24.0,
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.format_quote_rounded,
-                                  size: 32,
-                                  color: theme.colorScheme.primary,
-                                ),
-                                const SizedBox(height: AppSpacing.md),
-                                Text(
-                                  t['quoteText'],
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    fontStyle: FontStyle.italic,
-                                    height: 1.6,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                if (t['quoteReference'] != null) ...[
-                                  const SizedBox(height: AppSpacing.sm),
-                                  Text(
-                                    t['quoteReference'],
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(AppSpacing.xl),
+                      decoration: BoxDecoration(
+                        color: HomeV2.primary.withValues(
+                            alpha: HomeV2.isDark(context) ? 0.16 : 0.07),
+                        borderRadius: BorderRadius.circular(HomeV2.radius),
+                        border: Border.all(
+                            color: HomeV2.primary.withValues(alpha: 0.18)),
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.xxl),
-                  ],
-
-                  // Navigation buttons (top)
-                  _buildNavigationButtons(context, t),
-                  const SizedBox(height: AppSpacing.xxl),
-
-                  // Introduction paragraph
-                  if (t['introParagraph'] != null) ...[
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.xl),
-                        child: Text(
-                          t['introParagraph'],
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            height: 1.6,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xxl),
-                  ],
-
-                  // What is section
-                  if (t['whatIsTitle'] != null) ...[
-                    _buildSection(
-                      context,
-                      title: t['whatIsTitle'],
-                      icon: Icons.lightbulb_outline_rounded,
-                      children: [
-                        if (t['whatIsContent'] != null)
+                      child: Column(
+                        children: [
+                          Icon(Icons.format_quote_rounded,
+                              size: 34, color: HomeV2.iconAccent(context)),
+                          const SizedBox(height: AppSpacing.sm),
                           Text(
-                            t['whatIsContent'],
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              height: 1.6,
-                            ),
+                            t['quoteText'],
+                            style:
+                                HomeV2.serifQuote(context, size: 19, height: 1.5),
+                            textAlign: TextAlign.center,
                           ),
-                        if (t['whatIsContent1'] != null) ...[
-                          Text(
-                            t['whatIsContent1'],
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              height: 1.6,
-                            ),
-                          ),
-                          if (t['whatIsContent2'] != null) ...[
-                            const SizedBox(height: AppSpacing.lg),
+                          if (t['quoteReference'] != null) ...[
+                            const SizedBox(height: AppSpacing.sm),
                             Text(
-                              t['whatIsContent2'],
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                height: 1.6,
+                              t['quoteReference'],
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: HomeV2.textMuted(context),
                               ),
+                              textAlign: TextAlign.center,
                             ),
                           ],
                         ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                  ],
+
+                  _buildNavigationButtons(context, t),
+                  const SizedBox(height: AppSpacing.xl),
+
+                  if (t['introParagraph'] != null) ...[
+                    _v2Card(child: _body(t['introParagraph'])),
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
+
+                  if (t['whatIsTitle'] != null) ...[
+                    _section(
+                      title: t['whatIsTitle'],
+                      icon: Icons.lightbulb_outline_rounded,
+                      children: [
+                        if (t['whatIsContent'] != null) _body(t['whatIsContent']),
+                        if (t['whatIsContent1'] != null) ...[
+                          _body(t['whatIsContent1']),
+                          if (t['whatIsContent2'] != null) ...[
+                            const SizedBox(height: AppSpacing.md),
+                            _body(t['whatIsContent2']),
+                          ],
+                        ],
                         if (t['whatIsQuote'] != null) ...[
-                          const SizedBox(height: AppSpacing.lg),
-                          Container(
-                            padding: const EdgeInsets.all(AppSpacing.lg),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceContainerHighest
-                                  .withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
+                          const SizedBox(height: AppSpacing.md),
+                          _tintBox(
                             child: Text(
                               t['whatIsQuote'],
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontStyle: FontStyle.italic,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
+                              style: HomeV2.serifQuote(context, size: 16),
                             ),
                           ),
                         ],
                       ],
                     ),
-                    const SizedBox(height: AppSpacing.xxl),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
 
-                  // How to section
                   if (t['howToTitle'] != null) ...[
-                    _buildSection(
-                      context,
+                    _section(
                       title: t['howToTitle'],
                       icon: Icons.help_outline_rounded,
                       children: [
@@ -314,91 +147,193 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                           _buildStepsList(context, t['howToSteps']),
                       ],
                     ),
-                    const SizedBox(height: AppSpacing.xxl),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
 
-                  // Practical tips
                   if (t['practicalTips'] != null) ...[
-                    _buildSection(
-                      context,
+                    _section(
                       title: t['practicalTipsTitle'] ?? 'Praktické návody',
                       icon: Icons.tips_and_updates_rounded,
                       children: [_buildTipsList(context, t['practicalTips'])],
                     ),
-                    const SizedBox(height: AppSpacing.xxl),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
 
-                  // Example section
                   if (t['exampleTitle'] != null) ...[
-                    _buildSection(
-                      context,
+                    _section(
                       title: t['exampleTitle'],
                       icon: Icons.lightbulb_rounded,
                       children: [_buildExample(context, t)],
                     ),
-                    const SizedBox(height: AppSpacing.xxl),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
 
-                  // Closing section
                   if (t['closingTitle'] != null) ...[
-                    Card(
-                      color: _getStepColor(widget.step),
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.xxl),
-                        child: Column(
-                          children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(AppSpacing.xxl),
+                      decoration: BoxDecoration(
+                        color: HomeV2.primary,
+                        borderRadius: BorderRadius.circular(HomeV2.radius),
+                        boxShadow: HomeV2.softShadow(context),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            t['closingTitle'],
+                            style: HomeV2.serifTitle(context,
+                                size: 20, color: Colors.white),
+                            textAlign: TextAlign.center,
+                          ),
+                          if (t['closingText'] != null) ...[
+                            const SizedBox(height: AppSpacing.md),
                             Text(
-                              t['closingTitle'],
-                              style: theme.textTheme.titleLarge?.copyWith(
+                              t['closingText'],
+                              style: const TextStyle(
                                 color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 14.5,
+                                height: 1.6,
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            if (t['closingText'] != null) ...[
-                              const SizedBox(height: AppSpacing.lg),
-                              Text(
-                                t['closingText'],
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: Colors.white,
-                                  height: 1.6,
+                          ],
+                          if (t['closingQuote'] != null) ...[
+                            const SizedBox(height: AppSpacing.lg),
+                            Container(
+                              padding: const EdgeInsets.all(AppSpacing.lg),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                borderRadius:
+                                    BorderRadius.circular(HomeV2.radiusSm),
+                              ),
+                              child: Text(
+                                t['closingQuote'],
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.95),
+                                  fontStyle: FontStyle.italic,
+                                  height: 1.5,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
-                            ],
-                            if (t['closingQuote'] != null) ...[
-                              const SizedBox(height: AppSpacing.lg),
-                              Container(
-                                padding: const EdgeInsets.all(AppSpacing.lg),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.md,
-                                  ),
-                                ),
-                                child: Text(
-                                  t['closingQuote'],
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: Colors.white,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ],
+                            ),
                           ],
-                        ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xxl),
+                    const SizedBox(height: AppSpacing.xl),
                   ],
 
-                  // Navigation buttons (bottom)
                   _buildNavigationButtons(context, t),
-
-                  const SizedBox(height: AppSpacing.xxl),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Hero ──────────────────────────────────────────────────────────────────
+  Widget _buildHero(Map<String, dynamic> t) {
+    final topPad = MediaQuery.of(context).padding.top;
+    final isTablet = MediaQuery.of(context).size.width >= 600;
+    final bg = HomeV2.background(context);
+    final halo = <Shadow>[
+      const Shadow(color: Colors.black54, blurRadius: 12),
+      const Shadow(color: Colors.black38, blurRadius: 4),
+    ];
+    const bottomRadius = Radius.circular(HomeV2.radius + 6);
+
+    return SizedBox(
+      height: isTablet ? 320 : 270,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: bottomRadius),
+            child: Image.asset(
+              _getStepBackgroundImage(widget.step),
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) =>
+                  ColoredBox(color: HomeV2.primary.withValues(alpha: 0.4)),
+            ),
+          ),
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: bottomRadius),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.30),
+                    Colors.black.withValues(alpha: 0.10),
+                    HomeV2.primary.withValues(alpha: 0.55),
+                    bg,
+                  ],
+                  stops: const [0.0, 0.35, 0.85, 1.0],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: topPad + AppSpacing.sm,
+            left: AppSpacing.lg,
+            child: _CircleButton(
+              icon: Icons.arrow_back_rounded,
+              onTap: () => Navigator.of(context).maybePop(),
+            ),
+          ),
+          Positioned(
+            left: AppSpacing.xl,
+            right: AppSpacing.xl,
+            bottom: AppSpacing.lg,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.20),
+                        borderRadius: BorderRadius.circular(AppRadius.full),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(_getStepIcon(widget.step),
+                              size: 15, color: Colors.white),
+                          const SizedBox(width: 6),
+                          Text(
+                            t['stepIndicator'] ?? 'Krok',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  t['stepTitle'] ?? 'Lectio Divina',
+                  style: HomeV2.serifTitle(
+                    context,
+                    size: isTablet ? 36 : 30,
+                    color: Colors.white,
+                    height: 1.1,
+                  ).copyWith(shadows: halo),
+                ),
+              ],
             ),
           ),
         ],
@@ -406,75 +341,96 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
     );
   }
 
-  Widget _buildSection(
-    BuildContext context, {
+  // ── Stavebné prvky ──────────────────────────────────────────────────────────
+  Widget _v2Card({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _tintBox({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: HomeV2.primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+        border: Border.all(color: HomeV2.primary.withValues(alpha: 0.12)),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _body(String text) => Text(
+        text,
+        style: TextStyle(
+          fontSize: 15,
+          height: 1.6,
+          color: HomeV2.textDark(context),
+        ),
+      );
+
+  Widget _section({
     required String title,
     required IconData icon,
     required List<Widget> children,
   }) {
-    final theme = Theme.of(context);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  child: Icon(icon, color: theme.colorScheme.primary, size: 24),
+    return _v2Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: HomeV2.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
-                const SizedBox(width: AppSpacing.lg),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                child: Icon(icon, color: HomeV2.iconAccent(context), size: 22),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text(
+                  title,
+                  style: HomeV2.serifTitle(context, size: 20, height: 1.2),
                 ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            ...children,
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          ...children,
+        ],
       ),
     );
   }
 
   Widget _buildList(BuildContext context, List<dynamic> items) {
-    final theme = Theme.of(context);
-
     return Column(
       children: items.map<Widget>((item) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: AppSpacing.md),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.md),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: 6,
                 height: 6,
-                margin: const EdgeInsets.only(top: AppSpacing.sm),
+                margin: const EdgeInsets.only(top: 9),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
+                  color: HomeV2.iconAccent(context),
                   shape: BoxShape.circle,
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Text(
-                  item.toString(),
-                  style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
-                ),
-              ),
+              Expanded(child: _body(item.toString())),
             ],
           ),
         );
@@ -483,8 +439,6 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
   }
 
   Widget _buildStepsList(BuildContext context, List<dynamic> steps) {
-    final theme = Theme.of(context);
-
     return Column(
       children: steps.asMap().entries.map<Widget>((entry) {
         final index = entry.key;
@@ -496,23 +450,24 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 28,
-                height: 28,
+                width: 30,
+                height: 30,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
+                  color: HomeV2.primary,
                   shape: BoxShape.circle,
                 ),
                 child: Center(
                   child: Text(
                     '${index + 1}',
-                    style: theme.textTheme.bodyMedium!.copyWith(
+                    style: const TextStyle(
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: AppSpacing.lg),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -520,32 +475,29 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
                     if (step is Map && step['title'] != null) ...[
                       Text(
                         step['title'],
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                        style: TextStyle(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w700,
+                          color: HomeV2.textDark(context),
                         ),
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       if (step['items'] != null)
                         ...((step['items'] as List).map<Widget>((item) {
-                          final theme = Theme.of(context);
                           return Padding(
-                            padding: const EdgeInsets.only(
-                              bottom: AppSpacing.xs,
-                            ),
+                            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
                             child: Text(
                               '• $item',
-                              style: theme.textTheme.bodyMedium?.copyWith(
+                              style: TextStyle(
+                                fontSize: 14,
                                 height: 1.4,
+                                color: HomeV2.textMuted(context),
                               ),
                             ),
                           );
-                        }).toList()),
-                    ] else ...[
-                      Text(
-                        step.toString(),
-                        style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
-                      ),
-                    ],
+                        })),
+                    ] else
+                      _body(step.toString()),
                   ],
                 ),
               ),
@@ -557,51 +509,52 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
   }
 
   Widget _buildTipsList(BuildContext context, List<dynamic> tips) {
-    final theme = Theme.of(context);
-
     return Column(
       children: tips.map<Widget>((tip) {
         if (tip is! Map) return const SizedBox.shrink();
-
         return Container(
-          margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-          child: Card(
-            elevation: AppElevation.low,
-            color: theme.colorScheme.surfaceContainerHighest.withValues(
-              alpha: 0.3,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (tip['title'] != null) ...[
-                    Text(
-                      tip['title'],
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                  ],
-                  if (tip['description'] != null) ...[
-                    Text(
-                      tip['description'],
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                  ],
-                  if (tip['content'] != null)
-                    Text(
-                      tip['content'],
-                      style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
-                    ),
-                ],
-              ),
-            ),
+          margin: const EdgeInsets.only(bottom: AppSpacing.md),
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: HomeV2.primary.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+            border: Border.all(color: HomeV2.primary.withValues(alpha: 0.12)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (tip['title'] != null) ...[
+                Text(
+                  tip['title'],
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: HomeV2.textDark(context),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+              ],
+              if (tip['description'] != null) ...[
+                Text(
+                  tip['description'],
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: HomeV2.iconAccent(context),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+              ],
+              if (tip['content'] != null)
+                Text(
+                  tip['content'],
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: HomeV2.textMuted(context),
+                  ),
+                ),
+            ],
           ),
         );
       }).toList(),
@@ -609,65 +562,51 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
   }
 
   Widget _buildExample(BuildContext context, Map<String, dynamic> t) {
-    final theme = Theme.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (t['exampleVerse'] != null) ...[
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
+          _tintBox(
             child: Text(
               t['exampleVerse'],
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: HomeV2.textDark(context),
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.md),
         ],
-
         if (t['exampleSteps'] != null) ...[
           ...((t['exampleSteps'] as List).map<Widget>((step) {
-            final theme = Theme.of(context);
             return Container(
               margin: const EdgeInsets.only(bottom: AppSpacing.md),
               padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.3,
-                ),
-                borderRadius: BorderRadius.circular(AppRadius.md),
+                color: HomeV2.primary.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(HomeV2.radiusSm),
               ),
               child: Text(
                 step.toString(),
-                style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: HomeV2.textDark(context),
+                ),
               ),
             );
-          }).toList()),
-          const SizedBox(height: AppSpacing.lg),
+          })),
         ],
-
         if (t['exampleSummary'] != null) ...[
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: BoxDecoration(
-              color: _getStepColor(widget.step).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(
-                color: _getStepColor(widget.step).withValues(alpha: 0.3),
-              ),
-            ),
+          _tintBox(
             child: Text(
               t['exampleSummary'],
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style: TextStyle(
+                fontSize: 14,
                 fontStyle: FontStyle.italic,
-                color: _getStepColor(widget.step),
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
+                color: HomeV2.iconAccent(context),
               ),
             ),
           ),
@@ -682,7 +621,6 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
 
     return Row(
       children: [
-        // Left button: previous step or back to overview
         Expanded(
           child: OutlinedButton.icon(
             onPressed: () {
@@ -696,27 +634,28 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
               previousStep != null
                   ? Icons.arrow_back_rounded
                   : Icons.home_rounded,
+              size: 18,
             ),
             label: Text(
               previousStep != null
                   ? (t['back'] ?? 'Späť')
                   : (t['backToOverview'] ?? 'Späť na prehľad'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.isDark(context)
-                  ? AppColors.darkPrimaryLight
-                  : AppColors.primary,
+              foregroundColor: HomeV2.iconAccent(context),
               side: BorderSide(
-                color: AppColors.isDark(context)
-                    ? AppColors.darkPrimaryLight
-                    : AppColors.primary,
+                color: HomeV2.primary.withValues(alpha: 0.5),
               ),
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.full),
+              ),
             ),
           ),
         ),
-        const SizedBox(width: AppSpacing.lg),
-        // Right button: next step or back to overview
+        const SizedBox(width: AppSpacing.md),
         Expanded(
           child: ElevatedButton.icon(
             onPressed: () {
@@ -730,25 +669,28 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
               nextStep != null
                   ? Icons.arrow_forward_rounded
                   : Icons.home_rounded,
+              size: 18,
             ),
             label: Text(
               nextStep != null
                   ? (t['next'] ?? 'Ďalej')
                   : (t['backToOverview'] ?? 'Späť na prehľad'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _getStepColor(widget.step),
+              backgroundColor: HomeV2.primary,
               foregroundColor: Colors.white,
+              elevation: 0,
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.full),
+              ),
             ),
           ),
         ),
       ],
     );
-  }
-
-  Color _getStepColor(String step) {
-    return AppColors.primary;
   }
 
   IconData _getStepIcon(String step) {
@@ -815,6 +757,32 @@ class _IntroStepScreenState extends State<IntroStepScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => IntroStepScreen(step: step)),
+    );
+  }
+}
+
+class _CircleButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _CircleButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: HomeV2.card(context).withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, color: HomeV2.primary, size: 22),
+        ),
+      ),
     );
   }
 }

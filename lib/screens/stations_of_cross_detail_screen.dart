@@ -15,6 +15,7 @@ import '../services/umami_analytics_service.dart';
 import '../shared/app_colors.dart';
 import '../shared/app_spacing.dart';
 import '../shared/audio_constants.dart';
+import '../widgets/home_v2/home_v2_tokens.dart';
 import '../widgets/lectio_floating_audio_player.dart';
 
 class StationsOfCrossDetailScreen extends StatefulWidget {
@@ -441,7 +442,7 @@ class _StationsOfCrossDetailScreenState
     final stations = _data!.stations;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: HomeV2.background(context),
       body: Stack(
         children: [
           PageView.builder(
@@ -550,21 +551,19 @@ class _StationsOfCrossDetailScreenState
 
   Widget _buildLoadingScreen(ThemeData theme) {
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: HomeV2.background(context),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              valueColor: AlwaysStoppedAnimation<Color>(HomeV2.primary),
               strokeWidth: 3,
             ),
             const SizedBox(height: AppSpacing.xl),
             Text(
               tr('stations_of_cross_loading_detail'),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: TextStyle(color: HomeV2.textMuted(context)),
             ),
           ],
         ),
@@ -573,56 +572,118 @@ class _StationsOfCrossDetailScreenState
   }
 
   Widget _buildErrorScreen(ThemeData theme) {
+    final topPad = MediaQuery.of(context).padding.top;
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(title: Text(tr('stations_not_found'))),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xxl),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline_rounded,
-                size: 80,
-                color: theme.colorScheme.error,
+      backgroundColor: HomeV2.background(context),
+      body: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.sm,
+              topPad + AppSpacing.sm,
+              AppSpacing.sm,
+              0,
+            ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: _CircleButton(
+                icon: Icons.arrow_back_rounded,
+                onTap: () => Navigator.of(context).maybePop(),
               ),
-              const SizedBox(height: AppSpacing.xl),
-              Text(
-                tr('stations_not_found'),
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  color: theme.colorScheme.error,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                _error ?? tr('error_loading'),
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.xxxl),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.arrow_back_rounded),
-                    label: Text(tr('back_to_list')),
-                  ),
-                  const SizedBox(width: AppSpacing.lg),
-                  OutlinedButton.icon(
-                    onPressed: _loadDetail,
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: Text(tr('try_again')),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xxl),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.xl),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFC0392B).withValues(alpha: 0.10),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.error_outline_rounded,
+                          size: 52, color: Color(0xFFC0392B)),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      tr('stations_not_found'),
+                      style: HomeV2.serifTitle(context, size: 22),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      _error ?? tr('error_loading'),
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: HomeV2.textMuted(context),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                          label: Text(tr('back_to_list')),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: HomeV2.primary,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.full),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        TextButton.icon(
+                          onPressed: _loadDetail,
+                          icon: Icon(Icons.refresh_rounded,
+                              color: HomeV2.primary),
+                          label: Text(
+                            tr('try_again'),
+                            style: TextStyle(
+                                color: HomeV2.primary,
+                                fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CircleButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _CircleButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: HomeV2.card(context).withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, color: HomeV2.primary, size: 22),
         ),
       ),
     );
@@ -826,14 +887,16 @@ class _StationPageViewState extends State<_StationPageView> {
                     bottom: AppSpacing.lg,
                     child: Text(
                       widget.data.title,
-                      style:
-                          (isTablet
-                                  ? theme.textTheme.headlineLarge
-                                  : theme.textTheme.headlineSmall)
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+                      style: HomeV2.serifTitle(
+                        context,
+                        size: isTablet ? 32 : 24,
+                        color: Colors.white,
+                        height: 1.15,
+                      ).copyWith(
+                        shadows: const [
+                          Shadow(color: Colors.black54, blurRadius: 10),
+                        ],
+                      ),
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -855,10 +918,10 @@ class _StationPageViewState extends State<_StationPageView> {
             ),
             child: Text(
               stationLabel,
-              style: TextStyle(
-                fontSize: labelFontSize,
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
+              style: HomeV2.serifTitle(
+                context,
+                size: labelFontSize,
+                color: HomeV2.primary,
               ),
               textAlign: TextAlign.center,
             ),

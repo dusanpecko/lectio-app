@@ -517,8 +517,18 @@ class LocalNotificationsService {
         'prayer_body':
             'Una invitación a un momento de meditación con Dios. ¿Unirse?',
       },
+      'fr': {
+        'welcome_title': 'Bienvenue dans Lectio Divina ! 🙏',
+        'welcome_body':
+            'Découvre la beauté de la lecture priante des Écritures. Es-tu prêt pour un chemin spirituel ?',
+        'daily_title': 'Méditation du jour 📖',
+        'daily_body': 'Ton texte quotidien de lectio divina t\'attend. Ouvrir ?',
+        'prayer_title': 'Le temps de la prière 🙏',
+        'prayer_body':
+            'Une invitation à un moment de recueillement avec Dieu. Rejoindre ?',
+      },
     };
-    return texts[lang]?[key] ?? texts['sk']![key]!;
+    return texts[lang]?[key] ?? texts['en']?[key] ?? texts['sk']![key]!;
   }
 
   /// Získanie aktuálneho jazyka aplikácie
@@ -533,8 +543,8 @@ class LocalNotificationsService {
     } catch (e) {
       _logger.w('Could not get current language from context: $e');
     }
-    // Fallback na slovenčinu
-    return 'sk';
+    // Fallback na angličtinu (predvolený jazyk)
+    return 'en';
   }
 
   /// Navigácia na LectioScreen

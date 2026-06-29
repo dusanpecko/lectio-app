@@ -32,9 +32,15 @@ class LectioDateSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final today = DateTime.now();
-    final start = DateTime(today.year, today.month, today.day)
-        .subtract(Duration(days: daysBack));
+    // Lišta je vycentrovaná na VYBRANÝ deň (nie fixne na dnešok) — inak by sa
+    // pri výbere dňa mimo rozsahu (admin v kalendári) nezvýraznil žiadny deň.
+    // Pre default (vybraný = dnes) je výsledok identický ako predtým.
+    final base = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+    );
+    final start = base.subtract(Duration(days: daysBack));
     final total = daysBack + daysForward + 1;
     final locale = context.locale.languageCode;
 

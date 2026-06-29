@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 /// Model pre audio stopu v Lectio Divina
@@ -81,7 +82,7 @@ class LectioAudioTracksBuilder {
     _addTrackIfExists(
       tracks: tracks,
       dataKey: 'modlitba_audio',
-      label: languageCode == 'sk' ? 'Modlitba' : 'Prayer',
+      label: tr('prayer'),
       icon: Icons.favorite,
       color: Colors.red,
     );
@@ -94,9 +95,7 @@ class LectioAudioTracksBuilder {
     _addTrackIfExists(
       tracks: tracks,
       dataKey: bibleAudioKey,
-      label:
-          lectioData[nazovKey] as String? ??
-          (languageCode == 'sk' ? 'Biblický text' : 'Biblical text'),
+      label: lectioData[nazovKey] as String? ?? tr('section_title_bible'),
       icon: Icons.menu_book,
       color: Colors.purple,
     );

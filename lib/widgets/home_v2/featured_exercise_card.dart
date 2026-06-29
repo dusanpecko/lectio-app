@@ -13,10 +13,14 @@ class FeaturedExerciseCard extends StatelessWidget {
   final SpiritualExercise exercise;
   final VoidCallback onTap;
 
+  /// Výška karty — väčšia na tablete (responzívne z carouselu).
+  final double height;
+
   const FeaturedExerciseCard({
     super.key,
     required this.exercise,
     required this.onTap,
+    this.height = 180,
   });
 
   @override
@@ -29,7 +33,7 @@ class FeaturedExerciseCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      height: 180,
+      height: height,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(HomeV2.radius),
         boxShadow: HomeV2.softShadow(context),

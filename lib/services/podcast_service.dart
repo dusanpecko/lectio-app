@@ -50,6 +50,8 @@ class PodcastService {
           .eq('status', 'ready')
           .lte('publish_date', today)
           .order('publish_date', ascending: false)
+          // Pri prípadnej duplicite na deň vyhrá najnovšie vygenerovaná epizóda.
+          .order('generated_at', ascending: false)
           .limit(1)
           .maybeSingle();
 
@@ -57,6 +59,7 @@ class PodcastService {
         appLogger.d('🎧 Podcast: žiadna ready epizóda pre "$locale"');
         return null;
       }
+      await _attachLectioVariants(res);
       final episode = PodcastEpisode.fromJson(res);
       appLogger.i('✅ Podcast: epizóda "${episode.title}" (${episode.publishDate})');
       return episode;
@@ -79,13 +82,38 @@ class PodcastService {
           .eq('lang', locale)
           .eq('status', 'ready')
           .eq('publish_date', dateStr)
+          // Pri prípadnej duplicite na deň vyhrá najnovšie vygenerovaná epizóda.
+          .order('generated_at', ascending: false)
           .limit(1)
           .maybeSingle();
       if (res == null) return null;
+      await _attachLectioVariants(res);
       return PodcastEpisode.fromJson(res);
     } catch (e) {
       appLogger.e('❌ Podcast: chyba pri načítaní epizódy pre $dateStr: $e');
       return null;
+    }
+  }
+
+  /// Doplní k epizóde kombinované „celé Lectio" audio (`full_long_audio` /
+  /// `full_short_audio`) z `lectio_sources` podľa `lectio_source_id`. V appke
+  /// sa namiesto podcastu prehráva práve toto audio (podcast ostáva na Spotify).
+  /// Best-effort — pri chybe necháme epizódu bez kombinovaného audia.
+  Future<void> _attachLectioVariants(Map<String, dynamic> row) async {
+    final sourceId = (row['lectio_source_id'] as num?)?.toInt();
+    if (sourceId == null) return;
+    try {
+      final src = await _supabase
+          .from('lectio_sources')
+          .select('full_long_audio, full_short_audio')
+          .eq('id', sourceId)
+          .maybeSingle();
+      if (src != null) {
+        row['full_long_audio'] = src['full_long_audio'];
+        row['full_short_audio'] = src['full_short_audio'];
+      }
+    } catch (e) {
+      appLogger.d('🎧 Podcast: nepodarilo sa načítať lectio varianty: $e');
     }
   }
 }

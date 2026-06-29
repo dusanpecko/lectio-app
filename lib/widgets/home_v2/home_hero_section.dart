@@ -12,19 +12,27 @@ import 'home_v2_tokens.dart';
 class HomeHeroSection extends StatelessWidget {
   final String imageAsset;
   final String? avatarUrl;
-  final bool isSupporter;
+
+  /// Tier aktívneho predplatného (`founder`/`patron`/…) alebo `null`.
+  /// Určuje farbu prstenca okolo avatara (ako na webe).
+  final String? supportTier;
   final Widget? floatingBadge;
   final VoidCallback onProfileTap;
   final VoidCallback onNotificationsTap;
+
+  /// Voliteľný obal okolo profilového avatara — používa sa pre coach marks
+  /// (showcase). Ak je null, avatar sa vykreslí bez obalu.
+  final Widget Function(Widget child)? wrapProfile;
 
   const HomeHeroSection({
     super.key,
     required this.imageAsset,
     this.avatarUrl,
-    this.isSupporter = false,
+    this.supportTier,
     this.floatingBadge,
     required this.onProfileTap,
     required this.onNotificationsTap,
+    this.wrapProfile,
   });
 
   @override
@@ -82,12 +90,15 @@ class HomeHeroSection extends StatelessWidget {
             right: AppSpacing.lg,
             child: Row(
               children: [
-                _ProfileAvatar(
-                  avatarUrl: avatarUrl,
-                  isSupporter: isSupporter,
-                  tooltip: tr('profile_title'),
-                  onTap: onProfileTap,
-                ),
+                Builder(builder: (context) {
+                  final Widget avatar = _ProfileAvatar(
+                    avatarUrl: avatarUrl,
+                    supportTier: supportTier,
+                    tooltip: tr('profile_title'),
+                    onTap: onProfileTap,
+                  );
+                  return wrapProfile?.call(avatar) ?? avatar;
+                }),
                 Expanded(
                   child: Center(
                     child: Image.asset(
@@ -161,19 +172,28 @@ class _CircleIconButton extends StatelessWidget {
 }
 
 /// Profilové tlačidlo — reálna fotka po prihlásení, fallback anonymný ikon,
-/// a zlatý prémiový rámik pre podporovateľov (aktívne predplatné).
+/// a farebný prémiový rámik pre podporovateľov podľa tieru (ako na webe).
 class _ProfileAvatar extends StatelessWidget {
   final String? avatarUrl;
-  final bool isSupporter;
+  final String? supportTier;
   final String tooltip;
   final VoidCallback onTap;
 
   const _ProfileAvatar({
     required this.avatarUrl,
-    required this.isSupporter,
+    required this.supportTier,
     required this.tooltip,
     required this.onTap,
   });
+
+  /// Farba prstenca podľa tieru — zhodné s webom:
+  /// founder = fialová, patron = modrá, ostatní podporovatelia = červená.
+  Color? get _ringColor => switch (supportTier) {
+        null => null,
+        'founder' => const Color(0xFF9333EA),
+        'patron' => const Color(0xFF2563EB),
+        _ => const Color(0xFFEF4444),
+      };
 
   Widget _fallbackIcon(BuildContext context) => Center(
         child: Icon(Icons.person_outline_rounded,
@@ -201,16 +221,13 @@ class _ProfileAvatar extends StatelessWidget {
           : _fallbackIcon(context),
     );
 
-    // Zlatý rámik pre podporovateľov.
-    final Widget node = isSupporter
+    // Farebný rámik pre podporovateľov podľa tieru (ako na webe).
+    final ringColor = _ringColor;
+    final Widget node = ringColor != null
         ? Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [HomeV2.gold, HomeV2.goldLight],
-              ),
+              color: ringColor,
             ),
             padding: const EdgeInsets.all(2.5),
             child: Container(

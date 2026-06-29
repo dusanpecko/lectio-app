@@ -125,6 +125,18 @@
         </receiver>
 
 
+        <!-- Domovský widget „Actio" -->
+        <receiver
+            android:name="sk.dpapp.app.android604688a88a394.ActioWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/actio_widget_info" />
+        </receiver>
+
         <!-- Povinné pre Flutter -->
         <meta-data
             android:name="flutterEmbedding"

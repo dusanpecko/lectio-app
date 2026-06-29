@@ -1,6 +1,10 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../shared/app_spacing.dart';
+import '../widgets/home_v2/home_v2_tokens.dart';
 
 class NoteDetailScreen extends StatefulWidget {
   final Map<String, dynamic>? note;
@@ -16,6 +20,9 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   late TextEditingController _contentCtrl;
   late TextEditingController _bibleReferenceCtrl;
   late TextEditingController _bibleQuoteCtrl;
+
+  static const Color _scriptureGold = Color(0xFFB8862F);
+  static const Color _danger = Color(0xFFC0392B);
 
   bool _isSaving = false;
   bool _isDeleting = false;
@@ -33,7 +40,6 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       text: widget.note?['bible_quote'] ?? '',
     );
 
-    // Sledovanie zmien
     _titleCtrl.addListener(_onTextChanged);
     _contentCtrl.addListener(_onTextChanged);
     _bibleReferenceCtrl.addListener(_onTextChanged);
@@ -55,38 +61,58 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     super.dispose();
   }
 
+  bool get _isEditing => widget.note != null && widget.note?['id'] != null;
+
+  void _showSnack(String message, {required bool isError}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? _danger : const Color(0xFF2E9E5B),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+        ),
+        margin: const EdgeInsets.all(AppSpacing.lg),
+      ),
+    );
+  }
+
   Future<bool> _onWillPop() async {
     if (!_hasChanges) return true;
-
     final shouldLeave = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+      builder: (ctx) => AlertDialog(
+        backgroundColor: HomeV2.card(ctx),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(HomeV2.radius),
+        ),
         title: Row(
           children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              color: Theme.of(context).colorScheme.error,
-            ),
+            const Icon(Icons.warning_amber_rounded, color: _danger),
             const SizedBox(width: AppSpacing.sm),
-            const Text('Neuložené zmeny'),
+            Expanded(child: Text(tr('note_unsaved_title'))),
           ],
         ),
-        content: const Text(
-          'Máte neuložené zmeny. Naozaj chcete opustiť túto stránku?',
-        ),
+        content: Text(tr('note_unsaved_msg')),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Zostať'),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              tr('note_stay'),
+              style: TextStyle(color: HomeV2.textMuted(ctx)),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
+              backgroundColor: _danger,
               foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.full),
+              ),
             ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Opustiť'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(tr('note_leave')),
           ),
         ],
       ),
@@ -99,19 +125,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     final userId = Supabase.instance.client.auth.currentUser?.id;
 
     if (userId == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.error, color: Colors.white),
-                SizedBox(width: AppSpacing.sm),
-                Text('Nie ste prihlásený'),
-              ],
-            ),
-          ),
-        );
-      }
+      if (mounted) _showSnack(tr('note_not_logged_in'), isError: true);
       setState(() => _isSaving = false);
       return;
     }
@@ -140,37 +154,15 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       setState(() => _hasChanges = false);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: AppSpacing.sm),
-                Text(
-                  isInsert
-                      ? 'Poznámka bola vytvorená'
-                      : 'Poznámka bola uložená',
-                ),
-              ],
-            ),
-          ),
+        _showSnack(
+          isInsert ? tr('note_created_msg') : tr('note_saved_msg'),
+          isError: false,
         );
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error, color: Colors.white),
-                const SizedBox(width: AppSpacing.sm),
-                Text('Chyba pri ukladaní: ${e.toString()}'),
-              ],
-            ),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        _showSnack('${tr('note_save_error')}: $e', isError: true);
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -187,33 +179,12 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
             .eq('id', widget.note!['id']);
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: AppSpacing.sm),
-                  Text('Poznámka bola zmazaná'),
-                ],
-              ),
-            ),
-          );
+          _showSnack(tr('note_deleted'), isError: false);
           Navigator.pop(context, true);
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.error, color: Colors.white),
-                  const SizedBox(width: AppSpacing.sm),
-                  Text('Chyba pri mazaní: ${e.toString()}'),
-                ],
-              ),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
+          _showSnack('${tr('note_delete_error')}: $e', isError: true);
         }
       } finally {
         if (mounted) setState(() => _isDeleting = false);
@@ -227,304 +198,530 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+        backgroundColor: HomeV2.card(ctx),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(HomeV2.radius),
+        ),
         title: Row(
           children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              color: Theme.of(context).colorScheme.error,
-            ),
+            const Icon(Icons.warning_amber_rounded, color: _danger),
             const SizedBox(width: AppSpacing.sm),
-            const Text('Zmazať poznámku'),
+            Expanded(child: Text(tr('delete_note'))),
           ],
         ),
-        content: const Text(
-          'Naozaj chcete túto poznámku zmazať? Táto akcia je nezvratná.',
-        ),
+        content: Text(tr('delete_note_confirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Zrušiť'),
+            child: Text(
+              tr('cancel'),
+              style: TextStyle(color: HomeV2.textMuted(ctx)),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
+              backgroundColor: _danger,
               foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.full),
+              ),
             ),
             onPressed: () async {
               Navigator.of(ctx).pop();
               await deleteNote();
             },
-            child: _isDeleting
-                ? const SizedBox(
-                    height: 16,
-                    width: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text('Zmazať'),
+            child: Text(tr('delete')),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInputCard({
-    required String title,
-    required Widget child,
-    IconData? icon,
-    Color? iconColor,
-  }) {
-    return Card(
-      elevation: AppElevation.low,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+  void _trySave() {
+    if (_formKey.currentState?.validate() ?? false) {
+      FocusScope.of(context).unfocus();
+      HapticFeedback.mediumImpact();
+      saveNote();
+    }
+  }
+
+  Future<void> _openContentEditor() async {
+    FocusScope.of(context).unfocus();
+    final result = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => _NoteContentEditor(
+          initialText: _contentCtrl.text,
+          title: tr('note_content_label'),
+          hint: tr('note_content_hint'),
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (result != null && result != _contentCtrl.text) {
+      _contentCtrl.text = result;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final navigator = Navigator.of(context);
+        if (!mounted) return;
+        final shouldPop = await _onWillPop();
+        if (!mounted) return;
+        if (shouldPop) navigator.pop();
+      },
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness:
+              HomeV2.isDark(context) ? Brightness.light : Brightness.dark,
+          statusBarBrightness:
+              HomeV2.isDark(context) ? Brightness.dark : Brightness.light,
+        ),
+        child: Scaffold(
+          backgroundColor: HomeV2.background(context),
+          body: Form(
+            key: _formKey,
+            child: ListView(
+              padding: EdgeInsets.zero,
               children: [
-                if (icon != null) ...[
-                  Icon(
-                    icon,
-                    size: 20,
-                    color: iconColor ?? Theme.of(context).colorScheme.primary,
+                _buildHero(),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    MediaQuery.of(context).viewPadding.bottom + AppSpacing.xxl,
                   ),
-                  const SizedBox(width: AppSpacing.sm),
-                ],
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.primary,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _field(
+                        label: tr('note_title_label'),
+                        icon: Icons.title_rounded,
+                        controller: _titleCtrl,
+                        hint: tr('note_title_hint'),
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? tr('note_title_required')
+                            : null,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _field(
+                        label: tr('note_bible_ref_label'),
+                        icon: Icons.menu_book_rounded,
+                        iconColor: _scriptureGold,
+                        controller: _bibleReferenceCtrl,
+                        hint: tr('note_bible_ref_hint'),
+                        capitalization: TextCapitalization.words,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _field(
+                        label: tr('note_bible_quote_label'),
+                        icon: Icons.format_quote_rounded,
+                        iconColor: _scriptureGold,
+                        controller: _bibleQuoteCtrl,
+                        hint: tr('note_bible_quote_hint'),
+                        minLines: 2,
+                        maxLines: 4,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _field(
+                        label: tr('note_content_label'),
+                        icon: Icons.edit_note_rounded,
+                        controller: _contentCtrl,
+                        hint: tr('note_content_hint'),
+                        minLines: 4,
+                        maxLines: 10,
+                        readOnly: true,
+                        onTap: _openContentEditor,
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? tr('note_content_required')
+                            : null,
+                      ),
+                      const SizedBox(height: AppSpacing.xxl),
+                      _buildSaveButton(),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.md),
-            child,
-          ],
+          ),
         ),
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isEditing = widget.note != null && widget.note?['id'] != null;
-
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
-
-        final navigator = Navigator.of(context);
-        
-        if (!mounted) return;
-        final shouldPop = await _onWillPop();
-
-        if (!mounted) return;
-        if (shouldPop) {
-          navigator.pop();
-        }
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(isEditing ? 'Upraviť poznámku' : 'Nová poznámka'),
-          elevation: AppElevation.none,
-          actions: [
-            if (_hasChanges && !_isSaving)
-              TextButton.icon(
-                onPressed: () {
-                  if (_formKey.currentState?.validate() ?? false) {
-                    saveNote();
-                  }
-                },
-                icon: const Icon(Icons.save_rounded),
-                label: const Text('Uložiť'),
-              ),
-            if (isEditing)
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert_rounded),
-                onSelected: (value) {
-                  if (value == 'delete') {
-                    _showDeleteDialog();
-                  }
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem<String>(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.delete_outline,
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        const Text('Zmazať poznámku'),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+  // ── Hero ──────────────────────────────────────────────────────────────────
+  Widget _buildHero() {
+    final topPad = MediaQuery.of(context).padding.top;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        topPad + AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.xl,
+      ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            HomeV2.primary.withValues(alpha: HomeV2.isDark(context) ? 0.32 : 0.14),
+            HomeV2.background(context),
           ],
         ),
-        body: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildInputCard(
-                  title: 'Názov poznámky',
-                  icon: Icons.title_rounded,
-                  child: TextFormField(
-                    controller: _titleCtrl,
-                    decoration: const InputDecoration(
-                      hintText: 'Zadajte názov poznámky...',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    validator: (value) => value == null || value.trim().isEmpty
-                        ? 'Zadajte názov'
-                        : null,
-                    textCapitalization: TextCapitalization.sentences,
-                  ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _CircleButton(
+                icon: Icons.arrow_back_rounded,
+                onTap: () => Navigator.of(context).maybePop(),
+              ),
+              const Spacer(),
+              if (_isEditing)
+                _CircleButton(
+                  icon: Icons.delete_outline_rounded,
+                  iconColor: _danger,
+                  onTap: _isDeleting ? null : _showDeleteDialog,
                 ),
-                const SizedBox(height: AppSpacing.lg),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            _isEditing ? tr('edit_note') : tr('new_note'),
+            style: HomeV2.serifTitle(context, size: 28, height: 1.1),
+          ),
+        ],
+      ),
+    );
+  }
 
-                _buildInputCard(
-                  title: 'Biblická citácia',
-                  icon: Icons.menu_book_rounded,
-                  iconColor: Colors.green[700],
-                  child: TextFormField(
-                    controller: _bibleReferenceCtrl,
-                    decoration: const InputDecoration(
-                      hintText: 'napr. Jn 3,16 alebo Matúš 5:3-12',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    textCapitalization: TextCapitalization.words,
-                  ),
+  // ── Pole vo v2 karte ──────────────────────────────────────────────────────
+  Widget _field({
+    required String label,
+    required IconData icon,
+    required TextEditingController controller,
+    required String hint,
+    Color? iconColor,
+    int maxLines = 1,
+    int? minLines,
+    String? Function(String?)? validator,
+    TextCapitalization capitalization = TextCapitalization.sentences,
+    bool readOnly = false,
+    VoidCallback? onTap,
+  }) {
+    final accent = iconColor ?? HomeV2.iconAccent(context);
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: accent),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: accent,
                 ),
-                const SizedBox(height: AppSpacing.lg),
-
-                _buildInputCard(
-                  title: 'Biblický verš',
-                  icon: Icons.format_quote_rounded,
-                  iconColor: Colors.green[600],
-                  child: TextFormField(
-                    controller: _bibleQuoteCtrl,
-                    decoration: const InputDecoration(
-                      hintText: 'Citát z Biblie...',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    maxLines: 3,
-                    minLines: 2,
-                    textCapitalization: TextCapitalization.sentences,
-                  ),
+              ),
+              if (onTap != null) ...[
+                const Spacer(),
+                Icon(
+                  Icons.open_in_full_rounded,
+                  size: 16,
+                  color: HomeV2.textMuted(context),
                 ),
-                const SizedBox(height: AppSpacing.lg),
+              ],
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          TextFormField(
+            controller: controller,
+            maxLines: maxLines,
+            minLines: minLines,
+            readOnly: readOnly,
+            onTap: onTap,
+            textCapitalization: capitalization,
+            style: TextStyle(
+              fontSize: 15,
+              height: 1.45,
+              color: HomeV2.textDark(context),
+            ),
+            validator: validator,
+            decoration: _inputDecoration(hint),
+          ),
+        ],
+      ),
+    );
+  }
 
-                _buildInputCard(
-                  title: 'Poznámka',
-                  icon: Icons.note_alt_rounded,
-                  child: TextFormField(
-                    controller: _contentCtrl,
-                    decoration: const InputDecoration(
-                      hintText: 'Vaše myšlienky a úvahy...',
-                      border: OutlineInputBorder(),
-                      alignLabelWithHint: true,
-                      isDense: true,
-                    ),
-                    maxLines: 8,
-                    minLines: 4,
-                    validator: (value) => value == null || value.trim().isEmpty
-                        ? 'Zadajte obsah poznámky'
-                        : null,
-                    textCapitalization: TextCapitalization.sentences,
-                  ),
+  InputDecoration _inputDecoration(String hint) {
+    OutlineInputBorder border(Color color, double width) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+          borderSide: BorderSide(color: color, width: width),
+        );
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(color: HomeV2.textMuted(context), fontSize: 14),
+      isDense: true,
+      filled: true,
+      fillColor: HomeV2.isDark(context)
+          ? Colors.white.withValues(alpha: 0.04)
+          : HomeV2.primary.withValues(alpha: 0.035),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.md,
+      ),
+      border: border(HomeV2.primary.withValues(alpha: 0.15), 1),
+      enabledBorder: border(HomeV2.primary.withValues(alpha: 0.15), 1),
+      focusedBorder: border(HomeV2.primary, 1.5),
+      errorBorder: border(_danger, 1),
+      focusedErrorBorder: border(_danger, 1.5),
+    );
+  }
+
+  Widget _buildSaveButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _isSaving ? null : _trySave,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: HomeV2.primary,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: HomeV2.primary.withValues(alpha: 0.5),
+          disabledForegroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.full),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (_isSaving)
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
                 ),
-                const SizedBox(height: AppSpacing.xxl),
+              )
+            else
+              const Icon(Icons.save_rounded, size: 20),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              _isEditing ? tr('note_save_changes') : tr('note_create'),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-                Row(
+// ── Celoobrazovkový editor obsahu poznámky ──────────────────────────────────
+InputDecoration _editorDecoration(BuildContext context, String hint) {
+  OutlineInputBorder border(Color color, double width) => OutlineInputBorder(
+        borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+        borderSide: BorderSide(color: color, width: width),
+      );
+  return InputDecoration(
+    hintText: hint,
+    hintStyle: TextStyle(color: HomeV2.textMuted(context), fontSize: 15),
+    filled: true,
+    fillColor: HomeV2.card(context),
+    contentPadding: const EdgeInsets.all(AppSpacing.lg),
+    border: border(HomeV2.primary.withValues(alpha: 0.15), 1),
+    enabledBorder: border(HomeV2.primary.withValues(alpha: 0.15), 1),
+    focusedBorder: border(HomeV2.primary, 1.5),
+  );
+}
+
+class _NoteContentEditor extends StatefulWidget {
+  final String initialText;
+  final String title;
+  final String hint;
+  const _NoteContentEditor({
+    required this.initialText,
+    required this.title,
+    required this.hint,
+  });
+
+  @override
+  State<_NoteContentEditor> createState() => _NoteContentEditorState();
+}
+
+class _NoteContentEditorState extends State<_NoteContentEditor> {
+  late final TextEditingController _ctrl =
+      TextEditingController(text: widget.initialText);
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _done() => Navigator.of(context).pop(_ctrl.text);
+
+  @override
+  Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final topPad = mq.padding.top;
+    // Scaffold sám zmenší telo nad klávesnicu (resizeToAvoidBottomInset),
+    // preto pri otvorenej klávesnici pridávame len malú medzeru; pri zatvorenej
+    // rešpektujeme bezpečnú zónu (home indikátor), nech karta nejde k okraju.
+    final keyboardOpen = mq.viewInsets.bottom > 0;
+    final bottomGap =
+        AppSpacing.lg + (keyboardOpen ? 0.0 : mq.viewPadding.bottom);
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _done();
+      },
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness:
+              HomeV2.isDark(context) ? Brightness.light : Brightness.dark,
+          statusBarBrightness:
+              HomeV2.isDark(context) ? Brightness.dark : Brightness.light,
+        ),
+        child: Scaffold(
+          backgroundColor: HomeV2.background(context),
+          body: Column(
+            children: [
+              Container(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  topPad + AppSpacing.sm,
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                ),
+                decoration: BoxDecoration(
+                  color: HomeV2.background(context),
+                  boxShadow: HomeV2.softShadowSm(context),
+                ),
+                child: Row(
                   children: [
-                    if (isEditing) ...[
-                      IconButton(
-                        onPressed: _isDeleting ? null : _showDeleteDialog,
-                        icon: _isDeleting
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Icon(
-                                Icons.delete_outline,
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                        style: IconButton.styleFrom(
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.error.withValues(alpha: 0.1),
-                          side: BorderSide(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.error.withValues(alpha: 0.3),
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                          padding: const EdgeInsets.all(AppSpacing.lg),
-                        ),
-                        tooltip: 'Zmazať poznámku',
-                      ),
-                      const SizedBox(width: AppSpacing.lg),
-                    ],
+                    _CircleButton(
+                      icon: Icons.close_rounded,
+                      onTap: _done,
+                    ),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
-                      flex: 2,
-                      child: ElevatedButton.icon(
-                        onPressed: _isSaving
-                            ? null
-                            : () {
-                                if (_formKey.currentState?.validate() ??
-                                    false) {
-                                  saveNote();
-                                }
-                              },
-                        icon: _isSaving
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.save_rounded),
-                        label: Text(
-                          isEditing ? 'Uložiť zmeny' : 'Vytvoriť poznámku',
+                      child: Text(
+                        widget.title,
+                        style: HomeV2.serifTitle(context, size: 20),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    FilledButton(
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        _done();
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: HomeV2.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                          vertical: AppSpacing.sm,
                         ),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
+                      ),
+                      child: Text(
+                        tr('note_save_short'),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.xxl),
-              ],
-            ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    bottomGap,
+                  ),
+                  child: TextField(
+                    controller: _ctrl,
+                    autofocus: true,
+                    expands: true,
+                    maxLines: null,
+                    minLines: null,
+                    keyboardType: TextInputType.multiline,
+                    textCapitalization: TextCapitalization.sentences,
+                    textAlignVertical: TextAlignVertical.top,
+                    style: TextStyle(
+                      fontSize: 16,
+                      height: 1.55,
+                      color: HomeV2.textDark(context),
+                    ),
+                    decoration: _editorDecoration(context, widget.hint),
+                  ),
+                ),
+              ),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CircleButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+  final Color? iconColor;
+  const _CircleButton({required this.icon, required this.onTap, this.iconColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: HomeV2.card(context).withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap == null
+            ? null
+            : () {
+                HapticFeedback.lightImpact();
+                onTap!();
+              },
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, color: iconColor ?? HomeV2.primary, size: 22),
         ),
       ),
     );

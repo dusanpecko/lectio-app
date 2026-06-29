@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
@@ -15,7 +15,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../shared/app_colors.dart';
 import '../utils/app_logger.dart';
-import 'notification_settings_screen.dart';
+import '../widgets/home_v2/home_v2_tokens.dart';
+import '../services/supporter_discount_service.dart';
+import 'shop/my_orders_screen.dart';
 import 'spiritual_exercise_detail_screen.dart';
 import '../shared/app_spacing.dart';
 
@@ -227,6 +229,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // New data
   List<Subscription> _subscriptions = [];
+  SupporterDiscountInfo _discount = SupporterDiscountInfo.none;
   List<Donation> _donations = [];
   List<SpiritualExerciseRegistration> _exerciseRegistrations = [];
   List<BankPayment> _bankPayments = [];
@@ -293,6 +296,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _fetchExerciseRegistrations(),
       _fetchBankPayments(),
       _fetchBillingInfo(),
+      _fetchDiscount(),
     ]);
     _buildPaymentHistory();
   }
@@ -351,11 +355,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = supabase.auth.currentUser;
     if (user == null) return;
     try {
+      // Aktívne A ešte nevypršané (rovnako ako prstenec na home) — inak by sa
+      // po skončení predplatného stále zobrazovalo ako aktívne + farebný prstenec.
+      final nowIso = DateTime.now().toUtc().toIso8601String();
       final data = await supabase
           .from('subscriptions')
           .select('*')
           .eq('user_id', user.id)
           .eq('status', 'active')
+          .gte('current_period_end', nowIso)
           .order('created_at', ascending: false);
       if (mounted) {
         setState(() {
@@ -467,7 +475,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _shippingStreetCtrl.text =
                 billingInfo.shippingAddress!['street'] ?? '';
             _shippingCityCtrl.text = billingInfo.shippingAddress!['city'] ?? '';
-            _shippingZipCtrl.text = billingInfo.shippingAddress!['zip'] ?? '';
+            _shippingZipCtrl.text =
+                (billingInfo.shippingAddress!['postal_code'] ??
+                        billingInfo.shippingAddress!['zip'] ??
+                        '')
+                    .toString();
             _shippingCountryCtrl.text =
                 billingInfo.shippingAddress!['country'] ?? '';
             _shippingPhoneCtrl.text =
@@ -481,7 +493,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _billingStreetCtrl.text =
                 billingInfo.billingAddress!['street'] ?? '';
             _billingCityCtrl.text = billingInfo.billingAddress!['city'] ?? '';
-            _billingZipCtrl.text = billingInfo.billingAddress!['zip'] ?? '';
+            _billingZipCtrl.text =
+                (billingInfo.billingAddress!['postal_code'] ??
+                        billingInfo.billingAddress!['zip'] ??
+                        '')
+                    .toString();
             _billingCountryCtrl.text =
                 billingInfo.billingAddress!['country'] ?? '';
             _billingPhoneCtrl.text = billingInfo.billingAddress!['phone'] ?? '';
@@ -494,23 +510,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _fetchDiscount() async {
+    final info = await SupporterDiscountService.instance.fetch();
+    if (mounted) setState(() => _discount = info);
+  }
+
   void _buildPaymentHistory() {
     final history = <PaymentHistoryItem>[];
 
-    // Add subscriptions
-    for (final sub in _subscriptions) {
-      history.add(
-        PaymentHistoryItem(
-          id: sub.id,
-          type: 'subscription',
-          amount: sub.amount,
-          date: sub.currentPeriodEnd,
-          description:
-              '${sub.tier} tier - ${sub.interval == 'month' ? 'profile.payment.monthly'.tr() : 'profile.payment.yearly'.tr()}',
-          status: sub.status,
-        ),
-      );
-    }
+    // Aktívne predplatné do histórie NEpridávame — má vlastný detailný blok
+    // (so zrušením) navrchu zjednotenej karty „Platby a podpora".
+    // História = jednorazové platby (príspevky + bankové platby).
 
     // Add donations
     for (final donation in _donations) {
@@ -607,7 +617,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         shippingAddress = {
           'street': _shippingStreetCtrl.text.trim(),
           'city': _shippingCityCtrl.text.trim(),
-          'zip': _shippingZipCtrl.text.trim(),
+          'postal_code': _shippingZipCtrl.text.trim(),
           'country': _shippingCountryCtrl.text.trim(),
           'phone': _shippingPhoneCtrl.text.trim(),
           'email': _shippingEmailCtrl.text.trim(),
@@ -622,7 +632,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         billingAddress = {
           'street': _billingStreetCtrl.text.trim(),
           'city': _billingCityCtrl.text.trim(),
-          'zip': _billingZipCtrl.text.trim(),
+          'postal_code': _billingZipCtrl.text.trim(),
           'country': _billingCountryCtrl.text.trim(),
           'phone': _billingPhoneCtrl.text.trim(),
           'email': _billingEmailCtrl.text.trim(),
@@ -1181,125 +1191,216 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final theme = Theme.of(context);
     final user = supabase.auth.currentUser;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('profile.title'.tr()),
-        backgroundColor: theme.appBarTheme.backgroundColor,
-        foregroundColor: theme.appBarTheme.foregroundColor,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'profile.button.logout'.tr(),
-            onPressed: signOut,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: HomeV2.isDark(context)
+            ? Brightness.light
+            : Brightness.dark,
+        statusBarBrightness: HomeV2.isDark(context)
+            ? Brightness.dark
+            : Brightness.light,
+      ),
+      child: Scaffold(
+        backgroundColor: HomeV2.background(context),
+        body: Column(
+          children: [
+            _buildHero(),
+            Expanded(
+              child: user == null
+                  ? Center(child: Text("profile.not_logged".tr()))
+                  : Form(
+                      key: _formKey,
+                      child: ListView(
+                        padding: EdgeInsets.fromLTRB(
+                          AppSpacing.lg,
+                          AppSpacing.xs,
+                          AppSpacing.lg,
+                          MediaQuery.of(context).viewPadding.bottom +
+                              AppSpacing.xxl,
+                        ),
+                        children: [
+                          // Avatar Card
+                          _buildAvatarCard(theme),
+                          const SizedBox(height: AppSpacing.lg),
+
+                          // Profile Info Card
+                          _buildProfileInfoCard(theme),
+                          const SizedBox(height: AppSpacing.lg),
+
+                          // Action Buttons Card
+                          _buildActionButtonsCard(theme),
+                          const SizedBox(height: AppSpacing.lg),
+
+                          // Billing Info Section
+                          _buildBillingInfoSection(theme),
+                          const SizedBox(height: AppSpacing.lg),
+
+                          // Podporovateľská zľava — kód + % (len ak má nárok).
+                          if (_discount.eligible && _discount.code != null) ...[
+                            _buildDiscountCard(theme),
+                            const SizedBox(height: AppSpacing.lg),
+                          ],
+
+                          // Moje objednávky — e-shop je len SK, vlastná samostatná karta.
+                          if (context.locale.languageCode == 'sk') ...[
+                            _buildOrdersCard(theme),
+                            const SizedBox(height: AppSpacing.lg),
+                          ],
+
+                          // Spiritual Exercise Registrations
+                          if (_exerciseRegistrations.isNotEmpty) ...[
+                            _buildExerciseRegistrationsCard(theme),
+                            const SizedBox(height: AppSpacing.lg),
+                          ],
+
+                          // Platby a podpora — zjednotené: aktívne predplatné (so
+                          // zrušením) navrchu + história jednorazových platieb
+                          // (príspevky + bankové platby) v jednej karte.
+                          if (_subscriptions.isNotEmpty ||
+                              _paymentHistory.isNotEmpty) ...[
+                            _buildPaymentsCard(theme),
+                            const SizedBox(height: AppSpacing.lg),
+                          ],
+
+                          // Save Button
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _isSaving ? null : saveProfile,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: HomeV2.primary,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpacing.lg,
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.full,
+                                  ),
+                                ),
+                              ),
+                              child: _isSaving
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Text('profile.button.save_changes'.tr()),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+
+                          // Delete Account Button
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _isSaving ? null : deleteAccount,
+                              icon: const Icon(
+                                Icons.delete_forever_rounded,
+                                color: Color(0xFFC0392B),
+                                size: 20,
+                              ),
+                              label: Text(
+                                'profile.button.delete_account'.tr(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(
+                                  color: Color(0xFFC0392B),
+                                ),
+                                foregroundColor: const Color(0xFFC0392B),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpacing.md,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.full,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                        ],
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Hero ──────────────────────────────────────────────────────────────────
+  Widget _buildHero() {
+    final topPad = MediaQuery.of(context).padding.top;
+    final isLoggedIn = supabase.auth.currentUser != null;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        topPad + AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.xl,
+      ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            HomeV2.primary.withValues(
+              alpha: HomeV2.isDark(context) ? 0.32 : 0.14,
+            ),
+            HomeV2.background(context),
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _ProfileCircleButton(
+                icon: Icons.arrow_back_rounded,
+                onTap: () => Navigator.of(context).maybePop(),
+              ),
+              const Spacer(),
+              if (isLoggedIn)
+                _ProfileCircleButton(
+                  icon: Icons.logout_rounded,
+                  onTap: signOut,
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            'profile.title'.tr(),
+            style: HomeV2.serifTitle(context, size: 30, height: 1.1),
           ),
         ],
       ),
-      body: user == null
-          ? Center(child: Text("profile.not_logged".tr()))
-          : Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                children: [
-                  // Avatar Card
-                  _buildAvatarCard(theme),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Profile Info Card
-                  _buildProfileInfoCard(theme),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Action Buttons Card
-                  _buildActionButtonsCard(theme),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Billing Info Section
-                  _buildBillingInfoSection(theme),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // My Subscriptions (expandable)
-                  if (_subscriptions.isNotEmpty) ...[
-                    _buildSubscriptionsCard(theme),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
-
-                  // My Donations (expandable)
-                  if (_donations.isNotEmpty) ...[
-                    _buildDonationsCard(theme),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
-
-                  // Spiritual Exercise Registrations
-                  if (_exerciseRegistrations.isNotEmpty) ...[
-                    _buildExerciseRegistrationsCard(theme),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
-
-                  // Bank Payments (expandable)
-                  if (_bankPayments.isNotEmpty) ...[
-                    _buildBankPaymentsCard(theme),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
-
-                  // Payment History (expandable)
-                  if (_paymentHistory.isNotEmpty) ...[
-                    _buildPaymentHistoryCard(theme),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
-
-                  // Save Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isSaving ? null : saveProfile,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary,
-                        foregroundColor: theme.colorScheme.onPrimary,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.lg,
-                        ),
-                        textStyle: const TextStyle(fontWeight: FontWeight.w600),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                      ),
-                      child: _isSaving
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text('profile.button.save_changes'.tr()),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Delete Account Button
-                  OutlinedButton.icon(
-                    onPressed: _isSaving ? null : deleteAccount,
-                    icon: const Icon(Icons.delete_forever, color: Colors.red),
-                    label: Text('profile.button.delete_account'.tr()),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.red),
-                      foregroundColor: Colors.red,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xxxl),
-                ],
-              ),
-            ),
     );
   }
 
   Widget _buildAvatarCard(ThemeData theme) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
       ),
-      elevation: AppElevation.medium,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
@@ -1329,10 +1430,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   Colors.blue.shade600,
                                   Colors.indigo.shade700,
                                 ]
+                              // Ostatní podporovatelia → červená (ako na webe).
                               : [
-                                  Colors.amber.shade400,
-                                  Colors.orange.shade500,
-                                  Colors.deepOrange.shade600,
+                                  Colors.red.shade400,
+                                  Colors.red.shade600,
+                                  Colors.red.shade800,
                                 ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -1386,11 +1488,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildProfileInfoCard(ThemeData theme) {
     final theme = Theme.of(context);
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
       ),
-      elevation: AppElevation.medium,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -1518,11 +1622,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildActionButtonsCard(ThemeData theme) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
       ),
-      elevation: AppElevation.medium,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -1532,24 +1638,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: Text('profile.button.change_password'.tr()),
               trailing: const Icon(Icons.chevron_right),
               onTap: changePassword,
-              contentPadding: EdgeInsets.zero,
-            ),
-            const Divider(height: 1),
-            ListTile(
-              leading: Icon(
-                Icons.notifications,
-                color: theme.colorScheme.primary,
-              ),
-              title: Text('profile.button.notification_settings'.tr()),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const NotificationSettingsScreen(),
-                  ),
-                );
-              },
               contentPadding: EdgeInsets.zero,
             ),
             const Divider(height: 1),
@@ -1586,9 +1674,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (ctx) => AlertDialog(
         title: Text('profile.subscription.cancel_title'.tr()),
         content: Text(
-          'profile.subscription.cancel_message'.tr(args: [
-            DateFormat('dd.MM.yyyy').format(sub.currentPeriodEnd),
-          ]),
+          'profile.subscription.cancel_message'.tr(
+            args: [DateFormat('dd.MM.yyyy').format(sub.currentPeriodEnd)],
+          ),
         ),
         actions: [
           TextButton(
@@ -1642,7 +1730,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final data = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(data['error'] ?? 'profile.subscription.cancel_error'.tr()),
+            content: Text(
+              data['error'] ?? 'profile.subscription.cancel_error'.tr(),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -1659,34 +1749,208 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Widget _buildSubscriptionsCard(ThemeData theme) {
-    final theme = Theme.of(context);
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
+  /// Samostatná karta „Moje objednávky" (e-shop) — len SK mutácia.
+  Widget _buildOrdersCard(ThemeData theme) {
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
       ),
-      elevation: AppElevation.medium,
-      child: ExpansionTile(
+      child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
-            color: Colors.purple.withValues(alpha: 0.1),
+            color: HomeV2.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
-          child: const Icon(Icons.credit_card, color: Colors.purple, size: 20),
+          child: Icon(
+            Icons.receipt_long_rounded,
+            color: HomeV2.primary,
+            size: 20,
+          ),
         ),
         title: Text(
-          'profile.section.subscriptions'.tr(),
+          'orders.title'.tr(),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const MyOrdersScreen()),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
+      ),
+    );
+  }
+
+  /// Karta s podporovateľským zľavovým kódom (poďakovanie za podporu).
+  Widget _buildDiscountCard(ThemeData theme) {
+    final code = _discount.code ?? '';
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
+        border: Border.all(color: HomeV2.primary.withValues(alpha: 0.25)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text('🎁', style: TextStyle(fontSize: 20)),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    'profile.discount.title'.tr(),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'profile.discount.subtitle'.tr(
+                args: [_discount.percent.toStringAsFixed(0)],
+              ),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: HomeV2.textMuted(context),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
+                    decoration: BoxDecoration(
+                      color: HomeV2.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                    child: Text(
+                      code,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                IconButton(
+                  icon: Icon(Icons.copy_rounded, color: HomeV2.primary),
+                  tooltip: 'copied_to_clipboard'.tr(),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    Clipboard.setData(ClipboardData(text: code));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('copied_to_clipboard'.tr())),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Zjednotená karta „Platby a podpora": navrchu blok aktívneho predplatného
+  /// (so zrušením), pod ním história jednorazových platieb (príspevky +
+  /// bankové platby). Nahrádza pôvodné štyri samostatné karty.
+  Widget _buildPaymentsCard(ThemeData theme) {
+    final hasSub = _subscriptions.isNotEmpty;
+    final hasHistory = _paymentHistory.isNotEmpty;
+    final totalCount = _subscriptions.length + _paymentHistory.length;
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
+      ),
+      child: ExpansionTile(
+        initiallyExpanded: hasSub,
+        leading: Container(
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: HomeV2.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+          child: Icon(
+            Icons.account_balance_wallet_outlined,
+            color: HomeV2.primary,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          'profile.section.payments'.tr(),
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
         subtitle: Text(
-          '${_subscriptions.length} ${'profile.subscription.active'.tr().toLowerCase()}',
+          '$totalCount ${totalCount == 1 ? 'profile.payment.singular'.tr() : 'profile.payment.plural'.tr()}',
         ),
-        children: _subscriptions
-            .map((sub) => _buildSubscriptionItem(theme, sub))
-            .toList(),
+        children: [
+          // Aktívne predplatné — detailný blok so zrušením (navrchu).
+          if (hasSub) ...[
+            const SizedBox(height: AppSpacing.sm),
+            ..._subscriptions.map((sub) => _buildSubscriptionItem(theme, sub)),
+          ],
+          // História jednorazových platieb (príspevky + bankové platby).
+          if (hasHistory) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, AppSpacing.sm),
+              child: Row(
+                children: [
+                  Icon(Icons.history, size: 16, color: Colors.grey.shade500),
+                  const SizedBox(width: 6),
+                  Text(
+                    'profile.section.payment_history'.tr(),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Column(
+                children: _paymentHistory.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final payment = entry.value;
+                  final isLast = index == _paymentHistory.length - 1;
+                  return _buildPaymentHistoryRow(theme, payment, isLast);
+                }).toList(),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -1783,93 +2047,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildDonationsCard(ThemeData theme) {
-    final theme = Theme.of(context);
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-      ),
-      elevation: AppElevation.medium,
-      child: ExpansionTile(
-        leading: Container(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: Colors.red.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-          ),
-          child: const Icon(Icons.favorite, color: Colors.red, size: 20),
-        ),
-        title: Text(
-          'profile.section.donations'.tr(),
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        subtitle: Text(
-          '${_donations.length} ${'profile.payment.one_time'.tr()}',
-        ),
-        children: _donations
-            .map((donation) => _buildDonationItem(theme, donation))
-            .toList(),
-      ),
-    );
-  }
-
-  Widget _buildDonationItem(ThemeData theme, Donation donation) {
-    final theme = Theme.of(context);
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '€${donation.amount.toStringAsFixed(2)}',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  DateFormat('dd.MM.yyyy').format(donation.createdAt),
-                  style: theme.textTheme.bodySmall!.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                if (donation.message != null &&
-                    donation.message!.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    '"${donation.message}"',
-                    style: TextStyle(
-                      fontStyle: FontStyle.italic,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          Icon(Icons.favorite, color: theme.colorScheme.primary, size: 32),
-        ],
-      ),
-    );
-  }
-
   Widget _buildExerciseRegistrationsCard(ThemeData theme) {
     final theme = Theme.of(context);
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
       ),
-      elevation: AppElevation.medium,
       child: ExpansionTile(
         leading: Container(
           padding: const EdgeInsets.all(AppSpacing.sm),
@@ -2081,11 +2267,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // Billing Info Section Widget
   Widget _buildBillingInfoSection(ThemeData theme) {
     final theme = Theme.of(context);
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
       ),
-      elevation: AppElevation.medium,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -2493,155 +2681,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // Bank Payments Section Widget
-  Widget _buildBankPaymentsCard(ThemeData theme) {
-    final theme = Theme.of(context);
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-      ),
-      elevation: AppElevation.medium,
-      child: ExpansionTile(
-        leading: Container(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: Colors.cyan.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-          ),
-          child: const Icon(
-            Icons.account_balance,
-            color: Colors.cyan,
-            size: 20,
-          ),
-        ),
-        title: Text(
-          'profile.section.bank_payments'.tr(),
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        subtitle: Text(
-          '${_bankPayments.length} ${_bankPayments.length == 1 ? 'profile.payment.singular'.tr() : 'profile.payment.plural'.tr()}',
-        ),
-        children: _bankPayments
-            .map((payment) => _buildBankPaymentItem(theme, payment))
-            .toList(),
-      ),
-    );
-  }
-
-  Widget _buildBankPaymentItem(ThemeData theme, BankPayment payment) {
-    final theme = Theme.of(context);
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              Icons.account_balance,
-              color: theme.colorScheme.primary,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  payment.paymentType ??
-                      'profile.bank_payment.unknown_type'.tr(),
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  DateFormat('dd.MM.yyyy').format(payment.transactionDate),
-                  style: theme.textTheme.bodySmall!.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                if (payment.payerReference != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    'VS: ${payment.payerReference}',
-                    style: theme.textTheme.labelSmall!.copyWith(
-                      color: Colors.grey.shade500,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          Text(
-            '${payment.amount.toStringAsFixed(2)} ${payment.currency}',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPaymentHistoryCard(ThemeData theme) {
-    final theme = Theme.of(context);
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-      ),
-      elevation: AppElevation.medium,
-      child: ExpansionTile(
-        leading: Container(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: Colors.indigo.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-          ),
-          child: const Icon(Icons.history, color: Colors.indigo, size: 20),
-        ),
-        title: Text(
-          'profile.section.payment_history'.tr(),
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        subtitle: Text(
-          '${_paymentHistory.length} ${_paymentHistory.length == 1 ? 'profile.payment.singular'.tr() : 'profile.payment.plural'.tr()}',
-        ),
-        children: [
-          Container(
-            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: Column(
-              children: _paymentHistory.asMap().entries.map((entry) {
-                final index = entry.key;
-                final payment = entry.value;
-                final isLast = index == _paymentHistory.length - 1;
-                return _buildPaymentHistoryRow(theme, payment, isLast);
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildPaymentHistoryRow(
     ThemeData theme,
     PaymentHistoryItem payment,
@@ -2739,6 +2778,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ProfileCircleButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _ProfileCircleButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: HomeV2.card(context).withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, color: HomeV2.primary, size: 22),
+        ),
       ),
     );
   }

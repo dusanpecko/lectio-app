@@ -1,12 +1,19 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:app_links/app_links.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/spiritual_exercise.dart';
 import '../shared/app_colors.dart';
 import '../utils/app_logger.dart';
 import '../shared/app_spacing.dart';
+import '../widgets/home_v2/home_v2_tokens.dart';
 
 class SpiritualExerciseRegistrationScreen extends StatefulWidget {
   final String exerciseSlug;
@@ -51,12 +58,16 @@ class _SpiritualExerciseRegistrationScreenState
   bool _gdprConsent = false;
   bool _responsibilityConsent = false;
   bool _newsletterConsent = false;
+  String _paymentMethod = 'card'; // 'card' (Mollie) | 'bank' (prevod)
 
   // State
   bool _isSubmitting = false;
   String? _serverError;
-  bool _isAuthenticated = false;
-  bool _hasProfileData = false;
+  // Backend + deep link návrat z Mollie
+  static const String _baseUrl = 'https://www.lectio.one';
+  late final AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSub;
+  bool _awaitingCardPayment = false;
 
   // Constants
   static const List<String> _referralSources = [
@@ -88,13 +99,30 @@ class _SpiritualExerciseRegistrationScreenState
     if (widget.pricing.isNotEmpty) {
       _roomType = widget.pricing.first.roomType;
     }
+    _appLinks = AppLinks();
+    _linkSub = _appLinks.uriLinkStream.listen((uri) {
+      if (uri.scheme == 'lectio-divina' &&
+          uri.host == 'payment-success' &&
+          (uri.queryParameters['type'] ?? '') == 'spiritual_exercise') {
+        _onCardPaid();
+      }
+    });
     _fetchUserProfile();
   }
 
   @override
   void dispose() {
+    _linkSub?.cancel();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Návrat z Mollie po úspešnej platbe kartou (deep link).
+  void _onCardPaid() {
+    if (!mounted || !_awaitingCardPayment) return;
+    _awaitingCardPayment = false;
+    setState(() => _isSubmitting = false);
+    _showSuccessDialog();
   }
 
   Future<void> _fetchUserProfile() async {
@@ -102,8 +130,6 @@ class _SpiritualExerciseRegistrationScreenState
     final user = supabase.auth.currentUser;
 
     if (user != null) {
-      setState(() => _isAuthenticated = true);
-
       try {
         final profile = await supabase
             .from('users')
@@ -115,15 +141,7 @@ class _SpiritualExerciseRegistrationScreenState
           final shippingAddr =
               profile['shipping_address'] as Map<String, dynamic>?;
 
-          final hasData =
-              shippingAddr != null &&
-              (shippingAddr['phone'] != null ||
-                  shippingAddr['street'] != null ||
-                  shippingAddr['city'] != null);
-
           setState(() {
-            _hasProfileData = hasData;
-
             // Parse full name
             final fullName = profile['full_name'] as String?;
             if (fullName != null && fullName.isNotEmpty) {
@@ -183,10 +201,14 @@ class _SpiritualExerciseRegistrationScreenState
     });
 
     try {
-      final response = await Supabase.instance.client.functions.invoke(
-        'spiritual-exercise-register',
-        body: {
-          'exerciseSlug': widget.exerciseSlug,
+      final token = Supabase.instance.client.auth.currentSession?.accessToken;
+      final response = await http.post(
+        Uri.parse('$_baseUrl/api/spiritual-exercises/${widget.exerciseSlug}/register'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
           'email': _email,
           'first_name': _firstName,
           'last_name': _lastName,
@@ -205,32 +227,97 @@ class _SpiritualExerciseRegistrationScreenState
           'gdpr_consent': _gdprConsent,
           'responsibility_consent': _responsibilityConsent,
           'newsletter_consent': _newsletterConsent,
-        },
+          'payment_method': _paymentMethod,
+          'platform': 'mobile',
+        }),
       );
 
-      if (response.status != 200) {
-        throw Exception(
-          response.data?['error'] ?? 'Nepodarilo sa odoslať registráciu',
-        );
+      final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception(data['error'] ?? 'Nepodarilo sa odoslať registráciu');
       }
 
       if (!mounted) return;
+      final payment = (data['payment'] as Map?)?.cast<String, dynamic>();
 
-      // Show success and offer to save profile
-      if (_isAuthenticated && !_hasProfileData) {
-        _showSaveProfileDialog();
-      } else {
-        _showSuccessDialog();
+      // Platba kartou → otvor Mollie checkout; po úhrade príde deep link.
+      if (_paymentMethod == 'card' && payment?['checkoutUrl'] is String) {
+        _awaitingCardPayment = true;
+        await launchUrl(
+          Uri.parse(payment!['checkoutUrl'] as String),
+          mode: LaunchMode.externalApplication,
+        );
+        return; // _isSubmitting necháme true kým sa nevráti z platby
       }
+
+      // Platba na účet → ukáž bankové údaje (VS, suma).
+      setState(() => _isSubmitting = false);
+      _showBankDetailsDialog(payment);
     } catch (e) {
-      setState(() {
-        _serverError = e.toString();
-      });
-    } finally {
       if (mounted) {
-        setState(() => _isSubmitting = false);
+        setState(() {
+          _serverError = e.toString();
+          _isSubmitting = false;
+        });
       }
     }
+  }
+
+  void _showBankDetailsDialog(Map<String, dynamic>? payment) {
+    final amount = payment?['amount'];
+    final vs = payment?['variableSymbol']?.toString() ?? '';
+    final iban = payment?['iban']?.toString() ?? 'SK42 7500 0000 0040 3515 6222';
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.account_balance, color: AppColors.primary, size: 26),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(child: Text(tr('se_bank_title'))),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(tr('se_bank_instructions')),
+            const SizedBox(height: AppSpacing.md),
+            _bankRow(tr('se_bank_account'), iban),
+            _bankRow(tr('se_bank_vs'), vs),
+            if (amount != null)
+              _bankRow(tr('se_bank_amount'), '${(amount as num).toStringAsFixed(2)} €'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // dialog
+              Navigator.of(context).pop(); // späť na detail
+            },
+            child: Text(tr('ok')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _bankRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+          ),
+          Expanded(flex: 3, child: Text(value)),
+        ],
+      ),
+    );
   }
 
   void _showError(String message) {
@@ -263,64 +350,6 @@ class _SpiritualExerciseRegistrationScreenState
         ],
       ),
     );
-  }
-
-  void _showSaveProfileDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(tr('save_profile_title')),
-        content: Text(tr('save_profile_message')),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              Navigator.of(context).pop();
-            },
-            child: Text(tr('no')),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final navigator = Navigator.of(dialogContext);
-              final parentNavigator = Navigator.of(context);
-              await _saveProfile();
-              if (mounted) {
-                navigator.pop();
-                parentNavigator.pop();
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: Text(tr('yes')),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _saveProfile() async {
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return;
-
-      await Supabase.instance.client
-          .from('users')
-          .update({
-            'full_name': '$_firstName $_lastName'.trim(),
-            'shipping_address': {
-              'name': '$_firstName $_lastName'.trim(),
-              'email': _email,
-              'phone': _phone,
-              'street': _street,
-              'city': _city,
-              'postal_code': _postalCode,
-              'country': 'Slovensko',
-            },
-          })
-          .eq('id', user.id);
-    } catch (e) {
-      appLogger.e('❌ Error saving profile: $e');
-    }
   }
 
   Future<void> _selectBirthDate() async {
@@ -363,11 +392,16 @@ class _SpiritualExerciseRegistrationScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
+      backgroundColor: HomeV2.background(context),
       appBar: AppBar(
-        title: Text(tr('registration_title')),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: AppElevation.none,
+        title: Text(
+          tr('registration_title'),
+          style: HomeV2.serifTitle(context, size: 20),
+        ),
+        backgroundColor: HomeV2.background(context),
+        foregroundColor: HomeV2.iconAccent(context),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
       ),
       body: Form(
         key: _formKey,
@@ -610,28 +644,44 @@ class _SpiritualExerciseRegistrationScreenState
               Container(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: HomeV2.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: Colors.blue.shade200),
+                  border: Border.all(
+                    color: HomeV2.primary.withValues(alpha: 0.30),
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${tr("price")}: ${_selectedPricing!.price.toStringAsFixed(2)} € + ${tr("deposit")}: ${(_selectedPricing!.deposit ?? 50).toStringAsFixed(2)} € = ${_selectedPricing!.totalPrice.toStringAsFixed(2)} €',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      tr('registration_deposit_info'),
-                      style: theme.textTheme.bodySmall!.copyWith(
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  '${tr("se_fee_label")}: ${_selectedPricing!.price.toStringAsFixed(2)} €',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: HomeV2.textDark(context),
+                  ),
                 ),
               ),
             ],
+
+            const SizedBox(height: AppSpacing.xxl),
+
+            // Section: Spôsob platby
+            _buildSectionHeader(
+              icon: Icons.payment,
+              title: tr('se_payment_method'),
+              required: true,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            _buildPaymentOption(
+              value: 'card',
+              title: tr('se_payment_card'),
+              subtitle: tr('se_payment_card_desc'),
+              icon: Icons.credit_card,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            _buildPaymentOption(
+              value: 'bank',
+              title: tr('se_payment_bank'),
+              subtitle: tr('se_payment_bank_desc'),
+              icon: Icons.account_balance,
+            ),
 
             const SizedBox(height: AppSpacing.xxl),
 
@@ -704,12 +754,14 @@ class _SpiritualExerciseRegistrationScreenState
               child: ElevatedButton(
                 onPressed: _isSubmitting ? null : _submitForm,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: HomeV2.primary,
                   foregroundColor: Colors.white,
+                  disabledBackgroundColor: HomeV2.primary.withValues(alpha: 0.5),
+                  disabledForegroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
-                  elevation: AppElevation.medium,
+                  elevation: 0,
                 ),
                 child: _isSubmitting
                     ? const SizedBox(
@@ -724,6 +776,7 @@ class _SpiritualExerciseRegistrationScreenState
                         tr('submit_registration'),
                         style: theme.textTheme.titleMedium!.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
               ),
@@ -813,27 +866,35 @@ class _SpiritualExerciseRegistrationScreenState
             keyboardType: keyboardType,
             maxLength: maxLength,
             maxLines: maxLines,
+            style: TextStyle(color: HomeV2.textDark(context)),
             decoration: InputDecoration(
               hintText: hintText,
+              hintStyle: TextStyle(color: HomeV2.textMuted(context)),
               counterText: '',
+              filled: true,
+              fillColor: HomeV2.card(context),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: const BorderSide(color: Colors.grey),
+                borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+                borderSide:
+                    BorderSide(color: HomeV2.primary.withValues(alpha: 0.15)),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+                borderSide:
+                    BorderSide(color: HomeV2.primary.withValues(alpha: 0.15)),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: const BorderSide(
-                  color: AppColors.primary,
-                  width: 2,
-                ),
+                borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+                borderSide: const BorderSide(color: HomeV2.primary, width: 1.5),
               ),
               errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: const BorderSide(color: Colors.red),
+                borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+                borderSide: const BorderSide(color: Color(0xFFC0392B)),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+                borderSide:
+                    const BorderSide(color: Color(0xFFC0392B), width: 1.5),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -882,8 +943,10 @@ class _SpiritualExerciseRegistrationScreenState
                 vertical: 14,
               ),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(AppRadius.md),
+                color: HomeV2.card(context),
+                border:
+                    Border.all(color: HomeV2.primary.withValues(alpha: 0.15)),
+                borderRadius: BorderRadius.circular(HomeV2.radiusSm),
               ),
               child: Row(
                 children: [
@@ -897,12 +960,13 @@ class _SpiritualExerciseRegistrationScreenState
                           : tr('select_date'),
                       style: TextStyle(
                         color: value.isNotEmpty
-                            ? AppColors.adaptiveCardTitle(context)
-                            : Colors.grey,
+                            ? HomeV2.textDark(context)
+                            : HomeV2.textMuted(context),
                       ),
                     ),
                   ),
-                  Icon(Icons.calendar_today, color: Colors.grey.shade600),
+                  Icon(Icons.calendar_today_rounded,
+                      size: 20, color: HomeV2.iconAccent(context)),
                 ],
               ),
             ),
@@ -940,20 +1004,23 @@ class _SpiritualExerciseRegistrationScreenState
           const SizedBox(height: AppSpacing.sm),
           DropdownButtonFormField<String>(
             initialValue: value.isNotEmpty ? value : null,
+            style: TextStyle(fontSize: 15, color: HomeV2.textDark(context)),
             decoration: InputDecoration(
+              filled: true,
+              fillColor: HomeV2.card(context),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
+                borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+                borderSide:
+                    BorderSide(color: HomeV2.primary.withValues(alpha: 0.15)),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+                borderSide:
+                    BorderSide(color: HomeV2.primary.withValues(alpha: 0.15)),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: const BorderSide(
-                  color: AppColors.primary,
-                  width: 2,
-                ),
+                borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+                borderSide: const BorderSide(color: HomeV2.primary, width: 1.5),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -984,13 +1051,15 @@ class _SpiritualExerciseRegistrationScreenState
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             border: Border.all(
-              color: isSelected ? AppColors.primary : Colors.grey.shade300,
+              color: isSelected
+                  ? HomeV2.primary
+                  : HomeV2.primary.withValues(alpha: 0.20),
               width: isSelected ? 2 : 1,
             ),
             borderRadius: BorderRadius.circular(AppRadius.md),
             color: isSelected
-                ? AppColors.primary.withValues(alpha: 0.05)
-                : Colors.white,
+                ? HomeV2.primary.withValues(alpha: 0.10)
+                : HomeV2.card(context),
           ),
           child: Row(
             children: [
@@ -1018,6 +1087,7 @@ class _SpiritualExerciseRegistrationScreenState
                       pricing.roomType,
                       style: theme.textTheme.titleMedium!.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: HomeV2.textDark(context),
                       ),
                     ),
                     if (pricing.description != null) ...[
@@ -1025,33 +1095,81 @@ class _SpiritualExerciseRegistrationScreenState
                       Text(
                         pricing.description!,
                         style: theme.textTheme.bodySmall!.copyWith(
-                          color: Colors.grey.shade600,
+                          color: HomeV2.textMuted(context),
                         ),
                       ),
                     ],
                   ],
                 ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              Text(
+                '${pricing.price.toStringAsFixed(2)} €',
+                style: theme.textTheme.titleMedium!.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentOption({
+    required String value,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+  }) {
+    final theme = Theme.of(context);
+    final isSelected = _paymentMethod == value;
+    return InkWell(
+      onTap: () => setState(() => _paymentMethod = value),
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected
+                ? HomeV2.primary
+                : HomeV2.primary.withValues(alpha: 0.20),
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          color: isSelected
+              ? HomeV2.primary.withValues(alpha: 0.10)
+              : HomeV2.card(context),
+        ),
+        child: Row(
+          children: [
+            Icon(icon,
+                color: isSelected ? HomeV2.primary : HomeV2.textMuted(context)),
+            const SizedBox(width: AppSpacing.lg),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${pricing.totalPrice.toStringAsFixed(2)} €',
+                    title,
                     style: theme.textTheme.titleMedium!.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: HomeV2.textDark(context),
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
-                    '${pricing.price.toStringAsFixed(0)} € + ${(pricing.deposit ?? 50).toStringAsFixed(0)} € ${tr("deposit")}',
-                    style: theme.textTheme.labelSmall!.copyWith(
-                      color: Colors.grey.shade600,
+                    subtitle,
+                    style: theme.textTheme.bodySmall!.copyWith(
+                      color: HomeV2.textMuted(context),
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle, color: HomeV2.primary),
+          ],
         ),
       ),
     );

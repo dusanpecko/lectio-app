@@ -9,22 +9,29 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../shared/app_colors.dart';
 import '../shared/app_spacing.dart';
+import '../services/umami_analytics_service.dart';
+import '../widgets/donation/support_campaign_card.dart';
+import '../widgets/home_v2/home_v2_tokens.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DONATION SCREEN — Redesigned 10.1.1
-// Segment toggle: Predplatné / Jednorazový dar
+// DONATION SCREEN — Premium v2 redesign
+// Hero + segment toggle (Predplatné / Jednorazový dar)
 // Subscription tiers in PageView with dots indicator
 // Quick-amount chips for one-time donation
-// "Modlím sa" as bottom banner
 // Bank transfer & 2% daní as collapsible ExpansionTiles
+// "Modlím sa" banner + footer
 // ─────────────────────────────────────────────────────────────────────────────
 
 enum _DonationTab { subscription, oneTime }
 
 class DonationScreen extends StatefulWidget {
-  const DonationScreen({super.key});
+  /// Voliteľná projektová kampaň — keď je nastavená, dar sa otaguje (účelový)
+  /// a obrazovka sa zameria na jednorazový dar pre tento projekt.
+  final String? campaign; // slug, napr. 'potulky' / 'kurz_lectio'
+  final String? campaignTitle; // názov pre banner
+
+  const DonationScreen({super.key, this.campaign, this.campaignTitle});
 
   @override
   State<DonationScreen> createState() => _DonationScreenState();
@@ -35,8 +42,9 @@ class _DonationScreenState extends State<DonationScreen> {
   bool _isLoading = false;
   _DonationTab _activeTab = _DonationTab.subscription;
 
-  // IAP
   static const _baseUrl = 'https://www.lectio.one';
+  static const Color _primaryLight = Color(0xFF6B73A8);
+  static const Color _success = Color(0xFF2E9E5B);
 
   // One-time donation
   int? _selectedQuickAmount;
@@ -67,7 +75,7 @@ class _DonationScreenState extends State<DonationScreen> {
         'donation.tier_friend_f3'.tr(),
         'donation.tier_friend_f4'.tr(),
       ],
-      'yearlyPrice': '\u20ac30/${'donation.tier_friend_interval'.tr()}',
+      'yearlyPrice': '€30/${'donation.tier_friend_interval'.tr()}',
     },
     {
       'tier': 'friend_plus',
@@ -84,7 +92,7 @@ class _DonationScreenState extends State<DonationScreen> {
         'donation.tier_friend_plus_f3'.tr(),
         'donation.tier_friend_plus_f4'.tr(),
       ],
-      'yearlyPrice': '\u20ac50/${'donation.tier_friend_plus_interval'.tr()}',
+      'yearlyPrice': '€50/${'donation.tier_friend_plus_interval'.tr()}',
     },
     {
       'tier': 'patron_mini',
@@ -102,7 +110,7 @@ class _DonationScreenState extends State<DonationScreen> {
         'donation.tier_patron_mini_f4'.tr(),
       ],
       'popular': true,
-      'yearlyPrice': '\u20ac100/${'donation.tier_patron_mini_interval'.tr()}',
+      'yearlyPrice': '€100/${'donation.tier_patron_mini_interval'.tr()}',
     },
     {
       'tier': 'patron_plus',
@@ -119,7 +127,7 @@ class _DonationScreenState extends State<DonationScreen> {
         'donation.tier_patron_plus_f3'.tr(),
         'donation.tier_patron_plus_f4'.tr(),
       ],
-      'yearlyPrice': '\u20ac150/${'donation.tier_patron_plus_interval'.tr()}',
+      'yearlyPrice': '€150/${'donation.tier_patron_plus_interval'.tr()}',
     },
     {
       'tier': 'patron',
@@ -136,7 +144,7 @@ class _DonationScreenState extends State<DonationScreen> {
         'donation.tier_patron_f3'.tr(),
         'donation.tier_patron_f4'.tr(),
       ],
-      'yearlyPrice': '\u20ac200/${'donation.tier_patron_interval'.tr()}',
+      'yearlyPrice': '€200/${'donation.tier_patron_interval'.tr()}',
     },
     {
       'tier': 'founder',
@@ -153,18 +161,18 @@ class _DonationScreenState extends State<DonationScreen> {
         'donation.tier_founder_f3'.tr(),
         'donation.tier_founder_f4'.tr(),
       ],
-      'yearlyPrice': '\u20ac500/${'donation.tier_founder_interval'.tr()}',
+      'yearlyPrice': '€500/${'donation.tier_founder_interval'.tr()}',
     },
   ];
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
-  // Deep link listener
   late final AppLinks _appLinks;
   StreamSubscription<Uri>? _linkSubscription;
 
   @override
   void initState() {
     super.initState();
+    if (widget.campaign != null) _activeTab = _DonationTab.oneTime;
     _tierPageController = PageController(viewportFraction: 0.88);
     _tierPageController.addListener(() {
       final page = _tierPageController.page?.round() ?? 0;
@@ -184,13 +192,7 @@ class _DonationScreenState extends State<DonationScreen> {
         final message = type == 'subscription'
             ? 'donation.subscription_success'.tr()
             : 'donation.donation_success'.tr();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 4),
-          ),
-        );
+        _snack(message, color: _success, seconds: 4);
       }
     });
   }
@@ -268,6 +270,7 @@ class _DonationScreenState extends State<DonationScreen> {
       'userId': user?.id,
       'email': user?.email,
       'platform': 'mobile',
+      if (widget.campaign != null) 'campaign': widget.campaign,
     });
   }
 
@@ -293,17 +296,29 @@ class _DonationScreenState extends State<DonationScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: HomeV2.card(ctx),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
+          borderRadius: BorderRadius.circular(HomeV2.radius),
         ),
         title: Text('donation.login_title'.tr()),
         content: Text('donation.login_message'.tr()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('donation.login_cancel'.tr()),
+            child: Text(
+              'donation.login_cancel'.tr(),
+              style: TextStyle(color: HomeV2.textMuted(ctx)),
+            ),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: HomeV2.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.full),
+              ),
+            ),
             onPressed: () {
               Navigator.pop(ctx);
               Navigator.pop(context);
@@ -315,139 +330,301 @@ class _DonationScreenState extends State<DonationScreen> {
     );
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _snack(String message, {Color? color, int seconds = 3}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: seconds),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+        ),
+        margin: const EdgeInsets.all(AppSpacing.lg),
+      ),
+    );
   }
+
+  void _showError(String message) =>
+      _snack(message, color: const Color(0xFFC0392B));
 
   // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(title: Text('donation.title'.tr()), centerTitle: true),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              // CustomScrollView + _buildHeroAppBar(theme) — temporarily disabled
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: HomeV2.isDark(context)
+            ? Brightness.light
+            : Brightness.dark,
+        statusBarBrightness: HomeV2.isDark(context)
+            ? Brightness.dark
+            : Brightness.light,
+      ),
+      child: Scaffold(
+        backgroundColor: HomeV2.background(context),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : ListView(
+                padding: EdgeInsets.zero,
                 children: [
-                  const SizedBox(height: AppSpacing.xxl),
-
-                  // Intro text
-                  Text(
-                    'donation.intro'.tr(),
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyLarge!.copyWith(
-                      height: 1.6,
-                      color: isDark ? Colors.white70 : Colors.black87,
+                  _buildHero(),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      MediaQuery.of(context).viewPadding.bottom +
+                          AppSpacing.xxxl,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (widget.campaign != null) ...[
+                          // Účelový dar pre konkrétny projekt → iba jednorazový dar
+                          _buildCampaignBanner(),
+                          const SizedBox(height: AppSpacing.xl),
+                          _buildOneTimeDonationSection(),
+                        ] else ...[
+                          // Príbeh (progress + míľniky) — rozbaľovačka, nad plánmi
+                          _buildStoryTile(),
+                          const SizedBox(height: AppSpacing.xl),
+                          _buildSegmentToggle(),
+                          const SizedBox(height: AppSpacing.xl),
+                          AnimatedSwitcher(
+                            duration: HomeV2.anim,
+                            child: _activeTab == _DonationTab.subscription
+                                ? _buildSubscriptionSection()
+                                : _buildOneTimeDonationSection(),
+                          ),
+                        ],
+                        const SizedBox(height: AppSpacing.xxxl),
+                        // Banku a 2% z daní pri účelovom dare nezobrazujeme
+                        if (widget.campaign == null) ...[
+                          _buildBankTransferTile(),
+                          const SizedBox(height: AppSpacing.sm),
+                          _buildTaxSupportTile(),
+                          const SizedBox(height: AppSpacing.xxxl),
+                        ],
+                        _buildPrayerBanner(),
+                        const SizedBox(height: AppSpacing.xxl),
+                        _buildFooter(),
+                      ],
                     ),
                   ),
-
-                  const SizedBox(height: AppSpacing.xxl),
-
-                  // Segment toggle
-                  _buildSegmentToggle(theme),
-
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // Active tab content
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: _activeTab == _DonationTab.subscription
-                        ? _buildSubscriptionSection(theme, isDark)
-                        : _buildOneTimeDonationSection(theme, isDark),
-                  ),
-
-                  const SizedBox(height: AppSpacing.xxxl),
-
-                  // Collapsible: Bank transfer
-                  _buildBankTransferTile(theme, isDark),
-
-                  const SizedBox(height: AppSpacing.sm),
-
-                  // Collapsible: 2% z dani
-                  _buildTaxSupportTile(theme, isDark),
-
-                  const SizedBox(height: AppSpacing.xxxl),
-
-                  // "Modlim sa" banner
-                  _buildPrayerBanner(theme, isDark),
-
-                  const SizedBox(height: AppSpacing.xxl),
-
-                  // Footer
-                  _buildFooter(theme),
-
-                  const SizedBox(height: AppSpacing.xxxl),
                 ],
               ),
-            ),
+      ),
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // WIDGETS
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ── Hero ──────────────────────────────────────────────────────────────────
+  Widget _buildHero() {
+    final topPad = MediaQuery.of(context).padding.top;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        topPad + AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.xl,
+      ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            HomeV2.primary.withValues(
+              alpha: HomeV2.isDark(context) ? 0.32 : 0.14,
+            ),
+            HomeV2.background(context),
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _CircleButton(
+                icon: Icons.arrow_back_rounded,
+                onTap: () => Navigator.of(context).maybePop(),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: HomeV2.card(context),
+                  shape: BoxShape.circle,
+                  boxShadow: HomeV2.softShadowSm(context),
+                ),
+                child: Icon(
+                  Icons.favorite_rounded,
+                  color: HomeV2.gold,
+                  size: 24,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            'donation.title'.tr(),
+            style: HomeV2.serifTitle(context, size: 30, height: 1.1),
+          ),
+        ],
+      ),
+    );
+  }
 
-  // ── Segment toggle ────────────────────────────────────────────────────────
-  Widget _buildSegmentToggle(ThemeData theme) {
-    return SegmentedButton<_DonationTab>(
-      segments: [
-        ButtonSegment(
-          value: _DonationTab.subscription,
-          label: Text('donation.tab_subscription'.tr()),
-          icon: const Icon(Icons.autorenew_rounded, size: 18),
+  // ── Banner účelovej kampane ───────────────────────────────────────────────
+  Widget _buildCampaignBanner() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [HomeV2.primary, _primaryLight],
         ),
-        ButtonSegment(
-          value: _DonationTab.oneTime,
-          label: Text('donation.tab_one_time'.tr()),
-          icon: const Icon(Icons.volunteer_activism_rounded, size: 18),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadow(context),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+            ),
+            child: const Icon(Icons.flag_rounded, color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'projects.campaign_badge'.tr(),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  widget.campaignTitle ?? '',
+                  style: HomeV2.serifTitle(context, size: 19, color: Colors.white),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'projects.campaign_note'.tr(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12.5,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Segment toggle (vlastný v2) ───────────────────────────────────────────
+  Widget _buildSegmentToggle() {
+    Widget seg(_DonationTab tab, IconData icon, String label) {
+      final selected = _activeTab == tab;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            setState(() => _activeTab = tab);
+          },
+          child: AnimatedContainer(
+            duration: HomeV2.anim,
+            curve: HomeV2.curve,
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+            decoration: BoxDecoration(
+              color: selected ? HomeV2.primary : Colors.transparent,
+              borderRadius: BorderRadius.circular(HomeV2.radiusSm - 3),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 18,
+                  color: selected ? Colors.white : HomeV2.textMuted(context),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: selected
+                          ? Colors.white
+                          : HomeV2.textMuted(context),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-      ],
-      selected: {_activeTab},
-      onSelectionChanged: (selected) {
-        setState(() => _activeTab = selected.first);
-      },
-      style: SegmentedButton.styleFrom(
-        selectedBackgroundColor: theme.colorScheme.primary,
-        selectedForegroundColor: Colors.white,
-        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+        boxShadow: HomeV2.softShadowSm(context),
+      ),
+      child: Row(
+        children: [
+          seg(
+            _DonationTab.subscription,
+            Icons.autorenew_rounded,
+            'donation.tab_subscription'.tr(),
+          ),
+          seg(
+            _DonationTab.oneTime,
+            Icons.volunteer_activism_rounded,
+            'donation.tab_one_time'.tr(),
+          ),
+        ],
       ),
     );
   }
 
   // ── Subscription section ──────────────────────────────────────────────────
-  Widget _buildSubscriptionSection(ThemeData theme, bool isDark) {
+  Widget _buildSubscriptionSection() {
     return Column(
       key: const ValueKey('subscription'),
       children: [
-        // Tier PageView
         SizedBox(
-          height: 440,
+          height: 450,
           child: PageView.builder(
             controller: _tierPageController,
             itemCount: _subscriptionTiers.length,
             itemBuilder: (context, index) {
-              return _buildTierCard(
-                theme,
-                isDark,
-                _subscriptionTiers[index],
-                index,
-              );
+              return _buildTierCard(_subscriptionTiers[index]);
             },
           ),
         ),
-
         const SizedBox(height: AppSpacing.md),
-
-        // Page indicator dots
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
@@ -459,8 +636,8 @@ class _DonationScreenState extends State<DonationScreen> {
               height: 8,
               decoration: BoxDecoration(
                 color: i == _currentTierPage
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.primary.withValues(alpha: 0.25),
+                    ? HomeV2.primary
+                    : HomeV2.primary.withValues(alpha: 0.25),
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
@@ -471,87 +648,77 @@ class _DonationScreenState extends State<DonationScreen> {
   }
 
   // ── Single tier card ──────────────────────────────────────────────────────
-  Widget _buildTierCard(
-    ThemeData theme,
-    bool isDark,
-    Map<String, dynamic> tierData,
-    int index,
-  ) {
+  Widget _buildTierCard(Map<String, dynamic> tierData) {
     final isPopular = tierData['popular'] == true;
     final features = tierData['features'] as List<String>? ?? [];
     final hasMonthly = tierData.containsKey('monthlyPrice');
     final tierIcon = tierData['icon'] as IconData;
+    final muted = HomeV2.textMuted(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
+          borderRadius: BorderRadius.circular(HomeV2.radius),
           gradient: isPopular
-              ? LinearGradient(
+              ? const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [theme.colorScheme.primary, AppColors.primaryLight],
+                  colors: [HomeV2.primary, _primaryLight],
                 )
               : null,
-          color: isPopular
-              ? null
-              : (isDark ? AppColors.darkCard : Colors.white),
-          boxShadow: [
-            BoxShadow(
-              color: isPopular
-                  ? theme.colorScheme.primary.withValues(alpha: 0.3)
-                  : Colors.black.withValues(alpha: 0.08),
-              blurRadius: isPopular ? 16 : 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: isPopular ? null : HomeV2.card(context),
+          boxShadow: isPopular
+              ? [
+                  BoxShadow(
+                    color: HomeV2.primary.withValues(alpha: 0.30),
+                    blurRadius: 24,
+                    offset: const Offset(0, 12),
+                  ),
+                ]
+              : HomeV2.softShadow(context),
         ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Badge row
               Row(
                 children: [
-                  // Icon
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: isPopular
-                          ? Colors.white.withValues(alpha: 0.15)
-                          : theme.colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(AppRadius.md),
+                          ? Colors.white.withValues(alpha: 0.18)
+                          : HomeV2.primary.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(HomeV2.radiusSm),
                     ),
                     child: Icon(
                       tierIcon,
                       size: 24,
                       color: isPopular
                           ? Colors.white
-                          : theme.colorScheme.primary,
+                          : HomeV2.iconAccent(context),
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.sm),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           tierData['name'] as String,
-                          style: theme.textTheme.titleLarge!.copyWith(
-                            fontWeight: FontWeight.bold,
+                          style: HomeV2.serifTitle(
+                            context,
+                            size: 21,
                             color: isPopular ? Colors.white : null,
                           ),
                         ),
                         Text(
                           tierData['subtitle'] as String,
-                          style: theme.textTheme.bodySmall!.copyWith(
-                            color: isPopular
-                                ? Colors.white70
-                                : (isDark
-                                      ? AppColors.darkCardSubtitle
-                                      : AppColors.cardSubtitle),
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: isPopular ? Colors.white70 : muted,
                           ),
                         ),
                       ],
@@ -564,41 +731,39 @@ class _DonationScreenState extends State<DonationScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: Colors.white.withValues(alpha: 0.22),
                         borderRadius: BorderRadius.circular(AppRadius.full),
                       ),
                       child: Text(
                         'donation.popular'.tr(),
-                        style: theme.textTheme.labelSmall!.copyWith(
+                        style: const TextStyle(
+                          fontSize: 11,
                           color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
                 ],
               ),
-
               const SizedBox(height: AppSpacing.lg),
-
-              // Price
               Row(
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
                     tierData['price'] as String,
-                    style: theme.textTheme.headlineMedium!.copyWith(
+                    style: TextStyle(
+                      fontSize: 30,
                       fontWeight: FontWeight.w800,
-                      color: isPopular
-                          ? Colors.white
-                          : theme.colorScheme.primary,
+                      color: isPopular ? Colors.white : HomeV2.primary,
                     ),
                   ),
                   const SizedBox(width: 4),
                   Text(
                     '/ ${tierData['interval']}',
-                    style: theme.textTheme.bodyMedium!.copyWith(
-                      color: isPopular ? Colors.white60 : Colors.grey,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isPopular ? Colors.white60 : muted,
                     ),
                   ),
                 ],
@@ -610,48 +775,46 @@ class _DonationScreenState extends State<DonationScreen> {
                     'donation.or'.tr(
                       args: [tierData['monthlyPrice'] as String],
                     ),
-                    style: theme.textTheme.bodySmall!.copyWith(
-                      color: isPopular ? Colors.white54 : Colors.grey,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: isPopular ? Colors.white54 : muted,
                     ),
                   ),
                 ),
-
               const SizedBox(height: AppSpacing.lg),
-
-              // Divider
               Container(
                 height: 1,
                 color: isPopular
-                    ? Colors.white.withValues(alpha: 0.15)
-                    : (isDark ? Colors.white12 : Colors.grey.shade200),
+                    ? Colors.white.withValues(alpha: 0.18)
+                    : HomeV2.primary.withValues(alpha: 0.08),
               ),
-
               const SizedBox(height: AppSpacing.md),
-
-              // Features
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     children: features.map((feature) {
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.only(bottom: 7),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Icon(
-                              Icons.check_circle_outline_rounded,
+                              Icons.check_circle_rounded,
                               size: 18,
                               color: isPopular
-                                  ? Colors.white70
-                                  : theme.colorScheme.primary,
+                                  ? Colors.white
+                                  : HomeV2.iconAccent(context),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 feature,
-                                style: theme.textTheme.bodyMedium!.copyWith(
+                                style: TextStyle(
+                                  fontSize: 14,
                                   height: 1.4,
-                                  color: isPopular ? Colors.white : null,
+                                  color: isPopular
+                                      ? Colors.white
+                                      : HomeV2.textDark(context),
                                 ),
                               ),
                             ),
@@ -662,21 +825,16 @@ class _DonationScreenState extends State<DonationScreen> {
                   ),
                 ),
               ),
-
-              const SizedBox(height: AppSpacing.md),
-
-              // Description
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 tierData['description'] as String,
-                style: theme.textTheme.bodySmall!.copyWith(
+                style: TextStyle(
+                  fontSize: 12.5,
                   fontStyle: FontStyle.italic,
-                  color: isPopular ? Colors.white60 : Colors.grey,
+                  color: isPopular ? Colors.white60 : muted,
                 ),
               ),
-
               const SizedBox(height: AppSpacing.lg),
-
-              // Action buttons
               Row(
                 children: [
                   Expanded(
@@ -684,16 +842,22 @@ class _DonationScreenState extends State<DonationScreen> {
                       onPressed: () =>
                           _startSubscription(tierData['tier'], 'year'),
                       style: ElevatedButton.styleFrom(
+                        elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        backgroundColor: isPopular ? Colors.white : null,
+                        backgroundColor: isPopular
+                            ? Colors.white
+                            : HomeV2.primary,
                         foregroundColor: isPopular
-                            ? theme.colorScheme.primary
-                            : null,
+                            ? HomeV2.primary
+                            : Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
                       ),
-                      child: Text('donation.yearly'.tr()),
+                      child: Text(
+                        'donation.yearly'.tr(),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                     ),
                   ),
                   if (hasMonthly) ...[
@@ -704,17 +868,22 @@ class _DonationScreenState extends State<DonationScreen> {
                             _startSubscription(tierData['tier'], 'month'),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          foregroundColor: isPopular ? Colors.white : null,
+                          foregroundColor: isPopular
+                              ? Colors.white
+                              : HomeV2.primary,
                           side: BorderSide(
                             color: isPopular
                                 ? Colors.white70
-                                : theme.colorScheme.primary,
+                                : HomeV2.primary.withValues(alpha: 0.5),
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            borderRadius: BorderRadius.circular(AppRadius.full),
                           ),
                         ),
-                        child: Text('donation.monthly'.tr()),
+                        child: Text(
+                          'donation.monthly'.tr(),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ),
                     ),
                   ],
@@ -728,141 +897,113 @@ class _DonationScreenState extends State<DonationScreen> {
   }
 
   // ── One-time donation section ─────────────────────────────────────────────
-  Widget _buildOneTimeDonationSection(ThemeData theme, bool isDark) {
+  Widget _buildOneTimeDonationSection() {
+    final muted = HomeV2.textMuted(context);
     return Container(
       key: const ValueKey('oneTime'),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadow(context),
       ),
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
             children: [
               Icon(
                 Icons.volunteer_activism_rounded,
-                color: theme.colorScheme.primary,
-                size: 24,
+                color: HomeV2.iconAccent(context),
+                size: 22,
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
                 'donation.one_time_title'.tr(),
-                style: theme.textTheme.titleMedium!.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: HomeV2.serifTitle(context, size: 19),
               ),
             ],
           ),
-
           const SizedBox(height: AppSpacing.lg),
-
-          // Quick amount chips
           Text(
             'donation.select_amount'.tr(),
-            style: theme.textTheme.bodySmall!.copyWith(
-              color: Colors.grey,
-              fontWeight: FontWeight.w500,
+            style: TextStyle(
+              fontSize: 13,
+              color: muted,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
+          Row(
             children: [
-              ..._quickAmounts.map((amount) {
-                final isSelected =
-                    !_useCustomAmount && _selectedQuickAmount == amount;
-                return ChoiceChip(
-                  label: Text(
-                    '\u20ac$amount',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white : null,
-                    ),
-                  ),
-                  selected: isSelected,
-                  selectedColor: theme.colorScheme.primary,
-                  onSelected: (selected) {
-                    setState(() {
-                      _useCustomAmount = false;
-                      _selectedQuickAmount = selected ? amount : null;
-                      _customAmountController.clear();
-                    });
-                  },
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                );
-              }),
+              for (var i = 0; i < _quickAmounts.length; i++) ...[
+                if (i > 0) const SizedBox(width: AppSpacing.sm),
+                Expanded(child: _amountChip(_quickAmounts[i])),
+              ],
             ],
           ),
-
           const SizedBox(height: AppSpacing.lg),
-
-          // Custom amount
           Text(
             'donation.custom_amount'.tr(),
-            style: theme.textTheme.bodySmall!.copyWith(
-              color: Colors.grey,
-              fontWeight: FontWeight.w500,
+            style: TextStyle(
+              fontSize: 13,
+              color: muted,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
           TextField(
             controller: _customAmountController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: HomeV2.textDark(context),
+            ),
             decoration: InputDecoration(
-              prefixText: '\u20ac ',
+              prefixText: '€ ',
               prefixStyle: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
+                color: HomeV2.primary,
                 fontSize: 18,
               ),
               hintText: '10.00',
+              hintStyle: TextStyle(color: muted),
+              filled: true,
+              fillColor: HomeV2.isDark(context)
+                  ? Colors.white.withValues(alpha: 0.04)
+                  : HomeV2.primary.withValues(alpha: 0.035),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
+                borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+                borderSide: BorderSide(
+                  color: HomeV2.primary.withValues(alpha: 0.15),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+                borderSide: BorderSide(
+                  color: HomeV2.primary.withValues(alpha: 0.15),
+                ),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: BorderSide(
-                  color: theme.colorScheme.primary,
-                  width: 2,
-                ),
+                borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+                borderSide: BorderSide(color: HomeV2.primary, width: 1.5),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 14,
               ),
             ),
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            onTap: () {
-              setState(() {
-                _useCustomAmount = true;
-                _selectedQuickAmount = null;
-              });
-            },
-            onChanged: (_) {
-              setState(() {
-                _useCustomAmount = true;
-                _selectedQuickAmount = null;
-              });
-            },
+            onTap: () => setState(() {
+              _useCustomAmount = true;
+              _selectedQuickAmount = null;
+            }),
+            onChanged: (_) => setState(() {
+              _useCustomAmount = true;
+              _selectedQuickAmount = null;
+            }),
           ),
-
           const SizedBox(height: AppSpacing.xl),
-
-          // Donate button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -873,9 +1014,14 @@ class _DonationScreenState extends State<DonationScreen> {
                   ? _makeOneTimeDonation
                   : null,
               style: ElevatedButton.styleFrom(
+                backgroundColor: HomeV2.primary,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: HomeV2.primary.withValues(alpha: 0.4),
+                disabledForegroundColor: Colors.white,
+                elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
                 ),
               ),
               child: Text(
@@ -891,31 +1037,22 @@ class _DonationScreenState extends State<DonationScreen> {
                     : 'donation.donate'.tr(),
                 style: const TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
           ),
-
           const SizedBox(height: AppSpacing.md),
-
-          // Secure payment badge
           Center(
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.lock_outline_rounded,
-                  size: 14,
-                  color: Colors.grey.shade400,
-                ),
+                Icon(Icons.lock_outline_rounded, size: 14, color: muted),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
                     'donation.secure_mollie'.tr(),
-                    style: theme.textTheme.bodySmall!.copyWith(
-                      color: Colors.grey.shade400,
-                    ),
+                    style: TextStyle(fontSize: 12, color: muted),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -927,86 +1064,153 @@ class _DonationScreenState extends State<DonationScreen> {
     );
   }
 
-  // ── Bank transfer tile ────────────────────────────────────────────────────
-  Widget _buildBankTransferTile(ThemeData theme, bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+  Widget _amountChip(int amount) {
+    final selected = !_useCustomAmount && _selectedQuickAmount == amount;
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        setState(() {
+          _useCustomAmount = false;
+          _selectedQuickAmount = amount;
+          _customAmountController.clear();
+        });
+      },
+      child: AnimatedContainer(
+        duration: HomeV2.anim,
+        curve: HomeV2.curve,
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected
+              ? HomeV2.primary
+              : HomeV2.primary.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+          border: Border.all(
+            color: selected
+                ? HomeV2.primary
+                : HomeV2.primary.withValues(alpha: 0.15),
+            width: 1.5,
           ),
-        ],
-      ),
-      child: Theme(
-        data: theme.copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.xs,
+        ),
+        child: Text(
+          '€$amount',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: selected ? Colors.white : HomeV2.textDark(context),
           ),
-          childrenPadding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            0,
-            AppSpacing.lg,
-            AppSpacing.lg,
-          ),
-          leading: Icon(
-            Icons.account_balance_rounded,
-            color: theme.colorScheme.primary,
-          ),
-          title: Text(
-            'donation.bank_title'.tr(),
-            style: theme.textTheme.titleSmall!.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          subtitle: Text(
-            'donation.bank_subtitle'.tr(),
-            style: theme.textTheme.bodySmall!.copyWith(color: Colors.grey),
-          ),
-          children: [
-            const Divider(),
-            const SizedBox(height: AppSpacing.sm),
-            _CopyRow(
-              label: 'donation.account_name'.tr(),
-              value: 'lectio.one',
-              isDark: isDark,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            _CopyRow(
-              label: 'IBAN',
-              value: 'SK42 7500 0000 0040 3515 6222',
-              isDark: isDark,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            _CopyRow(label: 'BIC (SWIFT)', value: 'CEKOSKBX', isDark: isDark),
-          ],
         ),
       ),
+    );
+  }
+
+  // ── Bank transfer tile ────────────────────────────────────────────────────
+  // ── Príbeh (rozbaľovačka) ───────────────────────────────────────────────
+  Widget _buildStoryTile() {
+    return _expansionCard(
+      leading: Icons.auto_stories_rounded,
+      title: 'donation.story_title'.tr(),
+      subtitle: 'donation.story_subtitle'.tr(),
+      onExpansionChanged: (open) {
+        if (open) {
+          UmamiAnalyticsService().trackEvent(
+            'donation_story_opened',
+            eventData: {'language': context.locale.languageCode},
+          );
+        }
+      },
+      maintainState: true,
+      children: const [SupportCampaignCard(embedded: true)],
+    );
+  }
+
+  Widget _buildBankTransferTile() {
+    return _expansionCard(
+      leading: Icons.account_balance_rounded,
+      title: 'donation.bank_title'.tr(),
+      subtitle: 'donation.bank_subtitle'.tr(),
+      children: [
+        _CopyRow(label: 'donation.account_name'.tr(), value: 'lectio.one'),
+        const SizedBox(height: AppSpacing.sm),
+        const _CopyRow(label: 'IBAN', value: 'SK42 7500 0000 0040 3515 6222'),
+        const SizedBox(height: AppSpacing.sm),
+        const _CopyRow(label: 'BIC (SWIFT)', value: 'CEKOSKBX'),
+      ],
     );
   }
 
   // ── Tax support tile ──────────────────────────────────────────────────────
-  Widget _buildTaxSupportTile(ThemeData theme, bool isDark) {
+  Widget _buildTaxSupportTile() {
+    return _expansionCard(
+      leading: Icons.eco_rounded,
+      title: 'donation.tax_title'.tr(),
+      subtitle: 'donation.tax_subtitle'.tr(),
+      children: [
+        Text(
+          'donation.tax_description'.tr(),
+          style: TextStyle(height: 1.5, color: HomeV2.textDark(context)),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        _buildInfoRow('donation.tax_name'.tr(), 'lectio.one'),
+        _buildInfoRow('donation.tax_form'.tr(), 'donation.tax_form_value'.tr()),
+        _buildInfoRow('donation.tax_ico'.tr(), '55971521'),
+        _buildInfoRow(
+          'donation.tax_address'.tr(),
+          'Jána Kalinčiaka 3098/1, 010 01 Žilina',
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: HomeV2.primary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'donation.tax_deadlines_title'.tr(),
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: HomeV2.textDark(context),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'donation.tax_deadlines'.tr(),
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.6,
+                  color: HomeV2.textDark(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _expansionCard({
+    required IconData leading,
+    required String title,
+    required String subtitle,
+    required List<Widget> children,
+    ValueChanged<bool>? onExpansionChanged,
+    bool maintainState = false,
+  }) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Theme(
-        data: theme.copyWith(dividerColor: Colors.transparent),
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
+          onExpansionChanged: onExpansionChanged,
+          maintainState: maintainState,
           tilePadding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: AppSpacing.xs,
@@ -1017,79 +1221,44 @@ class _DonationScreenState extends State<DonationScreen> {
             AppSpacing.lg,
             AppSpacing.lg,
           ),
-          leading: Icon(Icons.eco_rounded, color: theme.colorScheme.primary),
+          iconColor: HomeV2.primary,
+          collapsedIconColor: HomeV2.iconAccent(context),
+          leading: Icon(leading, color: HomeV2.iconAccent(context)),
           title: Text(
-            'donation.tax_title'.tr(),
-            style: theme.textTheme.titleSmall!.copyWith(
-              fontWeight: FontWeight.w600,
+            title,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: HomeV2.textDark(context),
             ),
           ),
           subtitle: Text(
-            'donation.tax_subtitle'.tr(),
-            style: theme.textTheme.bodySmall!.copyWith(color: Colors.grey),
+            subtitle,
+            style: TextStyle(fontSize: 12.5, color: HomeV2.textMuted(context)),
           ),
           children: [
-            const Divider(),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'donation.tax_description'.tr(),
-              style: theme.textTheme.bodyMedium!.copyWith(height: 1.5),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildInfoRow(theme, 'donation.tax_name'.tr(), 'lectio.one'),
-            _buildInfoRow(
-              theme,
-              'donation.tax_form'.tr(),
-              'donation.tax_form_value'.tr(),
-            ),
-            _buildInfoRow(theme, 'donation.tax_ico'.tr(), '55971521'),
-            _buildInfoRow(
-              theme,
-              'donation.tax_address'.tr(),
-              'Jána Kalinčiaka 3098/1, 010 01 Žilina',
-            ),
+            Divider(height: 1, color: HomeV2.primary.withValues(alpha: 0.08)),
             const SizedBox(height: AppSpacing.md),
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'donation.tax_deadlines_title'.tr(),
-                    style: theme.textTheme.bodyMedium!.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'donation.tax_deadlines'.tr(),
-                    style: theme.textTheme.bodySmall!.copyWith(height: 1.6),
-                  ),
-                ],
-              ),
-            ),
+            ...children,
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(ThemeData theme, String label, String value) {
+  Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 60,
+            width: 64,
             child: Text(
               label,
-              style: theme.textTheme.bodySmall!.copyWith(
-                color: Colors.grey,
+              style: TextStyle(
+                fontSize: 12.5,
+                color: HomeV2.textMuted(context),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1097,8 +1266,10 @@ class _DonationScreenState extends State<DonationScreen> {
           Expanded(
             child: Text(
               value,
-              style: theme.textTheme.bodySmall!.copyWith(
-                fontWeight: FontWeight.w600,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: HomeV2.textDark(context),
               ),
             ),
           ),
@@ -1108,39 +1279,36 @@ class _DonationScreenState extends State<DonationScreen> {
   }
 
   // ── Prayer banner ─────────────────────────────────────────────────────────
-  Widget _buildPrayerBanner(ThemeData theme, bool isDark) {
+  Widget _buildPrayerBanner() {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        border: Border.all(color: HomeV2.primary.withValues(alpha: 0.20)),
+        color: HomeV2.primary.withValues(
+          alpha: HomeV2.isDark(context) ? 0.10 : 0.05,
         ),
-        color: isDark
-            ? theme.colorScheme.primary.withValues(alpha: 0.08)
-            : theme.colorScheme.primary.withValues(alpha: 0.04),
       ),
       child: Column(
         children: [
           Icon(
             Icons.church_rounded,
             size: 36,
-            color: theme.colorScheme.primary.withValues(alpha: 0.6),
+            color: HomeV2.iconAccent(context).withValues(alpha: 0.7),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             'donation.prayer_title'.tr(),
-            style: theme.textTheme.titleMedium!.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: HomeV2.serifTitle(context, size: 19),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             'donation.prayer_description'.tr(),
-            style: theme.textTheme.bodyMedium!.copyWith(
-              color: isDark ? Colors.white60 : Colors.grey.shade600,
+            style: TextStyle(
+              fontSize: 14,
               height: 1.5,
+              color: HomeV2.textMuted(context),
             ),
             textAlign: TextAlign.center,
           ),
@@ -1150,14 +1318,15 @@ class _DonationScreenState extends State<DonationScreen> {
   }
 
   // ── Footer ────────────────────────────────────────────────────────────────
-  Widget _buildFooter(ThemeData theme) {
+  Widget _buildFooter() {
     return Column(
       children: [
         Text(
           'donation.footer_line1'.tr(),
           textAlign: TextAlign.center,
-          style: theme.textTheme.bodySmall!.copyWith(
-            color: Colors.grey,
+          style: TextStyle(
+            fontSize: 12.5,
+            color: HomeV2.textMuted(context),
             height: 1.5,
           ),
         ),
@@ -1165,8 +1334,30 @@ class _DonationScreenState extends State<DonationScreen> {
         Text(
           'donation.footer_line2'.tr(),
           textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium!.copyWith(
-            fontWeight: FontWeight.w500,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: HomeV2.textDark(context),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        GestureDetector(
+          onTap: () {
+            final locale = context.locale.languageCode;
+            launchUrl(
+              Uri.parse(
+                'https://www.lectio.one/$locale/terms#darovacie-podmienky',
+              ),
+              mode: LaunchMode.externalApplication,
+            );
+          },
+          child: Text(
+            'donation.terms_title'.tr(),
+            style: TextStyle(
+              fontSize: 12,
+              color: HomeV2.primary,
+              decoration: TextDecoration.underline,
+            ),
           ),
         ),
       ],
@@ -1180,29 +1371,19 @@ class _DonationScreenState extends State<DonationScreen> {
 class _CopyRow extends StatelessWidget {
   final String label;
   final String value;
-  final bool isDark;
 
-  const _CopyRow({
-    required this.label,
-    required this.value,
-    this.isDark = false,
-  });
+  const _CopyRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final primary = theme.colorScheme.primary;
-
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : primary.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        color: HomeV2.primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(HomeV2.radiusSm),
       ),
       child: Row(
         children: [
@@ -1210,18 +1391,21 @@ class _CopyRow extends StatelessWidget {
             width: 80,
             child: Text(
               label,
-              style: theme.textTheme.bodySmall!.copyWith(
-                fontWeight: FontWeight.w600,
-                color: primary,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: HomeV2.iconAccent(context),
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: theme.textTheme.bodySmall!.copyWith(
+              style: TextStyle(
+                fontSize: 12.5,
                 fontFamily: 'monospace',
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
+                color: HomeV2.textDark(context),
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -1233,6 +1417,11 @@ class _CopyRow extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('donation.copied'.tr(args: [label])),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+                  ),
+                  margin: const EdgeInsets.all(AppSpacing.lg),
                   duration: const Duration(seconds: 2),
                 ),
               );
@@ -1240,10 +1429,40 @@ class _CopyRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadius.sm),
             child: Padding(
               padding: const EdgeInsets.all(4),
-              child: Icon(Icons.copy_rounded, size: 18, color: primary),
+              child: Icon(
+                Icons.copy_rounded,
+                size: 18,
+                color: HomeV2.iconAccent(context),
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CircleButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _CircleButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: HomeV2.card(context).withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, color: HomeV2.primary, size: 22),
+        ),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../utils/app_logger.dart';
+import 'lectio_data_service.dart';
 
 /// Model pre uložené Lectio dáta
 class CachedLectioData {
@@ -122,8 +123,17 @@ class LectioCacheService {
     return '$_cacheKeyPrefix${locale}_$date';
   }
 
-  /// Načíta Lectio z cache pre konkrétny dátum
-  Future<CachedLectioData?> getCachedLectio(String date, String locale) async {
+  /// Načíta Lectio z cache pre konkrétny dátum.
+  ///
+  /// [ignoreExpiry] = true pre offline použitie — explicitne stiahnuté dni
+  /// (tlačidlo „Stiahnuť 7 dní") majú platiť celé okno, nie len 24 h. Cache
+  /// zapisuje výlučne offline sťahovanie, takže tu freshness-gate nie je
+  /// potrebný (online sa aj tak používajú čerstvé dáta zo servera).
+  Future<CachedLectioData?> getCachedLectio(
+    String date,
+    String locale, {
+    bool ignoreExpiry = false,
+  }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final key = _getCacheKey(date, locale);
@@ -136,7 +146,7 @@ class LectioCacheService {
 
       final data = CachedLectioData.fromJson(jsonDecode(jsonStr));
 
-      if (!data.isValid) {
+      if (!ignoreExpiry && !data.isValid) {
         appLogger.d('📦 Cache EXPIRED pre $date ($locale)');
         return null;
       }
@@ -226,83 +236,32 @@ class LectioCacheService {
     String locale,
   ) async {
     try {
-      // 1. Nájdi liturgický rok
-      final liturgicalYearsResponse = await _supabase
-          .from('liturgical_years')
-          .select()
-          .eq('locale_code', locale)
-          .lte('start_date', date)
-          .gte('end_date', date);
+      // Lectio source cez zdieľanú reťazenú logiku (jazyk → EN → SK).
+      final lectioSource = await LectioDataService.instance.getDailyLectio(
+        date: DateTime.parse(date),
+        locale: locale,
+      );
 
-      Map<String, dynamic>? correctLiturgicalYear;
-      final liturgicalYearsList = liturgicalYearsResponse as List;
-
-      if (liturgicalYearsList.isNotEmpty) {
-        correctLiturgicalYear = liturgicalYearsList[0] as Map<String, dynamic>;
-      } else if (locale != 'sk') {
-        // Fallback to SK
-        final skYearsResponse = await _supabase
-            .from('liturgical_years')
+      // Kalendár pre zobrazovacie polia (názov slávenia, hlava) — jazyk → EN → SK.
+      Map<String, dynamic>? calendarResponse;
+      for (final lang in {locale, 'en', 'sk'}) {
+        calendarResponse = await _supabase
+            .from('liturgical_calendar')
             .select()
-            .eq('locale_code', 'sk')
-            .lte('start_date', date)
-            .gte('end_date', date);
-        final skYearsList = skYearsResponse as List;
-        if (skYearsList.isNotEmpty) {
-          correctLiturgicalYear = skYearsList[0] as Map<String, dynamic>;
+            .eq('datum', date)
+            .eq('locale_code', lang)
+            .maybeSingle();
+        if (calendarResponse != null &&
+            calendarResponse['lectio_hlava'] != null) {
+          break;
         }
+        calendarResponse = null;
       }
 
-      // 2. Nájdi kalendárny záznam
-      final calendarResponse = await _supabase
-          .from('liturgical_calendar')
-          .select()
-          .eq('datum', date)
-          .eq('locale_code', locale)
-          .maybeSingle();
-
-      if (calendarResponse == null ||
-          calendarResponse['lectio_hlava'] == null) {
-        return null;
-      }
+      if (calendarResponse == null) return null;
 
       final lectioHlava = calendarResponse['lectio_hlava'];
       final celebrationTitle = calendarResponse['celebration_title'] ?? '';
-      final celebrationRankNum = calendarResponse['celebration_rank_num'];
-
-      // 3. Urči rok (A/B/C alebo N)
-      final isWeekday = RegExp(
-        r'(Pondelok|Utorok|Streda|Štvrtok|Piatok|Sobota|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday).+(týždňa|Week)',
-      ).hasMatch(celebrationTitle);
-
-      final isSpecialDay =
-          !isWeekday &&
-          (celebrationTitle.toLowerCase().contains('nedeľa') ||
-              celebrationTitle.toLowerCase().contains('sunday') ||
-              (celebrationRankNum != null && celebrationRankNum > 1));
-
-      final lectionaryCycle = correctLiturgicalYear?['lectionary_cycle'] ?? 'A';
-      final rokToSearch = isSpecialDay ? lectionaryCycle : 'N';
-
-      // 4. Nájdi lectio source
-      var lectioSource = await _supabase
-          .from('lectio_sources')
-          .select()
-          .eq('hlava', lectioHlava)
-          .eq('lang', locale)
-          .eq('rok', rokToSearch)
-          .maybeSingle();
-
-      // Fallback logika
-      if (lectioSource == null && isSpecialDay && rokToSearch != 'N') {
-        lectioSource = await _supabase
-            .from('lectio_sources')
-            .select()
-            .eq('hlava', lectioHlava)
-            .eq('lang', locale)
-            .eq('rok', 'N')
-            .maybeSingle();
-      }
 
       return CachedLectioData(
         date: date,

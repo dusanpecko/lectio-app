@@ -70,7 +70,7 @@ class Adoration {
   factory Adoration.fromJson(Map<String, dynamic> json) {
     return Adoration(
       id: json['id'].toString(),
-      lang: json['lang']?.toString() ?? 'sk',
+      lang: json['lang']?.toString() ?? 'en',
       title: json['nazov']?.toString() ?? '',
       biblicalText: json['biblicky_text']?.toString() ?? '',
       introduction: json['uvod']?.toString() ?? '',

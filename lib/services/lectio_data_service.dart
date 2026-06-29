@@ -7,7 +7,10 @@ class DailyQuote {
   final String? text;
   final String? reference;
 
-  DailyQuote({this.text, this.reference});
+  /// Súradnice biblického čítania daného dňa (`suradnice_pismo`, neformátované).
+  final String? suradnice;
+
+  DailyQuote({this.text, this.reference, this.suradnice});
 }
 
 class LectioDataService {
@@ -26,92 +29,122 @@ class LectioDataService {
   LectioDataService.internal({SupabaseClient? client})
     : _supabase = client ?? Supabase.instance.client;
 
-  /// Fetch daily actio/quote based on liturgical calendar
-  Future<DailyQuote?> getDailyQuote({required String locale}) async {
-    final today = DateTime.now().toIso8601String().substring(0, 10);
+  /// Poradie jazykov pre fallback OBSAHU: jazyk používateľa → EN → SK.
+  /// (Deduplikované — SK/EN používateľ nemá zbytočné duplikáty.)
+  List<String> _fallbackChain(String locale) {
+    final chain = <String>[locale];
+    for (final fb in const ['en', 'sk']) {
+      if (!chain.contains(fb)) chain.add(fb);
+    }
+    return chain;
+  }
 
-    try {
-      // 1. NAJPRV nájdeme správny liturgický rok
-      final liturgicalYearsResponse = await _supabase
+  static final RegExp _weekdayRe = RegExp(
+    r'(Pondelok|Utorok|Streda|Štvrtok|Piatok|Sobota|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday).+(týždňa|Week)',
+  );
+
+  /// Liturgický cyklus (A/B/C) pre dátum — skúša jazyk → EN → SK.
+  Future<String> _cycleForDate(String today, String locale) async {
+    for (final lang in _fallbackChain(locale)) {
+      final res = await _supabase
           .from('liturgical_years')
-          .select()
-          .eq('locale_code', locale)
+          .select('lectionary_cycle')
+          .eq('locale_code', lang)
           .lte('start_date', today)
           .gte('end_date', today);
+      final list = res as List;
+      if (list.isNotEmpty) {
+        return (list[0]['lectionary_cycle'] ?? 'A') as String;
+      }
+    }
+    return 'A';
+  }
 
-      Map<String, dynamic>? correctLiturgicalYear;
-      final liturgicalYearsList = liturgicalYearsResponse as List;
+  /// Určí `rok` (cyklus A/B/C alebo 'N') pre dátum. Typ dňa klasifikuje zo SK
+  /// kalendára (regex spoľahlivo zachytí SK/EN názvy) — je univerzálny pre
+  /// všetky jazyky, takže sa nepokazí pri FR/ES názvoch.
+  Future<String> _rokForDate(String today, String cycle) async {
+    final cal = await _supabase
+        .from('liturgical_calendar')
+        .select('celebration_title, celebration_rank_num')
+        .eq('datum', today)
+        .eq('locale_code', 'sk')
+        .maybeSingle();
+    if (cal == null) return 'N';
+    final title = (cal['celebration_title'] ?? '') as String;
+    final rank = cal['celebration_rank_num'];
+    final isWeekday = _weekdayRe.hasMatch(title);
+    final isSpecialDay =
+        !isWeekday &&
+        (title.toLowerCase().contains('nedeľa') ||
+            title.toLowerCase().contains('sunday') ||
+            (rank != null && rank > 1));
+    return isSpecialDay ? cycle : 'N';
+  }
 
-      if (liturgicalYearsList.isNotEmpty) {
-        correctLiturgicalYear = liturgicalYearsList[0] as Map<String, dynamic>;
-      } else if (locale != 'sk') {
-        // Fallback to SK
-        final skYearsResponse = await _supabase
-            .from('liturgical_years')
-            .select()
-            .eq('locale_code', 'sk')
-            .lte('start_date', today)
-            .gte('end_date', today);
-        final skYearsList = skYearsResponse as List;
-        if (skYearsList.isNotEmpty) {
-          correctLiturgicalYear = skYearsList[0] as Map<String, dynamic>;
-        }
+  /// Lectio_source pre JEDEN jazyk: kalendár(dátum,lang) → hlava →
+  /// source(hlava,lang,rok) (+ skús 'N' pre sviatky). null = pre jazyk chýba.
+  /// `hlava` je per-jazyk, preto sa rieši z kalendára toho istého jazyka.
+  Future<Map<String, dynamic>?> _sourceForLang(
+    String today,
+    String lang,
+    String rok,
+  ) async {
+    final cal = await _supabase
+        .from('liturgical_calendar')
+        .select('lectio_hlava')
+        .eq('datum', today)
+        .eq('locale_code', lang)
+        .maybeSingle();
+    final hlava = cal?['lectio_hlava'];
+    if (hlava == null) return null;
+
+    var source = await _supabase
+        .from('lectio_sources')
+        .select()
+        .eq('hlava', hlava)
+        .eq('lang', lang)
+        .eq('rok', rok)
+        .maybeSingle();
+    if (source == null && rok != 'N') {
+      source = await _supabase
+          .from('lectio_sources')
+          .select()
+          .eq('hlava', hlava)
+          .eq('lang', lang)
+          .eq('rok', 'N')
+          .maybeSingle();
+    }
+    return source;
+  }
+
+  /// Fetch daily actio/quote based on liturgical calendar (fallback jazyk→EN→SK)
+  Future<DailyQuote?> getDailyQuote({required String locale}) async {
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    try {
+      final cycle = await _cycleForDate(today, locale);
+      final rok = await _rokForDate(today, cycle);
+
+      Map<String, dynamic>? source;
+      for (final lang in _fallbackChain(locale)) {
+        source = await _sourceForLang(today, lang, rok);
+        if (source != null) break;
       }
 
-      // 2. Nájdi dnešný liturgický deň
-      final calendarResponse = await _supabase
+      // Názov slávenia v jazyku používateľa (pre fallback referenciu).
+      final cal = await _supabase
           .from('liturgical_calendar')
-          .select()
+          .select('celebration_title')
           .eq('datum', today)
           .eq('locale_code', locale)
           .maybeSingle();
+      final celeb = (cal?['celebration_title'] as String?)?.trim();
 
-      if (calendarResponse == null ||
-          calendarResponse['lectio_hlava'] == null) {
-        return null;
-      }
-
-      final lectioHlava = calendarResponse['lectio_hlava'];
-      final celebrationTitle = calendarResponse['celebration_title'] ?? '';
-      final celebrationRankNum = calendarResponse['celebration_rank_num'];
-
-      // 3. Určíme či použiť cyklus (A/B/C) alebo 'N'
-      final isWeekday = RegExp(
-        r'(Pondelok|Utorok|Streda|Štvrtok|Piatok|Sobota|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday).+(týždňa|Week)',
-      ).hasMatch(celebrationTitle);
-
-      final isSpecialDay =
-          !isWeekday &&
-          (celebrationTitle.toLowerCase().contains('nedeľa') ||
-              celebrationTitle.toLowerCase().contains('sunday') ||
-              (celebrationRankNum != null && celebrationRankNum > 1));
-
-      final lectionaryCycle = correctLiturgicalYear?['lectionary_cycle'] ?? 'A';
-      final rokToSearch = isSpecialDay ? lectionaryCycle : 'N';
-
-      // 4. Nájdi lectio source
-      var lectioSource = await _supabase
-          .from('lectio_sources')
-          .select()
-          .eq('hlava', lectioHlava)
-          .eq('lang', locale)
-          .eq('rok', rokToSearch)
-          .maybeSingle();
-
-      // Fallback logika
-      if (lectioSource == null && isSpecialDay && rokToSearch != 'N') {
-        lectioSource = await _supabase
-            .from('lectio_sources')
-            .select()
-            .eq('hlava', lectioHlava)
-            .eq('lang', locale)
-            .eq('rok', 'N')
-            .maybeSingle();
-      }
-
+      if (source == null && (celeb == null || celeb.isEmpty)) return null;
       return DailyQuote(
-        text: lectioSource?['actio_text'],
-        reference: lectioSource?['reference'] ?? celebrationTitle,
+        text: source?['actio_text'],
+        reference: source?['reference'] ?? celeb,
+        suradnice: source?['suradnice_pismo'] as String?,
       );
     } catch (e) {
       appLogger.e('❌ Service: Error fetching daily quote: $e');
@@ -197,166 +230,33 @@ class LectioDataService {
     }
   }
 
-  /// Fetch full Lectio Divina content for a specific date
+  /// Fetch full Lectio Divina content for a specific date (fallback jazyk→EN→SK)
   Future<Map<String, dynamic>?> getDailyLectio({
     required DateTime date,
     required String locale,
   }) async {
     final today = date.toIso8601String().substring(0, 10);
-
     try {
       appLogger.d(
         '🔍 Service: Načítavam lectio pre dátum: $today, jazyk: $locale',
       );
+      final cycle = await _cycleForDate(today, locale);
+      final rok = await _rokForDate(today, cycle);
 
-      // 1. NAJPRV nájdeme správny liturgický rok na základe dátumu
-      final liturgicalYearsResponse = await _supabase
-          .from('liturgical_years')
-          .select()
-          .eq('locale_code', locale)
-          .lte('start_date', today)
-          .gte('end_date', today);
-
-      Map<String, dynamic>? correctLiturgicalYear;
-      final liturgicalYearsList = liturgicalYearsResponse as List;
-
-      if (liturgicalYearsList.isNotEmpty) {
-        final yearData = liturgicalYearsList[0] as Map<String, dynamic>;
-        correctLiturgicalYear = yearData;
-        appLogger.i(
-          '✅ Service: Nájdený liturgický rok: ${yearData['year']} '
-          '(${yearData['start_date']} - ${yearData['end_date']}), '
-          'cyklus: ${yearData['lectionary_cycle']}',
-        );
-      } else {
-        // Fallback na slovenčinu ak aktuálny jazyk nemá liturgický rok
-        if (locale != 'sk') {
-          appLogger.d('🔄 Service: Hľadám liturgický rok v slovenčine...');
-          final skYearsResponse = await _supabase
-              .from('liturgical_years')
-              .select()
-              .eq('locale_code', 'sk')
-              .lte('start_date', today)
-              .gte('end_date', today);
-
-          final skYearsList = skYearsResponse as List;
-          if (skYearsList.isNotEmpty) {
-            final skYearData = skYearsList[0] as Map<String, dynamic>;
-            correctLiturgicalYear = skYearData;
-            appLogger.i(
-              '✅ Service: Nájdený SK liturgický rok: ${skYearData['year']} '
-              '(${skYearData['start_date']} - ${skYearData['end_date']}), '
-              'cyklus: ${skYearData['lectionary_cycle']}',
-            );
+      for (final lang in _fallbackChain(locale)) {
+        final source = await _sourceForLang(today, lang, rok);
+        if (source != null) {
+          if (lang != locale) {
+            appLogger.d('🔄 Service: lectio fallback $locale → $lang');
           }
+          return source;
         }
       }
 
-      // 2. Nájdi deň v liturgical_calendar
-      var calendarResponse = await _supabase
-          .from('liturgical_calendar')
-          .select()
-          .eq('datum', today)
-          .eq('locale_code', locale)
-          .maybeSingle();
-
-      // Fallback na slovenčinu ak kalendár pre aktuálny jazyk neexistuje
-      if (calendarResponse == null && locale != 'sk') {
-        appLogger.d('🔄 Service: Skúšam načítať kalendár pre slovenčinu...');
-        calendarResponse = await _supabase
-            .from('liturgical_calendar')
-            .select()
-            .eq('datum', today)
-            .eq('locale_code', 'sk')
-            .maybeSingle();
-      }
-
-      if (calendarResponse == null) {
-        appLogger.e(
-          '❌ Service: Liturgický kalendár nenájdený pre dátum $today',
-        );
-        return null;
-      }
-
-      final lectioHlava = calendarResponse['lectio_hlava'];
-      if (lectioHlava == null) {
-        debugPrint('❌ Service: Tento deň nemá priradenú lectio hlavičku');
-        return null;
-      }
-
-      // 3. Určíme či použiť cyklus (A/B/C) alebo 'N' pre všedné dni
-      final celebrationTitle = calendarResponse['celebration_title'] ?? '';
-      final celebrationRankNum = calendarResponse['celebration_rank_num'];
-
-      // Pre všedné dni (pondelok-sobota v cezročnom období) používame 'N'
-      final isWeekday = RegExp(
-        r'(Pondelok|Utorok|Streda|Štvrtok|Piatok|Sobota|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday).+(týždňa|Week)',
-      ).hasMatch(celebrationTitle);
-
-      // Pre nedele a sviatky používame A/B/C
-      final isSpecialDay =
-          !isWeekday &&
-          (celebrationTitle.toLowerCase().contains('nedeľa') ||
-              celebrationTitle.toLowerCase().contains('sunday') ||
-              (celebrationRankNum != null && celebrationRankNum > 1));
-
-      // POUŽIJEME správny liturgický rok
-      final lectionaryCycle = correctLiturgicalYear?['lectionary_cycle'] ?? 'A';
-      final rokToSearch = isSpecialDay ? lectionaryCycle : 'N';
-
-      // 4. Nájdi zodpovedajúci záznam v lectio_sources
-      var lectioSource = await _supabase
-          .from('lectio_sources')
-          .select()
-          .eq('hlava', lectioHlava)
-          .eq('lang', locale)
-          .eq('rok', rokToSearch)
-          .maybeSingle();
-
-      // Fallback logika
-      if (lectioSource == null) {
-        appLogger.e(
-          '❌ Service: Lectio source nenájdený pre $locale, rok $rokToSearch',
-        );
-
-        // Pre sviatky: skús rok 'N'
-        if (isSpecialDay && rokToSearch != 'N') {
-          lectioSource = await _supabase
-              .from('lectio_sources')
-              .select()
-              .eq('hlava', lectioHlava)
-              .eq('lang', locale)
-              .eq('rok', 'N')
-              .maybeSingle();
-        }
-
-        // Fallback na slovenčinu
-        if (lectioSource == null && locale != 'sk') {
-          appLogger.d(
-            '🔄 Service: Skúšam načítať lectio source pre slovenčinu...',
-          );
-          lectioSource = await _supabase
-              .from('lectio_sources')
-              .select()
-              .eq('hlava', lectioHlava)
-              .eq('lang', 'sk')
-              .eq('rok', rokToSearch)
-              .maybeSingle();
-
-          // Pre sviatky v slovenčine: aj tu skús 'N'
-          if (lectioSource == null && isSpecialDay && rokToSearch != 'N') {
-            lectioSource = await _supabase
-                .from('lectio_sources')
-                .select()
-                .eq('hlava', lectioHlava)
-                .eq('lang', 'sk')
-                .eq('rok', 'N')
-                .maybeSingle();
-          }
-        }
-      }
-
-      return lectioSource;
+      appLogger.e(
+        '❌ Service: Lectio nenájdené pre $today (locale $locale → en → sk)',
+      );
+      return null;
     } catch (e) {
       appLogger.e('❌ Service: Chyba pri načítavaní Lectio dát: $e');
       return null;

@@ -27,7 +27,7 @@ val flutterVersionCode: String = localProperties.getProperty("flutter.versionCod
 val flutterVersionName: String = localProperties.getProperty("flutter.versionName") ?: "1.0"
 
 android {
-    namespace = "com.example.lectio_divina"
+    namespace = "sk.dpapp.app.android604688a88a394"
     compileSdk = 36
 
     compileOptions {

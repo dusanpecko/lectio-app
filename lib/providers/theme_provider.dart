@@ -135,10 +135,10 @@ class ThemeProvider with ChangeNotifier {
     } else {
       // Pre 'system' použij systémový jazyk
       final systemLocale = WidgetsBinding.instance.platformDispatcher.locale;
-      final supportedLanguages = ['sk', 'en', 'es'];
+      final supportedLanguages = ['en', 'sk', 'es', 'fr'];
       final systemLang = supportedLanguages.contains(systemLocale.languageCode)
           ? systemLocale.languageCode
-          : 'sk';
+          : 'en';
       await context.setLocale(Locale(systemLang));
     }
   }
@@ -150,33 +150,24 @@ class ThemeProvider with ChangeNotifier {
     return _fontFamily;
   }
 
-  /// Vytvorí TextTheme s použitými font nastaveniami
-  TextTheme applyFontSettings(TextTheme baseTheme) {
-    final scaleFactor = _fontSize / 16.0; // 16 je baseline
+  /// Faktor veľkosti písma (baseline 16). Aplikuje sa GLOBÁLNE cez
+  /// MediaQuery.textScaler v MyApp, aby platil pre VŠETKY Text widgety
+  /// (nielen tie z témy — väčšina obrazoviek má hardcoded fontSize).
+  double get textScale => _fontSize / 16.0;
 
-    // Pre každý TextStyle aplikuj font family a scale
+  /// Aplikuje LEN font family na TextTheme. Veľkosť rieši globálny textScaler.
+  TextTheme applyFontSettings(TextTheme baseTheme) {
     TextStyle? applyToStyle(TextStyle? style) {
       if (style == null) return null;
-
-      final baseSize = style.fontSize ?? 14.0;
-      final scaledSize = baseSize * scaleFactor;
-
-      // Aplikuj správny font podľa výberu
       switch (_fontFamily) {
-        case 'Default':
-          // Inter font z Google Fonts
-          return GoogleFonts.inter(textStyle: style, fontSize: scaledSize);
         case 'Serif':
-          // Merriweather - elegantný serif font
-          return GoogleFonts.merriweather(
-            textStyle: style,
-            fontSize: scaledSize,
-          );
+          return GoogleFonts.merriweather(textStyle: style);
         case 'Monospace':
-          // Roboto Mono - čitateľný monospace font
-          return GoogleFonts.robotoMono(textStyle: style, fontSize: scaledSize);
+          return GoogleFonts.robotoMono(textStyle: style);
+        case 'Default':
+          return GoogleFonts.inter(textStyle: style);
         default:
-          return style.copyWith(fontSize: scaledSize);
+          return style;
       }
     }
 

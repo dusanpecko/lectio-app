@@ -1,10 +1,12 @@
 //lib/screens/intentions_list_screen.dart
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'intention_submit_screen.dart';
 import '../shared/app_spacing.dart';
+import '../widgets/home_v2/home_v2_tokens.dart';
 
 class IntentionsListScreen extends StatefulWidget {
   const IntentionsListScreen({super.key});
@@ -23,10 +25,28 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
   Set<int> prayedIntentions = {};
   String? currentUserId;
 
+  static const Color _danger = Color(0xFFC0392B);
+  static const Color _success = Color(0xFF2E9E5B);
+
   @override
   void initState() {
     super.initState();
     fetchRoleAndIntentions();
+  }
+
+  void _snack(String message, {required bool isError}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? _danger : _success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+        ),
+        margin: const EdgeInsets.all(AppSpacing.lg),
+      ),
+    );
   }
 
   Future<void> fetchRoleAndIntentions() async {
@@ -97,7 +117,12 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('error_loading_intentions'.tr()),
-            backgroundColor: Colors.red,
+            backgroundColor: _danger,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+            ),
+            margin: const EdgeInsets.all(AppSpacing.lg),
             action: SnackBarAction(
               label: 'retry'.tr(),
               textColor: Colors.white,
@@ -141,30 +166,20 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
 
       if (mounted) {
         fetchRoleAndIntentions();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              approved ? 'intention_approved'.tr() : 'intention_rejected'.tr(),
-            ),
-            backgroundColor: Colors.green,
-          ),
+        _snack(
+          approved ? 'intention_approved'.tr() : 'intention_rejected'.tr(),
+          isError: false,
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('error_updating_intention'.tr()),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _snack('error_updating_intention'.tr(), isError: true);
     }
   }
 
   Future<void> onPrayed(int intentionId) async {
     if (!mounted) return;
 
+    HapticFeedback.lightImpact();
     // Optimistic update - okamžite aktualizujeme UI
     setState(() {
       prayedIntentions.add(intentionId);
@@ -188,15 +203,7 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
           'intention_id': intentionId,
         });
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('prayer_recorded'.tr()),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
+        _snack('prayer_recorded'.tr(), isError: false);
       } else {
         // Ak už existuje, vrátíme optimistic update
         if (mounted) {
@@ -213,12 +220,7 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
           prayedIntentions.remove(intentionId);
           prayerCounts[intentionId] = (prayerCounts[intentionId] ?? 1) - 1;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('error_recording_prayer'.tr()),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _snack('error_recording_prayer'.tr(), isError: true);
       }
     }
   }
@@ -234,233 +236,531 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
 
       if (mounted) {
         fetchRoleAndIntentions();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('intention_deleted'.tr()),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        _snack('intention_deleted'.tr(), isError: false);
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('error_deleting_intention'.tr()),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _snack('error_deleting_intention'.tr(), isError: true);
     }
+  }
+
+  Future<void> _openSubmit({Map<String, dynamic>? existing}) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => IntentionSubmitScreen(existingIntention: existing),
+      ),
+    );
+    if (result == true) fetchRoleAndIntentions();
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('intentions_title'.tr()),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: fetchRoleAndIntentions,
-          ),
-        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness:
+            HomeV2.isDark(context) ? Brightness.light : Brightness.dark,
+        statusBarBrightness:
+            HomeV2.isDark(context) ? Brightness.dark : Brightness.light,
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                child: Column(
+      child: Scaffold(
+        backgroundColor: HomeV2.background(context),
+        body: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: fetchRoleAndIntentions,
+                color: HomeV2.primary,
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  physics: const AlwaysScrollableScrollPhysics(),
                   children: [
-                    // Card s obrázkom a textom
-                    Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      elevation: AppElevation.medium,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          ClipRRect(
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(AppRadius.md),
-                            ),
-                            child: Image.asset(
-                              'assets/images/modlitba.jpg',
-                              fit: BoxFit.cover,
-                              height: MediaQuery.of(context).size.width >= 600
-                                  ? 280.0
-                                  : 180.0,
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            child: Text(
-                              'intention_intro'.tr(),
-                              style: theme.textTheme.titleMedium,
-                              textAlign: TextAlign.justify,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    _buildHero(),
+                    _buildIntroCard(),
                     const SizedBox(height: AppSpacing.lg),
-
-                    // Zoznam úmyslov
                     if (intentions.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.xxl,
-                        ),
-                        child: Center(child: Text('no_intentions'.tr())),
-                      )
+                      _buildEmptyState()
                     else
-                      ...intentions.map((item) {
-                        final isAuthor =
-                            Supabase.instance.client.auth.currentUser?.id ==
-                            item['user_id'];
-                        return (role == 'admin' || isAuthor)
-                            ? Dismissible(
-                                key: Key(item['id'].toString()),
-                                direction: DismissDirection.endToStart,
-                                background: Container(
-                                  color: Colors.red,
-                                  alignment: Alignment.centerRight,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                  ),
-                                  child: const Icon(
-                                    Icons.delete,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                confirmDismiss: (_) async {
-                                  return await showDialog<bool>(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: Text('delete_intention'.tr()),
-                                      content: Text('delete_confirmation'.tr()),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(false),
-                                          child: Text('cancel'.tr()),
-                                        ),
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(true),
-                                          child: Text('delete'.tr()),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                                onDismissed: (_) => deleteIntention(item['id']),
-                                child: _buildIntentionCard(item, isAuthor),
-                              )
-                            : _buildIntentionCard(item, isAuthor);
-                      }),
-
-                    // Priestor pre FAB + systémovú navigačnú lištu
+                      ...intentions.map(_buildDismissibleCard),
                     SizedBox(
-                      height: MediaQuery.of(context).padding.bottom + 80,
+                      height: MediaQuery.of(context).padding.bottom + 96,
                     ),
                   ],
                 ),
               ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => _openSubmit(),
+          backgroundColor: HomeV2.primary,
+          foregroundColor: Colors.white,
+          elevation: 3,
+          icon: const Icon(Icons.add_rounded),
+          label: Text(
+            'add_intention'.tr(),
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          shape: const StadiumBorder(),
+        ),
+      ),
+    );
+  }
+
+  // ── Hero ──────────────────────────────────────────────────────────────────
+  Widget _buildHero() {
+    final topPad = MediaQuery.of(context).padding.top;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        topPad + AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.xl,
+      ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            HomeV2.primary.withValues(alpha: HomeV2.isDark(context) ? 0.32 : 0.14),
+            HomeV2.background(context),
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (Navigator.canPop(context))
+                _CircleButton(
+                  icon: Icons.arrow_back_rounded,
+                  onTap: () => Navigator.of(context).maybePop(),
+                ),
+              const Spacer(),
+              _CircleButton(
+                icon: Icons.refresh_rounded,
+                onTap: fetchRoleAndIntentions,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            'intentions_title'.tr(),
+            style: HomeV2.serifTitle(context, size: 30, height: 1.1),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Úvodná karta s obrázkom ─────────────────────────────────────────────────
+  Widget _buildIntroCard() {
+    final isTablet = MediaQuery.of(context).size.width >= 600;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadow(context),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Image.asset(
+            'assets/images/modlitba.jpg',
+            fit: BoxFit.cover,
+            height: isTablet ? 260 : 170,
+            errorBuilder: (_, _, _) => ColoredBox(
+              color: HomeV2.primary.withValues(alpha: 0.12),
+              child: const SizedBox(height: 170),
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const IntentionSubmitScreen(),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Text(
+              'intention_intro'.tr(),
+              style: TextStyle(
+                fontSize: 14.5,
+                height: 1.55,
+                color: HomeV2.textDark(context),
+              ),
+              textAlign: TextAlign.justify,
             ),
-          );
-          if (result == true) {
-            fetchRoleAndIntentions();
-          }
-        },
-        tooltip: 'add_intention'.tr(),
-        child: const Icon(Icons.add),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xxl,
+        AppSpacing.xxl,
+        AppSpacing.xxl,
+        AppSpacing.lg,
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            decoration: BoxDecoration(
+              color: HomeV2.primary.withValues(alpha: 0.10),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.volunteer_activism_outlined,
+              size: 52,
+              color: HomeV2.iconAccent(context),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            'no_intentions'.tr(),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 15,
+              color: HomeV2.textMuted(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Karta úmyslu ────────────────────────────────────────────────────────────
+  Widget _buildDismissibleCard(Map<String, dynamic> item) {
+    final isAuthor =
+        Supabase.instance.client.auth.currentUser?.id == item['user_id'];
+    final canDelete = role == 'admin' || isAuthor;
+    final card = _buildIntentionCard(item, isAuthor);
+    if (!canDelete) return card;
+
+    return Dismissible(
+      key: Key(item['id'].toString()),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        margin: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          0,
+          AppSpacing.lg,
+          AppSpacing.md,
+        ),
+        decoration: BoxDecoration(
+          color: _danger,
+          borderRadius: BorderRadius.circular(HomeV2.radius),
+        ),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+        child: const Icon(Icons.delete_rounded, color: Colors.white),
+      ),
+      confirmDismiss: (_) => _confirmDelete(),
+      onDismissed: (_) => deleteIntention(item['id']),
+      child: card,
+    );
+  }
+
+  Future<void> _promptDelete(int id) async {
+    final ok = await _confirmDelete();
+    if (ok == true) await deleteIntention(id);
+  }
+
+  Future<bool?> _confirmDelete() {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: HomeV2.card(ctx),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(HomeV2.radius),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: _danger),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(child: Text('delete_intention'.tr())),
+          ],
+        ),
+        content: Text('delete_confirmation'.tr()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              'cancel'.tr(),
+              style: TextStyle(color: HomeV2.textMuted(ctx)),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _danger,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.full),
+              ),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('delete'.tr()),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildIntentionCard(Map<String, dynamic> item, bool isAuthor) {
-    final theme = Theme.of(context);
     final intentionId = item['id'] as int;
     final prayerCount = prayerCounts[intentionId] ?? 0;
     final alreadyPrayed = prayedIntentions.contains(intentionId);
+    final name = item['name']?.toString().trim();
+    final hasName = name != null && name.isNotEmpty;
+    final isAdmin = role == 'admin';
+    final approved = item['approved'] == true;
 
-    return Card(
-      //margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
-      child: ListTile(
-        title: Text(item['intention'] ?? ''),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (item['name'] != null)
-              Text(
-                'from'.tr(args: [item['name']]),
-                style: theme.textTheme.bodySmall,
-              ),
-            if (role == 'admin')
-              Text(
-                'approved'.tr(
-                  args: [
-                    item['approved'] ? 'approved_yes'.tr() : 'approved_no'.tr(),
-                  ],
-                ),
-                style: theme.textTheme.bodySmall!.copyWith(
-                  color: item['approved'] ? Colors.green : Colors.red,
-                ),
-              ),
+    return Container(
+      margin: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isAdmin || isAuthor)
+            Row(
+              children: [
+                if (isAdmin) _statusBadge(approved),
+                const Spacer(),
+                if (isAuthor)
+                  _miniAction(
+                    icon: Icons.edit_outlined,
+                    color: HomeV2.iconAccent(context),
+                    tooltip: 'edit'.tr(),
+                    onTap: () => _openSubmit(existing: item),
+                  ),
+                if (isAdmin) ...[
+                  _miniAction(
+                    icon: Icons.check_rounded,
+                    color: _success,
+                    tooltip: 'approve'.tr(),
+                    onTap: () => approveIntention(item['id'], true),
+                  ),
+                  _miniAction(
+                    icon: Icons.close_rounded,
+                    color: _danger,
+                    tooltip: 'reject'.tr(),
+                    onTap: () => approveIntention(item['id'], false),
+                  ),
+                ],
+                if (isAuthor || isAdmin)
+                  _miniAction(
+                    icon: Icons.delete_outline_rounded,
+                    color: _danger,
+                    tooltip: 'delete_intention'.tr(),
+                    onTap: () => _promptDelete(item['id'] as int),
+                  ),
+              ],
+            ),
+          Text(
+            item['intention']?.toString() ?? '',
+            style: TextStyle(
+              fontSize: 16,
+              height: 1.5,
+              color: HomeV2.textDark(context),
+            ),
+          ),
+          if (hasName) ...[
             const SizedBox(height: AppSpacing.sm),
-            // Nahradené FutureBuilder lokálnymi dátami
-            Text('prayed_count'.tr(args: [prayerCount.toString()])),
-            TextButton.icon(
-              icon: const Icon(Icons.volunteer_activism),
-              label: Text('i_prayed'.tr()),
-              onPressed: alreadyPrayed ? null : () => onPrayed(item['id']),
+            Row(
+              children: [
+                Icon(
+                  Icons.person_outline_rounded,
+                  size: 15,
+                  color: HomeV2.textMuted(context),
+                ),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    'from'.tr(args: [name]),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontStyle: FontStyle.italic,
+                      color: HomeV2.textMuted(context),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+            child: Divider(
+              height: 1,
+              color: HomeV2.primary.withValues(alpha: 0.08),
+            ),
+          ),
+          Row(
+            children: [
+              Icon(
+                Icons.favorite_rounded,
+                size: 16,
+                color: HomeV2.gold,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'prayed_count'.tr(args: [prayerCount.toString()]),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: HomeV2.textMuted(context),
+                ),
+              ),
+              const Spacer(),
+              _prayButton(alreadyPrayed, item['id'] as int),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusBadge(bool approved) {
+    final color = approved ? _success : _danger;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            approved ? Icons.verified_rounded : Icons.hourglass_empty_rounded,
+            size: 13,
+            color: color,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            approved ? 'approved_yes'.tr() : 'approved_no'.tr(),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniAction({
+    required IconData icon,
+    required Color color,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(left: AppSpacing.sm),
+      child: Tooltip(
+        message: tooltip,
+        child: Material(
+          color: color.withValues(alpha: 0.10),
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onTap();
+            },
+            child: SizedBox(
+              width: 36,
+              height: 36,
+              child: Icon(icon, size: 19, color: color),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _prayButton(bool alreadyPrayed, int intentionId) {
+    if (alreadyPrayed) {
+      return Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: HomeV2.primary.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(AppRadius.full),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle_rounded, size: 17, color: HomeV2.primary),
+            const SizedBox(width: 6),
+            Text(
+              'i_prayed'.tr(),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: HomeV2.primary,
+              ),
             ),
           ],
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isAuthor)
-              IconButton(
-                icon: const Icon(Icons.edit, color: Colors.orange),
-                tooltip: 'edit'.tr(),
-                onPressed: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          IntentionSubmitScreen(existingIntention: item),
-                    ),
-                  );
-                  if (result == true) {
-                    fetchRoleAndIntentions();
-                  }
-                },
-              ),
-            if (role == 'admin') ...[
-              IconButton(
-                icon: const Icon(Icons.check, color: Colors.green),
-                tooltip: 'approve'.tr(),
-                onPressed: () => approveIntention(item['id'], true),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.red),
-                tooltip: 'reject'.tr(),
-                onPressed: () => approveIntention(item['id'], false),
-              ),
-            ],
-          ],
+      );
+    }
+    return FilledButton.icon(
+      onPressed: () => onPrayed(intentionId),
+      icon: const Icon(Icons.volunteer_activism_rounded, size: 17),
+      label: Text(
+        'i_prayed'.tr(),
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+      ),
+      style: FilledButton.styleFrom(
+        backgroundColor: HomeV2.primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.full),
+        ),
+      ),
+    );
+  }
+}
+
+class _CircleButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _CircleButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: HomeV2.card(context).withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, color: HomeV2.primary, size: 22),
         ),
       ),
     );

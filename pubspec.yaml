@@ -19,7 +19,7 @@ documentation: https://github.com/dusanpecko/lectio-app/wiki
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 10.2.0+5000014
+version: 11.0.0+5000015
 
 environment:
   sdk: ^3.8.0
@@ -67,6 +67,7 @@ dependencies:
   permission_handler: ^12.0.1
   device_info_plus: ^12.3.0
   app_links: ^6.4.1
+  home_widget: ^0.7.0
   http: ^1.4.0
   share_plus: ^11.1.0
   flutter_svg: ^2.0.17
@@ -77,11 +78,16 @@ dependencies:
   flutter_local_notifications: ^19.5.0
   provider: ^6.1.2
   cached_network_image: ^3.4.1
+  # Priamy prístup k disk cache, ktorú používa cached_network_image — pre
+  # predcachovanie podcast coverov na offline použitie.
+  flutter_cache_manager: ^3.4.1
   connectivity_plus: ^6.1.0
   video_player: ^2.9.3
   webview_flutter: ^4.13.1
   in_app_review: ^2.0.10
   wakelock_plus: ^1.2.8
+  showcaseview: ^5.1.0
+  flutter_markdown_plus: ^1.0.7
 
 dev_dependencies:
   flutter_test:

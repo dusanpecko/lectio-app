@@ -11,8 +11,11 @@ import 'package:lectio_divina/screens/auth_screen.dart';
 import 'package:lectio_divina/screens/home_screen.dart';
 import 'package:lectio_divina/screens/lectio_screen.dart';
 import 'package:lectio_divina/screens/onboarding_screen.dart';
+import 'package:lectio_divina/screens/onboarding_update_screen.dart';
+import 'package:lectio_divina/widgets/app_update_dialog.dart';
 import 'package:lectio_divina/shared/app_theme.dart';
 import 'package:lectio_divina/utils/app_logger.dart';
+import 'package:lectio_divina/utils/route_observer.dart';
 import 'package:lectio_divina/utils/umami_navigation_observer.dart';
 import 'package:lectio_divina/widgets/global_mini_player.dart';
 import 'package:provider/provider.dart';
@@ -26,6 +29,7 @@ import 'providers/theme_provider.dart';
 import 'services/audio_download_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/fcm_service.dart';
+import 'services/home_widget_service.dart';
 import 'services/lectio_audio_player.dart';
 import 'services/local_notifications_service.dart';
 import 'services/umami_analytics_service.dart';
@@ -38,10 +42,10 @@ Future<Locale> _getStartLocale(String languageCode) async {
   if (languageCode == 'system') {
     // Pre 'system' použij systémový jazyk
     final systemLocale = WidgetsBinding.instance.platformDispatcher.locale;
-    final supportedLanguages = ['sk', 'en', 'es'];
+    final supportedLanguages = ['en', 'sk', 'es', 'fr'];
     final systemLang = supportedLanguages.contains(systemLocale.languageCode)
         ? systemLocale.languageCode
-        : 'sk';
+        : 'en';
     return Locale(systemLang);
   } else {
     // Použij explicitne zvolený jazyk
@@ -109,9 +113,14 @@ Future<void> main() async {
     _logger.e('Missing SUPABASE_URL or SUPABASE_ANON_KEY in .env.');
     runApp(
       EasyLocalization(
-        supportedLocales: const [Locale('sk'), Locale('en'), Locale('es')],
+        supportedLocales: const [
+          Locale('en'),
+          Locale('sk'),
+          Locale('es'),
+          Locale('fr'),
+        ],
         path: 'assets/translations',
-        fallbackLocale: const Locale('sk'),
+        fallbackLocale: const Locale('en'),
         child: const EnvErrorApp(),
       ),
     );
@@ -139,9 +148,14 @@ Future<void> main() async {
     ChangeNotifierProvider.value(
       value: themeProvider,
       child: EasyLocalization(
-        supportedLocales: const [Locale('sk'), Locale('en'), Locale('es')],
+        supportedLocales: const [
+          Locale('en'),
+          Locale('sk'),
+          Locale('es'),
+          Locale('fr'),
+        ],
         path: 'assets/translations',
-        fallbackLocale: const Locale('sk'),
+        fallbackLocale: const Locale('en'),
         startLocale: startLocale,
         child: const MyApp(),
       ),
@@ -173,12 +187,20 @@ class MyApp extends StatelessWidget {
       darkTheme: darkTheme,
       themeMode: themeProvider.themeMode,
       initialRoute: '/',
-      navigatorObservers: [UmamiNavigationObserver()],
+      navigatorObservers: [UmamiNavigationObserver(), appRouteObserver],
       localizationsDelegates: [...context.localizationDelegates],
       supportedLocales: context.supportedLocales,
       locale: context.locale,
       builder: (context, child) {
-        return GlobalMiniPlayer(child: child ?? const SizedBox.shrink());
+        // Veľkosť písma z Nastavení aplikuj GLOBÁLNE na všetky Text widgety.
+        // Skombinuj so systémovým škálovaním (prístupnosť) a clampni.
+        final mq = MediaQuery.of(context);
+        final systemFactor = mq.textScaler.scale(10) / 10;
+        final scale = (systemFactor * themeProvider.textScale).clamp(0.8, 2.0);
+        return MediaQuery(
+          data: mq.copyWith(textScaler: TextScaler.linear(scale)),
+          child: GlobalMiniPlayer(child: child ?? const SizedBox.shrink()),
+        );
       },
       home: const FCMInitializer(child: SessionHandler()),
       routes: {'/lectio': (context) => const LectioScreen()},
@@ -250,6 +272,13 @@ class _FCMInitializerState extends State<FCMInitializer>
     } catch (e) {
       _logger.e('❌ Error initializing AudioDownloadService: $e');
     }
+
+    try {
+      await HomeWidgetService.init();
+      _logger.i('✅ HomeWidgetService initialized (deferred)');
+    } catch (e) {
+      _logger.e('❌ Error initializing HomeWidgetService: $e');
+    }
   }
 
   @override
@@ -320,6 +349,17 @@ class _FCMInitializerState extends State<FCMInitializer>
   }
 }
 
+/// Verzia onboardingu. Zvýš pri väčšom update, ak chceš existujúcim používateľom
+/// ukázať „Čo je nové" obrazovku ([OnboardingUpdateScreen]).
+///   0            → nový používateľ → plný [OnboardingScreen]
+///   1..CURRENT-1 → existujúci po update → [OnboardingUpdateScreen]
+///   >= CURRENT   → rovno do appky
+const int kCurrentOnboardingVersion = 2;
+
+/// DOČASNE: vynúti zobrazenie „Čo je nové" ([OnboardingUpdateScreen]) pri
+/// každom štarte (test). Pred vydaním prepnúť na `false`.
+const bool kForceOnboardingUpdate = false;
+
 class SessionHandler extends StatefulWidget {
   const SessionHandler({super.key});
 
@@ -330,7 +370,7 @@ class SessionHandler extends StatefulWidget {
 class _SessionHandlerState extends State<SessionHandler> {
   Session? session;
   late final StreamSubscription<AuthState> _authSubscription;
-  bool _showOnboarding = false;
+  int _onboardingVersion = kCurrentOnboardingVersion;
   bool _loading = true;
 
   @override
@@ -373,18 +413,26 @@ class _SessionHandlerState extends State<SessionHandler> {
       });
     });
 
-    // Kontrola čakajúcej notifikácie
+    // Kontrola čakajúcej notifikácie + kontrola verzie appky (force/soft update)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       NotificationController.instance.checkPendingNotification(mounted);
+      if (mounted) maybeShowAppUpdateDialog(context);
     });
   }
 
   Future<void> _checkOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
-    final seen = prefs.getBool('onboarding_completed') ?? false;
+    // Migrácia: starý `onboarding_completed` (bool) → verzia 1 (videli starý
+    // onboarding) ; bez ničoho → 0 (nový používateľ).
+    final stored = prefs.getInt('onboarding_version');
+    final legacyCompleted = prefs.getBool('onboarding_completed') ?? false;
+    // DOČASNE: vynútené zobrazenie „Čo je nové" (predchádzajúca verzia → gate).
+    final version = kForceOnboardingUpdate
+        ? (kCurrentOnboardingVersion > 1 ? kCurrentOnboardingVersion - 1 : 1)
+        : (stored ?? (legacyCompleted ? 1 : 0));
     if (mounted) {
       setState(() {
-        _showOnboarding = !seen;
+        _onboardingVersion = version;
         _loading = false;
       });
     }
@@ -392,10 +440,11 @@ class _SessionHandlerState extends State<SessionHandler> {
 
   Future<void> _completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('onboarding_completed', true);
+    await prefs.setInt('onboarding_version', kCurrentOnboardingVersion);
+    await prefs.setBool('onboarding_completed', true); // legacy kompatibilita
     if (mounted) {
       setState(() {
-        _showOnboarding = false;
+        _onboardingVersion = kCurrentOnboardingVersion;
       });
     }
   }
@@ -408,18 +457,32 @@ class _SessionHandlerState extends State<SessionHandler> {
 
   @override
   Widget build(BuildContext context) {
+    // Závislosť na jazyku: čítaním `context.locale` sa SessionHandler stane
+    // závislým od EasyLocalization, takže pri zmene jazyka sa prestaví (aj keď
+    // je tento domovský route schovaný pod pushnutými obrazovkami). Home/Auth
+    // dostanú key viazaný na jazyk → nanovo sa postavia v novom jazyku a
+    // znovu načítajú lokalizovaný obsah. Bez tohto sa imperatívne pushnuté
+    // obrazovky neaktualizovali až do reštartu appky.
+    final lang = context.locale.languageCode;
+
     if (_loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    if (_showOnboarding) {
+    // Nový používateľ → plný onboarding. Existujúci po update → „Čo je nové".
+    // (Onboarding si rebuild pri zmene jazyka rieši sám — bez key, aby sa
+    // jeho stav neresetoval pri výbere jazyka v onboardingu.)
+    if (_onboardingVersion == 0) {
       return OnboardingScreen(onComplete: _completeOnboarding);
+    }
+    if (_onboardingVersion < kCurrentOnboardingVersion) {
+      return OnboardingUpdateScreen(onComplete: _completeOnboarding);
     }
 
     if (session == null) {
-      return const AuthScreen();
+      return AuthScreen(key: ValueKey('auth_$lang'));
     } else {
-      return const HomeScreen();
+      return HomeScreen(key: ValueKey('home_$lang'));
     }
   }
 }

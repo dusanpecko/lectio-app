@@ -1,12 +1,13 @@
 // lib/screens/adoration_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../models/adoration_model.dart';
 import '../services/adoration_service.dart';
-import '../shared/app_colors.dart';
-import 'adoration_detail_screen.dart';
 import '../shared/app_spacing.dart';
+import '../widgets/home_v2/home_v2_tokens.dart';
+import 'adoration_detail_screen.dart';
 
 class AdorationScreen extends StatefulWidget {
   const AdorationScreen({super.key});
@@ -68,217 +69,39 @@ class _AdorationScreenState extends State<AdorationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: _isLoading
-          ? _buildLoadingState(theme)
-          : _error != null
-          ? _buildErrorState(theme)
-          : CustomScrollView(
-              slivers: [
-                // Hero App Bar
-                SliverAppBar(
-                  expandedHeight: MediaQuery.of(context).size.width >= 600
-                      ? 450.0
-                      : 300.0,
-                  floating: false,
-                  pinned: true,
-                  backgroundColor: AppColors.primary,
-                  title: Text(
-                    tr('adoration_title'),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  actions: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.refresh_rounded,
-                        color: Colors.white,
-                      ),
-                      onPressed: _loadData,
-                      tooltip: tr('refresh'),
-                    ),
-                  ],
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.asset(
-                          'assets/images/adoration-background.webp',
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(color: AppColors.primary);
-                          },
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                AppColors.primary.withValues(alpha: 0.6),
-                                AppColors.primary.withValues(alpha: 0.85),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SafeArea(
-                          child: Padding(
-                            padding: EdgeInsets.all(
-                              MediaQuery.of(context).size.width >= 600
-                                  ? AppSpacing.xxl * 1.5
-                                  : AppSpacing.xxl,
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: EdgeInsets.all(
-                                    MediaQuery.of(context).size.width >= 600
-                                        ? AppSpacing.xl
-                                        : AppSpacing.lg,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.xl,
-                                    ),
-                                  ),
-                                  child: Icon(
-                                    Icons.favorite_rounded,
-                                    size:
-                                        MediaQuery.of(context).size.width >= 600
-                                        ? 64
-                                        : 48,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                SizedBox(
-                                  height:
-                                      MediaQuery.of(context).size.width >= 600
-                                      ? AppSpacing.xl
-                                      : AppSpacing.lg,
-                                ),
-                                Text(
-                                  tr('adoration_main_title'),
-                                  style:
-                                      (MediaQuery.of(context).size.width >= 600
-                                              ? theme.textTheme.headlineLarge
-                                              : theme.textTheme.headlineMedium)
-                                          ?.copyWith(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                SizedBox(
-                                  height:
-                                      MediaQuery.of(context).size.width >= 600
-                                      ? AppSpacing.md
-                                      : AppSpacing.sm,
-                                ),
-                                Text(
-                                  tr('adoration_main_subtitle'),
-                                  style:
-                                      (MediaQuery.of(context).size.width >= 600
-                                              ? theme.textTheme.headlineMedium
-                                              : theme.textTheme.titleMedium)
-                                          ?.copyWith(
-                                            color: Colors.white70,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Adoration List
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final adoration = _adorations[index];
-                      return _buildAdorationCard(theme, adoration, index);
-                    }, childCount: _adorations.length),
-                  ),
-                ),
-
-                const SliverToBoxAdapter(child: SizedBox(height: 100)),
-              ],
-            ),
-    );
-  }
-
-  Widget _buildLoadingState(ThemeData theme) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(
-              theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            tr('loading_adorations'),
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
       ),
-    );
-  }
-
-  Widget _buildErrorState(ThemeData theme) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      child: Scaffold(
+        backgroundColor: HomeV2.background(context),
+        body: Column(
           children: [
-            Icon(
-              Icons.error_outline_rounded,
-              size: 64,
-              color: theme.colorScheme.error,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              tr('error_loading_adorations'),
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              _error ?? tr('unknown_error'),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-            ElevatedButton.icon(
-              onPressed: _loadData,
-              icon: const Icon(Icons.refresh_rounded),
-              label: Text(tr('try_again')),
+            _buildHero(),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? _buildErrorState()
+                      : RefreshIndicator(
+                          onRefresh: _loadData,
+                          color: HomeV2.primary,
+                          child: ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: EdgeInsets.fromLTRB(
+                              AppSpacing.lg,
+                              AppSpacing.md,
+                              AppSpacing.lg,
+                              MediaQuery.of(context).viewPadding.bottom +
+                                  AppSpacing.xxl,
+                            ),
+                            itemCount: _adorations.length,
+                            itemBuilder: (context, index) =>
+                                _buildAdorationCard(_adorations[index], index),
+                          ),
+                        ),
             ),
           ],
         ),
@@ -286,174 +109,311 @@ class _AdorationScreenState extends State<AdorationScreen> {
     );
   }
 
-  Widget _buildAdorationCard(ThemeData theme, Adoration adoration, int index) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Material(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        elevation: AppElevation.none,
-        child: InkWell(
-          onTap: () => _navigateToAdoration(adoration),
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(
-                color: theme.dividerColor.withValues(alpha: 0.3),
+  // ── Hero (foto pozadie) ─────────────────────────────────────────────────────
+  Widget _buildHero() {
+    final topPad = MediaQuery.of(context).padding.top;
+    final isTablet = MediaQuery.of(context).size.width >= 600;
+    final bg = HomeV2.background(context);
+    final halo = <Shadow>[
+      const Shadow(color: Colors.black54, blurRadius: 12),
+      const Shadow(color: Colors.black38, blurRadius: 4),
+    ];
+    const bottomRadius = Radius.circular(HomeV2.radius + 6);
+
+    return SizedBox(
+      height: isTablet ? 320 : 260,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: bottomRadius),
+            child: Image.asset(
+              'assets/images/adoration-background.webp',
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) =>
+                  ColoredBox(color: HomeV2.primary.withValues(alpha: 0.4)),
+            ),
+          ),
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: bottomRadius),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.30),
+                    Colors.black.withValues(alpha: 0.10),
+                    HomeV2.primary.withValues(alpha: 0.55),
+                    bg,
+                  ],
+                  stops: const [0.0, 0.35, 0.85, 1.0],
+                ),
               ),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Row(
-                children: [
-                  // Number Badge
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppColors.primary, AppColors.accent],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          Positioned(
+            top: topPad + AppSpacing.sm,
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            child: Row(
+              children: [
+                _CircleButton(
+                  icon: Icons.arrow_back_rounded,
+                  onTap: () => Navigator.of(context).maybePop(),
+                ),
+                const Spacer(),
+                _CircleButton(
+                  icon: Icons.refresh_rounded,
+                  onTap: _loadData,
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: AppSpacing.xl,
+            right: AppSpacing.xl,
+            bottom: AppSpacing.lg,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  tr('adoration_main_title'),
+                  style: HomeV2.serifTitle(
+                    context,
+                    size: isTablet ? 34 : 28,
+                    color: Colors.white,
+                    height: 1.1,
+                  ).copyWith(shadows: halo),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  tr('adoration_main_subtitle'),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    shadows: halo,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Karta adorácie ──────────────────────────────────────────────────────────
+  Widget _buildAdorationCard(Adoration adoration, int index) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            _navigateToAdoration(adoration);
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [HomeV2.primary, Color(0xFF6B73A8)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    child: Center(
-                      child: Text(
-                        '${index + 1}',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${index + 1}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.lg),
-
-                  // Content
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          adoration.title,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        adoration.title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                          color: HomeV2.textDark(context),
                         ),
-                        const SizedBox(height: AppSpacing.xs),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (adoration.biblicalText.isNotEmpty) ...[
+                        const SizedBox(height: 3),
                         Text(
                           adoration.biblicalText,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: AppColors.primary,
+                          style: TextStyle(
+                            fontSize: 13,
                             fontStyle: FontStyle.italic,
+                            color: HomeV2.iconAccent(context),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (adoration.author != null) ...[
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            adoration.author!,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                      ],
+                      if (adoration.author != null) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          adoration.author!,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: HomeV2.textMuted(context),
                           ),
-                        ],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      if (adoration.hasAudio || adoration.hasImage) ...[
                         const SizedBox(height: AppSpacing.sm),
                         Row(
                           children: [
                             if (adoration.hasAudio)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(
-                                    alpha: 0.1,
-                                  ),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.headphones_rounded,
-                                      size: 14,
-                                      color: AppColors.primary,
-                                    ),
-                                    const SizedBox(width: AppSpacing.xs),
-                                    Text(
-                                      tr('audio'),
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                              _chip(Icons.headphones_rounded, tr('audio'),
+                                  HomeV2.primary),
                             if (adoration.hasImage) ...[
                               if (adoration.hasAudio)
                                 const SizedBox(width: AppSpacing.sm),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.accent.withValues(
-                                    alpha: 0.1,
-                                  ),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.image_rounded,
-                                      size: 14,
-                                      color: AppColors.accent,
-                                    ),
-                                    const SizedBox(width: AppSpacing.xs),
-                                    Text(
-                                      tr('image'),
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: AppColors.accent,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                              _chip(Icons.image_rounded, tr('image'),
+                                  const Color(0xFFB8862F)),
                             ],
                           ],
                         ),
                       ],
-                    ),
+                    ],
                   ),
-
-                  // Arrow Icon
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: theme.colorScheme.onSurfaceVariant.withValues(
-                      alpha: 0.5,
-                    ),
-                    size: 28,
-                  ),
-                ],
-              ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: HomeV2.textMuted(context),
+                ),
+              ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _chip(IconData icon, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppRadius.full),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              decoration: BoxDecoration(
+                color: const Color(0xFFC0392B).withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.error_outline_rounded,
+                  size: 52, color: Color(0xFFC0392B)),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              tr('error_loading_adorations'),
+              style: HomeV2.serifTitle(context, size: 22),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              _error ?? tr('unknown_error'),
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.5,
+                color: HomeV2.textMuted(context),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            TextButton.icon(
+              onPressed: _loadData,
+              icon: Icon(Icons.refresh_rounded, color: HomeV2.primary),
+              label: Text(
+                tr('try_again'),
+                style: TextStyle(
+                    color: HomeV2.primary, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CircleButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _CircleButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: HomeV2.card(context).withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, color: HomeV2.primary, size: 22),
         ),
       ),
     );

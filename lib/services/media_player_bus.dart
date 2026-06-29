@@ -36,6 +36,10 @@ class MediaPlayerBus extends ChangeNotifier {
   String? get currentId => _currentId;
   bool isCurrent(String id) => _currentId == id;
 
+  /// Identifikátor obsahu aktuálneho média (pre Lectio = deň „yyyy-MM-dd").
+  /// Slúži na zistenie, či hrá audio z iného dňa.
+  String? get currentContentId => _contentId;
+
   // Analytics metadáta aktuálneho média.
   String? _contentType;
   String? _contentId;
@@ -49,6 +53,39 @@ class MediaPlayerBus extends ChangeNotifier {
   Stream<Duration> get positionStream => _player.positionStream;
   Stream<Duration?> get durationStream => _player.durationStream;
   Stream<bool> get playingStream => _player.playingStream;
+  Stream<ProcessingState> get processingStateStream =>
+      _player.processingStateStream;
+
+  Future<void> _setSource({
+    required String id,
+    required String url,
+    required String title,
+    String? artUri,
+    String? contentType,
+    String? contentId,
+    String? language,
+  }) async {
+    _currentId = id;
+    _contentType = contentType;
+    _contentId = contentId;
+    if (language != null) _language = language;
+    // Ak je audio stiahnuté offline, prehraj lokálny súbor.
+    await AudioDownloadService.instance.initialize();
+    final localPath = AudioDownloadService.instance.getLocalPath(url);
+    final uri = localPath != null ? Uri.file(localPath) : Uri.parse(url);
+    await _player.setAudioSource(
+      AudioSource.uri(
+        uri,
+        tag: MediaItem(
+          id: id,
+          title: title,
+          artist: 'Lectio Divina',
+          artUri: artUri != null ? Uri.tryParse(artUri) : null,
+        ),
+      ),
+    );
+    notifyListeners();
+  }
 
   /// Spustí / pozastaví médium s daným [id]. Pri zmene [id] načíta nový zdroj.
   /// [contentType]/[contentId]/[language] sa použijú pre Umami `audio_heartbeat`.
@@ -64,26 +101,15 @@ class MediaPlayerBus extends ChangeNotifier {
     if (url.isEmpty) return;
     try {
       if (_currentId != id) {
-        _currentId = id;
-        _contentType = contentType;
-        _contentId = contentId;
-        if (language != null) _language = language;
-        // Ak je audio stiahnuté offline, prehraj lokálny súbor.
-        await AudioDownloadService.instance.initialize();
-        final localPath = AudioDownloadService.instance.getLocalPath(url);
-        final uri = localPath != null ? Uri.file(localPath) : Uri.parse(url);
-        await _player.setAudioSource(
-          AudioSource.uri(
-            uri,
-            tag: MediaItem(
-              id: id,
-              title: title,
-              artist: 'Lectio Divina',
-              artUri: artUri != null ? Uri.tryParse(artUri) : null,
-            ),
-          ),
+        await _setSource(
+          id: id,
+          url: url,
+          title: title,
+          artUri: artUri,
+          contentType: contentType,
+          contentId: contentId,
+          language: language,
         );
-        notifyListeners();
       }
       if (_player.playing) {
         await _player.pause();
@@ -95,7 +121,52 @@ class MediaPlayerBus extends ChangeNotifier {
     }
   }
 
+  /// Vždy spustí (re-štartne) dané médium — pre kapitoly, dots, prev/next a
+  /// automatické prehranie ďalšej kapitoly.
+  Future<void> play({
+    required String id,
+    required String url,
+    String title = 'Lectio Divina',
+    String? artUri,
+    String? contentType,
+    String? contentId,
+    String? language,
+  }) async {
+    if (url.isEmpty) return;
+    try {
+      if (_currentId != id) {
+        await _setSource(
+          id: id,
+          url: url,
+          title: title,
+          artUri: artUri,
+          contentType: contentType,
+          contentId: contentId,
+          language: language,
+        );
+      } else {
+        await _player.seek(Duration.zero);
+      }
+      await _player.play();
+    } catch (e) {
+      appLogger.e('❌ MediaPlayerBus.play: $e');
+    }
+  }
+
   Future<void> seek(Duration position) async => _player.seek(position);
+
+  /// Zastaví prehrávanie a zruší aktuálne médium. Ďalšie `toggle`/`play`
+  /// (aj rovnaké id) tak začne od začiatku — používa sa pri prepnutí dňa v Lectio.
+  Future<void> stop() async {
+    try {
+      await _player.pause();
+    } catch (_) {
+      // ignore
+    }
+    _currentId = null;
+    _contentId = null;
+    notifyListeners();
+  }
 
   // ── Umami audio_heartbeat (každých 30s počas prehrávania) ──────────────────
   void _startHeartbeat() {

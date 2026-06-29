@@ -1,8 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../shared/app_spacing.dart';
 import '../shared/app_colors.dart';
+import '../widgets/home_v2/home_v2_tokens.dart';
 
 class PrivacyScreen extends StatefulWidget {
   const PrivacyScreen({super.key});
@@ -42,21 +44,39 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(tr('privacy.page_title'))),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness:
+            HomeV2.isDark(context) ? Brightness.light : Brightness.dark,
+        statusBarBrightness:
+            HomeV2.isDark(context) ? Brightness.dark : Brightness.light,
+      ),
+      child: Scaffold(
+        backgroundColor: HomeV2.background(context),
+        body: Column(
           children: [
-            // Header Card
-            Card(
-              elevation: AppElevation.medium,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
+            _buildHero(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.xs,
+                  AppSpacing.lg,
+                  MediaQuery.of(context).viewPadding.bottom + AppSpacing.xxl,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header Card
+                    Container(
+                      decoration: BoxDecoration(
+                        color: HomeV2.card(context),
+                        borderRadius: BorderRadius.circular(HomeV2.radius),
+                        boxShadow: HomeV2.softShadowSm(context),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -354,8 +374,25 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                     tr('privacy.contact.organization'),
                     style: const TextStyle(
                       height: 1.5,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w700,
                     ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    tr('privacy.contact.address'),
+                    style: const TextStyle(height: 1.5),
+                  ),
+                  Text(
+                    tr('privacy.contact.ico'),
+                    style: const TextStyle(height: 1.5),
+                  ),
+                  Text(
+                    tr('privacy.contact.dic'),
+                    style: const TextStyle(height: 1.5),
+                  ),
+                  Text(
+                    tr('privacy.contact.duns'),
+                    style: const TextStyle(height: 1.5),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
@@ -403,9 +440,51 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: AppSpacing.xxl),
+                    const SizedBox(height: AppSpacing.xxl),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ── Hero ──────────────────────────────────────────────────────────────────
+  Widget _buildHero() {
+    final topPad = MediaQuery.of(context).padding.top;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        topPad + AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.xl,
+      ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            HomeV2.primary.withValues(alpha: HomeV2.isDark(context) ? 0.32 : 0.14),
+            HomeV2.background(context),
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _CircleButton(
+            icon: Icons.arrow_back_rounded,
+            onTap: () => Navigator.of(context).maybePop(),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            tr('privacy.page_title'),
+            style: HomeV2.serifTitle(context, size: 26, height: 1.15),
+          ),
+        ],
       ),
     );
   }
@@ -419,28 +498,31 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
   }) {
     final isExpanded = _expandedSections.contains(id);
 
-    return Card(
-      elevation: AppElevation.medium,
+    return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
       ),
       child: Column(
         children: [
           InkWell(
             onTap: () => _toggleSection(id),
-            borderRadius: BorderRadius.circular(AppRadius.md),
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: Row(
                 children: [
-                  Icon(icon, color: theme.colorScheme.primary, size: 24),
+                  Icon(icon, color: HomeV2.iconAccent(context), size: 22),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Text(
                       title,
-                      style: theme.textTheme.titleMedium!.copyWith(
-                        fontWeight: FontWeight.bold,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: HomeV2.textDark(context),
                       ),
                     ),
                   ),
@@ -448,7 +530,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                     isExpanded
                         ? Icons.keyboard_arrow_up_rounded
                         : Icons.keyboard_arrow_down_rounded,
-                    color: theme.colorScheme.primary,
+                    color: HomeV2.textMuted(context),
                   ),
                 ],
               ),
@@ -460,6 +542,32 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
               child: content,
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _CircleButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _CircleButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: HomeV2.card(context).withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, color: HomeV2.primary, size: 22),
+        ),
       ),
     );
   }

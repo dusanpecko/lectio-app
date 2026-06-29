@@ -4,7 +4,6 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:just_audio/just_audio.dart';
@@ -16,6 +15,7 @@ import '../shared/rosary_constants.dart';
 import '../widgets/audio/universal_audio_player.dart';
 import '../widgets/audio/audio_player_models.dart';
 import '../shared/app_spacing.dart';
+import '../widgets/home_v2/home_v2_tokens.dart';
 
 class RosaryDecadeScreen extends StatefulWidget {
   final RosaryCategory category;
@@ -233,13 +233,13 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
     final categoryColor = RosaryConstants.hexToColor(categoryInfo.color);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: HomeV2.background(context),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
               categoryColor.withValues(alpha: 0.1),
-              theme.scaffoldBackgroundColor,
+              HomeV2.background(context),
               categoryColor.withValues(alpha: 0.05),
             ],
             begin: Alignment.topLeft,
@@ -300,120 +300,123 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
   }
 
   Widget _buildLoadingScreen(ThemeData theme) {
-    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              theme.colorScheme.primary.withValues(alpha: 0.1),
-              theme.scaffoldBackgroundColor,
-              theme.colorScheme.secondary.withValues(alpha: 0.1),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Center(
-          child: Container(
-            padding: const EdgeInsets.all(AppSpacing.xxxl),
-            decoration: BoxDecoration(
-              color: theme.cardColor.withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.shadowColor.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+      backgroundColor: HomeV2.background(context),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(HomeV2.primary),
+              strokeWidth: 3,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    theme.colorScheme.primary,
-                  ),
-                  strokeWidth: 3,
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                Text(
-                  tr('loading_mystery'),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  tr('preparing_spiritual_journey'),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+            const SizedBox(height: AppSpacing.xl),
+            Text(
+              tr('loading_mystery'),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: HomeV2.textDark(context),
+              ),
             ),
-          ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              tr('preparing_spiritual_journey'),
+              style: TextStyle(color: HomeV2.textMuted(context)),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildErrorScreen(ThemeData theme) {
-    final theme = Theme.of(context);
+    final topPad = MediaQuery.of(context).padding.top;
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(title: Text(tr('mystery_not_found'))),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xxl),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline_rounded,
-                size: 80,
-                color: theme.colorScheme.error,
+      backgroundColor: HomeV2.background(context),
+      body: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+                AppSpacing.sm, topPad + AppSpacing.sm, AppSpacing.sm, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: _CircleButton(
+                icon: Icons.arrow_back_rounded,
+                onTap: () => Navigator.of(context).maybePop(),
               ),
-              const SizedBox(height: AppSpacing.xl),
-              Text(
-                tr('mystery_not_found'),
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  color: theme.colorScheme.error,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                _error ?? tr('requested_mystery_not_found'),
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.xxxl),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.arrow_back_rounded),
-                    label: Text(tr('back_to_category')),
-                  ),
-                  const SizedBox(width: AppSpacing.lg),
-                  OutlinedButton.icon(
-                    onPressed: _loadDecade,
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: Text(tr('try_again')),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
-        ),
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xxl),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.xl),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFC0392B).withValues(alpha: 0.10),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.error_outline_rounded,
+                          size: 52, color: Color(0xFFC0392B)),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      tr('mystery_not_found'),
+                      style: HomeV2.serifTitle(context, size: 22),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      _error ?? tr('requested_mystery_not_found'),
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: HomeV2.textMuted(context),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                          label: Text(tr('back_to_category')),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: HomeV2.primary,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.full),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        TextButton.icon(
+                          onPressed: _loadDecade,
+                          icon:
+                              Icon(Icons.refresh_rounded, color: HomeV2.primary),
+                          label: Text(
+                            tr('try_again'),
+                            style: TextStyle(
+                                color: HomeV2.primary,
+                                fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -491,14 +494,16 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
                     SizedBox(height: isTablet ? AppSpacing.xl : AppSpacing.lg),
                     Text(
                       _decade!.title,
-                      style:
-                          (isTablet
-                                  ? theme.textTheme.headlineLarge
-                                  : theme.textTheme.headlineMedium)
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+                      style: HomeV2.serifTitle(
+                        context,
+                        size: isTablet ? 34 : 26,
+                        color: Colors.white,
+                        height: 1.15,
+                      ).copyWith(
+                        shadows: const [
+                          Shadow(color: Colors.black54, blurRadius: 10),
+                        ],
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(height: isTablet ? AppSpacing.md : AppSpacing.sm),
@@ -844,6 +849,29 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
             ? categoryColor
             : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
         padding: EdgeInsets.zero,
+      ),
+    );
+  }
+}
+
+class _CircleButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _CircleButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: HomeV2.card(context).withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, color: HomeV2.primary, size: 22),
+        ),
       ),
     );
   }

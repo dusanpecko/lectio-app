@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<!-- Actio widget (dark) -->
+	<color name="actio_widget_bg">#1C2030</color>
+	<color name="actio_widget_overline">#9AA0D0</color>
+	<color name="actio_widget_text">#ECECF2</color>
+	<color name="actio_widget_ref">#9AA0D0</color>
+</resources>

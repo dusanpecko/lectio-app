@@ -43,7 +43,7 @@ class StationsOfCross {
 
     return StationsOfCross(
       id: json['id'].toString(),
-      lang: json['lang']?.toString() ?? 'sk',
+      lang: json['lang']?.toString() ?? 'en',
       title: json['nazov']?.toString() ?? '',
       subtitle: json['podnazov']?.toString(),
       author: json['autor']?.toString(),

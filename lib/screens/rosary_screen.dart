@@ -1,13 +1,14 @@
 // lib/screens/rosary_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../models/rosary_model.dart';
 import '../services/rosary_service.dart';
-import '../shared/app_colors.dart';
 import '../shared/rosary_constants.dart';
-import 'rosary_category_screen.dart';
 import '../shared/app_spacing.dart';
+import '../widgets/home_v2/home_v2_tokens.dart';
+import 'rosary_category_screen.dart';
 
 class RosaryScreen extends StatefulWidget {
   const RosaryScreen({super.key});
@@ -30,16 +31,13 @@ class _RosaryScreenState extends State<RosaryScreen> {
 
   Future<void> _loadData() async {
     if (!mounted) return;
-
     setState(() {
       _isLoading = true;
       _error = null;
     });
-
     try {
       final lang = context.locale.languageCode;
       final stats = await _rosaryService.getCategoryStats(lang);
-
       if (mounted) {
         setState(() {
           _categoryStats = stats;
@@ -66,201 +64,43 @@ class _RosaryScreenState extends State<RosaryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: _isLoading
-          ? _buildLoadingState(theme)
-          : _error != null
-          ? _buildErrorState(theme)
-          : CustomScrollView(
-              slivers: [
-                // Hero App Bar s obrázkom
-                SliverAppBar(
-                  expandedHeight: MediaQuery.of(context).size.width >= 600
-                      ? 450.0
-                      : 300.0,
-                  floating: false,
-                  pinned: true,
-                  backgroundColor: AppColors.primary,
-                  title: Text(
-                    tr('rosary_title'),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  actions: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.refresh_rounded,
-                        color: Colors.white,
-                      ),
-                      onPressed: _loadData,
-                      tooltip: tr('refresh'),
-                    ),
-                  ],
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.asset(
-                          'assets/images/rosary_backround.webp',
-                          fit: BoxFit.cover,
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                AppColors.primary.withValues(alpha: 0.6),
-                                AppColors.primary.withValues(alpha: 0.85),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SafeArea(
-                          child: Padding(
-                            padding: EdgeInsets.all(
-                              MediaQuery.of(context).size.width >= 600
-                                  ? AppSpacing.xxl * 1.5
-                                  : AppSpacing.xxl,
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: EdgeInsets.all(
-                                    MediaQuery.of(context).size.width >= 600
-                                        ? AppSpacing.xl
-                                        : AppSpacing.lg,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.xl,
-                                    ),
-                                  ),
-                                  child: Icon(
-                                    Icons.auto_stories_rounded,
-                                    size:
-                                        MediaQuery.of(context).size.width >= 600
-                                        ? 64
-                                        : 48,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                SizedBox(
-                                  height:
-                                      MediaQuery.of(context).size.width >= 600
-                                      ? AppSpacing.xl
-                                      : AppSpacing.lg,
-                                ),
-                                Text(
-                                  tr('rosary_main_title'),
-                                  style:
-                                      (MediaQuery.of(context).size.width >= 600
-                                              ? theme.textTheme.headlineLarge
-                                              : theme.textTheme.headlineMedium)
-                                          ?.copyWith(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                SizedBox(
-                                  height:
-                                      MediaQuery.of(context).size.width >= 600
-                                      ? AppSpacing.md
-                                      : AppSpacing.sm,
-                                ),
-                                Text(
-                                  tr('rosary_main_subtitle'),
-                                  style:
-                                      (MediaQuery.of(context).size.width >= 600
-                                              ? theme.textTheme.headlineMedium
-                                              : theme.textTheme.titleLarge)
-                                          ?.copyWith(
-                                            color: Colors.white70,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Content
-                SliverToBoxAdapter(child: _buildContentBody(theme)),
-              ],
-            ),
-    );
-  }
-
-  Widget _buildLoadingState(ThemeData theme) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(
-              theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            tr('loading_rosary'),
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
       ),
-    );
-  }
-
-  Widget _buildErrorState(ThemeData theme) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      child: Scaffold(
+        backgroundColor: HomeV2.background(context),
+        body: Column(
           children: [
-            Icon(
-              Icons.error_outline_rounded,
-              size: 64,
-              color: theme.colorScheme.error,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              tr('error_loading_rosary'),
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              _error ?? tr('unknown_error'),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-            ElevatedButton.icon(
-              onPressed: _loadData,
-              icon: const Icon(Icons.refresh_rounded),
-              label: Text(tr('try_again')),
+            _buildHero(),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? _buildErrorState()
+                      : RefreshIndicator(
+                          onRefresh: _loadData,
+                          color: HomeV2.primary,
+                          child: ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: EdgeInsets.fromLTRB(
+                              AppSpacing.lg,
+                              AppSpacing.lg,
+                              AppSpacing.lg,
+                              MediaQuery.of(context).viewPadding.bottom +
+                                  AppSpacing.xxl,
+                            ),
+                            children: [
+                              _buildHowToSection(),
+                              const SizedBox(height: AppSpacing.xxl),
+                              _buildCategoriesSection(),
+                              const SizedBox(height: AppSpacing.xxl),
+                              _buildBenefitsSection(),
+                            ],
+                          ),
+                        ),
             ),
           ],
         ),
@@ -268,141 +108,202 @@ class _RosaryScreenState extends State<RosaryScreen> {
     );
   }
 
-  Widget _buildContentBody(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  // ── Hero ──────────────────────────────────────────────────────────────────
+  Widget _buildHero() {
+    final topPad = MediaQuery.of(context).padding.top;
+    final isTablet = MediaQuery.of(context).size.width >= 600;
+    final bg = HomeV2.background(context);
+    final halo = <Shadow>[
+      const Shadow(color: Colors.black54, blurRadius: 12),
+      const Shadow(color: Colors.black38, blurRadius: 4),
+    ];
+    const bottomRadius = Radius.circular(HomeV2.radius + 6);
+
+    return SizedBox(
+      height: isTablet ? 320 : 260,
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          const SizedBox(height: AppSpacing.lg),
-          _buildHowToSection(theme),
-          const SizedBox(height: AppSpacing.xxxl),
-          _buildCategoriesSection(theme),
-          const SizedBox(height: AppSpacing.xxxl),
-          _buildBenefitsSection(theme),
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: bottomRadius),
+            child: Image.asset(
+              'assets/images/rosary_backround.webp',
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) =>
+                  ColoredBox(color: HomeV2.primary.withValues(alpha: 0.4)),
+            ),
+          ),
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: bottomRadius),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.30),
+                    Colors.black.withValues(alpha: 0.10),
+                    HomeV2.primary.withValues(alpha: 0.55),
+                    bg,
+                  ],
+                  stops: const [0.0, 0.35, 0.85, 1.0],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: topPad + AppSpacing.sm,
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            child: Row(
+              children: [
+                _CircleButton(
+                  icon: Icons.arrow_back_rounded,
+                  onTap: () => Navigator.of(context).maybePop(),
+                ),
+                const Spacer(),
+                _CircleButton(
+                  icon: Icons.refresh_rounded,
+                  onTap: _loadData,
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: AppSpacing.xl,
+            right: AppSpacing.xl,
+            bottom: AppSpacing.lg,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  tr('rosary_main_title'),
+                  style: HomeV2.serifTitle(
+                    context,
+                    size: isTablet ? 34 : 28,
+                    color: Colors.white,
+                    height: 1.1,
+                  ).copyWith(shadows: halo),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  tr('rosary_main_subtitle'),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    shadows: halo,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildHowToSection(ThemeData theme) {
-    final theme = Theme.of(context);
+  // ── Karta ───────────────────────────────────────────────────────────────────
+  BoxDecoration _cardDecoration() => BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
+      );
+
+  // ── Návod ───────────────────────────────────────────────────────────────────
+  Widget _buildHowToSection() {
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withValues(alpha: 0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      decoration: _cardDecoration(),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          // Hlavička
           Container(
-            padding: const EdgeInsets.all(AppSpacing.xl),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary.withValues(alpha: 0.1),
-                  AppColors.accent.withValues(alpha: 0.05),
-                ],
-              ),
+              color: HomeV2.primary.withValues(alpha: 0.07),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppColors.primary, AppColors.accent],
+                    gradient: const LinearGradient(
+                      colors: [HomeV2.primary, Color(0xFF6B73A8)],
                     ),
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
-                  child: const Icon(
-                    Icons.info_rounded,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+                  child: const Icon(Icons.info_rounded,
+                      color: Colors.white, size: 22),
                 ),
-                const SizedBox(width: AppSpacing.lg),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Text(
                     tr('how_to_pray_rosary'),
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: HomeV2.serifTitle(context, size: 19),
                   ),
                 ),
               ],
             ),
           ),
-
-          // FAQ - Tradičný ruženec
-          Theme(
-            data: theme.copyWith(dividerColor: Colors.transparent),
-            child: ExpansionTile(
-              tilePadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 4,
-              ),
-              childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-              leading: Text('📿', style: theme.textTheme.headlineSmall),
-              title: Text(
-                tr('traditional_rosary'),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              children: [
-                _buildHowToItem(theme, tr('opening_prayers')),
-                _buildHowToItem(theme, tr('five_decades')),
-                _buildHowToItem(theme, tr('decade_structure')),
-              ],
-            ),
+          _expansion(
+            emoji: '📿',
+            title: tr('traditional_rosary'),
+            children: [
+              _bulletItem(tr('opening_prayers')),
+              _bulletItem(tr('five_decades')),
+              _bulletItem(tr('decade_structure')),
+            ],
           ),
-
           Divider(
             height: 1,
-            indent: 20,
-            endIndent: 20,
-            color: theme.dividerColor.withValues(alpha: 0.3),
+            indent: AppSpacing.lg,
+            endIndent: AppSpacing.lg,
+            color: HomeV2.primary.withValues(alpha: 0.08),
           ),
-
-          // FAQ - Lectio Divina kroky
-          Theme(
-            data: theme.copyWith(dividerColor: Colors.transparent),
-            child: ExpansionTile(
-              tilePadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 4,
-              ),
-              childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-              leading: Text('📖', style: theme.textTheme.headlineSmall),
-              title: Text(
-                tr('lectio_divina_steps'),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              children: RosaryConstants.lectioDivinaSteps
-                  .map((step) => _buildLectioDivinaStep(theme, step))
-                  .toList(),
-            ),
+          _expansion(
+            emoji: '📖',
+            title: tr('lectio_divina_steps'),
+            children: RosaryConstants.lectioDivinaSteps
+                .map((step) => _buildLectioDivinaStep(step))
+                .toList(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHowToItem(ThemeData theme, String text) {
-    final theme = Theme.of(context);
+  Widget _expansion({
+    required String emoji,
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding:
+            const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 4),
+        childrenPadding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+        iconColor: HomeV2.primary,
+        collapsedIconColor: HomeV2.iconAccent(context),
+        leading: Text(emoji, style: const TextStyle(fontSize: 24)),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: HomeV2.textDark(context),
+          ),
+        ),
+        children: children,
+      ),
+    );
+  }
+
+  Widget _bulletItem(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Row(
@@ -411,17 +312,19 @@ class _RosaryScreenState extends State<RosaryScreen> {
           Container(
             width: 6,
             height: 6,
-            margin: const EdgeInsets.only(top: 6, right: AppSpacing.md),
+            margin: const EdgeInsets.only(top: 7, right: AppSpacing.md),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary,
+              color: HomeV2.iconAccent(context),
               shape: BoxShape.circle,
             ),
           ),
           Expanded(
             child: Text(
               text,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.5,
+                color: HomeV2.textMuted(context),
               ),
             ),
           ),
@@ -430,8 +333,7 @@ class _RosaryScreenState extends State<RosaryScreen> {
     );
   }
 
-  Widget _buildLectioDivinaStep(ThemeData theme, Map<String, dynamic> step) {
-    final theme = Theme.of(context);
+  Widget _buildLectioDivinaStep(Map<String, dynamic> step) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Row(
@@ -452,15 +354,18 @@ class _RosaryScreenState extends State<RosaryScreen> {
                 children: [
                   TextSpan(
                     text: '${step['title']}: ',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: HomeV2.textDark(context),
                     ),
                   ),
                   TextSpan(
                     text: step['description'],
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 1.5,
+                      color: HomeV2.textMuted(context),
                     ),
                   ),
                 ],
@@ -472,177 +377,273 @@ class _RosaryScreenState extends State<RosaryScreen> {
     );
   }
 
-  Widget _buildCategoriesSection(ThemeData theme) {
-    final theme = Theme.of(context);
+  // ── Kategórie ─────────────────────────────────────────────────────────────
+  Widget _buildCategoriesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          tr('select_mystery_category'),
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: AppSpacing.md),
+          child: Text(
+            tr('select_mystery_category'),
+            style: HomeV2.serifTitle(context, size: 21),
           ),
         ),
-        const SizedBox(height: AppSpacing.lg),
-
-        // Changed from GridView to Column with individual cards
-        Column(
-          children: RosaryCategory.values.map((category) {
-            final categoryInfo = RosaryConstants.getCategoryInfo(category);
-            final stats = _categoryStats.firstWhere(
-              (s) => s.category == category,
-              orElse: () => RosaryCategoryStats(
-                category: category,
-                totalCount: 0,
-                withAudio: 0,
-                withImages: 0,
-              ),
-            );
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: _buildCategoryCard(theme, category, categoryInfo, stats),
-            );
-          }).toList(),
-        ),
+        ...RosaryCategory.values.map((category) {
+          final categoryInfo = RosaryConstants.getCategoryInfo(category);
+          final stats = _categoryStats.firstWhere(
+            (s) => s.category == category,
+            orElse: () => RosaryCategoryStats(
+              category: category,
+              totalCount: 0,
+              withAudio: 0,
+              withImages: 0,
+            ),
+          );
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+            child: _buildCategoryCard(category, categoryInfo, stats),
+          );
+        }),
       ],
     );
   }
 
   Widget _buildCategoryCard(
-    ThemeData theme,
     RosaryCategory category,
     RosaryCategoryInfo categoryInfo,
     RosaryCategoryStats stats,
   ) {
     final color = RosaryConstants.hexToColor(categoryInfo.color);
 
-    return GestureDetector(
-      onTap: () => _navigateToCategory(category),
-      child: Container(
-        decoration: BoxDecoration(
-          color: theme.cardColor,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          boxShadow: [
-            BoxShadow(
-              color: theme.shadowColor.withValues(alpha: 0.1),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // Background gradient
-            Positioned(
-              top: 0,
-              right: 0,
-              child: Container(
-                width: 60,
-                height: 60,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          _navigateToCategory(category);
+        },
+        child: Container(
+          decoration: _cardDecoration(),
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    colors: [color.withValues(alpha: 0.1), Colors.transparent],
-                  ),
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(AppRadius.md),
-                  ),
+                  color: color,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
+                child: Icon(categoryInfo.icon, color: Colors.white, size: 28),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Ikona
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+              const SizedBox(width: AppSpacing.lg),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      categoryInfo.name,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: HomeV2.textDark(context),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    child: Icon(
-                      categoryInfo.icon,
-                      color: Colors.white,
-                      size: 28,
+                    const SizedBox(height: 3),
+                    Text(
+                      categoryInfo.description,
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.4,
+                        color: HomeV2.textMuted(context),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Názov
-                  Text(
-                    categoryInfo.name,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-
-                  // Popis
-                  Text(
-                    categoryInfo.description,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Štatistiky
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.book_rounded,
-                            size: 14,
-                            color: theme.colorScheme.onSurfaceVariant,
+                    const SizedBox(height: AppSpacing.sm),
+                    Row(
+                      children: [
+                        Icon(Icons.book_rounded,
+                            size: 14, color: HomeV2.textMuted(context)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${stats.totalCount}',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: HomeV2.textMuted(context),
                           ),
-                          const SizedBox(width: AppSpacing.xs),
+                        ),
+                        if (stats.withAudio > 0) ...[
+                          const SizedBox(width: AppSpacing.md),
+                          Icon(Icons.headphones_rounded, size: 14, color: color),
+                          const SizedBox(width: 4),
                           Text(
-                            '${stats.totalCount}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                            '${stats.withAudio}',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: color,
                             ),
                           ),
                         ],
-                      ),
-                      if (stats.withAudio > 0)
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.headphones_rounded,
-                              size: 14,
-                              color: color,
-                            ),
-                            const SizedBox(width: AppSpacing.xs),
-                            Text(
-                              '${stats.withAudio}',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: color,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      Icon(Icons.arrow_forward_rounded, size: 16, color: color),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: color),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Prínosy ─────────────────────────────────────────────────────────────────
+  Widget _buildBenefitsSection() {
+    return Column(
+      children: [
+        _benefitCard(
+          icon: Icons.favorite_rounded,
+          iconColor: HomeV2.primary,
+          title: tr('spiritual_benefits'),
+          items: const [
+            [Icons.auto_stories_rounded, 'deeper_understanding'],
+            [Icons.visibility_rounded, 'peaceful_prayer'],
+            [Icons.directions_walk_rounded, 'practical_application'],
+            [Icons.trending_up_rounded, 'spiritual_growth'],
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _benefitCard(
+          icon: Icons.phone_android_rounded,
+          iconColor: const Color(0xFFB8862F),
+          title: tr('app_features'),
+          items: const [
+            [Icons.headphones_rounded, 'audio_recordings'],
+            [Icons.schedule_rounded, 'time_guidance'],
+            [Icons.book_rounded, 'complete_texts'],
+            [Icons.navigation_rounded, 'step_by_step'],
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _benefitCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required List<List<dynamic>> items,
+  }) {
+    return Container(
+      width: double.infinity,
+      decoration: _cardDecoration(),
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: iconColor,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Icon(icon, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text(
+                  title,
+                  style: HomeV2.serifTitle(context, size: 18),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          ...items.map((it) => _benefitItem(it[0] as IconData, tr(it[1] as String))),
+        ],
+      ),
+    );
+  }
+
+  Widget _benefitItem(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: HomeV2.iconAccent(context)),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.4,
+                color: HomeV2.textMuted(context),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              decoration: BoxDecoration(
+                color: const Color(0xFFC0392B).withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.error_outline_rounded,
+                  size: 52, color: Color(0xFFC0392B)),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              tr('error_loading_rosary'),
+              style: HomeV2.serifTitle(context, size: 22),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              _error ?? tr('unknown_error'),
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.5,
+                color: HomeV2.textMuted(context),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            TextButton.icon(
+              onPressed: _loadData,
+              icon: Icon(Icons.refresh_rounded, color: HomeV2.primary),
+              label: Text(
+                tr('try_again'),
+                style: TextStyle(
+                    color: HomeV2.primary, fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -650,171 +651,29 @@ class _RosaryScreenState extends State<RosaryScreen> {
       ),
     );
   }
+}
 
-  Widget _buildBenefitsSection(ThemeData theme) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Spiritual Benefits Card
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            boxShadow: [
-              BoxShadow(
-                color: theme.shadowColor.withValues(alpha: 0.1),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                    child: const Icon(
-                      Icons.favorite_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Text(
-                      tr('spiritual_benefits'),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              _buildBenefitItem(
-                theme,
-                Icons.auto_stories_rounded,
-                tr('deeper_understanding'),
-              ),
-              _buildBenefitItem(
-                theme,
-                Icons.visibility_rounded,
-                tr('peaceful_prayer'),
-              ),
-              _buildBenefitItem(
-                theme,
-                Icons.directions_walk_rounded,
-                tr('practical_application'),
-              ),
-              _buildBenefitItem(
-                theme,
-                Icons.trending_up_rounded,
-                tr('spiritual_growth'),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        // App Features Card
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            boxShadow: [
-              BoxShadow(
-                color: theme.shadowColor.withValues(alpha: 0.1),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.accent,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                    child: const Icon(
-                      Icons.phone_android_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Text(
-                      tr('app_features'),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              _buildBenefitItem(
-                theme,
-                Icons.headphones_rounded,
-                tr('audio_recordings'),
-              ),
-              _buildBenefitItem(
-                theme,
-                Icons.schedule_rounded,
-                tr('time_guidance'),
-              ),
-              _buildBenefitItem(
-                theme,
-                Icons.book_rounded,
-                tr('complete_texts'),
-              ),
-              _buildBenefitItem(
-                theme,
-                Icons.navigation_rounded,
-                tr('step_by_step'),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+class _CircleButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _CircleButton({required this.icon, required this.onTap});
 
-  Widget _buildBenefitItem(ThemeData theme, IconData icon, String text) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 16, color: theme.colorScheme.primary),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Text(
-              text,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ],
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: HomeV2.card(context).withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, color: HomeV2.primary, size: 22),
+        ),
       ),
     );
   }

@@ -7,4 +7,10 @@
 	<!-- Splash screen colors -->
 	<color name="splash_background">#4A5C7E</color>
 	<color name="splash_icon_background">#4A5C7E</color>
+
+	<!-- Actio widget (light) — jemný levanduľový odtieň (brand) -->
+	<color name="actio_widget_bg">#EEF0F7</color>
+	<color name="actio_widget_overline">#4A5085</color>
+	<color name="actio_widget_text">#2B2B3A</color>
+	<color name="actio_widget_ref">#6B73A8</color>
 </resources>

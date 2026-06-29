@@ -8,6 +8,9 @@ class IntroStepTranslations {
       case 'es':
         translations = _es;
         break;
+      case 'fr':
+        translations = _fr;
+        break;
       case 'cz':
       case 'cs':
         translations = _cz;
@@ -35,6 +38,11 @@ class IntroStepTranslations {
         return {
           'notFoundTitle': 'Krok nenalezen',
           'notFoundMessage': 'Krok zatím není implementován',
+        };
+      case 'fr':
+        return {
+          'notFoundTitle': 'Étape introuvable',
+          'notFoundMessage': 'Étape pas encore implémentée',
         };
       default:
         return {
@@ -1677,6 +1685,419 @@ class IntroStepTranslations {
           '"Así brille su luz delante de los hombres, para que vean sus buenas obras y glorifiquen a su Padre que está en los cielos." (Mt 5,16)',
       'back': 'Contemplatio',
       'backToOverview': 'Volver al resumen',
+    },
+  };
+
+  // ============================================================
+  // FRENCH (FR)
+  // ============================================================
+  static const Map<String, Map<String, dynamic>> _fr = {
+    'silencio': {
+      'stepIndicator': 'Étape 1 sur 6',
+      'stepTitle': '🤫 SILENCIO – Silence',
+      'quoteText': '"Et après le feu, le murmure d\'une brise légère."',
+      'quoteReference': '1 R 19,12',
+      'introParagraph':
+          'Silencio est la première et la plus importante étape de la Lectio Divina. Ce n\'est pas seulement une préparation – c\'est une porte d\'entrée. Sans le silence, la Parole ne peut se déposer. Sans le silence, la lecture demeure une simple lecture. Le silence crée un espace où Dieu peut parler.',
+      'whatIsTitle': '🔑 Pourquoi le silence ?',
+      'whatIsContent1':
+          'Nous vivons dans un bruit incessant – notifications, images, attentes. Notre conscience est fragmentée en brefs éclats d\'attention. Le bruit qui nous entoure n\'est pas seulement sonore. Il est ontologique – il façonne qui nous sommes.',
+      'whatIsContent2':
+          'Blaise Pascal écrivait que tout le malheur de l\'homme vient de son incapacité à demeurer en silence dans sa chambre. Dans le silence, tu ne peux pas te cacher. Sans images, sans sons, sans réactions, il ne reste que toi – et ce que tu portes en toi.',
+      'whatIsQuote':
+          'Dieu n\'élève pas la voix. Dieu attend que tu fasses silence.',
+      'practicalTipsTitle': '✍️ Conseils pratiques',
+      'practicalTips': [
+        {
+          'title': 'Une porte d\'entrée concrète vers le Silencio',
+          'description': 'Assieds-toi avec stabilité et dignité',
+          'content':
+              'Assieds-toi avec stabilité et dignité. Le dos droit mais détendu. Les mains reposant paisiblement. Les yeux fermés ou doucement entrouverts. Quelques respirations lentes jusque dans le ventre. Observe simplement le mouvement du souffle.',
+        },
+        {
+          'title': 'Utilise un mot d\'ancrage',
+          'description': 'Quand l\'esprit s\'égare, utilise un mot court',
+          'content':
+              'Quand l\'esprit s\'égare, utilise un seul mot court comme ancre : Jésus. Maranatha. Je suis là. Ne combats pas tes pensées. Reviens simplement avec douceur à ce mot.',
+        },
+        {
+          'title': 'Consacre du temps au silence',
+          'description': 'Avant d\'ouvrir la Bible',
+          'content':
+              'Consacre 2 à 5 minutes de pur silence avant d\'ouvrir la Bible. Le silence n\'est pas quelque chose que tu dois maîtriser. C\'est un lieu où Dieu t\'attend déjà.',
+        },
+        {
+          'title': 'Ce à quoi il faut prendre garde',
+          'description': 'Le silence n\'est pas une performance',
+          'content':
+              'Le silence n\'est pas une performance. N\'essaie pas de l\'atteindre par la force ou le perfectionnisme. Si la peur surgit, ne l\'analyse pas. Fais confiance. Le silence doit être un lieu de repos, non un champ de bataille.',
+        },
+        {
+          'title': 'Un pas concret',
+          'description': '5 minutes chaque jour',
+          'content':
+              '5 minutes chaque jour – le matin, juste après le réveil. Sans téléphone – laisse-le dans une autre pièce. Sans musique – tu cherches l\'absence de son. Sans paroles – pas de prières mémorisées, seulement une présence silencieuse. Avec fidélité plutôt qu\'avec perfection.',
+        },
+      ],
+      'closingTitle': '🤲 Conclusion de l\'étape Silencio',
+      'closingText':
+          'Le silence n\'est pas le but. C\'est une porte d\'entrée. Avant d\'ouvrir la Bible, avant de commencer à lire ou à parler, arrête-toi. Dis dans ton cœur : "Maintenant je ne fais rien. Je suis là pour Toi, Seigneur." La Parole qui vient après le silence tombe sur une autre terre.',
+      'closingQuote':
+          'On dit que dans le mariage, le silence est la condition essentielle d\'un baiser. Non parce que les paroles seraient mauvaises, mais parce qu\'à un certain moment elles doivent s\'effacer pour laisser advenir une proximité que les mots ne peuvent contenir. La Lectio Divina cherche ce baiser.',
+      'back': 'Retour à l\'aperçu',
+      'next': 'Lectio',
+    },
+    'lectio': {
+      'stepIndicator': 'Étape 2 sur 6',
+      'stepTitle': '🕯️ LECTIO – Lecture',
+      'quoteText': '"Parle, Seigneur, car ton serviteur écoute."',
+      'quoteReference': '1 S 3,10',
+      'introParagraph':
+          'Lectio est la première étape clé de la prière de la Lectio Divina. Elle signifie lire – mais non pas seulement avec les yeux. Elle signifie lire de manière à entendre la voix de Dieu cachée derrière les paroles de l\'Écriture.',
+      'whatIsTitle': '🔑 Qu\'est-ce que la Lectio ?',
+      'whatIsContent1':
+          'La Lectio nous invite à écouter attentivement chaque mot, en le laissant pénétrer en nous. Dans cette étape, nous ne cherchons pas seulement le sens – nous cherchons la présence de Celui qui parle.',
+      'whatIsContent2':
+          'La Parole devient vivante lorsque nous l\'accueillons d\'un cœur ouvert, en croyant que Dieu a aujourd\'hui un message personnel pour nous.',
+      'howToTitle': '🙏 Comment commencer ?',
+      'howToList': [
+        'Trouve un lieu tranquille et un bon moment (par ex. le matin, le soir, avant de dormir)',
+        'Respire profondément et apaise tes pensées',
+        'Invoque le Saint-Esprit : "Saint-Esprit, ouvre mes oreilles et mon cœur pour entendre ce que Tu veux me dire."',
+      ],
+      'practicalTipsTitle': '✍️ Conseils pratiques',
+      'practicalTips': [
+        {
+          'title': 'Se préparer à lire',
+          'description': 'Crée un espace pour rencontrer Dieu',
+          'content':
+              'Trouve un lieu tranquille, à l\'abri des distractions. Ce peut être un coin de ta chambre, près d\'une fenêtre, ou même dans la nature. L\'important est que tu te sentes paisible et en sécurité. Prépare une Bible ou ton téléphone avec une application biblique.',
+        },
+        {
+          'title': 'Choisir un passage',
+          'description': 'Choisis un texte court mais riche de sens',
+          'content':
+              'Le mieux est de commencer par 3 à 5 versets. Tu peux utiliser l\'Évangile du jour, un psaume ou un passage choisi selon un thème (paix, amour, confiance). Ne cherche pas la quantité : la qualité d\'une lecture attentive est plus importante.',
+        },
+        {
+          'title': 'Une lecture attentive',
+          'description': 'Lis lentement et avec attention',
+          'content':
+              'Lis le texte trois fois : la première pour l\'impression d\'ensemble, la deuxième en t\'attardant sur chaque mot, la troisième en te concentrant sur ce qui t\'a touché. Ne te presse pas. Imagine que Jésus est assis près de toi et qu\'Il te lit ce texte personnellement.',
+        },
+        {
+          'title': 'Écouter avec le cœur',
+          'description':
+              'Sois attentif à tes sentiments et à tes mouvements intérieurs',
+          'content':
+              'Écoute non seulement avec ton intelligence, mais aussi avec ton cœur. Quels sentiments le texte suscite-t-il ? Que te rappelle-t-il ? Où ressens-tu la paix, où ressens-tu une tension ? Ne juge pas tes réactions : accueille-les comme une part de ton dialogue avec Dieu.',
+        },
+        {
+          'title': 'Noter le mot',
+          'description': 'Écris un mot ou une phrase qui t\'a touché',
+          'content':
+              'Si quelque chose t\'a particulièrement touché – un mot, une phrase, une image – note-le. Cela peut être dans un journal, dans les notes de ton téléphone, ou simplement sur un petit papier. Cette parole sera ta compagne tout au long de la journée.',
+        },
+      ],
+      'exampleTitle': '📝 Un exemple pratique',
+      'exampleVerse':
+          'Je choisis le texte : "Venez à ma suite, et je vous ferai pêcheurs d\'hommes." (Mt 4,19)',
+      'exampleSteps': [
+        'Première lecture : je me concentre sur le contexte dans son ensemble',
+        'Deuxième lecture : le mot "venez" me parle – c\'est une invitation, non un ordre',
+        'Troisième lecture : "à ma suite" remue mon cœur – où Jésus m\'appelle-t-il ?',
+      ],
+      'exampleSummary':
+          'Je m\'arrête au mot "venez" et je le répète. Je sens que Dieu m\'invite à m\'approcher.',
+      'closingTitle': '🤲 Conclusion de l\'étape Lectio',
+      'closingText':
+          'Après la lecture, demeure un instant dans le silence. Laisse la Parole résonner en toi. Lorsque tu sens que quelque chose a bougé en toi – que quelque chose est resté – tu peux passer à l\'étape suivante : Meditatio – la méditation.',
+      'closingQuote':
+          '"La Parole est comme une semence. Par la lecture, nous la semons. Par la méditation, nous l\'arrosons. Par la prière, nous la laissons grandir. Par la contemplation, nous demeurons en elle."',
+      'back': 'Silencio',
+      'next': 'Meditatio',
+    },
+    'meditatio': {
+      'stepIndicator': 'Étape 3 sur 6',
+      'stepTitle': '💭 MEDITATIO – Méditation',
+      'quoteText':
+          'Toute Écriture est inspirée par Dieu et utile pour enseigner, réfuter, redresser et former à la justice.',
+      'quoteReference': '2 Tm 3,16',
+      'introParagraph':
+          'Après avoir lu et accueilli la Parole dans notre cœur, vient le temps de la "ruminer" – de la laisser mûrir en nous et de déployer son sens. La phase Meditatio consiste à plonger en profondeur.',
+      'whatIsTitle': '🔍 Qu\'est-ce que la Meditatio ?',
+      'whatIsContent1':
+          'La Meditatio est une méditation silencieuse et attentive. Ce n\'est pas une analyse intellectuelle, mais une écoute avec le cœur. Ici, il ne s\'agit plus seulement des mots, mais de leur message intérieur et de ce qu\'ils touchent en nous.',
+      'whatIsContent2':
+          'De même que nous mâchons lentement la nourriture pour en tirer tout son suc – dans cette phase, nous laissons la Parole pénétrer nos pensées, nos sentiments et notre âme.',
+      'whatIsQuote':
+          '"La Parole de Dieu est le pain de vie. Laisse-la entrer au plus profond de toi – non comme une information, mais comme une nourriture."',
+      'howToTitle': '🧠 Comment pratiquer la méditation ?',
+      'howToSteps': [
+        'Demeure avec le mot, la phrase ou l\'image qui t\'a touché durant la lecture (Lectio).',
+        'Répète-le lentement dans ton esprit – comme si tu le savourais encore et encore.',
+        'Remarque ce qui s\'éveille en toi : sentiments, pensées, invitations, défis, lumière.',
+      ],
+      'practicalTipsTitle': '✍️ Conseils pratiques',
+      'practicalTips': [
+        {
+          'title': 'Répète la Parole',
+          'description': 'Demeure avec le mot qui t\'a touché dans la Lectio',
+          'content':
+              'Prends le mot, la phrase ou l\'image de la lecture précédente et répète-le dans ton esprit. Non pas machinalement, mais comme lorsque tu savoures un bon repas – lentement, avec attention. Laisse-le se "fondre" dans ton cœur.',
+        },
+        {
+          'title': 'Pose des questions',
+          'description': 'Deux directions essentielles pour la méditation',
+          'content':
+              'Demande-toi : 1) Que me dit ce texte sur Dieu ? Comment se révèle-t-Il à moi ? 2) Que me dit-il sur moi et sur ma vie aujourd\'hui ? Ne te hâte pas de répondre : laisse les réponses émerger naturellement en toi.',
+        },
+        {
+          'title': 'Cherche des liens',
+          'description': 'Relie le texte au contexte biblique plus large',
+          'content':
+              'Si un mot te rappelle un autre passage de la Bible, cherche-le. Comment Dieu a-t-Il parlé ailleurs du même thème ? Par exemple "n\'aie pas peur" – où Dieu le dit-Il encore ? Mais il ne s\'agit pas d\'étudier : il s\'agit d\'écouter plus profondément.',
+        },
+        {
+          'title': 'Demeure dans le silence',
+          'description': 'Donne à la Parole l\'espace de grandir',
+          'content':
+              'Après la méditation, ne te presse pas de passer plus loin. Demeure un moment dans le silence, comme Marie qui "gardait toutes ces choses dans son cœur". Laisse la Parole germer en toi comme une semence dans la terre.',
+        },
+        {
+          'title': 'Écris tes observations',
+          'description': 'Conserve le fruit de la méditation',
+          'content':
+              'Note dans un journal ou dans tes notes : la parole qui t\'a touché, tes sentiments, tes réponses aux questions, tes observations personnelles. Tu pourras y revenir au cours de la journée ou plus tard.',
+        },
+      ],
+      'exampleTitle': '📝 Exemple de méditation',
+      'exampleVerse':
+          'La parole qui m\'a touché : "Sois sans crainte" (Lc 1,30)',
+      'exampleSteps': [
+        'Que dit-il sur Dieu ? Il voit ma peur et veut m\'apaiser. Il est bon et plein de sollicitude.',
+        'Que dit-il sur moi ? Il est permis d\'avoir peur, mais je n\'ai pas à demeurer dans la peur. Dieu m\'invite à la confiance.',
+      ],
+      'exampleSummary':
+          'Aujourd\'hui, j\'ai peur d\'un entretien d\'embauche. Dieu me dit "sois sans crainte" – non parce que rien n\'arrivera, mais parce qu\'Il est avec moi.',
+      'closingTitle': '🕯️ Fais silence et écoute',
+      'closingText':
+          'Après les réponses, ne parle pas aussitôt. Demeure un moment dans le silence. Laisse la Parole "germer" – tout comme une petite semence a besoin de temps dans la terre.',
+      'closingQuote':
+          '"Marie gardait toutes ces choses dans son cœur." (Lc 2,19)',
+      'back': 'Lectio',
+      'next': 'Oratio',
+    },
+    'oratio': {
+      'stepIndicator': 'Étape 4 sur 6',
+      'stepTitle': '🙏 ORATIO – Prière',
+      'quoteText':
+          '"Voici l\'assurance que nous avons devant Dieu : si nous demandons quelque chose selon sa volonté, il nous écoute."',
+      'quoteReference': '1 Jn 5,14',
+      'introParagraph':
+          'Après la lecture et la méditation vient une étape naturelle et belle : répondre à Dieu. Dans la phase Oratio, ce n\'est plus seulement Dieu qui nous parle – c\'est maintenant nous qui Lui parlons.',
+      'whatIsTitle': '💬 Qu\'est-ce que l\'Oratio ?',
+      'whatIsContent':
+          'L\'Oratio est la prière comme réponse à ce que tu as entendu et compris. Ce n\'est pas réciter des phrases apprises par cœur, mais un dialogue sincère. Comme un enfant qui parle avec confiance à son père.',
+      'whatIsQuote':
+          'Ta prière n\'est pas une prestation. C\'est une réponse au Dieu d\'amour qui t\'a écouté le premier.',
+      'howToTitle': '🧎 Comment prier dans cette phase ?',
+      'howToSteps': [
+        'Pars de la Parole que tu as reçue. Ne te sépare pas de la lectio et de la meditatio.',
+        'Sois honnête et naturel. Prie avec tes propres mots.',
+        'Parle comme si tu te tenais vraiment devant Dieu. Et en même temps : écoute entre les lignes.',
+      ],
+      'practicalTipsTitle': '✍️ Conseils pratiques',
+      'practicalTips': [
+        {
+          'title': 'Pars de la Parole',
+          'description': 'Prie à partir de ce qui t\'a parlé',
+          'content':
+              'Ne sépare pas la prière de la lecture et de la méditation qui précèdent. Utilise les mots, les phrases ou les images qui t\'ont parlé.',
+        },
+        {
+          'title': 'Sois honnête',
+          'description': 'Prie avec tes propres mots',
+          'content':
+              'Ne récite pas des prières apprises par cœur. Parle à Dieu avec sincérité, comme s\'Il était assis à tes côtés. Dieu veut entendre ta voix et ton cœur.',
+        },
+        {
+          'title': 'Essaie différentes formes',
+          'description': 'La prière n\'est pas forcément verbale',
+          'content':
+              'En plus de parler, tu peux exprimer ta prière par l\'écriture dans un journal, le dessin, le chant, la danse ou en tenant la croix contre toi. Parfois la plus belle prière est simplement de demeurer en silence dans la présence de Dieu.',
+        },
+        {
+          'title': 'Adapte-toi à l\'image de Dieu',
+          'description': 'Prie selon la manière dont Dieu t\'a parlé',
+          'content':
+              'Si dans la méditation tu as perçu Dieu comme un Père aimant, prie avec la confiance d\'un enfant. Si tu L\'as perçu comme un Ami, sois ouvert. Si tu L\'as perçu comme un Maître, demande la sagesse.',
+        },
+        {
+          'title': 'Termine dans le silence',
+          'description': 'Après la prière, fais silence pour la contemplation',
+          'content':
+              'Quand tu as dit à Dieu tout ce qui était dans ton cœur, ne te hâte pas de partir. Demeure encore un moment dans Sa présence.',
+        },
+      ],
+      'exampleTitle': '📝 Exemple de prière Oratio',
+      'exampleVerse':
+          'Mot de la méditation : "Sois sans crainte, Dieu est avec toi" (Lc 1,30)',
+      'exampleSteps': [
+        '"Seigneur, merci pour cette parole. Je sais que j\'ai peur de cet entretien de demain. Mais Toi, Tu me dis : sois sans crainte."',
+        '"Aide-moi à Te faire confiance plus qu\'à ma peur. Donne-moi la paix qui vient de Toi."',
+        '"Merci de me connaître et de prendre soin de moi. Je Te remets ma peur et j\'accueille Ton amour."',
+      ],
+      'exampleSummary': '(Puis je demeure un moment dans le silence...)',
+      'closingTitle': '🕯️ Conclusion de la prière',
+      'closingText':
+          'Après la prière, fais de nouveau silence. Comme lorsqu\'une personne aimée répond, et qu\'ensuite tous deux se regardent simplement dans les yeux – sans paroles. Nous entrons dans la contemplation.',
+      'closingQuote':
+          '"La prière n\'est pas faite pour changer Dieu, mais pour que Dieu nous change." – saint Augustin',
+      'back': 'Meditatio',
+      'next': 'Contemplatio',
+    },
+    'contemplatio': {
+      'stepIndicator': 'Étape 5 sur 6',
+      'stepTitle': '🌿 CONTEMPLATIO – Contemplation',
+      'quoteText':
+          '"Montre-moi ton visage, fais-moi entendre ta voix ; car ta voix est douce et ton visage est beau."',
+      'quoteReference': 'Ct 2,14',
+      'introParagraph':
+          'Après la lecture, la méditation et la prière vient le silence. Non pas le vide, mais un silence comblé – par la présence de Dieu. Dans l\'étape Contemplatio, nous ne cherchons plus à parler ni à analyser – nous sommes simplement.',
+      'whatIsTitle': '🕊️ Qu\'est-ce que la Contemplatio ?',
+      'whatIsContent1':
+          'La Contemplatio, c\'est se reposer en Dieu. Ce n\'est pas un effort, ni une réussite – c\'est demeurer dans l\'amour. Après avoir écouté la Parole dans la lectio, l\'avoir méditée dans la meditatio et y avoir répondu dans l\'oratio, nous restons maintenant dans Sa présence.',
+      'whatIsContent2':
+          'Sans attentes. Sans paroles. Seulement avec le désir d\'être avec Lui.',
+      'whatIsQuote':
+          '"Le silence est la langue de Dieu. Tout le reste n\'est qu\'une mauvaise traduction." — Thomas Keating',
+      'howToTitle': '🙌 Comment pratiquer la contemplation ?',
+      'howToSteps': [
+        'Assieds-toi ou agenouille-toi dans une posture confortable mais éveillée. Ferme les yeux.',
+        'Respire paisiblement. Ralentis le rythme du corps et de l\'âme. Laisse aller toutes les pensées.',
+        'Parfois tu éprouves la paix, la clarté, la consolation. D\'autres fois rien. Les deux sont bons.',
+      ],
+      'practicalTipsTitle': '✍️ Conseils pratiques',
+      'practicalTips': [
+        {
+          'title': 'Se préparer au silence',
+          'description': 'Crée un environnement pour la contemplation',
+          'content':
+              'Trouve un lieu tranquille où rien ne te dérangera. Assieds-toi confortablement, mais reste éveillé. Tu peux allumer une bougie ou placer une icône devant toi. Ferme les yeux et ralentis le rythme de ta respiration.',
+        },
+        {
+          'title': 'Laisse aller les pensées',
+          'description': 'Ne les repousse pas, laisse-les simplement passer',
+          'content':
+              'Quand des pensées sur le travail, les soucis ou les projets surgissent, ne les chasse pas de force. Observe-les simplement comme des nuages dans le ciel et laisse-les passer.',
+        },
+        {
+          'title': 'Respire avec Dieu',
+          'description': 'Fais de la respiration un chemin vers la présence',
+          'content':
+              'Respire paisiblement et naturellement. Tu peux dire "Seigneur Jésus" en inspirant et "aie pitié" en expirant. Que ton souffle te relie à Lui.',
+        },
+        {
+          'title': 'Utilise une ancre spirituelle',
+          'description': 'Des moyens pour soutenir l\'attention',
+          'content':
+              'Si la concentration est difficile, répète la Prière de Jésus, observe la flamme d\'une bougie, ou répète un verset qui t\'a parlé.',
+        },
+        {
+          'title': 'Sois, tout simplement',
+          'description': 'N\'attends rien, reçois seulement la présence',
+          'content':
+              'Sache simplement que Dieu est là et que tu es avec Lui. Même si tu ne ressens rien d\'extraordinaire, la contemplation est en train de se faire. L\'amour n\'est pas toujours ressenti, mais il est toujours présent.',
+        },
+      ],
+      'exampleTitle': '📝 Exemple de contemplation',
+      'exampleVerse': '"Demeurez en moi, comme moi en vous." (Jn 15,4)',
+      'exampleSteps': [
+        'Je ferme les yeux et je respire paisiblement. Je laisse aller toutes les pensées.',
+        'Je suis simplement là – avec Dieu. Je n\'attends rien de particulier.',
+        'Si mon esprit s\'égare, je dis doucement : "Tu es là, Seigneur" et je reviens.',
+        'Je demeure ainsi 5 à 10 minutes, dans un simple être avec Lui.',
+      ],
+      'exampleSummary':
+          'Peut-être que je ne ressens rien d\'extraordinaire. Mais je sais qu\'Il est là. Et cela suffit.',
+      'closingTitle': '🔜 Prêt à transformer ta prière en action ?',
+      'closingText':
+          'De la contemplation jaillit la dernière étape de la Lectio Divina – ACTIO, où la Parole devient vie. Mais reste encore un moment... dans le silence. Dans la proximité de Dieu. Dans l\'amour.',
+      'closingQuote': '"Demeurez en moi, comme moi en vous." (Jn 15,4)',
+      'back': 'Oratio',
+      'next': 'Actio',
+    },
+    'actio': {
+      'stepIndicator': 'Étape 6 sur 6',
+      'stepTitle': '🕊️ ACTIO – Vivre la Parole de Dieu',
+      'quoteText':
+          '"Mettez la Parole en pratique, ne soyez pas seulement des auditeurs qui s\'abusent eux-mêmes."',
+      'quoteReference': 'Jc 1,22',
+      'introParagraph':
+          'La Lectio Divina ne s\'achève pas dans le silence de la contemplation. La Parole que nous avons entendue, méditée, à laquelle nous avons répondu dans la prière et dans laquelle nous nous sommes reposés – veut maintenant entrer dans notre vie quotidienne.',
+      'whatIsTitle': '🌱 Qu\'est-ce que l\'Actio ?',
+      'whatIsContent':
+          'L\'Actio est l\'étape où la Parole devient action. Non pas un grand geste spectaculaire, mais une décision silencieuse de vivre selon ce que nous avons reçu de Dieu.',
+      'whatIsQuote':
+          '"L\'Actio répond à la question : Comment vais-je vivre aujourd\'hui ce que Dieu m\'a dit ?"',
+      'howToTitle': '🌍 L\'Actio dans la vie de tous les jours',
+      'howToSteps': [
+        'Les relations : pardonner, comprendre, écouter. Répondre avec grâce, non par automatisme.',
+        'Le travail : faire les choses avec honnêteté. Servir sans attendre de récompense. Voir le travail comme un service.',
+        'Le silence : garder la paix intérieure. Éviter les disputes inutiles.',
+      ],
+      'practicalTipsTitle': '✍️ Conseils pratiques',
+      'practicalTips': [
+        {
+          'title': 'Nomme un pas concret',
+          'description': 'Que feras-tu concrètement aujourd\'hui ?',
+          'content':
+              'Après la Lectio Divina, demande-toi : Que puis-je faire concrètement aujourd\'hui à partir de ce que Dieu m\'a dit ? Une seule petite décision suffit.',
+        },
+        {
+          'title': 'Écris ton engagement',
+          'description': 'Un engagement écrit aide à persévérer',
+          'content':
+              'Écris dans ton carnet : "Aujourd\'hui je vais..." Par exemple : "Aujourd\'hui je ne me plaindrai pas" ou "Aujourd\'hui je dirai une parole bienveillante à quelqu\'un."',
+        },
+        {
+          'title': 'Reviens à la Parole durant la journée',
+          'description': 'Répète le mot qui t\'a parlé',
+          'content':
+              'Au long de la journée, rappelle-toi plusieurs fois le mot de la Lectio Divina. Écris-le sur une note ou programme un rappel sur ton téléphone.',
+        },
+        {
+          'title': 'Partage avec quelqu\'un',
+          'description': 'Dis à un proche ce que Dieu t\'a dit',
+          'content':
+              'Dis à ton conjoint, à un ami ou à ton accompagnateur spirituel ce que Dieu t\'a dit. Le partage aide à approfondir l\'expérience.',
+        },
+        {
+          'title': 'Examen du soir',
+          'description': 'Évalue comment s\'est déroulée ta journée',
+          'content':
+              'Avant de dormir, demande-toi : Ai-je vécu selon la Parole ? Où oui ? Où non ? Ne te juge pas – observe simplement. Et recommence demain.',
+        },
+      ],
+      'exampleTitle': '📝 Exemple d\'Actio',
+      'exampleVerse':
+          'Après la Lectio Divina complète avec la Parole "Sois sans crainte"',
+      'exampleSteps': [
+        'Le matin : je me réveille et ma première pensée est : "Sois sans crainte." Je respire profondément et je remets ma journée à Dieu.',
+        'Au travail : avant l\'entretien je dis : "Dieu est avec moi." Au lieu de paniquer, je me concentre sur le moment présent.',
+        'Le soir : j\'écris : "Aujourd\'hui je n\'ai pas eu peur. Non parce que j\'étais courageux, mais parce que j\'ai fait confiance."',
+        'Avant de dormir : je remercie Dieu pour cette journée. Je répète : "Sois sans crainte." Et je m\'endors en paix.',
+      ],
+      'exampleSummary':
+          'L\'Actio ne concerne pas la perfection. Elle concerne la fidélité. Les petits pas. Une vie qui se transforme lentement de l\'intérieur vers l\'extérieur.',
+      'closingTitle': '🌟 Conclusion de la Lectio Divina',
+      'closingText':
+          'Tu as parcouru toutes les étapes de la Lectio Divina. Silencio – le silence qui ouvre le cœur. Lectio – la lecture qui écoute. Meditatio – la méditation qui approfondit. Oratio – la prière qui répond. Contemplatio – la contemplation qui repose en Dieu. Et maintenant Actio – la vie qui transforme.',
+      'closingQuote':
+          '"Que votre lumière brille devant les hommes, afin qu\'ils voient vos bonnes œuvres et glorifient votre Père qui est dans les cieux." (Mt 5,16)',
+      'back': 'Contemplatio',
+      'backToOverview': 'Retour à l\'aperçu',
     },
   };
 }

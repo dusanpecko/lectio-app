@@ -14,6 +14,12 @@ class PodcastEpisode {
   final int? episodeNumber;
   final String? coverImageUrl;
 
+  /// Kombinované „celé Lectio" audio z `lectio_sources` (pripojené pri načítaní
+  /// epizódy). V appke sa namiesto podcastu prehráva práve tento súbor — podcast
+  /// ostáva len na Spotify. Dlhé = s hudbou + výzvou; krátke = len kroky.
+  final String? fullLongAudio;
+  final String? fullShortAudio;
+
   const PodcastEpisode({
     required this.id,
     required this.lang,
@@ -24,6 +30,8 @@ class PodcastEpisode {
     this.publishDate,
     this.episodeNumber,
     this.coverImageUrl,
+    this.fullLongAudio,
+    this.fullShortAudio,
   });
 
   factory PodcastEpisode.fromJson(Map<String, dynamic> json) {
@@ -37,6 +45,8 @@ class PodcastEpisode {
       publishDate: json['publish_date'] as String?,
       episodeNumber: (json['episode_number'] as num?)?.toInt(),
       coverImageUrl: json['cover_image_url'] as String?,
+      fullLongAudio: json['full_long_audio'] as String?,
+      fullShortAudio: json['full_short_audio'] as String?,
     );
   }
 

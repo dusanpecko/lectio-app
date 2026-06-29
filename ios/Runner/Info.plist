@@ -4,6 +4,11 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Deep-linky (lectio-divina://) spracúvajú výhradne pluginy app_links +
+	     home_widget. Vypnutý vstavaný Flutter router, inak by widget link
+	     `lectio-divina://actio` smeroval aj na route '/' (Home) → duplicitné Home. -->
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

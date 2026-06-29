@@ -2,11 +2,12 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../models/stations_of_cross_model.dart';
 import '../services/stations_of_cross_service.dart';
-import '../shared/app_colors.dart';
 import '../shared/app_spacing.dart';
+import '../widgets/home_v2/home_v2_tokens.dart';
 import 'stations_of_cross_detail_screen.dart';
 
 class StationsOfCrossScreen extends StatefulWidget {
@@ -70,141 +71,39 @@ class _StationsOfCrossScreenState extends State<StationsOfCrossScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: _isLoading
-          ? _buildLoadingState(theme)
-          : _error != null
-          ? _buildErrorState(theme)
-          : CustomScrollView(
-              slivers: [
-                _buildHeroAppBar(theme),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final item = _items[index];
-                      return _buildItemCard(theme, item, index);
-                    }, childCount: _items.length),
-                  ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 100)),
-              ],
-            ),
-    );
-  }
-
-  Widget _buildHeroAppBar(ThemeData theme) {
-    return SliverAppBar(
-      expandedHeight: MediaQuery.of(context).size.width >= 600 ? 450.0 : 300.0,
-      floating: false,
-      pinned: true,
-      backgroundColor: AppColors.primary,
-      title: Text(
-        tr('stations_of_cross_title'),
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-        ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-          onPressed: _loadData,
-          tooltip: tr('refresh'),
-        ),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          fit: StackFit.expand,
+      child: Scaffold(
+        backgroundColor: HomeV2.background(context),
+        body: Column(
           children: [
-            // Hero background image
-            Image.asset(
-              'assets/images/station_cross_backround.webp',
-              fit: BoxFit.cover,
-            ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.primary.withValues(alpha: 0.6),
-                    AppColors.primary.withValues(alpha: 0.85),
-                  ],
-                ),
-              ),
-            ),
-            SafeArea(
-              child: Padding(
-                padding: EdgeInsets.all(
-                  MediaQuery.of(context).size.width >= 600
-                      ? AppSpacing.xxl * 1.5
-                      : AppSpacing.xxl,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(
-                        MediaQuery.of(context).size.width >= 600
-                            ? AppSpacing.xl
-                            : AppSpacing.lg,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(AppRadius.xl),
-                      ),
-                      child: Icon(
-                        Icons.add_rounded, // Cross icon
-                        size: MediaQuery.of(context).size.width >= 600
-                            ? 64
-                            : 48,
-                        color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(
-                      height: MediaQuery.of(context).size.width >= 600
-                          ? AppSpacing.xl
-                          : AppSpacing.lg,
-                    ),
-                    Text(
-                      tr('stations_of_cross_main_title'),
-                      style:
-                          (MediaQuery.of(context).size.width >= 600
-                                  ? theme.textTheme.headlineLarge
-                                  : theme.textTheme.headlineMedium)
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(
-                      height: MediaQuery.of(context).size.width >= 600
-                          ? AppSpacing.md
-                          : AppSpacing.sm,
-                    ),
-                    Text(
-                      tr('stations_of_cross_subtitle'),
-                      style:
-                          (MediaQuery.of(context).size.width >= 600
-                                  ? theme.textTheme.headlineMedium
-                                  : theme.textTheme.titleMedium)
-                              ?.copyWith(
-                                color: Colors.white70,
-                                fontWeight: FontWeight.w500,
-                              ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
+            _buildHero(),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? _buildErrorState()
+                      : RefreshIndicator(
+                          onRefresh: _loadData,
+                          color: HomeV2.primary,
+                          child: ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: EdgeInsets.fromLTRB(
+                              AppSpacing.lg,
+                              AppSpacing.md,
+                              AppSpacing.lg,
+                              MediaQuery.of(context).viewPadding.bottom +
+                                  AppSpacing.xxl,
+                            ),
+                            itemCount: _items.length,
+                            itemBuilder: (context, index) =>
+                                _buildItemCard(_items[index], index),
+                          ),
+                        ),
             ),
           ],
         ),
@@ -212,148 +111,95 @@ class _StationsOfCrossScreenState extends State<StationsOfCrossScreen> {
     );
   }
 
-  Widget _buildItemCard(ThemeData theme, StationsOfCross item, int index) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Material(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        elevation: AppElevation.none,
-        child: InkWell(
-          onTap: () => _navigateToDetail(item),
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(
-                color: theme.dividerColor.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Row(
-                children: [
-                  // Thumbnail or number badge
-                  if (item.hasImage)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      child: CachedNetworkImage(
-                        imageUrl: item.illustrationImage!,
-                        width: 56,
-                        height: 56,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                          child: Icon(
-                            Icons.add_rounded,
-                            color: AppColors.primary,
-                            size: 28,
-                          ),
-                        ),
-                        errorWidget: (context, url, error) =>
-                            _buildNumberBadge(theme, index),
-                      ),
-                    )
-                  else
-                    _buildNumberBadge(theme, index),
-                  const SizedBox(width: AppSpacing.lg),
+  // ── Hero (foto pozadie) ─────────────────────────────────────────────────────
+  Widget _buildHero() {
+    final topPad = MediaQuery.of(context).padding.top;
+    final isTablet = MediaQuery.of(context).size.width >= 600;
+    final bg = HomeV2.background(context);
+    final halo = <Shadow>[
+      const Shadow(color: Colors.black54, blurRadius: 12),
+      const Shadow(color: Colors.black38, blurRadius: 4),
+    ];
+    const bottomRadius = Radius.circular(HomeV2.radius + 6);
 
-                  // Content
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.title,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (item.subtitle != null &&
-                            item.subtitle!.isNotEmpty) ...[
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            item.subtitle!,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: AppColors.primary,
-                              fontStyle: FontStyle.italic,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                        if (item.author != null && item.author!.isNotEmpty) ...[
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            item.author!,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-
-                  // Arrow
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: theme.colorScheme.onSurfaceVariant.withValues(
-                      alpha: 0.5,
-                    ),
-                    size: 28,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNumberBadge(ThemeData theme, int index) {
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.7)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-      ),
-      child: Center(
-        child: Icon(Icons.add_rounded, color: Colors.white, size: 28),
-      ),
-    );
-  }
-
-  Widget _buildLoadingState(ThemeData theme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return SizedBox(
+      height: isTablet ? 320 : 260,
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(
-              theme.colorScheme.primary,
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: bottomRadius),
+            child: Image.asset(
+              'assets/images/station_cross_backround.webp',
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) =>
+                  ColoredBox(color: HomeV2.primary.withValues(alpha: 0.4)),
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            tr('loading'),
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: bottomRadius),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.30),
+                    Colors.black.withValues(alpha: 0.10),
+                    HomeV2.primary.withValues(alpha: 0.55),
+                    bg,
+                  ],
+                  stops: const [0.0, 0.35, 0.85, 1.0],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: topPad + AppSpacing.sm,
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            child: Row(
+              children: [
+                _CircleButton(
+                  icon: Icons.arrow_back_rounded,
+                  onTap: () => Navigator.of(context).maybePop(),
+                ),
+                const Spacer(),
+                _CircleButton(
+                  icon: Icons.refresh_rounded,
+                  onTap: _loadData,
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: AppSpacing.xl,
+            right: AppSpacing.xl,
+            bottom: AppSpacing.lg,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  tr('stations_of_cross_main_title'),
+                  style: HomeV2.serifTitle(
+                    context,
+                    size: isTablet ? 34 : 28,
+                    color: Colors.white,
+                    height: 1.1,
+                  ).copyWith(shadows: halo),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  tr('stations_of_cross_subtitle'),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    shadows: halo,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -361,41 +207,192 @@ class _StationsOfCrossScreenState extends State<StationsOfCrossScreen> {
     );
   }
 
-  Widget _buildErrorState(ThemeData theme) {
+  // ── Karta setu ──────────────────────────────────────────────────────────────
+  Widget _buildItemCard(StationsOfCross item, int index) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            _navigateToDetail(item);
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              children: [
+                if (item.hasImage)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    child: CachedNetworkImage(
+                      imageUrl: item.illustrationImage!,
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                      placeholder: (_, _) => _numberBadge(index),
+                      errorWidget: (_, _, _) => _numberBadge(index),
+                    ),
+                  )
+                else
+                  _numberBadge(index),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                          color: HomeV2.textDark(context),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (item.subtitle != null &&
+                          item.subtitle!.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          item.subtitle!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontStyle: FontStyle.italic,
+                            color: HomeV2.iconAccent(context),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      if (item.author != null && item.author!.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          item.author!,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: HomeV2.textMuted(context),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: HomeV2.textMuted(context),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _numberBadge(int index) {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [HomeV2.primary, const Color(0xFF6B73A8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Center(
+        child: Text(
+          '${index + 1}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.error_outline_rounded,
-              size: 64,
-              color: theme.colorScheme.error,
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              decoration: BoxDecoration(
+                color: const Color(0xFFC0392B).withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.error_outline_rounded,
+                  size: 52, color: Color(0xFFC0392B)),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
               tr('error_loading'),
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: theme.colorScheme.error,
-              ),
+              style: HomeV2.serifTitle(context, size: 22),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               _error ?? tr('unknown_error'),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.5,
+                color: HomeV2.textMuted(context),
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: AppSpacing.xxl),
-            ElevatedButton.icon(
+            const SizedBox(height: AppSpacing.lg),
+            TextButton.icon(
               onPressed: _loadData,
-              icon: const Icon(Icons.refresh_rounded),
-              label: Text(tr('try_again')),
+              icon: Icon(Icons.refresh_rounded, color: HomeV2.primary),
+              label: Text(
+                tr('try_again'),
+                style: TextStyle(
+                    color: HomeV2.primary, fontWeight: FontWeight.w700),
+              ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CircleButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _CircleButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: HomeV2.card(context).withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, color: HomeV2.primary, size: 22),
         ),
       ),
     );

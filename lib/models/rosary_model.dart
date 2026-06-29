@@ -81,7 +81,7 @@ class RosaryDecade {
         (e) => e.toString().split('.').last == json['kategoria'],
       ),
       order: _parseIntSafely(json['poradie']) ?? 1, // Bezpečný parsing
-      lang: json['lang']?.toString() ?? 'sk',
+      lang: json['lang']?.toString() ?? 'en',
       published: _parseBoolSafely(json['publikovane']) ?? true,
       title: json['ruzenec']?.toString() ?? '',
       biblicalText: json['biblicky_text']?.toString() ?? '',
