@@ -32,15 +32,13 @@ class LectioDateSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Lišta je vycentrovaná na VYBRANÝ deň (nie fixne na dnešok) — inak by sa
-    // pri výbere dňa mimo rozsahu (admin v kalendári) nezvýraznil žiadny deň.
-    // Pre default (vybraný = dnes) je výsledok identický ako predtým.
-    final base = DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day,
-    );
-    final start = base.subtract(Duration(days: daysBack));
+    // Kotva lišty = VŽDY DNEŠOK (fixné okno −daysBack … +daysForward okolo
+    // dneška) — pre všetkých vrátane admina. Výber dňa lištu NEposúva; dnešok
+    // ostáva kotvou aj po návrate z Lectia. Zvýraznený je vybraný deň, ak padne
+    // do okna (inak nie je zvýraznené nič — vzdialené dni rieši kalendár).
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = today.subtract(Duration(days: daysBack));
     final total = daysBack + daysForward + 1;
     final locale = context.locale.languageCode;
 

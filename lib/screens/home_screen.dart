@@ -83,7 +83,8 @@ class _HomeScreenState extends State<HomeScreen> {
   late final String _heroImage =
       _heroImages[Random().nextInt(_heroImages.length)];
 
-  DateTime _selectedDate = DateTime.now();
+  // Kotva date-selectora — vždy dnešok (lišta sa neposúva výberom dňa).
+  final DateTime _selectedDate = DateTime.now();
   // -1 = žiadna položka nie je trvalo zvýraznená (menu je launcher, nie taby).
   final int _navIndex = -1;
 
@@ -473,7 +474,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openLectio(DateTime date) {
-    setState(() => _selectedDate = date);
+    // Kotva na home (`_selectedDate`) ostáva DNEŠOK — otvorenie iného dňa
+    // neposunie lištu ani nezmení zvýraznený deň po návrate. Do Lectia ide
+    // vybraný `date`.
     _push(LectioScreen(selectedDate: date), '/lectio');
   }
 

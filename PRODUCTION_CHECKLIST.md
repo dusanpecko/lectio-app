@@ -18,14 +18,14 @@
 - [x] Vercel `ALLOW_TEST_CHECKOUT` — odstránené
 
 **SQL migrácie spustené v produkcii (Supabase)**
-- [ ] `add_campaign_rewards.sql` (odmeny za dar)
+- [x] `add_campaign_rewards.sql` (odmeny za dar)
 - [x] `add_help_articles_platform.sql` (per-OS Pomocník) — už importované
-- [ ] `add_refund_to_orders.sql` (refundácie/dobropisy)
-- [ ] `add_decrement_product_stock.sql` (atomický sklad)
-- [ ] `add_invoice_token_to_orders.sql` (ochrana faktúr/dobropisov tokenom)
-- [ ] `add_full_lectio_audio.sql` (kombinované lectio audio)
-- [ ] `add_payment_to_se_registrations.sql` + `fix_se_email_template_fee.sql` (DC platby)
-- [ ] supporter-discount migrácia (ak ešte nebežala)
+- [x] `add_refund_to_orders.sql` (refundácie/dobropisy)
+- [x] `add_decrement_product_stock.sql` (atomický sklad)
+- [x] `add_invoice_token_to_orders.sql` (ochrana faktúr/dobropisov tokenom)
+- [x] `add_full_lectio_audio.sql` (kombinované lectio audio)
+- [x] `add_payment_to_se_registrations.sql` + `fix_se_email_template_fee.sql` (DC platby)
+- [x] supporter-discount migrácia (ak ešte nebežala)
 
 **Build & store**
 - [ ] `flutter analyze` = 0 errors (celý projekt)
@@ -34,9 +34,9 @@
 - [ ] App ikony + splash OK
 
 **Konfigurácia / prepínače**
-- [ ] **Podporovateľská zľava** — master `enabled` flag je default OFF; **zapnúť po teste**.
+- [x] **Podporovateľská zľava** — master `enabled` flag je default OFF; **zapnúť po teste**.
 - [x] **Apple OAuth secret** v Supabase — vložený nový JWT (platí do **26. 12. 2026**; rotovať skriptom `generate-apple-secret.cjs`).
-- [ ] Vercel env (ak relevantné): `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` + `RECAPTCHA_SECRET_KEY` (reCAPTCHA sa zapne až keď sú nastavené).
+- [x] Vercel env (ak relevantné): `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` + `RECAPTCHA_SECRET_KEY` (reCAPTCHA sa zapne až keď sú nastavené).
 - [ ] V admine doplniť fakturačné údaje OZ (adresa, DIČ, IČ DPH, IBAN).
 
 ---

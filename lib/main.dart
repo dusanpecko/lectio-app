@@ -457,14 +457,14 @@ class _SessionHandlerState extends State<SessionHandler> {
 
   @override
   Widget build(BuildContext context) {
-    // Závislosť na jazyku: čítaním `context.locale` sa SessionHandler stane
-    // závislým od EasyLocalization, takže pri zmene jazyka sa prestaví (aj keď
-    // je tento domovský route schovaný pod pushnutými obrazovkami). Home/Auth
-    // dostanú key viazaný na jazyk → nanovo sa postavia v novom jazyku a
-    // znovu načítajú lokalizovaný obsah. Bez tohto sa imperatívne pushnuté
-    // obrazovky neaktualizovali až do reštartu appky.
-    final lang = context.locale.languageCode;
-
+    // Pozn.: Home/Auth NEkľúčujeme jazykom. Skorší `ValueKey('home_$lang')`
+    // vynucoval kompletný REMOUNT pri zmene jazyka → počas prechodu existovali
+    // dve inštancie HomeScreen naraz so zdieľanými GlobalKeys (showcase) →
+    // „Duplicate GlobalKey" + re-entrantný build → pád viewportu
+    // (`_doingMountOrUpdate`, prázdny obsah pod hero). HomeScreen si jazyk
+    // aktualizuje sám: závisí od `context.locale` (→ `didChangeDependencies`
+    // znovu načíta obsah) a `tr()` stringy sa prestavia pri rebuild-e z
+    // EasyLocalization (setLocale prestaví celý podstrom).
     if (_loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -480,9 +480,9 @@ class _SessionHandlerState extends State<SessionHandler> {
     }
 
     if (session == null) {
-      return AuthScreen(key: ValueKey('auth_$lang'));
+      return const AuthScreen();
     } else {
-      return HomeScreen(key: ValueKey('home_$lang'));
+      return const HomeScreen();
     }
   }
 }
