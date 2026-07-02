@@ -28,7 +28,7 @@
 - [x] supporter-discount migrácia (ak ešte nebežala)
 
 **Build & store**
-- [ ] `flutter analyze` = 0 errors (celý projekt)
+- [x] `flutter analyze` = 0 errors (celý projekt) — overené 2.7.2026 (len 3 info deprecations)
 - [ ] Verzia / build number navýšený
 - [ ] Release build iOS (App Store) + Android (Play)
 - [ ] App ikony + splash OK
@@ -54,6 +54,7 @@
 - [ ] **Internacionalizácia** — infraštruktúra pre FR, PT, DE, PL, IT, CZ + export textov.
 - [ ] **E-shop — medzinárodné poštovné** _(až keď sa e-shop spustí mimo SK)_ — teraz je poštovné **per-produkt, country-agnostické**. Pri expanzii: (a) per-produkt `shipping_cost_intl`, alebo (b) násobiteľ podľa skupiny krajín. Stačí pridať kód krajiny do `ALLOWED_COUNTRIES` + country zoznamov + doriešiť poštovné.
 - [ ] **Refactoring** — `profile_screen` (~2551), `home_screen` (~2054), `lectio_screen` rozdelenie.
+- [ ] **Nová testovacia sada pre v2** — staré testy (pred-v2 HomeScreen, starý audio stack, widget_test s reálnym .env/Supabase) boli 2.7.2026 vymazané ako zastarané; ostal len `test/utils/ui_helpers_test.dart`. Napísať unit/widget testy pre v2 obrazovky a services (mocknúť Supabase, bez siete).
 - [ ] **Lokalizovať DC obrazovky** — `spiritual_exercise_detail/registration/list_screen` majú `tr()` = 0 (hardcoded SK) → externalizovať do `*.json`.
 - [ ] **Ruženec** — záložky a zdieľanie (zakomentované) · background audio (chýba mini player aj background playback).
 - [ ] **Liturgický kalendár** — svätec dňa na home screene.
