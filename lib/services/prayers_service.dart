@@ -32,7 +32,7 @@ class PrayersService {
     try {
       final data = await Supabase.instance.client
           .from('prayer_categories')
-          .select('code, title_sk, title_en, title_es, sort_order')
+          .select('code, title_sk, title_en, title_cz, title_es, title_fr, title_ptbr, title_de, sort_order')
           .eq('is_active', true)
           .order('sort_order', ascending: true);
       return (data as List)

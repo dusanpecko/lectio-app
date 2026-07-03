@@ -57,14 +57,22 @@ class PrayerCategory {
   final String code;
   final String titleSk;
   final String? titleEn;
+  final String? titleCz;
   final String? titleEs;
+  final String? titleFr;
+  final String? titlePtBr;
+  final String? titleDe;
   final int sortOrder;
 
   const PrayerCategory({
     required this.code,
     required this.titleSk,
     this.titleEn,
+    this.titleCz,
     this.titleEs,
+    this.titleFr,
+    this.titlePtBr,
+    this.titleDe,
     required this.sortOrder,
   });
 
@@ -73,21 +81,43 @@ class PrayerCategory {
       code: json['code']?.toString() ?? '',
       titleSk: json['title_sk']?.toString() ?? '',
       titleEn: json['title_en']?.toString(),
+      titleCz: json['title_cz']?.toString(),
       titleEs: json['title_es']?.toString(),
+      titleFr: json['title_fr']?.toString(),
+      titlePtBr: json['title_ptbr']?.toString(),
+      titleDe: json['title_de']?.toString(),
       sortOrder: (json['sort_order'] as num?)?.toInt() ?? 100,
     );
   }
 
-  /// Lokalizovaný názov podľa jazyka appky (fallback na SK).
+  /// Lokalizovaný názov podľa jazyka appky (fallback na SK). `locale` je
+  /// languageCode (sk, cs, en, es, fr, pt…); pt-BR má languageCode 'pt'.
   String titleFor(String locale) {
+    String? v;
     switch (locale) {
       case 'en':
-        return (titleEn != null && titleEn!.isNotEmpty) ? titleEn! : titleSk;
+        v = titleEn;
+        break;
+      case 'cs':
+      case 'cz':
+        v = titleCz;
+        break;
       case 'es':
-        return (titleEs != null && titleEs!.isNotEmpty) ? titleEs! : titleSk;
-      default:
-        return titleSk;
+        v = titleEs;
+        break;
+      case 'fr':
+        v = titleFr;
+        break;
+      case 'pt':
+      case 'pt-br':
+      case 'pt_br':
+        v = titlePtBr;
+        break;
+      case 'de':
+        v = titleDe;
+        break;
     }
+    return (v != null && v.isNotEmpty) ? v : titleSk;
   }
 }
 

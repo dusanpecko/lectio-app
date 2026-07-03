@@ -54,6 +54,7 @@
 - [ ] **Internacionalizácia** — infraštruktúra pre FR, PT, DE, PL, IT, CZ + export textov.
 - [ ] **E-shop — medzinárodné poštovné** _(až keď sa e-shop spustí mimo SK)_ — teraz je poštovné **per-produkt, country-agnostické**. Pri expanzii: (a) per-produkt `shipping_cost_intl`, alebo (b) násobiteľ podľa skupiny krajín. Stačí pridať kód krajiny do `ALLOWED_COUNTRIES` + country zoznamov + doriešiť poštovné.
 - [ ] **Refactoring** — `profile_screen` (~2551), `home_screen` (~2054), `lectio_screen` rozdelenie.
+- [ ] **Upratať print/debugPrint** — 22× v `lib/` (audit 2.7.2026). Kozmetika: release ich prakticky nevidí (`appLogger` filtruje na warning+), ale zjednotiť na `appLogger`.
 - [ ] **Nová testovacia sada pre v2** — staré testy (pred-v2 HomeScreen, starý audio stack, widget_test s reálnym .env/Supabase) boli 2.7.2026 vymazané ako zastarané; ostal len `test/utils/ui_helpers_test.dart`. Napísať unit/widget testy pre v2 obrazovky a services (mocknúť Supabase, bez siete).
 - [ ] **Lokalizovať DC obrazovky** — `spiritual_exercise_detail/registration/list_screen` majú `tr()` = 0 (hardcoded SK) → externalizovať do `*.json`.
 - [ ] **Ruženec** — záložky a zdieľanie (zakomentované) · background audio (chýba mini player aj background playback).
@@ -101,6 +102,9 @@
 - [ ] `app_links` 6.4.1 → 7.0.0 ⚠️ (blokované `supabase_flutter`)
 - [ ] `flutter_html` ^3.0.0-beta.2 ⚠️ beta
 - [ ] `just_audio_background` 0.0.1-beta.17 ⚠️ beta
+- [ ] **3 deprecations** (audit 2.7.2026, len info) — `ConcatenatingAudioSource` (adoration_detail, stations_of_cross_detail) a `onReorder` (lectio_survey — beztak vypnutý). Fungujú; riešiť pri upgrade `just_audio` / Fluttera.
+
+**Pozn. — TODO v kóde (audit 2.7.2026):** 4 komentáre, všetky platné a podchytené — 3× ruženec záložky/zdieľanie (→ roadmap v11.2), 1× Spotify feed URL pre EN/ES/FR/PT-BR (čaká na schválenie Spotify; → mapa prekladov bod 4).
 
 ---
 
