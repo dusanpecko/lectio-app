@@ -12,6 +12,7 @@ import '../services/prayers_service.dart';
 import '../shared/app_spacing.dart';
 import '../widgets/audio/audio_progress_bar.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
+import '../shared/audio_player_factory.dart';
 
 const List<String> _kCanonicalLangs = ['sk', 'cs', 'en', 'es', 'fr', 'pt-br'];
 
@@ -44,10 +45,44 @@ class _PrayersScreenState extends State<PrayersScreen> {
   List<Prayer> _prayers = [];
   List<PrayerCategory> _categories = [];
 
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _query = '';
+
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  /// Normalizácia pre vyhľadávanie — malé písmená bez diakritiky
+  /// („otce nas" nájde „Otče náš").
+  static String _fold(String s) {
+    const from = 'áäàâãčćďéěëèêíîĺľňñóôöòõŕřšťúůüùûýžÁÄÀÂÃČĆĎÉĚËÈÊÍÎĹĽŇÑÓÔÖÒÕŔŘŠŤÚŮÜÙÛÝŽ';
+    const to = 'aaaaaccdeeeeeiillnnooooorrstuuuuuyzaaaaaccdeeeeeiillnnooooorrstuuuuuyz';
+    final b = StringBuffer();
+    for (final ch in s.toLowerCase().split('')) {
+      final i = from.indexOf(ch);
+      b.write(i >= 0 ? to[i] : ch);
+    }
+    return b.toString();
+  }
+
+  /// Modlitba (skupina variantov) zodpovedá hľadaniu, ak sa dopyt nachádza
+  /// v názve alebo texte KTORÉHOKOĽVEK jazykového variantu.
+  bool _matches(List<Prayer> variants, String foldedQuery) {
+    for (final p in variants) {
+      if (_fold(p.title).contains(foldedQuery) ||
+          _fold(p.content).contains(foldedQuery)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<void> _load() async {
@@ -87,9 +122,12 @@ class _PrayersScreenState extends State<PrayersScreen> {
       byBase.putIfAbsent(p.baseCode, () => []).add(p);
     }
 
-    // kategória → zoznam skupín (každá skupina = zoradené varianty)
+    // kategória → zoznam skupín (každá skupina = zoradené varianty);
+    // pri aktívnom hľadaní prežijú len skupiny so zhodou v niektorom variante
+    final foldedQuery = _fold(_query.trim());
     final byCat = <String, List<List<Prayer>>>{};
     for (final variants in byBase.values) {
+      if (foldedQuery.isNotEmpty && !_matches(variants, foldedQuery)) continue;
       final ordered = _orderVariants(variants, locale);
       final primary = ordered.first;
       byCat.putIfAbsent(primary.category, () => []).add(ordered);
@@ -133,6 +171,8 @@ class _PrayersScreenState extends State<PrayersScreen> {
         body: Column(
           children: [
             _buildHero(),
+            if (_status == _Status.ready && _prayers.isNotEmpty)
+              _buildSearchField(),
             Expanded(child: _buildBody()),
           ],
         ),
@@ -186,6 +226,67 @@ class _PrayersScreenState extends State<PrayersScreen> {
     );
   }
 
+  Widget _buildSearchField() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
+      child: TextField(
+        controller: _searchCtrl,
+        onChanged: (v) => setState(() => _query = v),
+        textInputAction: TextInputAction.search,
+        style: TextStyle(fontSize: 15, color: HomeV2.textDark(context)),
+        decoration: InputDecoration(
+          hintText: 'prayers.search_hint'.tr(),
+          hintStyle: TextStyle(color: HomeV2.textMuted(context)),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: HomeV2.textMuted(context),
+          ),
+          suffixIcon: _query.isNotEmpty
+              ? IconButton(
+                  icon: Icon(
+                    Icons.close_rounded,
+                    size: 20,
+                    color: HomeV2.textMuted(context),
+                  ),
+                  onPressed: () {
+                    _searchCtrl.clear();
+                    setState(() => _query = '');
+                  },
+                )
+              : null,
+          filled: true,
+          fillColor: HomeV2.card(context),
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: 12,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(
+              color: HomeV2.primary.withValues(alpha: 0.10),
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(
+              color: HomeV2.primary.withValues(alpha: 0.10),
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(color: HomeV2.primary, width: 1.4),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildBody() {
     if (_status == _Status.loading) {
       return const Center(child: CircularProgressIndicator());
@@ -210,6 +311,13 @@ class _PrayersScreenState extends State<PrayersScreen> {
 
     final groups = _grouped();
     final locale = context.locale.languageCode;
+
+    if (groups.isEmpty && _query.trim().isNotEmpty) {
+      return _buildMessage(
+        Icons.search_off_rounded,
+        'prayers.search_empty'.tr(),
+      );
+    }
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -401,7 +509,7 @@ class _PrayerDetailScreenState extends State<PrayerDetailScreen> {
   late final PageController _controller = PageController();
   int _index = 0;
 
-  final AudioPlayer _player = AudioPlayer();
+  final AudioPlayer _player = createAppAudioPlayer();
   StreamSubscription<PlayerState>? _playerSub;
   bool _isPlaying = false;
   bool _audioLoading = false;

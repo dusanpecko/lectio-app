@@ -115,7 +115,9 @@
     "cat_morning": "Mañana",
     "cat_evening": "Noche",
     "cat_mealtime": "Comidas",
-    "cat_other": "Otras"
+    "cat_other": "Otras",
+    "search_hint": "Buscar oración…",
+    "search_empty": "Ninguna oración coincide con la búsqueda."
   },
   "reflections": "Reflexiones",
   "lectio_divina": "Lectio divina",

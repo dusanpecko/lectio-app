@@ -8,6 +8,7 @@ import '../models/lectio_audio_track.dart';
 import '../services/background_audio_manager.dart';
 import '../shared/audio_constants.dart';
 import '../utils/app_logger.dart';
+import '../shared/audio_player_factory.dart';
 
 /// Jednotný controller pre audio playback v Lectio Divina
 ///
@@ -39,14 +40,14 @@ class LectioAudioController extends ChangeNotifier {
 
   LectioAudioController._internal()
     : _backgroundManager = BackgroundAudioManager(),
-      _fallbackPlayer = AudioPlayer();
+      _fallbackPlayer = createAppAudioPlayer();
 
   @visibleForTesting
   LectioAudioController.internal({
     required BackgroundAudioManager manager,
     AudioPlayer? fallbackPlayer,
   }) : _backgroundManager = manager,
-       _fallbackPlayer = fallbackPlayer ?? AudioPlayer();
+       _fallbackPlayer = fallbackPlayer ?? createAppAudioPlayer();
 
   // State
   LectioPlaybackState _state = LectioPlaybackState.idle;

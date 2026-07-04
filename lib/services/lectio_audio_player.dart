@@ -10,6 +10,7 @@ import '../shared/audio_constants.dart';
 import '../utils/app_logger.dart';
 import 'audio_download_service.dart';
 import 'connectivity_service.dart';
+import '../shared/audio_player_factory.dart';
 
 /// Audio player for Lectio Divina with native background playback.
 ///
@@ -21,7 +22,7 @@ class LectioAudioPlayer extends ChangeNotifier {
   factory LectioAudioPlayer() => _instance;
   LectioAudioPlayer._internal();
 
-  final AudioPlayer _player = AudioPlayer();
+  final AudioPlayer _player = createAppAudioPlayer();
   final AudioDownloadService _audioDownloadService =
       AudioDownloadService.instance;
 

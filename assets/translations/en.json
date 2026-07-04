@@ -115,7 +115,9 @@
     "cat_morning": "Morning",
     "cat_evening": "Evening",
     "cat_mealtime": "Mealtime",
-    "cat_other": "Other"
+    "cat_other": "Other",
+    "search_hint": "Search prayers…",
+    "search_empty": "No prayer matches your search."
   },
   "reflections": "Reflections",
   "lectio_divina": "Lectio divina",

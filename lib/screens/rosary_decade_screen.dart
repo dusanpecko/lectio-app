@@ -16,6 +16,7 @@ import '../widgets/audio/universal_audio_player.dart';
 import '../widgets/audio/audio_player_models.dart';
 import '../shared/app_spacing.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
+import '../shared/audio_player_factory.dart';
 
 class RosaryDecadeScreen extends StatefulWidget {
   final RosaryCategory category;
@@ -33,7 +34,7 @@ class RosaryDecadeScreen extends StatefulWidget {
 
 class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
   final RosaryService _rosaryService = RosaryService();
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  final AudioPlayer _audioPlayer = createAppAudioPlayer();
 
   RosaryDecade? _decade;
   RosaryNavigation? _navigation;

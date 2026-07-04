@@ -17,6 +17,7 @@ import '../shared/audio_constants.dart';
 import '../shared/app_spacing.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
 import '../widgets/lectio_floating_audio_player.dart';
+import '../shared/audio_player_factory.dart';
 
 class AdorationDetailScreen extends StatefulWidget {
   final String adorationId;
@@ -41,7 +42,7 @@ const _kPrefKeyAdorationAudioMode = 'adoration_audio_mode';
 
 class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
   final AdorationService _adorationService = AdorationService();
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  final AudioPlayer _audioPlayer = createAppAudioPlayer();
 
   Adoration? _adoration;
   bool _isLoading = true;

@@ -6,12 +6,13 @@ import 'package:just_audio/just_audio.dart';
 import '../models/lectio_audio_state.dart';
 import '../services/background_audio_manager.dart';
 import '../shared/audio_constants.dart';
+import '../shared/audio_player_factory.dart';
 
 /// Mixin pre audio playback funkcionalitu v Lectio screen
 /// Obsahuje všetku logiku súvisiacu s prehrávaním audio
 mixin LectioAudioMixin<T extends StatefulWidget> on State<T> {
   // Audio players
-  final AudioPlayer audioPlayer = AudioPlayer();
+  final AudioPlayer audioPlayer = createAppAudioPlayer();
   final BackgroundAudioManager backgroundAudioManager = BackgroundAudioManager();
 
   // Audio state

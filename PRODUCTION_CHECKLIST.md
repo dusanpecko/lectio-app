@@ -44,6 +44,7 @@
 # 🗺️ Roadmap (ďalšie verzie)
 
 ### v11.1+ — august 2026
+- [ ] **Audio disk cache (`LockCachingAudioSource`)** — seek po fixe 5.7.2026 trvá ~1–1,5 s (sieťový range request); s priebežnou diskovou cache by bol seek v prehratej časti aj opakované prehratie okamžité. Pozor na súbeh s offline sťahovaním (`audio_download_service`) a správu miesta. _Rozhodnúť po v11.0._
 - [ ] **Android BackgroundAudioManager fallback** (nízka) — staršie Android (8/9) nezatvárajú media player po zatvorení appky na zamknutej obrazovke.
 - [ ] **Inbox** — systém správ od administrátorov.
 - [ ] **Semantics labels pre screen reader** — obrázky (`semanticLabel`), tlačidlá (`Semantics`).

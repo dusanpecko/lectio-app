@@ -69,7 +69,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // Hero obrázky — rotujú (náhodný pri každom spustení).
   static const List<String> _heroImages = [
     'assets/images/slide0.webp',
@@ -83,8 +83,14 @@ class _HomeScreenState extends State<HomeScreen> {
   late final String _heroImage =
       _heroImages[Random().nextInt(_heroImages.length)];
 
-  // Kotva date-selectora — vždy dnešok (lišta sa neposúva výberom dňa).
-  final DateTime _selectedDate = DateTime.now();
+  // Kotva date-selectora — VŽDY aktuálny dnešok (getter, nie uložená hodnota).
+  // Fix 4.7.2026: `final _selectedDate = DateTime.now()` zamrzol na dni mountu —
+  // appka cez noc na pozadí potom zvýrazňovala včerajšok.
+  DateTime get _selectedDate => DateTime.now();
+
+  /// Deň, pre ktorý sú načítané denné dáta (podcast, actio…) — na detekciu
+  /// prechodu cez polnoc pri návrate z pozadia.
+  DateTime _loadedDay = DateTime.now();
   // -1 = žiadna položka nie je trvalo zvýraznená (menu je launcher, nie taby).
   final int _navIndex = -1;
 
@@ -145,6 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _showcase = ShowcaseView.register(
       // Offline/bez Spotify → chýbajúce ciele preskočí (nezasekne sa sekvencia).
       skipIfTargetNotPresent: true,
@@ -163,10 +170,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _connSub?.cancel();
     _showcase?.unregister();
     _featuredController.dispose();
     super.dispose();
+  }
+
+  /// Návrat z pozadia po polnoci: appka cez noc na pozadí zobrazovala včerajší
+  /// deň (kalendár aj audio) — pri resume v iný deň prekreslíme (getter
+  /// `_selectedDate` + selector si dnešok počítajú v build) a znovu načítame
+  /// denné dáta (podcast, actio, quote…).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state != AppLifecycleState.resumed) return;
+    final now = DateTime.now();
+    final dayChanged = now.year != _loadedDay.year ||
+        now.month != _loadedDay.month ||
+        now.day != _loadedDay.day;
+    if (dayChanged && mounted) {
+      _loadedDay = now;
+      setState(() {});
+      _loadAll();
+    }
   }
 
   /// Featured carousel: odporúčané cvičenie + projekty Slovo bez hraníc.
@@ -345,6 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadAll() async {
+    _loadedDay = DateTime.now();
     await Future.wait([
       _loadPodcast(),
       _loadActio(),

@@ -123,8 +123,10 @@ class _PlayPauseButton extends StatelessWidget {
   }
 }
 
-/// Progress bar pre audio player
-class LectioAudioProgressBar extends StatelessWidget {
+/// Progress bar pre audio player.
+/// Fix 4.7.2026: seek sa volá RAZ pri pustení (onChangeEnd), nie pri každom
+/// pixeli ťahania — inak sa radili desiatky seekov a posun pôsobil zaseknuto.
+class LectioAudioProgressBar extends StatefulWidget {
   const LectioAudioProgressBar({
     super.key,
     required this.currentPosition,
@@ -139,10 +141,22 @@ class LectioAudioProgressBar extends StatelessWidget {
   final bool isSeeking;
 
   @override
+  State<LectioAudioProgressBar> createState() => _LectioAudioProgressBarState();
+}
+
+class _LectioAudioProgressBarState extends State<LectioAudioProgressBar> {
+  /// Sekundy počas ťahania; null = neťahá sa, zobrazuj reálnu pozíciu.
+  double? _dragSeconds;
+  int _dragEpoch = 0;
+
+  Duration get currentPosition => widget.currentPosition;
+  Duration get totalDuration => widget.totalDuration;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final maxValue = totalDuration.inSeconds.toDouble();
-    final currentValue = currentPosition.inSeconds.toDouble();
+    final currentValue = _dragSeconds ?? currentPosition.inSeconds.toDouble();
 
     return Row(
       children: [
@@ -165,7 +179,17 @@ class LectioAudioProgressBar extends StatelessWidget {
               activeColor: AppColors.primary,
               inactiveColor: AppColors.primary.withValues(alpha: 0.2),
               onChanged: (value) {
-                onSeek(Duration(seconds: value.toInt()));
+                setState(() => _dragSeconds = value);
+              },
+              onChangeEnd: (value) {
+                widget.onSeek(Duration(seconds: value.toInt()));
+                // Podrž lokálnu hodnotu, kým sa player presunie (žiadny skok späť).
+                final epoch = ++_dragEpoch;
+                Future.delayed(const Duration(milliseconds: 800), () {
+                  if (mounted && _dragEpoch == epoch) {
+                    setState(() => _dragSeconds = null);
+                  }
+                });
               },
             ),
           ),

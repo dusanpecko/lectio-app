@@ -115,7 +115,9 @@
     "cat_morning": "Du matin",
     "cat_evening": "Du soir",
     "cat_mealtime": "Repas",
-    "cat_other": "Autres"
+    "cat_other": "Autres",
+    "search_hint": "Rechercher une prière…",
+    "search_empty": "Aucune prière ne correspond à la recherche."
   },
   "reflections": "Réflexions",
   "lectio_divina": "Lectio divina",

@@ -17,6 +17,7 @@ import '../shared/app_spacing.dart';
 import '../shared/audio_constants.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
 import '../widgets/lectio_floating_audio_player.dart';
+import '../shared/audio_player_factory.dart';
 
 class StationsOfCrossDetailScreen extends StatefulWidget {
   final String stationsOfCrossId;
@@ -52,7 +53,7 @@ class _StationsOfCrossDetailScreenState
   int _currentPage = 0;
 
   // ── Audio (lectio-style floating player) ──
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  final AudioPlayer _audioPlayer = createAppAudioPlayer();
   bool _showAudioPlayer = false;
   bool _isMinimized = false;
   bool _isPlaying = false;

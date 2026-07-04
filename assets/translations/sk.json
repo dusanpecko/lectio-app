@@ -113,7 +113,9 @@
     "cat_morning": "Ranné",
     "cat_evening": "Večerné",
     "cat_mealtime": "Pri jedle",
-    "cat_other": "Ostatné"
+    "cat_other": "Ostatné",
+    "search_hint": "Hľadať modlitbu…",
+    "search_empty": "Žiadna modlitba nezodpovedá hľadaniu."
   },
   "reflections": "Zamyslenia",
   "lectio_divina": "Lectio divina",

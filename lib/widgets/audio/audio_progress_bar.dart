@@ -6,7 +6,14 @@ import 'package:rxdart/rxdart.dart';
 import 'audio_player_models.dart';
 import '../../shared/app_spacing.dart';
 
-class AudioProgressBar extends StatelessWidget {
+/// Progress bar s plynulým seekovaním.
+///
+/// DÔLEŽITÉ (fix 4.7.2026): počas ťahania sa seek NEvolá pri každom pixeli
+/// (`onChanged`) — to radilo do fronty desiatky network seekov a posun pôsobil
+/// „zaseknuto". Ťahanie mení len lokálny stav (`_dragProgress`), reálny seek sa
+/// vykoná RAZ v `onChangeEnd`. Lokálna hodnota sa drží ešte chvíľu po pustení,
+/// aby palec neskočil späť, kým sa prehrávač dobuffruje na novú pozíciu.
+class AudioProgressBar extends StatefulWidget {
   final AudioPlayer audioPlayer;
   final Color? accentColor;
   final AudioSeekCallback? onSeek;
@@ -23,9 +30,32 @@ class AudioProgressBar extends StatelessWidget {
   });
 
   @override
+  State<AudioProgressBar> createState() => _AudioProgressBarState();
+}
+
+class _AudioProgressBarState extends State<AudioProgressBar> {
+  /// Pozícia počas ťahania (0..1); null = neťahá sa, zobrazuj stream.
+  double? _dragProgress;
+  int _dragEpoch = 0;
+
+  void _endDrag(AudioPositionData positionData, double value) {
+    final newPosition = Duration(
+      milliseconds: (value * positionData.duration.inMilliseconds).round(),
+    );
+    widget.onSeek?.call(newPosition);
+    // Podrž lokálnu hodnotu, kým sa player presunie (inak palec skočí späť).
+    final epoch = ++_dragEpoch;
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted && _dragEpoch == epoch) {
+        setState(() => _dragProgress = null);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final effectiveAccentColor = accentColor ?? theme.colorScheme.primary;
+    final effectiveAccentColor = widget.accentColor ?? theme.colorScheme.primary;
 
     return StreamBuilder<AudioPositionData>(
       stream: _getPositionDataStream(),
@@ -42,7 +72,7 @@ class AudioProgressBar extends StatelessWidget {
               theme,
             ),
 
-            if (showDuration) ...[
+            if (widget.showDuration) ...[
               const SizedBox(height: AppSpacing.sm),
               _buildDurationLabels(context, positionData, theme),
             ],
@@ -58,14 +88,15 @@ class AudioProgressBar extends StatelessWidget {
     Color accentColor,
     ThemeData theme,
   ) {
+    final displayed = (_dragProgress ?? positionData.progress).clamp(0.0, 1.0);
     return SliderTheme(
       data: SliderTheme.of(context).copyWith(
-        trackHeight: height,
+        trackHeight: widget.height,
         thumbShape: RoundSliderThumbShape(
-          enabledThumbRadius: height * 2,
+          enabledThumbRadius: widget.height * 2,
           pressedElevation: 8,
         ),
-        overlayShape: RoundSliderOverlayShape(overlayRadius: height * 3),
+        overlayShape: RoundSliderOverlayShape(overlayRadius: widget.height * 3),
         activeTrackColor: accentColor,
         inactiveTrackColor: accentColor.withValues(alpha: 0.3),
         thumbColor: accentColor,
@@ -77,22 +108,18 @@ class AudioProgressBar extends StatelessWidget {
         ),
       ),
       child: Slider(
-        value: positionData.progress,
-        onChanged: onSeek != null
-            ? (value) {
-                final newPosition = Duration(
-                  milliseconds: (value * positionData.duration.inMilliseconds)
-                      .round(),
-                );
-                onSeek!(newPosition);
-              }
+        value: displayed,
+        onChanged: widget.onSeek != null
+            ? (value) => setState(() => _dragProgress = value)
+            : null,
+        onChangeEnd: widget.onSeek != null
+            ? (value) => _endDrag(positionData, value)
             : null,
         // Zobrazuje čas pri ťahaní
         label: _formatDuration(
           Duration(
             milliseconds:
-                (positionData.progress * positionData.duration.inMilliseconds)
-                    .round(),
+                (displayed * positionData.duration.inMilliseconds).round(),
           ),
         ),
       ),
@@ -132,8 +159,8 @@ class AudioProgressBar extends StatelessWidget {
   /// Kombinuje position a duration streams pre optimálny výkon
   Stream<AudioPositionData> _getPositionDataStream() {
     return Rx.combineLatest2<Duration, Duration?, AudioPositionData>(
-      audioPlayer.positionStream,
-      audioPlayer.durationStream,
+      widget.audioPlayer.positionStream,
+      widget.audioPlayer.durationStream,
       (position, duration) => AudioPositionData(
         position: position,
         duration: duration ?? Duration.zero,
@@ -186,7 +213,7 @@ class AudioProgressBarCompact extends StatelessWidget {
 }
 
 /// Pokročilá verzia s dodatočnými indikátormi
-class AudioProgressBarAdvanced extends StatelessWidget {
+class AudioProgressBarAdvanced extends StatefulWidget {
   final AudioPlayer audioPlayer;
   final Color? accentColor;
   final AudioSeekCallback? onSeek;
@@ -205,9 +232,32 @@ class AudioProgressBarAdvanced extends StatelessWidget {
   });
 
   @override
+  State<AudioProgressBarAdvanced> createState() =>
+      _AudioProgressBarAdvancedState();
+}
+
+class _AudioProgressBarAdvancedState extends State<AudioProgressBarAdvanced> {
+  /// Pozícia počas ťahania (0..1); null = neťahá sa (viď komentár vyššie).
+  double? _dragProgress;
+  int _dragEpoch = 0;
+
+  void _endDrag(AudioPositionData positionData, double value) {
+    final newPosition = Duration(
+      milliseconds: (value * positionData.duration.inMilliseconds).round(),
+    );
+    widget.onSeek?.call(newPosition);
+    final epoch = ++_dragEpoch;
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted && _dragEpoch == epoch) {
+        setState(() => _dragProgress = null);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final effectiveAccentColor = accentColor ?? theme.colorScheme.primary;
+    final effectiveAccentColor = widget.accentColor ?? theme.colorScheme.primary;
 
     return StreamBuilder<AudioPositionData>(
       stream: _getPositionDataStream(),
@@ -217,7 +267,7 @@ class AudioProgressBarAdvanced extends StatelessWidget {
         return Column(
           children: [
             // Buffering indicator
-            if (showBuffering) _buildBufferingIndicator(context, theme),
+            if (widget.showBuffering) _buildBufferingIndicator(context, theme),
 
             // Progress slider
             _buildAdvancedProgressSlider(
@@ -240,7 +290,7 @@ class AudioProgressBarAdvanced extends StatelessWidget {
   Widget _buildBufferingIndicator(BuildContext context, ThemeData theme) {
     final theme = Theme.of(context);
     return StreamBuilder<PlayerState>(
-      stream: audioPlayer.playerStateStream,
+      stream: widget.audioPlayer.playerStateStream,
       builder: (context, snapshot) {
         final playerState = snapshot.data;
         final isBuffering =
@@ -281,14 +331,15 @@ class AudioProgressBarAdvanced extends StatelessWidget {
     Color accentColor,
     ThemeData theme,
   ) {
+    final displayed = (_dragProgress ?? positionData.progress).clamp(0.0, 1.0);
     return SliderTheme(
       data: SliderTheme.of(context).copyWith(
-        trackHeight: height,
+        trackHeight: widget.height,
         thumbShape: RoundSliderThumbShape(
-          enabledThumbRadius: height * 2.5,
+          enabledThumbRadius: widget.height * 2.5,
           pressedElevation: 8,
         ),
-        overlayShape: RoundSliderOverlayShape(overlayRadius: height * 4),
+        overlayShape: RoundSliderOverlayShape(overlayRadius: widget.height * 4),
         activeTrackColor: accentColor,
         inactiveTrackColor: accentColor.withValues(alpha: 0.2),
         thumbColor: accentColor,
@@ -301,22 +352,18 @@ class AudioProgressBarAdvanced extends StatelessWidget {
         showValueIndicator: ShowValueIndicator.onlyForDiscrete,
       ),
       child: Slider(
-        value: positionData.progress,
+        value: displayed,
         divisions: 100, // Pre smoother seeking
-        onChanged: onSeek != null
-            ? (value) {
-                final newPosition = Duration(
-                  milliseconds: (value * positionData.duration.inMilliseconds)
-                      .round(),
-                );
-                onSeek!(newPosition);
-              }
+        onChanged: widget.onSeek != null
+            ? (value) => setState(() => _dragProgress = value)
+            : null,
+        onChangeEnd: widget.onSeek != null
+            ? (value) => _endDrag(positionData, value)
             : null,
         label: _formatDuration(
           Duration(
             milliseconds:
-                (positionData.progress * positionData.duration.inMilliseconds)
-                    .round(),
+                (displayed * positionData.duration.inMilliseconds).round(),
           ),
         ),
       ),
@@ -341,7 +388,7 @@ class AudioProgressBarAdvanced extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          if (showRemaining) ...[
+          if (widget.showRemaining) ...[
             Text(
               '-${_formatDuration(positionData.remaining)}',
               style: theme.textTheme.bodySmall?.copyWith(
@@ -366,8 +413,8 @@ class AudioProgressBarAdvanced extends StatelessWidget {
 
   Stream<AudioPositionData> _getPositionDataStream() {
     return Rx.combineLatest2<Duration, Duration?, AudioPositionData>(
-      audioPlayer.positionStream,
-      audioPlayer.durationStream,
+      widget.audioPlayer.positionStream,
+      widget.audioPlayer.durationStream,
       (position, duration) => AudioPositionData(
         position: position,
         duration: duration ?? Duration.zero,
