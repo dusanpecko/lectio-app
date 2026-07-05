@@ -29,8 +29,8 @@
 
 **Build & store**
 - [x] `flutter analyze` = 0 errors (celý projekt) — overené 2.7.2026 (len 3 info deprecations)
-- [ ] Verzia / build number navýšený
-- [ ] Release build iOS (App Store) + Android (Play)
+- [x] Verzia / build number navýšený — `11.0.0+6000001` (éra 6 = Flutter v11; 5.7.2026)
+- [x] Release build — Android AAB zbuildený (5.7.2026); iOS archív cez Xcode Cloud (auto pri pushi na main)
 - [ ] App ikony + splash OK
 
 **Konfigurácia / prepínače**
