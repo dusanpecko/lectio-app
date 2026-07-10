@@ -72,18 +72,19 @@ class MediaPlayerBus extends ChangeNotifier {
     // Ak je audio stiahnuté offline, prehraj lokálny súbor.
     await AudioDownloadService.instance.initialize();
     final localPath = AudioDownloadService.instance.getLocalPath(url);
-    final uri = localPath != null ? Uri.file(localPath) : Uri.parse(url);
-    await _player.setAudioSource(
-      AudioSource.uri(
-        uri,
-        tag: MediaItem(
-          id: id,
-          title: title,
-          artist: 'Lectio Divina',
-          artUri: artUri != null ? Uri.tryParse(artUri) : null,
-        ),
-      ),
+    final tag = MediaItem(
+      id: id,
+      title: title,
+      artist: 'Lectio Divina',
+      artUri: artUri != null ? Uri.tryParse(artUri) : null,
     );
+    // Offline súbor → lokálne; inak stream s diskovou cache (LockCaching) —
+    // seek a opakované prehratie sú potom okamžité.
+    final AudioSource source = localPath != null
+        ? AudioSource.uri(Uri.file(localPath), tag: tag)
+        // ignore: experimental_member_use  (LockCaching je stabilný napriek @experimental)
+        : LockCachingAudioSource(Uri.parse(url), tag: tag);
+    await _player.setAudioSource(source);
     notifyListeners();
   }
 

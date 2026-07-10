@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:just_audio/just_audio.dart' show ProcessingState;
 
 import '../../models/podcast_episode.dart';
 import '../../services/media_player_bus.dart';
@@ -325,7 +326,7 @@ class _Thumbnail extends StatelessWidget {
   }
 }
 
-class _ProgressBar extends StatelessWidget {
+class _ProgressBar extends StatefulWidget {
   final MediaPlayerBus controller;
   final bool isCurrent;
   final Duration fallbackTotal;
@@ -337,7 +338,32 @@ class _ProgressBar extends StatelessWidget {
   });
 
   @override
+  State<_ProgressBar> createState() => _ProgressBarState();
+}
+
+class _ProgressBarState extends State<_ProgressBar> {
+  /// Pozícia (ms) počas ťahania; null = neťahá sa, zobrazuj reálnu pozíciu.
+  /// Fix 7.7.2026: seek sa volá RAZ pri pustení (onChangeEnd), nie pri každom
+  /// pixeli — inak sa cez sieť radili desiatky seekov a posun bol „zaseknutý".
+  double? _dragMs;
+  int _dragEpoch = 0;
+
+  void _onSeekEnd(double v) {
+    widget.controller.seek(Duration(milliseconds: v.toInt()));
+    // Podrž pozíciu prsta, kým sa prehrávač presunie/dobufferuje (žiadny skok
+    // späť). Spinner medzitým signalizuje načítavanie (processingState).
+    final epoch = ++_dragEpoch;
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted && _dragEpoch == epoch) {
+        setState(() => _dragMs = null);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
+    final isCurrent = widget.isCurrent;
     return StreamBuilder<Duration>(
       stream: controller.positionStream,
       initialData: controller.position,
@@ -346,73 +372,112 @@ class _ProgressBar extends StatelessWidget {
           stream: controller.durationStream,
           initialData: controller.duration,
           builder: (context, durSnap) {
-            final total =
-                (isCurrent ? durSnap.data : null) ??
-                (fallbackTotal > Duration.zero ? fallbackTotal : null) ??
-                const Duration(seconds: 1);
-            final pos = isCurrent
-                ? (posSnap.data ?? Duration.zero)
-                : Duration.zero;
-            final maxMs = total.inMilliseconds <= 0 ? 1 : total.inMilliseconds;
-            final value = pos.inMilliseconds.clamp(0, maxMs).toDouble();
+            return StreamBuilder<ProcessingState>(
+              stream: controller.processingStateStream,
+              builder: (context, procSnap) {
+                final isBuffering =
+                    isCurrent &&
+                    (procSnap.data == ProcessingState.buffering ||
+                        procSnap.data == ProcessingState.loading);
+                final total =
+                    (isCurrent ? durSnap.data : null) ??
+                    (widget.fallbackTotal > Duration.zero
+                        ? widget.fallbackTotal
+                        : null) ??
+                    const Duration(seconds: 1);
+                final pos = isCurrent
+                    ? (posSnap.data ?? Duration.zero)
+                    : Duration.zero;
+                final maxMs = total.inMilliseconds <= 0
+                    ? 1
+                    : total.inMilliseconds;
+                final realValue = pos.inMilliseconds.clamp(0, maxMs).toDouble();
+                final value = (_dragMs ?? realValue).clamp(0, maxMs).toDouble();
+                // Čas zobrazený vľavo sleduje palec počas ťahania.
+                final shownPos = _dragMs != null
+                    ? Duration(milliseconds: value.toInt())
+                    : pos;
 
-            return Column(
-              children: [
-                SizedBox(
-                  height: 22,
-                  child: SliderTheme(
-                    data: SliderThemeData(
-                      trackHeight: 3,
-                      activeTrackColor: HomeV2.primary,
-                      inactiveTrackColor: HomeV2.primary.withValues(
-                        alpha: 0.15,
+                return Column(
+                  children: [
+                    SizedBox(
+                      height: 22,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SliderTheme(
+                            data: SliderThemeData(
+                              trackHeight: 3,
+                              activeTrackColor: HomeV2.primary,
+                              inactiveTrackColor: HomeV2.primary.withValues(
+                                alpha: 0.15,
+                              ),
+                              thumbColor: HomeV2.primary,
+                              overlayShape: SliderComponentShape.noOverlay,
+                              thumbShape: const RoundSliderThumbShape(
+                                enabledThumbRadius: 5,
+                              ),
+                              trackShape: const RoundedRectSliderTrackShape(),
+                            ),
+                            child: Slider(
+                              value: value,
+                              min: 0,
+                              max: maxMs.toDouble(),
+                              onChanged: isCurrent
+                                  ? (v) => setState(() => _dragMs = v)
+                                  : null,
+                              onChangeEnd: isCurrent ? _onSeekEnd : null,
+                            ),
+                          ),
+                          // Spinner „načítavam" počas dobufferovania po seeku
+                          // (aj pri prvom načítaní). Presne to, čo robí Spotify.
+                          if (isBuffering)
+                            const IgnorePointer(
+                              child: SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: HomeV2.primary,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                      thumbColor: HomeV2.primary,
-                      overlayShape: SliderComponentShape.noOverlay,
-                      thumbShape: const RoundSliderThumbShape(
-                        enabledThumbRadius: 5,
-                      ),
-                      trackShape: const RoundedRectSliderTrackShape(),
                     ),
-                    child: Slider(
-                      value: value,
-                      min: 0,
-                      max: maxMs.toDouble(),
-                      onChanged: isCurrent
-                          ? (v) => controller.seek(
-                              Duration(milliseconds: v.toInt()),
-                            )
-                          : null,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _fmtPair(shownPos),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: HomeV2.textMuted(context),
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            _fmtPair(total),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: HomeV2.textMuted(context),
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _fmtPair(pos),
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: HomeV2.textMuted(context),
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                      Text(
-                        _fmtPair(total),
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: HomeV2.textMuted(context),
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                  ],
+                );
+              },
             );
           },
         );

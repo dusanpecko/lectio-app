@@ -238,7 +238,8 @@ class _StationsOfCrossDetailScreenState
           ? (_tracks[i]['label'] as String? ?? 'Zastavenie')
           : 'Zastavenie';
       sources.add(
-        AudioSource.uri(
+        // ignore: experimental_member_use  (LockCaching je stabilný napriek @experimental)
+        LockCachingAudioSource(
           Uri.parse(station.audio!),
           tag: MediaItem(
             id: 'station_$i',
@@ -254,7 +255,8 @@ class _StationsOfCrossDetailScreenState
       // Interlude after this station (if mode != none)
       if (interludeUrl.isNotEmpty) {
         sources.add(
-          AudioSource.uri(
+          // ignore: experimental_member_use  (LockCaching je stabilný napriek @experimental)
+          LockCachingAudioSource(
             Uri.parse(interludeUrl),
             tag: MediaItem(
               id: 'interlude_$i',

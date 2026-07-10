@@ -301,7 +301,8 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
       final key = track['key'] as String;
 
       sources.add(
-        AudioSource.uri(
+        // ignore: experimental_member_use  (LockCaching je stabilný napriek @experimental)
+        LockCachingAudioSource(
           Uri.parse(url),
           tag: MediaItem(
             id: key,
@@ -318,7 +319,8 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
       if (interludeUrl.isNotEmpty && i < _tracks.length - 1) {
         final interludeArtist = _audioMode == 'short' ? 'MudiG' : 'Off Beat';
         sources.add(
-          AudioSource.uri(
+          // ignore: experimental_member_use  (LockCaching je stabilný napriek @experimental)
+          LockCachingAudioSource(
             Uri.parse(interludeUrl),
             tag: MediaItem(
               id: 'interlude_$i',

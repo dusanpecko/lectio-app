@@ -47,11 +47,10 @@
 - [ ] **Základné modlitby — doplniť Novénu** — pridať do sekcie modlitieb (multijazyčne, aj s audiom ako ostatné modlitby).
 - [ ] **Spytovanie svedomia** — pridať do sekcie modlitieb (multijazyčne, aj s audiom).
 - [x] **Úmysly — notifikačný schvaľovací flow** ✅ 7.7.2026 — používateľ pošle úmysel → admin dostane push (`notify-admin`, INSERT webhook) → po schválení (`approved=true`) dostane odosielateľ lokalizovaný push „Váš úmysel bol schválený a zaradený medzi modlitby" (`notify-approved`, UPDATE webhook, podľa `intentions.lang`). Informačná notifikácia — otvára hlavnú stránku, bez deep-linku. _Pozn.: Supabase webhook URL musí byť `www.lectio.one` (apex 301-redirect pg_net nenasleduje)._
-- [ ] **Audio disk cache (`LockCachingAudioSource`)** — seek po fixe 5.7.2026 trvá ~1–1,5 s (sieťový range request); s priebežnou diskovou cache by bol seek v prehratej časti aj opakované prehratie okamžité. Pozor na súbeh s offline sťahovaním (`audio_download_service`) a správu miesta. _Rozhodnúť po v11.0._
+- [x] **Audio disk cache (`LockCachingAudioSource`)** ✅ 7.7.2026 — stream sa cachuje na disk (Caches/, OS-evictable) na 6 streamovacích miestach (lectio player track+interlude, MediaPlayerBus, modlitby, universal, adorácie, krížové cesty); offline súbory ostávajú `AudioSource.file`. + home seek bar (`daily_podcast_card._ProgressBar`) prerobený: drag-state + seek raz na `onChangeEnd` + spinner počas bufferovania (namiesto seeku pri každom pixeli). Seek do vypočutej časti a opakované prehratie sú okamžité. Overené iOS + Pixel. _Správu miesta cache zatiaľ rieši OS; limit/čistenie doplniť ak bude treba._
 - [ ] **Android BackgroundAudioManager fallback** (nízka) — staršie Android (8/9) nezatvárajú media player po zatvorení appky na zamknutej obrazovke.
 - [ ] **Inbox** — systém správ od administrátorov.
 - [ ] **Semantics labels pre screen reader** — obrázky (`semanticLabel`), tlačidlá (`Semantics`).
-- [ ] **Brazílska portugalčina (pt-BR)** — web + marketing · obsah (kalendár, lectio-sources, krížové cesty, adorácie, modlitby) · preklad aplikácie (lokalizácia stringov).
 - [ ] **FCM Token Cleanup Cron** — očista starých/neplatných tokenov (90+ dní neaktívne).
 
 
@@ -65,6 +64,7 @@
 - [ ] **Ruženec** — záložky a zdieľanie (zakomentované) · background audio (chýba mini player aj background playback).
 - [ ] **Liturgický kalendár** — svätec dňa na home screene.
 - [ ] **Streak & Stats** — sledovanie pokroku, kalendár aktivity.
+- [ ] **Brazílska portugalčina (pt-BR)** — web + marketing · obsah (kalendár, lectio-sources, krížové cesty, adorácie, modlitby) · preklad aplikácie (lokalizácia stringov).
 
 ### v11.3+ 🎓 — november 2026
 - [ ] **Teologické prehĺbenie (Magisterium AI)** — voliteľná sekcia pod Actio s AI-generovaným komentárom k dennému evanjeliu. Magisterium API (28 000+ dokumentov) + ChatGPT/Claude → 4 bloky: Teologické jadro, Cirkevní Otcovia, KKC, Dokumenty Cirkvi. 1× denne/jazyk, cache v DB, editovateľné adminom. *Nie chatbot.* Detaily: `docs/TEOLOGICKE_PREHLBENIE_MAGISTERIUM.md`. Validácia teológom, budget na API, pilot 100–200 users.

@@ -547,8 +547,11 @@ class _PrayerDetailScreenState extends State<PrayerDetailScreen> {
       if (_loadedUrl != url) {
         setState(() => _audioLoading = true);
         // just_audio_background vyžaduje MediaItem tag na každom zdroji.
+        // LockCaching: stream + disková cache → seek a opakované prehratie
+        // modlitby sú okamžité (fix 7.7.2026).
         await _player.setAudioSource(
-          AudioSource.uri(
+          // ignore: experimental_member_use  (LockCaching je stabilný napriek @experimental)
+          LockCachingAudioSource(
             Uri.parse(url),
             tag: MediaItem(
               id: _current.shortcode,

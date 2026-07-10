@@ -366,7 +366,10 @@ class _UniversalAudioPlayerState extends State<UniversalAudioPlayer> {
       // Nastavenie audio source ak nie je nastavené alebo sa zmenil
       if (_audioPlayer.audioSource == null ||
           _audioPlayer.audioSource.toString() != audioUrl) {
-        final audioSource = AudioSource.uri(
+        // LockCaching: stream + disková cache → seek a opakované prehratie
+        // sú okamžité (fix 7.7.2026).
+        // ignore: experimental_member_use  (LockCaching je stabilný napriek @experimental)
+        final audioSource = LockCachingAudioSource(
           Uri.parse(audioUrl),
           tag: widget.audioItem.toMediaItem(),
         );

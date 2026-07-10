@@ -299,7 +299,12 @@ class LectioAudioPlayer extends ChangeNotifier {
     }
 
     appLogger.d('🎵 🌐 Streaming interlude from URL: $url');
-    return AudioSource.uri(Uri.parse(url), tag: mediaItem);
+    // LockCaching (fix 7.7.2026): streamuj a súčasne cachuj na disk (Caches/,
+    // OS ho uvoľní pri nedostatku miesta). Seek v už prehratej časti a
+    // opakované prehratie tej istej nahrávky sú potom okamžité. Offline
+    // stiahnuté súbory sem nechodia — tie idú vyššie cez AudioSource.file.
+    // ignore: experimental_member_use  (LockCaching je stabilný napriek @experimental)
+    return LockCachingAudioSource(Uri.parse(url), tag: mediaItem);
   }
 
   /// Create AudioSource for a track.
@@ -363,7 +368,12 @@ class LectioAudioPlayer extends ChangeNotifier {
 
     // Online - streamuj z URL
     appLogger.d('🎵 🌐 Streaming from URL for $key: $url');
-    return AudioSource.uri(Uri.parse(url), tag: mediaItem);
+    // LockCaching (fix 7.7.2026): streamuj a súčasne cachuj na disk (Caches/,
+    // OS ho uvoľní pri nedostatku miesta). Seek v už prehratej časti a
+    // opakované prehratie tej istej nahrávky sú potom okamžité. Offline
+    // stiahnuté súbory sem nechodia — tie idú vyššie cez AudioSource.file.
+    // ignore: experimental_member_use  (LockCaching je stabilný napriek @experimental)
+    return LockCachingAudioSource(Uri.parse(url), tag: mediaItem);
   }
 
   /// Set audio mode
