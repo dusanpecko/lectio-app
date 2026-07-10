@@ -12,7 +12,7 @@ echo "CI_WORKSPACE: $CI_WORKSPACE"
 # ---- Install Flutter SDK ----
 # Pinnuté na verziu zhodnú s lokálnym vývojom (pri lokálnom upgrade Fluttera
 # zvýš aj tu) — reprodukovateľné store buildy > "najnovšie stable".
-FLUTTER_VERSION="3.44.0"
+FLUTTER_VERSION="3.44.6"
 FLUTTER_HOME="$HOME/flutter"
 if [ ! -d "$FLUTTER_HOME" ]; then
     echo "Installing Flutter SDK $FLUTTER_VERSION..."
