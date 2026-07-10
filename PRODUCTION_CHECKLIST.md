@@ -46,7 +46,7 @@
 ### v11.1+ — august 2026
 - [ ] **Základné modlitby — doplniť Novénu** — pridať do sekcie modlitieb (multijazyčne, aj s audiom ako ostatné modlitby).
 - [ ] **Spytovanie svedomia** — pridať do sekcie modlitieb (multijazyčne, aj s audiom).
-- [ ] **Úmysly — notifikačný schvaľovací flow** — používateľ pošle úmysel (`intention_submit_screen`) → admin dostane push „nový úmysel na schválenie" → po schválení (`approved=true`) dostane odosielateľ push „Váš úmysel bol schválený a zaradený medzi modlitby" (lokalizované podľa `intentions.lang`). Schvaľovacia logika (`approved` flag) už existuje; treba doplniť notifikácie oboma smermi.
+- [x] **Úmysly — notifikačný schvaľovací flow** ✅ 7.7.2026 — používateľ pošle úmysel → admin dostane push (`notify-admin`, INSERT webhook) → po schválení (`approved=true`) dostane odosielateľ lokalizovaný push „Váš úmysel bol schválený a zaradený medzi modlitby" (`notify-approved`, UPDATE webhook, podľa `intentions.lang`). Informačná notifikácia — otvára hlavnú stránku, bez deep-linku. _Pozn.: Supabase webhook URL musí byť `www.lectio.one` (apex 301-redirect pg_net nenasleduje)._
 - [ ] **Audio disk cache (`LockCachingAudioSource`)** — seek po fixe 5.7.2026 trvá ~1–1,5 s (sieťový range request); s priebežnou diskovou cache by bol seek v prehratej časti aj opakované prehratie okamžité. Pozor na súbeh s offline sťahovaním (`audio_download_service`) a správu miesta. _Rozhodnúť po v11.0._
 - [ ] **Android BackgroundAudioManager fallback** (nízka) — staršie Android (8/9) nezatvárajú media player po zatvorení appky na zamknutej obrazovke.
 - [ ] **Inbox** — systém správ od administrátorov.
