@@ -1724,5 +1724,20 @@
       "help_title": "Pomôžte nám sprístupniť Lectio Divina ľuďom, ktorí túžia po modlitbe",
       "help_text": "Vaším príspevkom pomôžete vytvoriť videá, pripraviť obsah, zabezpečiť spracovanie kurzu a jeho preklady. Každá podpora pomáha tomu, aby sa modlitba s Božím slovom dostala bližšie k jednotlivcom, rodinám, spoločenstvám a farnostiam."
     }
-  }
+  },
+  "a11y_play": "Prehrať",
+  "a11y_pause": "Pozastaviť",
+  "a11y_stop": "Zastaviť",
+  "a11y_skip_next": "Ďalšia stopa",
+  "a11y_skip_previous": "Predchádzajúca stopa",
+  "a11y_seek": "Posunúť prehrávanie",
+  "a11y_close": "Zatvoriť",
+  "a11y_minimize": "Minimalizovať",
+  "a11y_back": "Späť",
+  "a11y_previous_day": "Predchádzajúci deň",
+  "a11y_next_day": "Nasledujúci deň",
+  "a11y_previous_section": "Predchádzajúca sekcia",
+  "a11y_next_section": "Nasledujúca sekcia",
+  "a11y_report_bad_audio": "Nahlásiť nekvalitné audio",
+  "a11y_menu": "Menu"
 }

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -296,7 +297,7 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
                   ),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
-                  tooltip: 'Nahlásiť zlé audio',
+                  tooltip: 'a11y_report_bad_audio'.tr(),
                   onPressed: onReportBadAudio,
                 ),
               if (onReportBadAudio != null)
@@ -310,7 +311,7 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
                 ),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
-                tooltip: 'Minimalizovať',
+                tooltip: 'a11y_minimize'.tr(),
                 onPressed: onMinimize,
               ),
               const SizedBox(width: AppSpacing.lg),
@@ -319,7 +320,7 @@ class LectioFloatingAudioPlayer extends StatelessWidget {
                 icon: const Icon(Icons.close, size: 20, color: Colors.white),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
-                tooltip: 'Zatvoriť a zastaviť',
+                tooltip: 'a11y_close'.tr(),
                 onPressed: onClose,
               ),
             ],

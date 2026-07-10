@@ -1,5 +1,6 @@
 // widgets/audio/audio_player_controls.dart
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'audio_player_models.dart';
@@ -129,6 +130,7 @@ class AudioPlayerControls extends StatelessWidget {
               icon: Icon(_getPlayPauseIcon(status)),
               iconSize: 28,
               color: accentColor,
+              tooltip: status.isPlaying ? 'a11y_pause'.tr() : 'a11y_play'.tr(),
             ),
     );
   }
@@ -176,7 +178,7 @@ class AudioPlayerControls extends StatelessWidget {
     return TextButton.icon(
       onPressed: status.canStop ? onStop : null,
       icon: const Icon(Icons.stop_rounded, size: 16),
-      label: const Text('Zastaviť'),
+      label: Text('a11y_stop'.tr()),
       style: TextButton.styleFrom(
         foregroundColor: status.canStop ? accentColor : Colors.grey,
         textStyle: const TextStyle(fontWeight: FontWeight.w500),

@@ -779,6 +779,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
                 icon: const Icon(Icons.chevron_left_rounded),
                 color: HomeV2.primary,
                 disabledColor: HomeV2.textMuted(context).withValues(alpha: 0.3),
+                tooltip: 'a11y_previous_section'.tr(),
                 onPressed: current > 0
                     ? () => _pageController.animateToPage(
                         current - 1,
@@ -804,6 +805,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
                 icon: const Icon(Icons.chevron_right_rounded),
                 color: HomeV2.primary,
                 disabledColor: HomeV2.textMuted(context).withValues(alpha: 0.3),
+                tooltip: 'a11y_next_section'.tr(),
                 onPressed: current < slides.length - 1
                     ? () => _pageController.animateToPage(
                         current + 1,
@@ -840,26 +842,36 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
   }
 
   // ── Hero ──────────────────────────────────────────────────────────────────
-  Widget _heroDateArrow(IconData icon, bool enabled, VoidCallback onTap) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: enabled
-          ? () {
-              HapticFeedback.selectionClick();
-              onTap();
-            }
-          : null,
-      // Väčšia tap plocha (~44×40) pre pohodlné prepínanie — ikona ostáva 22px.
-      child: SizedBox(
-        width: 44,
-        height: 40,
-        child: Center(
-          child: Icon(
-            icon,
-            size: 22,
-            color: enabled
-                ? Colors.white
-                : Colors.white.withValues(alpha: 0.35),
+  Widget _heroDateArrow(
+    IconData icon,
+    bool enabled,
+    VoidCallback onTap, {
+    required String semanticLabel,
+  }) {
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: semanticLabel,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: enabled
+            ? () {
+                HapticFeedback.selectionClick();
+                onTap();
+              }
+            : null,
+        // Väčšia tap plocha (~44×40) pre pohodlné prepínanie — ikona ostáva 22px.
+        child: SizedBox(
+          width: 44,
+          height: 40,
+          child: Center(
+            child: Icon(
+              icon,
+              size: 22,
+              color: enabled
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.35),
+            ),
           ),
         ),
       ),
@@ -959,6 +971,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
                           Icons.chevron_left_rounded,
                           _canPrev,
                           _previousDay,
+                          semanticLabel: 'a11y_previous_day'.tr(),
                         ),
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
@@ -994,6 +1007,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
                           Icons.chevron_right_rounded,
                           _canNext,
                           _nextDay,
+                          semanticLabel: 'a11y_next_day'.tr(),
                         ),
                       ],
                     ),

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../shared/app_colors.dart';
@@ -42,7 +43,7 @@ class LectioAudioControls extends StatelessWidget {
           iconSize: 32,
           color: canGoPrevious ? AppColors.primary : Colors.grey.shade400,
           onPressed: canGoPrevious ? onPrevious : null,
-          tooltip: 'Predchádzajúca',
+          tooltip: 'a11y_skip_previous'.tr(),
         ),
         const SizedBox(width: AppSpacing.lg),
 
@@ -63,7 +64,7 @@ class LectioAudioControls extends StatelessWidget {
           iconSize: 32,
           color: canGoNext ? AppColors.primary : Colors.grey.shade400,
           onPressed: canGoNext ? onNext : null,
-          tooltip: 'Ďalšia',
+          tooltip: 'a11y_skip_next'.tr(),
         ),
       ],
     );
@@ -106,7 +107,7 @@ class _PlayPauseButton extends StatelessWidget {
         onPressed: isProcessing || isSeeking
             ? null
             : (isPlaying ? onPause : onPlay),
-        tooltip: isPlaying ? 'Pozastaviť' : 'Prehrať',
+        tooltip: isPlaying ? 'a11y_pause'.tr() : 'a11y_play'.tr(),
       ),
     );
   }

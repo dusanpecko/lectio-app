@@ -55,6 +55,8 @@ class HomeHeroSection extends StatelessWidget {
               imageAsset,
               fit: BoxFit.cover,
               alignment: Alignment.topCenter,
+              // Dekoratívne pozadie — čítačka ho preskočí (nemá informačnú hodnotu).
+              excludeFromSemantics: true,
               errorBuilder: (_, _, _) => ColoredBox(
                 color: HomeV2.primary.withValues(alpha: 0.15),
               ),

@@ -1724,5 +1724,20 @@
       "help_title": "Aidez-nous à rendre la Lectio Divina accessible à ceux qui désirent prier",
       "help_text": "Par votre contribution, vous aiderez à créer les vidéos, à préparer le contenu, à produire le cours et ses traductions. Chaque soutien contribue à rapprocher la prière avec la Parole de Dieu des personnes, des familles, des communautés et des paroisses."
     }
-  }
+  },
+  "a11y_play": "Lire",
+  "a11y_pause": "Pause",
+  "a11y_stop": "Arrêter",
+  "a11y_skip_next": "Piste suivante",
+  "a11y_skip_previous": "Piste précédente",
+  "a11y_seek": "Se déplacer",
+  "a11y_close": "Fermer",
+  "a11y_minimize": "Réduire",
+  "a11y_back": "Retour",
+  "a11y_previous_day": "Jour précédent",
+  "a11y_next_day": "Jour suivant",
+  "a11y_previous_section": "Section précédente",
+  "a11y_next_section": "Section suivante",
+  "a11y_report_bad_audio": "Signaler un mauvais audio",
+  "a11y_menu": "Menu"
 }

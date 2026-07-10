@@ -1724,5 +1724,20 @@
       "help_title": "Ayúdanos a acercar la Lectio Divina a quienes anhelan orar",
       "help_text": "Con tu aportación ayudarás a crear los vídeos, preparar el contenido, producir el curso y sus traducciones. Cada apoyo contribuye a que la oración con la Palabra de Dios llegue más cerca de las personas, las familias, las comunidades y las parroquias."
     }
-  }
+  },
+  "a11y_play": "Reproducir",
+  "a11y_pause": "Pausar",
+  "a11y_stop": "Detener",
+  "a11y_skip_next": "Pista siguiente",
+  "a11y_skip_previous": "Pista anterior",
+  "a11y_seek": "Buscar posición",
+  "a11y_close": "Cerrar",
+  "a11y_minimize": "Minimizar",
+  "a11y_back": "Atrás",
+  "a11y_previous_day": "Día anterior",
+  "a11y_next_day": "Día siguiente",
+  "a11y_previous_section": "Sección anterior",
+  "a11y_next_section": "Sección siguiente",
+  "a11y_report_bad_audio": "Reportar audio deficiente",
+  "a11y_menu": "Menú"
 }

@@ -625,7 +625,11 @@ class StepPlayButton extends StatelessWidget {
                               )
                             : 0.0;
 
-                        return GestureDetector(
+                        return Semantics(
+                          button: true,
+                          // Čítačka: „Prehrať/Pozastaviť <krok>" (napr. Lectio).
+                          label: '${isPlaying ? 'a11y_pause'.tr() : 'a11y_play'.tr()} — $title',
+                          child: GestureDetector(
                           onTap: () {
                             HapticFeedback.lightImpact();
                             controller.toggle(
@@ -672,6 +676,7 @@ class StepPlayButton extends StatelessWidget {
                                 ),
                               ],
                             ),
+                          ),
                           ),
                         );
                       },
