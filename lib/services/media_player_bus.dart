@@ -8,6 +8,7 @@ import '../utils/app_logger.dart';
 import 'audio_download_service.dart';
 import 'lectio_audio_player.dart';
 import 'umami_analytics_service.dart';
+import '../shared/audio_constants.dart';
 
 /// Jednotná audio zbernica pre v2 (denný podcast aj jednotlivé kroky lectio).
 ///
@@ -72,11 +73,14 @@ class MediaPlayerBus extends ChangeNotifier {
     // Ak je audio stiahnuté offline, prehraj lokálny súbor.
     await AudioDownloadService.instance.initialize();
     final localPath = AudioDownloadService.instance.getLocalPath(url);
+    // Zmenši artwork pre media notifikáciu (nenačítavaj plné rozlíšenie do
+    // pamäte — Google Play upozornenie na loadArtBitmap).
+    final sizedArt = AudioConstants.sizedArtwork(artUri);
     final tag = MediaItem(
       id: id,
       title: title,
       artist: 'Lectio Divina',
-      artUri: artUri != null ? Uri.tryParse(artUri) : null,
+      artUri: sizedArt != null ? Uri.tryParse(sizedArt) : null,
     );
     // Offline súbor → lokálne; inak stream s diskovou cache (LockCaching) —
     // seek a opakované prehratie sú potom okamžité.

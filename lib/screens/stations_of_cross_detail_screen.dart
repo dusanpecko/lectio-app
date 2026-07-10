@@ -78,7 +78,10 @@ class _StationsOfCrossDetailScreenState
   /// Artwork URI for lock screen / notification
   Uri? get _artUri {
     final img = _data?.illustrationImage;
-    if (img != null && img.isNotEmpty) return Uri.tryParse(img);
+    // Zmenši pre media notifikáciu (nenačítavaj plné rozlíšenie do pamäte).
+    if (img != null && img.isNotEmpty) {
+      return Uri.tryParse(AudioConstants.sizedArtwork(img)!);
+    }
     return Uri.parse(AudioConstants.defaultArtworkUrl);
   }
 

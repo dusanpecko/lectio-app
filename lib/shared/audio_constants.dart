@@ -9,6 +9,27 @@ class AudioConstants {
   static const String _supabaseStorageBase =
       'https://core.lectio.one/storage/v1/object/public';
 
+  /// Base URL pre Supabase image transform (render/image) — zmenšovanie
+  /// obrázkov za behu.
+  static const String _supabaseRenderBase =
+      'https://core.lectio.one/storage/v1/render/image/public';
+
+  /// Zmenší Supabase Storage obrázok na [size]px cez image transform.
+  ///
+  /// Media notifikácia (`audio_service.loadArtBitmap`) načítava artwork do
+  /// pamäte v plnom rozlíšení — pri veľkých obrázkoch (napr. 2000×2000 = ~16 MB
+  /// RAM) to Google Play hlási ako výkonnostný problém. Notifikácia potrebuje
+  /// len ~512 px. Ne-Supabase URL vráti nezmenené (bezpečný passthrough).
+  static String? sizedArtwork(String? url, {int size = 512}) {
+    if (url == null || url.isEmpty) return url;
+    const marker = '/storage/v1/object/public/';
+    if (!url.contains(marker)) return url;
+    final transformed =
+        url.replaceFirst(marker, '/storage/v1/render/image/public/');
+    final sep = transformed.contains('?') ? '&' : '?';
+    return '$transformed${sep}width=$size&height=$size&resize=contain';
+  }
+
   /// Priečinok pre lectio audio súbory
   static const String _lectioAudioPath = 'audio-files/lectio';
 
@@ -31,9 +52,11 @@ class AudioConstants {
   // IKONY A ARTWORK
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// Default artwork pre audio notifikácie (lock screen, media controls)
+  /// Default artwork pre audio notifikácie (lock screen, media controls).
+  /// Cez render/image zmenšené na 512 px (zdroj icon.png je 2000×2000 →
+  /// bez zmenšenia ~16 MB RAM v notifikácii; Google Play upozornenie).
   static const String defaultArtworkUrl =
-      '$_supabaseStorageBase/$_avatarsPath/icon.png';
+      '$_supabaseRenderBase/$_avatarsPath/icon.png?width=512&height=512&resize=contain';
 
   // ═══════════════════════════════════════════════════════════════════════════
   // HELPER METÓDY

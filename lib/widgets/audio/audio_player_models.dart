@@ -2,6 +2,7 @@
 
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_service/audio_service.dart';
+import '../../shared/audio_constants.dart';
 
 /// Model pre audio položku - univerzálny pre rosary aj lectio
 class UniversalAudioItem {
@@ -68,7 +69,9 @@ class UniversalAudioItem {
       title: title,
       artist: author ?? 'Neznámy autor',
       duration: duration,
-      artUri: artworkUrl != null ? Uri.parse(artworkUrl!) : null,
+      artUri: AudioConstants.sizedArtwork(artworkUrl) != null
+          ? Uri.parse(AudioConstants.sizedArtwork(artworkUrl)!)
+          : null,
       playable: audioUrl?.isNotEmpty == true,
     );
   }
