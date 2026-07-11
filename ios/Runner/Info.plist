@@ -4,11 +4,6 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
-	<!-- Deep-linky (lectio-divina://) spracúvajú výhradne pluginy app_links +
-	     home_widget. Vypnutý vstavaný Flutter router, inak by widget link
-	     `lectio-divina://actio` smeroval aj na route '/' (Home) → duplicitné Home. -->
-	<key>FlutterDeepLinkingEnabled</key>
-	<false/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -48,6 +43,8 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
@@ -58,10 +55,10 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Lectio Divina potrebuje prístup ku kamere pre vytvorenie profilovej fotky.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Odomknutie súkromnej prípravy na sv. spoveď (spovedné tajomstvo).</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app uses local network to communicate with development tools and debugging services.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Lectio Divina môže potrebovať prístup k mikrofónu pre audio funkcie.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Lectio Divina potrebuje prístup k fotogalérii pre výber profilovej fotky.</string>
 	<key>UIApplicationSceneManifest</key>
@@ -75,10 +72,10 @@
 				<dict>
 					<key>UISceneClassName</key>
 					<string>UIWindowScene</string>
-					<key>UISceneDelegateClassName</key>
-					<string>FlutterSceneDelegate</string>
 					<key>UISceneConfigurationName</key>
 					<string>flutter</string>
+					<key>UISceneDelegateClassName</key>
+					<string>FlutterSceneDelegate</string>
 					<key>UISceneStoryboardFile</key>
 					<string>Main</string>
 				</dict>

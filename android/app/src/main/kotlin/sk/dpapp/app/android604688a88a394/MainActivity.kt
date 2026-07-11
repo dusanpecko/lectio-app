@@ -4,7 +4,8 @@ import androidx.annotation.NonNull
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
-import com.ryanheise.audioservice.AudioServiceActivity
+import com.ryanheise.audioservice.AudioServiceFragmentActivity
+import android.view.WindowManager
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
@@ -13,7 +14,7 @@ import android.provider.Settings
 import android.content.Intent
 import android.net.Uri
 
-class MainActivity: AudioServiceActivity() {
+class MainActivity: AudioServiceFragmentActivity() {
     private val CHANNEL = "sk.lectio.divina/do_not_disturb"
     private lateinit var notificationManager: NotificationManager
 
@@ -28,6 +29,22 @@ class MainActivity: AudioServiceActivity() {
         super.configureFlutterEngine(flutterEngine)
         
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        // Spovedné zrkadlo: FLAG_SECURE (žiadne screenshoty / skrytý obsah
+        // v prepínači aplikácií) — zapína sa len na spovedných obrazovkách.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "sk.lectio.divina/secure_screen").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "enable" -> {
+                    window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+                    result.success(true)
+                }
+                "disable" -> {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                    result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        }
         
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
