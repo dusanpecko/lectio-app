@@ -332,7 +332,7 @@ class LocalNotificationsService {
           );
 
       final initialized = await _notifications.initialize(
-        initializationSettings,
+        settings: initializationSettings,
         onDidReceiveNotificationResponse: _onNotificationTapped,
       );
 
@@ -627,11 +627,11 @@ class LocalNotificationsService {
       });
 
       await _notifications.zonedSchedule(
-        welcomeNotificationId,
-        _getNotificationText('welcome_title'),
-        _getNotificationText('welcome_body'),
-        tz.TZDateTime.from(scheduledDate, _currentTimezone),
-        const NotificationDetails(
+        id: welcomeNotificationId,
+        title: _getNotificationText('welcome_title'),
+        body: _getNotificationText('welcome_body'),
+        scheduledDate: tz.TZDateTime.from(scheduledDate, _currentTimezone),
+        notificationDetails: const NotificationDetails(
           android: AndroidNotificationDetails(
             'welcome_channel',
             'Uvítacie notifikácie',
@@ -754,11 +754,11 @@ class LocalNotificationsService {
             : AndroidScheduleMode.inexactAllowWhileIdle;
 
         await _notifications.zonedSchedule(
-          prayerReminderBaseId + i,
-          _getNotificationText('prayer_title'),
-          _getNotificationText('prayer_body'),
-          tz.TZDateTime.from(scheduledTime, _currentTimezone),
-          const NotificationDetails(
+          id: prayerReminderBaseId + i,
+          title: _getNotificationText('prayer_title'),
+          body: _getNotificationText('prayer_body'),
+          scheduledDate: tz.TZDateTime.from(scheduledTime, _currentTimezone),
+          notificationDetails: const NotificationDetails(
             android: AndroidNotificationDetails(
               'prayer_reminder_channel',
               'Pripomenutie modlitby',
@@ -796,7 +796,7 @@ class LocalNotificationsService {
   /// Zrušenie pripomenutia modlitby
   Future<void> _cancelPrayerReminder() async {
     for (int i = 0; i < NotificationConstants.scheduleDaysAhead; i++) {
-      await _notifications.cancel(prayerReminderBaseId + i);
+      await _notifications.cancel(id: prayerReminderBaseId + i);
     }
     _logger.i('🗑️ Cancelled prayer reminders');
   }

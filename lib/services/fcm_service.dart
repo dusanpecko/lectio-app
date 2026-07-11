@@ -42,7 +42,7 @@ Future<void> _showLocalNotification(RemoteMessage message) async {
     // Inicializuj lokálnu inštanciu — v background isolate nie je dostupný singleton
     final plugin = FlutterLocalNotificationsPlugin();
     await plugin.initialize(
-      const InitializationSettings(
+      settings: const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/launcher_icon'),
         iOS: DarwinInitializationSettings(),
       ),
@@ -80,10 +80,10 @@ Future<void> _showLocalNotification(RemoteMessage message) async {
     );
 
     await plugin.show(
-      message.hashCode,
-      notification.title,
-      notification.body,
-      platformChannelSpecifics,
+      id: message.hashCode,
+      title: notification.title,
+      body: notification.body,
+      notificationDetails: platformChannelSpecifics,
       payload: jsonEncode(message.data),
     );
   } catch (e) {
@@ -166,10 +166,10 @@ class FcmService {
       );
 
       await LocalNotificationsService.instance.plugin.show(
-        message.hashCode,
-        notification.title,
-        notification.body,
-        details,
+        id: message.hashCode,
+        title: notification.title,
+        body: notification.body,
+        notificationDetails: details,
         payload: jsonEncode(message.data),
       );
     } catch (e) {

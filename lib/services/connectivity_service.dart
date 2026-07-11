@@ -103,6 +103,8 @@ class ConnectivityService {
         return 'VPN';
       case ConnectivityResult.bluetooth:
         return 'Bluetooth';
+      case ConnectivityResult.satellite:
+        return 'Satelit';
       case ConnectivityResult.other:
         return 'Iné';
       case ConnectivityResult.none:

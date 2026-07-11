@@ -40,17 +40,17 @@ dependencies:
 
   # Ostatné balíčky necháme s konkrétnymi verziami
   cupertino_icons: ^1.0.8
-  flutter_dotenv: ^5.1.0
+  flutter_dotenv: ^6.0.1
   carousel_slider: ^5.1.1
   flutter_html: ^3.0.0-beta.2
   shared_preferences: ^2.2.3
-  sign_in_with_apple: ^6.1.1
+  sign_in_with_apple: ^8.1.0
   crypto: ^3.0.6
   google_sign_in: ^7.2.0
-  google_fonts: ^6.2.1
+  google_fonts: ^8.1.0
   easy_localization: ^3.0.7
   rxdart: ^0.28.0
-  package_info_plus: ^8.0.0
+  package_info_plus: ^10.2.0
   url_launcher: ^6.3.0
   logger: ^2.4.0
   image_picker: ^1.1.2
@@ -60,28 +60,31 @@ dependencies:
   supabase_flutter: ^2.10.0
   just_audio: ^0.10.5
   just_audio_background: ^0.0.1-beta.17
-  audio_session: ^0.1.21
+  audio_session: ^0.2.4
   audio_service: ^0.18.18
   get_it: ^9.2.0
-  timezone: ^0.10.1
+  timezone: ^0.11.1
   permission_handler: ^12.0.1
-  device_info_plus: ^12.3.0
-  app_links: ^6.4.1
-  home_widget: ^0.7.0
+  device_info_plus: ^13.2.0
+  app_links: ^7.2.1
+  home_widget: ^0.9.3
   http: ^1.4.0
-  share_plus: ^11.1.0
+  share_plus: ^13.2.0
   flutter_svg: ^2.0.17
   flutter_launcher_icons: ^0.14.4
   firebase_core: ^4.0.0
   firebase_messaging: ^16.0.0
   flutter_secure_storage: ^10.0.0
-  flutter_local_notifications: ^19.5.0
+  # Spovedné zrkadlo: PBKDF2 + AES-GCM (čisté Dart) a biometrické odomknutie
+  cryptography: ^2.7.0
+  local_auth: ^2.3.0
+  flutter_local_notifications: ^22.0.1
   provider: ^6.1.2
   cached_network_image: ^3.4.1
   # Priamy prístup k disk cache, ktorú používa cached_network_image — pre
   # predcachovanie podcast coverov na offline použitie.
   flutter_cache_manager: ^3.4.1
-  connectivity_plus: ^6.1.0
+  connectivity_plus: ^7.2.0
   video_player: ^2.9.3
   webview_flutter: ^4.13.1
   in_app_review: ^2.0.10
