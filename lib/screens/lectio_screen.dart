@@ -8,8 +8,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import 'dart:async';
+
 import '../models/podcast_episode.dart';
 import '../services/audio_download_service.dart';
+import '../services/connectivity_service.dart';
 import '../services/lectio_admin_service.dart';
 import '../services/lectio_cache_service.dart';
 import '../services/lectio_data_service.dart';
@@ -240,10 +243,29 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
       WakelockPlus.enable();
     }
 
-    final results = await Future.wait([
-      LectioDataService.instance.getDailyLectio(date: reqDate, locale: _locale),
-      PodcastService.instance.fetchEpisodeForDate(reqDate, _locale),
-    ]);
+    // Offline: sieť preskoč ÚPLNE — čakanie na connection timeouty
+    // (getDailyLectio = viac sekvenčných dopytov + podcast) držalo otvorenie
+    // obrazovky ~8 s, hoci dáta boli stiahnuté lokálne. Timeout navyše kryje
+    // „polomŕtve" pripojenie (wifi bez internetu).
+    Map<String, dynamic>? networkData;
+    PodcastEpisode? episode;
+    if (ConnectivityService.instance.isOnline) {
+      try {
+        final results = await Future.wait([
+          LectioDataService.instance.getDailyLectio(
+            date: reqDate,
+            locale: _locale,
+          ),
+          PodcastService.instance.fetchEpisodeForDate(reqDate, _locale),
+        ]).timeout(const Duration(seconds: 6));
+        networkData = results[0] as Map<String, dynamic>?;
+        episode = results[1] as PodcastEpisode?;
+      } on TimeoutException {
+        appLogger.w('⏱️ Lectio load timeout — padám na offline cache');
+      } catch (e) {
+        appLogger.w('⚠️ Lectio load zlyhal ($e) — padám na offline cache');
+      }
+    }
     final dateStr = DateFormat('yyyy-MM-dd').format(reqDate);
     // ignoreExpiry: stiahnuté dni musia platiť celé 7-dňové okno, nie len 24 h.
     final cached = await LectioCacheService.instance.getCachedLectio(
@@ -253,12 +275,11 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
     );
     // Ignoruj výsledok ak sa medzitým zmenil deň (rýchle prepínanie).
     if (!mounted || reqDate != _date) return;
-    final networkData = results[0] as Map<String, dynamic>?;
     setState(() {
       // Offline / výpadok siete: padni na stiahnuté dáta z cache. `_episode`
       // ostane null a kombinované audio sa vyrobí z `_data` v `_audioEpisode`.
       _data = networkData ?? cached?.rawData;
-      _episode = results[1] as PodcastEpisode?;
+      _episode = episode;
       _isDownloaded = cached != null;
       _loading = false;
     });

@@ -92,7 +92,21 @@ class AppFloatingMenu extends StatelessWidget {
             (route) => false,
           );
         } else {
-          await Supabase.instance.client.auth.signOut();
+          // Globálny sign-out môže pri OAuth (Apple) zlyhať → fallback na
+          // lokálny; potom zhoď pushnuté obrazovky, nech SessionHandler
+          // ukáže prihlásenie.
+          try {
+            await Supabase.instance.client.auth.signOut();
+          } catch (_) {
+            try {
+              await Supabase.instance.client.auth.signOut(
+                scope: SignOutScope.local,
+              );
+            } catch (_) {}
+          }
+          if (context.mounted) {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          }
         }
       } else {
         onTap(result);

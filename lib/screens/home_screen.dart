@@ -53,7 +53,10 @@ import 'news_list_screen.dart';
 import 'newsletter_list_screen.dart';
 import 'notes_list_screen.dart';
 import 'notifications_screen.dart';
+import 'auth_screen.dart';
 import 'profile_screen.dart';
+import 'confession_gate_screen.dart';
+import 'novenas_screen.dart';
 import 'prayers_screen.dart';
 import 'rosary_screen.dart';
 import 'settings_screen.dart';
@@ -919,6 +922,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 () => _push(const PrayersScreen(), '/prayers'),
               ),
               tile(
+                Icons.local_fire_department_rounded,
+                'novena.title',
+                () => _push(const NovenasScreen(), '/novenas'),
+              ),
+              tile(
+                Icons.favorite_border_rounded,
+                'confession.title',
+                () => _push(const ConfessionGateScreen(), '/confession'),
+              ),
+              tile(
                 Icons.auto_stories_rounded,
                 'rosary_title',
                 () => _push(const RosaryScreen(), '/rosary'),
@@ -1015,8 +1028,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     avatarUrl: _avatarUrl,
                     supportTier: _supportTier,
                     floatingBadge: _isOffline ? null : _buildHeroBadge(),
-                    onProfileTap: () =>
-                        _push(const ProfileScreen(), '/profile'),
+                    onProfileTap: () {
+                      // Bez session nemá profil zmysel — rovno na prihlásenie
+                      // (kryje aj zaseknutý stav po zlyhanom odhlásení).
+                      if (Supabase.instance.client.auth.currentSession ==
+                          null) {
+                        _push(const AuthScreen(), '/auth');
+                      } else {
+                        _push(const ProfileScreen(), '/profile');
+                      }
+                    },
                     onNotificationsTap: () =>
                         _push(const NotificationsScreen(), '/notifications'),
                     wrapProfile: (child) => _coachMark(

@@ -967,7 +967,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> signOut() async {
-    await supabase.auth.signOut();
+    // Globálny sign-out robí network volanie (revokácia refresh tokenu) a pri
+    // OAuth session (napr. Apple) môže zlyhať → bez catch by sa preskočila
+    // navigácia a UI ostalo v „prihlásenom" stave. Fallback: lokálny sign-out
+    // (session na zariadení vyčistí vždy).
+    try {
+      await supabase.auth.signOut();
+    } catch (_) {
+      try {
+        await supabase.auth.signOut(scope: SignOutScope.local);
+      } catch (_) {}
+    }
     if (mounted) {
       Navigator.popUntil(context, (route) => route.isFirst);
     }
