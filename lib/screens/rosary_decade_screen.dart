@@ -2,7 +2,6 @@
 
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_html/flutter_html.dart';
@@ -12,6 +11,7 @@ import '../services/rosary_service.dart';
 import '../services/umami_analytics_service.dart';
 import '../shared/app_colors.dart';
 import '../shared/rosary_constants.dart';
+import '../widgets/collapsible_hero_app_bar.dart';
 import '../widgets/audio/universal_audio_player.dart';
 import '../widgets/audio/audio_player_models.dart';
 import '../shared/app_spacing.dart';
@@ -427,139 +427,18 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
     RosaryCategoryInfo categoryInfo,
     Color categoryColor,
   ) {
-    final theme = Theme.of(context);
-    final isTablet = MediaQuery.of(context).size.width >= 600;
-    return SliverAppBar(
-      expandedHeight: isTablet ? 450.0 : 300.0,
-      floating: false,
-      pinned: true,
-      backgroundColor: categoryColor,
-      foregroundColor: Colors.white,
-      title: Text(
-        _decade!.title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (_decade!.hasImage)
-              CachedNetworkImage(
-                imageUrl: _decade!.illustrationImage!,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(color: categoryColor),
-                errorWidget: (context, url, error) =>
-                    Container(color: categoryColor),
-              )
-            else
-              Container(color: categoryColor),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    categoryColor.withValues(alpha: 0.5),
-                    categoryColor.withValues(alpha: 0.85),
-                  ],
-                ),
-              ),
-            ),
-            SafeArea(
-              child: Padding(
-                padding: EdgeInsets.all(
-                  isTablet ? AppSpacing.xxl * 1.5 : AppSpacing.xxl,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(
-                        isTablet ? AppSpacing.xl : AppSpacing.lg,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(AppRadius.xl),
-                      ),
-                      child: Icon(
-                        categoryInfo.icon,
-                        size: isTablet ? 64 : 48,
-                        color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(height: isTablet ? AppSpacing.xl : AppSpacing.lg),
-                    Text(
-                      _decade!.title,
-                      style: HomeV2.serifTitle(
-                        context,
-                        size: isTablet ? 34 : 26,
-                        color: Colors.white,
-                        height: 1.15,
-                      ).copyWith(
-                        shadows: const [
-                          Shadow(color: Colors.black54, blurRadius: 10),
-                        ],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: isTablet ? AppSpacing.md : AppSpacing.sm),
-                    Text(
-                      '${categoryInfo.name} · ${widget.decadeOrder}/5',
-                      style:
-                          (isTablet
-                                  ? theme.textTheme.headlineMedium
-                                  : theme.textTheme.titleMedium)
-                              ?.copyWith(
-                                color: Colors.white70,
-                                fontWeight: FontWeight.w500,
-                              ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+    // Jednotný zbaliteľný hero (vzor krížové cesty) — CollapsibleHeroAppBar.
+    return CollapsibleHeroAppBar(
+      collapsedTitle: _decade!.title,
+      imageUrl: _decade!.hasImage ? _decade!.illustrationImage : null,
+      accentColor: categoryColor,
+      expandedContent: HeroCenteredContent(
+        title: _decade!.title,
+        subtitle: _decade!.author,
+        icon: categoryInfo.icon,
       ),
     );
   }
-
-  // TODO: záložka a zdieľať - zatiaľ zakomentované
-  // Widget _buildActionButtons(ThemeData theme, Color categoryColor) {
-  //   return Row(
-  //     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-  //     children: [
-  //       OutlinedButton.icon(
-  //         onPressed: _handleBookmark,
-  //         icon: Icon(
-  //           _isBookmarked
-  //               ? Icons.bookmark_rounded
-  //               : Icons.bookmark_border_rounded,
-  //         ),
-  //         label: Text(tr('bookmark')),
-  //         style: OutlinedButton.styleFrom(
-  //           foregroundColor: categoryColor,
-  //           side: BorderSide(color: categoryColor),
-  //         ),
-  //       ),
-  //       OutlinedButton.icon(
-  //         onPressed: _handleShare,
-  //         icon: const Icon(Icons.share_rounded),
-  //         label: Text(tr('share')),
-  //         style: OutlinedButton.styleFrom(
-  //           foregroundColor: categoryColor,
-  //           side: BorderSide(color: categoryColor),
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
 
   Widget _buildBiblicalText(ThemeData theme, Color categoryColor) {
     final theme = Theme.of(context);

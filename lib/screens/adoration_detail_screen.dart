@@ -3,7 +3,6 @@
 import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_html/flutter_html.dart';
@@ -16,6 +15,7 @@ import '../shared/app_colors.dart';
 import '../shared/audio_constants.dart';
 import '../shared/app_spacing.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
+import '../widgets/collapsible_hero_app_bar.dart';
 import '../widgets/lectio_floating_audio_player.dart';
 import '../shared/audio_player_factory.dart';
 
@@ -742,121 +742,14 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
   }
 
   Widget _buildAppBar(ThemeData theme) {
-    final theme = Theme.of(context);
-    return SliverAppBar(
-      expandedHeight: MediaQuery.of(context).size.width >= 600 ? 450.0 : 300.0,
-      floating: false,
-      pinned: true,
-      backgroundColor: AppColors.primary,
-      foregroundColor: Colors.white,
-      title: Text(
-        _adoration!.title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (_adoration!.hasImage)
-              CachedNetworkImage(
-                imageUrl: _adoration!.illustrationImage!,
-                fit: BoxFit.cover,
-                placeholder: (context, url) =>
-                    Container(color: AppColors.primary),
-                errorWidget: (context, url, error) =>
-                    Container(color: AppColors.primary),
-              )
-            else
-              Container(color: AppColors.primary),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.primary.withValues(alpha: 0.5),
-                    AppColors.primary.withValues(alpha: 0.85),
-                  ],
-                ),
-              ),
-            ),
-            SafeArea(
-              child: Padding(
-                padding: EdgeInsets.all(
-                  MediaQuery.of(context).size.width >= 600
-                      ? AppSpacing.xxl * 1.5
-                      : AppSpacing.xxl,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(
-                        MediaQuery.of(context).size.width >= 600
-                            ? AppSpacing.xl
-                            : AppSpacing.lg,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(AppRadius.xl),
-                      ),
-                      child: Icon(
-                        Icons.favorite_rounded,
-                        size: MediaQuery.of(context).size.width >= 600
-                            ? 64
-                            : 48,
-                        color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(
-                      height: MediaQuery.of(context).size.width >= 600
-                          ? AppSpacing.xl
-                          : AppSpacing.lg,
-                    ),
-                    Text(
-                      _adoration!.title,
-                      style: HomeV2.serifTitle(
-                        context,
-                        size: MediaQuery.of(context).size.width >= 600 ? 34 : 26,
-                        color: Colors.white,
-                        height: 1.15,
-                      ).copyWith(
-                        shadows: const [
-                          Shadow(color: Colors.black54, blurRadius: 10),
-                        ],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    if (_adoration!.author?.isNotEmpty == true) ...[
-                      SizedBox(
-                        height: MediaQuery.of(context).size.width >= 600
-                            ? AppSpacing.md
-                            : AppSpacing.sm,
-                      ),
-                      Text(
-                        _adoration!.author!,
-                        style:
-                            (MediaQuery.of(context).size.width >= 600
-                                    ? theme.textTheme.headlineMedium
-                                    : theme.textTheme.titleMedium)
-                                ?.copyWith(
-                                  color: Colors.white70,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+    // Jednotný zbaliteľný hero (vzor krížové cesty) — CollapsibleHeroAppBar.
+    return CollapsibleHeroAppBar(
+      collapsedTitle: _adoration!.title,
+      imageUrl: _adoration!.hasImage ? _adoration!.illustrationImage : null,
+      expandedContent: HeroCenteredContent(
+        title: _adoration!.title,
+        subtitle: _adoration!.author,
+        icon: Icons.favorite_rounded,
       ),
     );
   }

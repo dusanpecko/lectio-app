@@ -3,7 +3,6 @@
 import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_html/flutter_html.dart';
@@ -15,6 +14,7 @@ import '../services/umami_analytics_service.dart';
 import '../shared/app_colors.dart';
 import '../shared/app_spacing.dart';
 import '../shared/audio_constants.dart';
+import '../widgets/collapsible_hero_app_bar.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
 import '../widgets/lectio_floating_audio_player.dart';
 import '../shared/audio_player_factory.dart';
@@ -720,30 +720,11 @@ class _StationPageView extends StatefulWidget {
 
 class _StationPageViewState extends State<_StationPageView> {
   final ScrollController _scrollController = ScrollController();
-  bool _isCollapsed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    final isTablet = MediaQuery.of(context).size.width >= 600;
-    final expandedHeight = isTablet ? 450.0 : 300.0;
-    final collapsed =
-        _scrollController.hasClients &&
-        _scrollController.offset > expandedHeight - kToolbarHeight;
-    if (collapsed != _isCollapsed) {
-      setState(() => _isCollapsed = collapsed);
-    }
   }
 
   Widget _buildDotIndicators(ThemeData theme, int count) {
@@ -820,29 +801,11 @@ class _StationPageViewState extends State<_StationPageView> {
     return CustomScrollView(
       controller: _scrollController,
       slivers: [
-        SliverAppBar(
-          expandedHeight: isTablet ? 450.0 : 300.0,
-          pinned: true,
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          automaticallyImplyLeading: false,
-          title: AnimatedOpacity(
-            opacity: _isCollapsed ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 200),
-            child: Text(
-              stationLabel,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          leading: IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-          ),
+        // Jednotný zbaliteľný hero (zdieľaný s adoráciami/ružencom/deviatnikmi).
+        CollapsibleHeroAppBar(
+          collapsedTitle: stationLabel,
+          imageUrl: heroImage,
+          fallbackAsset: heroImage == null ? heroFallbackAsset : null,
           actions: [
             if (station.isStation)
               Padding(
@@ -859,58 +822,34 @@ class _StationPageViewState extends State<_StationPageView> {
                 ),
               ),
           ],
-          flexibleSpace: FlexibleSpaceBar(
-            background: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (heroImage != null)
-                  CachedNetworkImage(
-                    imageUrl: heroImage,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) =>
-                        Container(color: AppColors.primary),
-                    errorWidget: (context, url, error) =>
-                        Container(color: AppColors.primary),
-                  )
-                else
-                  Image.asset(heroFallbackAsset, fit: BoxFit.cover),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        AppColors.primary.withValues(alpha: 0.4),
-                        AppColors.primary.withValues(alpha: 0.8),
-                      ],
-                    ),
-                  ),
-                ),
-                if (station.isIntro)
-                  Positioned(
-                    left: AppSpacing.xxl,
-                    right: AppSpacing.xxl,
-                    bottom: AppSpacing.lg,
-                    child: Text(
-                      widget.data.title,
-                      style: HomeV2.serifTitle(
-                        context,
-                        size: isTablet ? 32 : 24,
-                        color: Colors.white,
-                        height: 1.15,
-                      ).copyWith(
-                        shadows: const [
-                          Shadow(color: Colors.black54, blurRadius: 10),
-                        ],
+          expandedContent: station.isIntro
+              ? Stack(
+                  children: [
+                    Positioned(
+                      left: AppSpacing.xxl,
+                      right: AppSpacing.xxl,
+                      bottom: AppSpacing.lg,
+                      child: Text(
+                        widget.data.title,
+                        style:
+                            HomeV2.serifTitle(
+                              context,
+                              size: isTablet ? 32 : 24,
+                              color: Colors.white,
+                              height: 1.15,
+                            ).copyWith(
+                              shadows: const [
+                                Shadow(color: Colors.black54, blurRadius: 10),
+                              ],
+                            ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-              ],
-            ),
-          ),
+                  ],
+                )
+              : null,
         ),
         if (widget.data.stations.length > 1)
           SliverToBoxAdapter(
