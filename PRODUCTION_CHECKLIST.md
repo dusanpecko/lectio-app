@@ -31,7 +31,7 @@
 - [x] `flutter analyze` = 0 errors (celý projekt) — overené 2.7.2026 (len 3 info deprecations)
 - [x] Verzia / build number navýšený — `11.0.0+6000001` (éra 6 = Flutter v11; 5.7.2026)
 - [x] Release build — Android AAB zbuildený (5.7.2026); iOS archív cez Xcode Cloud (auto pri pushi na main)
-- [ ] App ikony + splash OK
+- [x] App ikony + splash OK
 
 **Konfigurácia / prepínače**
 - [x] **Podporovateľská zľava** — master `enabled` flag je default OFF; **zapnúť po teste**.
@@ -44,8 +44,12 @@
 # 🗺️ Roadmap (ďalšie verzie)
 
 ### v11.1+ — august 2026
-- [ ] **Základné modlitby — doplniť Novénu** — pridať do sekcie modlitieb (multijazyčne, aj s audiom ako ostatné modlitby).
-- [ ] **Spytovanie svedomia** — pridať do sekcie modlitieb (multijazyčne, aj s audiom).
+- [x] **Deviatniky (Novény)** ✅ 11.7.2026 — kompletná funkcia, otestovaná E2E: DB (`novenas` + `novena_days` + kategórie, RLS), admin `/admin/novenas` (jazykové záložky, rich text, dni, TTS per úvod/deň/záver, ilustračný obrázok — zdieľaný jazykmi), mobil (menu Deviatniky, zoznam s progresom a náhľadmi, kalendárny progres od štartu — lokálny, denné pripomienky, slidy úvod/deň/záver, copy, jazykové čipy, obrázkový hero). + **jednotný zbaliteľný hero** (`CollapsibleHeroAppBar` — vzor krížové cesty) nasadený na KC + adorácie + ruženec + deviatniky. _Obsah deviatnikov = editorská práca v admine (texty + TTS + obrázky)._
+- [x] **Spytovanie svedomia (spovedné zrkadlo)** ✅ 11.7.2026 — kompletná funkcia, otestovaná E2E (stratégia: `backend/docs/SPOVEDNE_ZRKADLO_STRATEGIA.md`). Backend: DB (mirrors+sections+questions, RLS) + admin `/admin/confession-mirrors` (jazykové záložky, sekcie s otázkami, sprievodca spoveďou, hero obrázok). Mobil: PIN brána (PBKDF2+AES-256-GCM, biometria, this-device-only, mimo záloh), checklist otázok + šifrované poznámky per sekcia, sprievodca (priebeh/zvolanie/ľútosť), info sheet „Ochrana tvojej prípravy" + disclaimer (nenahrádza sviatosť), „Vyspovedal som sa" reset s Amen popupom, FLAG_SECURE + privacy cover pri pozadí, ŽIADNA analytika. Podpora viacerých zrkadiel (dospelí/deti/manželia) s výberom. _Obsah = editorská práca v admine._
+- [ ] **E-shop — platba na dobierku** — dnes máme len Mollie (karta); doplniť dobierku ako platobnú metódu (checkout voľba, poštovné/príplatok za dobierku, objednávka bez online platby → stav `pending_cod`, fulfillment manuálne, faktúra pri odoslaní).
+- [ ] **E-shop — objednávka pre firmy** — fakturačné údaje firmy v checkoute (IČO, DIČ, IČ DPH, názov firmy) + prenesenie na faktúru/dobropis.
+- [ ] **O aplikácii — Sponzori** — pridať sekciu sponzorov/podporovateľov do obrazovky O aplikácii (`about_screen`).
+- [ ] **Home — featured slidy pre duchovný obsah** — do featured carouselu (kde sú Potulky a Kurz) pridať slidy: Krížová cesta, Základné modlitby, Novény, Spytovanie svedomia — vstupné body na duchovný obsah priamo z home.
 - [x] **Úmysly — notifikačný schvaľovací flow** ✅ 7.7.2026 — používateľ pošle úmysel → admin dostane push (`notify-admin`, INSERT webhook) → po schválení (`approved=true`) dostane odosielateľ lokalizovaný push „Váš úmysel bol schválený a zaradený medzi modlitby" (`notify-approved`, UPDATE webhook, podľa `intentions.lang`). Informačná notifikácia — otvára hlavnú stránku, bez deep-linku. _Pozn.: Supabase webhook URL musí byť `www.lectio.one` (apex 301-redirect pg_net nenasleduje)._
 - [x] **Audio disk cache (`LockCachingAudioSource`)** ✅ 7.7.2026 — stream sa cachuje na disk (Caches/, OS-evictable) na 6 streamovacích miestach (lectio player track+interlude, MediaPlayerBus, modlitby, universal, adorácie, krížové cesty); offline súbory ostávajú `AudioSource.file`. + home seek bar (`daily_podcast_card._ProgressBar`) prerobený: drag-state + seek raz na `onChangeEnd` + spinner počas bufferovania (namiesto seeku pri každom pixeli). Seek do vypočutej časti a opakované prehratie sú okamžité. Overené iOS + Pixel. _Správu miesta cache zatiaľ rieši OS; limit/čistenie doplniť ak bude treba._
 - [ ] ⏸️ **Android — media notifikácia po zatvorení appky (8/9)** _(on-hold, opraviť len ak sa ozvú používatelia)_ — overené 7.7.2026: pôvodná položka sa týkala starého audio stacku; `BackgroundAudioManager` je dnes len kompat. obálka nad `LectioAudioPlayer` (mixin + controller + `mini_audio_player` = mŕtvy kód, kandidát na zmazanie pri v11.2 refactoringu). Správanie dnes riadi `just_audio_background` — kandidátsky fix je jednoriadkový: `androidStopForegroundOnPause: true` v `main.dart` (štandard ako Spotify: pauza → notifikácia zmietnuteľná, zatvorenie appky → player zmizne). Nemenené bez spätnej väzby — mení správanie na všetkých Androidoch.
