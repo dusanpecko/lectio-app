@@ -1,13 +1,21 @@
 import 'dart:async';
+import '../services/audio_exclusive.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_html/flutter_html.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../models/confession_mirror.dart';
+import '../shared/audio_player_factory.dart';
 import '../services/confession_vault_service.dart';
+import '../utils/app_logger.dart';
 import '../shared/app_spacing.dart';
+import '../widgets/audio/audio_progress_bar.dart';
 import '../widgets/collapsible_hero_app_bar.dart';
 import '../widgets/confession_privacy_sheet.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
@@ -61,6 +69,75 @@ class _ConfessionScreenState extends State<ConfessionScreen>
   /// Zvolené zrkadlo (base kód). `null` = zobrazuje sa výber (ak ich je viac).
   String? _selectedBase;
 
+  /// Lokálny prehrávač TTS audia zrkadla — ZÁMERNE bez [MediaPlayerBus]:
+  /// zbernica posiela audio_heartbeat analytiku a vytvára systémovú media
+  /// notifikáciu (viditeľnú na zamknutej obrazovke) — oboje tu nechceme.
+  final AudioPlayer _audio = createAppAudioPlayer();
+  String? _audioLoadedUrl;
+
+  /// Posledná pozícia audia (sekundy) — ukladá sa do ŠIFROVANÉHO trezoru
+  /// spolu s odpoveďami, takže spytovanie môže pokračovať tam, kde skončilo
+  /// (ráno jedna sekcia, poobede ďalšia) a mimo trezoru neostane žiadna stopa.
+  int _audioPosSec = 0;
+
+  /// Aktuálna pozícia na uloženie — živá z playera, ak hrá toto zrkadlo.
+  int get _currentAudioPosSec {
+    if (_audioLoadedUrl == _mirror.audioUrl) {
+      final pos = _audio.position.inSeconds;
+      if (pos > 0) return pos;
+      // completed → position môže byť 0/­koniec; ponechaj uložený stav
+    }
+    return _audioPosSec;
+  }
+
+  Future<void> _toggleAudio() async {
+    final url = _mirror.audioUrl;
+    if (url == null) return;
+    final player = _audio;
+    try {
+      // Výhradný slot natívneho playera (just_audio_background = 1 naraz).
+      await AudioExclusive.acquire(player);
+      if (_audioLoadedUrl != url) {
+        // just_audio_background vyžaduje MediaItem tag na KAŽDOM zdroji —
+        // bez neho setAudioSource vyhodí výnimku a nič nehrá. Titulok je
+        // zámerne generický: na zamknutej obrazovke neprezradí, čo hrá.
+        await player.setAudioSource(
+          AudioSource.uri(
+            Uri.parse(url),
+            tag: MediaItem(id: 'confession_${_mirror.id}', title: 'Lectio Divina'),
+          ),
+        );
+        if (mounted) setState(() => _audioLoadedUrl = url);
+        // Pokračuj tam, kde používateľ naposledy skončil.
+        if (_audioPosSec > 5) {
+          await player.seek(Duration(seconds: _audioPosSec));
+        }
+      }
+      if (player.playing) {
+        _audioPosSec = player.position.inSeconds;
+        await player.pause();
+        _saveAnswersNow();
+      } else {
+        if (player.processingState == ProcessingState.completed) {
+          _audioPosSec = 0;
+          await player.seek(Duration.zero);
+        }
+        await player.play();
+      }
+    } catch (e) {
+      // Len lokálny log (žiadna analytika) — nech chyba nie je neviditeľná.
+      appLogger.e('Spytovanie: audio sa nepodarilo prehrať', error: e);
+    }
+  }
+
+  void _stopAudio() {
+    if (_audioLoadedUrl != null) {
+      final pos = _audio.position.inSeconds;
+      if (pos > 0) _audioPosSec = pos;
+    }
+    _audio.stop();
+  }
+
   ConfessionMirror get _mirror => _variants[_variantIndex];
 
   @override
@@ -68,6 +145,23 @@ class _ConfessionScreenState extends State<ConfessionScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _pageController = PageController();
+
+    // Nezhasínať obrazovku počas spytovania — rovnaké nastavenie ako Lectio
+    // (Nastavenia → „Nezhasínať obrazovku", default zapnuté). Krátky snackbar
+    // pripomenie, že obrazovka svieti, nech na to používateľ nezabudne.
+    SharedPreferences.getInstance().then((prefs) {
+      if (prefs.getBool('keep_screen_on') ?? true) {
+        WakelockPlus.enable();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('confession.awake_note'.tr()),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    });
 
     final locale = 'sk'; // prepíše sa v didChangeDependencies (context.locale)
     _byBase = {};
@@ -113,6 +207,7 @@ class _ConfessionScreenState extends State<ConfessionScreen>
   }
 
   Future<void> _backToPicker() async {
+    _stopAudio();
     await _saveAnswersNow();
     setState(() => _selectedBase = null);
   }
@@ -143,6 +238,9 @@ class _ConfessionScreenState extends State<ConfessionScreen>
       c.dispose();
     }
     _pageController.dispose();
+    AudioExclusive.release(_audio);
+    _audio.dispose();
+    WakelockPlus.disable();
     // Zamkni a vypni ochranu obrazovky pri odchode.
     _vault.lock();
     ConfessionVaultService.setSecureScreen(false);
@@ -156,10 +254,13 @@ class _ConfessionScreenState extends State<ConfessionScreen>
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.inactive && mounted) {
       // Prekry obsah SKÔR, než si systém spraví snapshot okna.
+      _audio.pause();
       setState(() => _obscured = true);
     } else if (state == AppLifecycleState.paused && _vault.isUnlocked) {
-      _saveAnswersNow();
-      _vault.lock();
+      _stopAudio();
+      // Zamkni až PO dokončení zápisu — lock počas neawaitovaného save
+      // hádzal "Bad state: Vault locked".
+      _saveAnswersNow().whenComplete(_vault.lock);
       if (mounted) Navigator.of(context).pop();
     } else if (state == AppLifecycleState.resumed && mounted) {
       // Len prechodné inactive (ovládacie centrum, hovor…) — odkry.
@@ -182,6 +283,7 @@ class _ConfessionScreenState extends State<ConfessionScreen>
       _notes = ((entry?['notes'] as Map?) ?? {}).map(
         (k, v) => MapEntry(k.toString(), v.toString()),
       );
+      _audioPosSec = (entry?['audio_pos'] as num?)?.toInt() ?? 0;
       // Zosynchronizuj controllery poznámok
       for (final s in _mirror.sections) {
         _noteCtrls
@@ -194,12 +296,18 @@ class _ConfessionScreenState extends State<ConfessionScreen>
 
   Future<void> _saveAnswersNow() async {
     if (!_vault.isUnlocked) return;
-    final data = await _vault.loadData();
-    data[_mirror.id] = {
-      'checked': _checked.toList()..sort(),
-      'notes': _notes,
-    };
-    await _vault.saveData(data);
+    try {
+      final data = await _vault.loadData();
+      data[_mirror.id] = {
+        'checked': _checked.toList()..sort(),
+        'notes': _notes,
+        'audio_pos': _currentAudioPosSec,
+      };
+      await _vault.saveData(data);
+    } on StateError {
+      // Trezor sa počas zápisu zamkol (odchod do pozadia) — bez pádu;
+      // odpovede sa uložia pri najbližšej zmene po odomknutí.
+    }
   }
 
   void _toggleQuestion(String questionId) {
@@ -403,18 +511,30 @@ class _ConfessionScreenState extends State<ConfessionScreen>
                 : Column(
                     children: [
                       Expanded(
-                        child: PageView.builder(
-                          controller: _pageController,
-                          itemCount: _slideCount,
-                          onPageChanged: (i) => setState(() => _slideIndex = i),
-                          itemBuilder: (_, i) => CustomScrollView(
-                            slivers: [
-                              _heroSliver(),
-                              SliverToBoxAdapter(child: _buildSlideBody(i)),
-                            ],
+                        // Ťuknutie mimo textového poľa zavrie klávesnicu
+                        // (translucent — nekradne tapy checkboxom/tlačidlám).
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onTap: () =>
+                              FocusManager.instance.primaryFocus?.unfocus(),
+                          child: PageView.builder(
+                            controller: _pageController,
+                            itemCount: _slideCount,
+                            onPageChanged: (i) =>
+                                setState(() => _slideIndex = i),
+                            itemBuilder: (_, i) => CustomScrollView(
+                              // Potiahnutie pri scrolle tiež zavrie klávesnicu.
+                              keyboardDismissBehavior:
+                                  ScrollViewKeyboardDismissBehavior.onDrag,
+                              slivers: [
+                                _heroSliver(),
+                                SliverToBoxAdapter(child: _buildSlideBody(i)),
+                              ],
+                            ),
                           ),
                         ),
                       ),
+                      if (_audioLoadedUrl != null) _buildAudioBar(),
                       _buildSlideNav(),
                     ],
                   ),
@@ -564,6 +684,24 @@ class _ConfessionScreenState extends State<ConfessionScreen>
             onPressed: _backToPicker,
             icon: const Icon(Icons.swap_horiz_rounded, color: Colors.white),
           ),
+        if (_mirror.audioUrl != null)
+          StreamBuilder<PlayerState>(
+            stream: _audio.playerStateStream,
+            builder: (_, snap) {
+              final playing = snap.data?.playing ?? false;
+              final done =
+                  snap.data?.processingState == ProcessingState.completed;
+              return IconButton(
+                onPressed: _toggleAudio,
+                icon: Icon(
+                  playing && !done
+                      ? Icons.pause_circle_rounded
+                      : Icons.play_circle_rounded,
+                  color: Colors.white,
+                ),
+              );
+            },
+          ),
         IconButton(
           onPressed: () => showConfessionPrivacySheet(context),
           icon: const Icon(Icons.shield_rounded, color: Colors.white),
@@ -641,6 +779,13 @@ class _ConfessionScreenState extends State<ConfessionScreen>
     ];
   }
 
+  /// Riadok začínajúci `#` nie je otázka, ale popisný text (návod k otázkam
+  /// pod ním) — vykreslí sa bez checkboxu, kurzívou v primárnej farbe.
+  static bool _isDescription(String text) => text.trimLeft().startsWith('#');
+
+  static String _descriptionText(String text) =>
+      text.trimLeft().replaceFirst(RegExp(r'^#+\s*'), '');
+
   List<Widget> _sectionChildren(ConfessionSection s) {
     return [
       Text(
@@ -649,6 +794,24 @@ class _ConfessionScreenState extends State<ConfessionScreen>
       ),
       const SizedBox(height: AppSpacing.md),
       for (final q in s.questions)
+        if (_isDescription(q.text))
+          Padding(
+            padding: const EdgeInsets.only(
+              top: AppSpacing.sm,
+              bottom: AppSpacing.sm,
+            ),
+            child: Text(
+              _descriptionText(q.text),
+              style: TextStyle(
+                fontSize: 15.5,
+                height: 1.5,
+                fontStyle: FontStyle.italic,
+                fontWeight: FontWeight.w600,
+                color: HomeV2.iconAccent(context),
+              ),
+            ),
+          )
+        else
         Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.xs),
           child: InkWell(
@@ -824,6 +987,7 @@ class _ConfessionScreenState extends State<ConfessionScreen>
             final active = i == _variantIndex;
             return GestureDetector(
               onTap: () async {
+                _stopAudio();
                 await _saveAnswersNow();
                 setState(() {
                   _variantIndex = i;
@@ -853,6 +1017,53 @@ class _ConfessionScreenState extends State<ConfessionScreen>
             );
           },
         ),
+      ),
+    );
+  }
+
+  /// Audio lišta ako pri modlitbách: play/pauza + posuvná časová os,
+  /// aby sa dalo pokračovať od ľubovoľného miesta (sekcia ráno, ďalšia večer).
+  Widget _buildAudioBar() {
+    // Bez vlastného pozadia — splýva so scaffoldom ako spodná navigácia.
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.xs,
+        AppSpacing.lg,
+        AppSpacing.xs,
+      ),
+      child: Row(
+        children: [
+          StreamBuilder<PlayerState>(
+            stream: _audio.playerStateStream,
+            builder: (_, snap) {
+              final playing = snap.data?.playing ?? false;
+              final done =
+                  snap.data?.processingState == ProcessingState.completed;
+              return IconButton(
+                onPressed: _toggleAudio,
+                icon: Icon(
+                  playing && !done
+                      ? Icons.pause_circle_rounded
+                      : Icons.play_circle_rounded,
+                  size: 34,
+                  color: HomeV2.primary,
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: AudioProgressBar(
+              audioPlayer: _audio,
+              accentColor: HomeV2.primary,
+              onSeek: (pos) {
+                _audioPosSec = pos.inSeconds;
+                _audio.seek(pos);
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

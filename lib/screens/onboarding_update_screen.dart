@@ -19,8 +19,19 @@ class OnboardingUpdateScreen extends StatefulWidget {
 }
 
 class _OnboardingUpdateScreenState extends State<OnboardingUpdateScreen> {
-  // Novinky tejto verzie (parametrický zoznam — pri ďalšom update uprav).
-  static const _features = [
+  // Novinky AKTUÁLNEJ verzie (v11.1) — pri ďalšom update uprav (staré presuň
+  // pod oddeľovač do [_featuresPrev], alebo ich vymeň úplne).
+  static const _featuresNew = [
+    (icon: Icons.local_fire_department_rounded, key: 'novenas'),
+    (icon: Icons.favorite_border_rounded, key: 'confession'),
+    (icon: Icons.church_rounded, key: 'devotions_home'),
+    (icon: Icons.notifications_active_rounded, key: 'intentions'),
+    (icon: Icons.bolt_rounded, key: 'audio'),
+    (icon: Icons.local_shipping_rounded, key: 'cod'),
+  ];
+
+  // Novinky predchádzajúcej verzie (v11.0) — pod oddeľovačom.
+  static const _featuresPrev = [
     (icon: Icons.palette_rounded, key: 'redesign'),
     (icon: Icons.translate_rounded, key: 'languages'),
     (icon: Icons.auto_stories_rounded, key: 'lectio'),
@@ -32,6 +43,11 @@ class _OnboardingUpdateScreenState extends State<OnboardingUpdateScreen> {
     (icon: Icons.shopping_bag_rounded, key: 'eshop'),
     (icon: Icons.system_update_rounded, key: 'updates'),
   ];
+
+  /// E-shopové karty sú len pre SK mutáciu (e-shop zatiaľ len SK; keď pribudne
+  /// CZ mutácia appky, rozšír podmienku o 'cs').
+  bool _showFeature(String key) =>
+      !{'eshop', 'cod'}.contains(key) || context.locale.languageCode == 'sk';
 
   @override
   Widget build(BuildContext context) {
@@ -98,14 +114,23 @@ class _OnboardingUpdateScreenState extends State<OnboardingUpdateScreen> {
                           ),
                           const SizedBox(height: AppSpacing.xl),
 
-                          // Novinky. E-shop je len pre SK → kartu ukáž iba
-                          // v slovenskej jazykovej mutácii. (Keď pribudne CZ
-                          // mutácia appky, rozšír podmienku o 'cs'.)
-                          ..._features
-                              .where((f) =>
-                                  f.key != 'eshop' ||
-                                  context.locale.languageCode == 'sk')
-                              .map(
+                          // Novinky aktuálnej verzie (v11.1)
+                          ..._featuresNew.where((f) => _showFeature(f.key)).map(
+                                (f) => _FeatureCard(
+                                  icon: f.icon,
+                                  title: tr(
+                                      'onboarding_update.feat_${f.key}_title'),
+                                  description: tr(
+                                      'onboarding_update.feat_${f.key}_desc'),
+                                ),
+                              ),
+
+                          // Oddeľovač — novinky predchádzajúcej verzie
+                          _SectionDivider(
+                            label: tr('onboarding_update.prev_section'),
+                          ),
+
+                          ..._featuresPrev.where((f) => _showFeature(f.key)).map(
                                 (f) => _FeatureCard(
                                   icon: f.icon,
                                   title: tr(
@@ -159,6 +184,43 @@ class _OnboardingUpdateScreenState extends State<OnboardingUpdateScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Oddeľovač sekcie „predchádzajúca verzia" — čiara s textom v strede.
+class _SectionDivider extends StatelessWidget {
+  final String label;
+  const _SectionDivider({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final line = Expanded(
+      child: Divider(
+        height: 1,
+        color: HomeV2.textMuted(context).withValues(alpha: 0.3),
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+      child: Row(
+        children: [
+          line,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+                color: HomeV2.textMuted(context),
+              ),
+            ),
+          ),
+          line,
+        ],
       ),
     );
   }

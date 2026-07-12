@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'audio_exclusive.dart';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
@@ -231,6 +232,7 @@ class LectioAudioPlayer extends ChangeNotifier {
       }
       // V offline mode nepreloaduj - preload môže skúsiť sťahovať artwork/metadata
       final shouldPreload = ConnectivityService.instance.isOnline;
+      await AudioExclusive.acquire(_player);
       await _player.setAudioSources(sources, preload: shouldPreload);
       appLogger.d(
         '🎵 ✅ Interleaved audio sources set successfully (preload=$shouldPreload)',
@@ -432,6 +434,7 @@ class LectioAudioPlayer extends ChangeNotifier {
         return;
       }
 
+      await AudioExclusive.acquire(_player);
       await _player.seek(Duration.zero, index: nativeIndex);
       if (!_player.playing) {
         _player.play();
@@ -459,6 +462,7 @@ class LectioAudioPlayer extends ChangeNotifier {
       if (_currentTrackIndex < 0 && _playlist.isNotEmpty) {
         await playTrackByIndex(0);
       } else {
+        await AudioExclusive.acquire(_player);
         await _player.play();
       }
     } catch (e) {

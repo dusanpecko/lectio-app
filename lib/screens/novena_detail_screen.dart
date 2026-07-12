@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../services/audio_exclusive.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -86,6 +87,7 @@ class _NovenaDetailScreenState extends State<NovenaDetailScreen> {
   @override
   void dispose() {
     _playerSub?.cancel();
+    AudioExclusive.release(_player);
     _player.dispose();
     _pageController.dispose();
     super.dispose();
@@ -287,6 +289,8 @@ class _NovenaDetailScreenState extends State<NovenaDetailScreen> {
   Future<void> _toggleAudio(String url) async {
     HapticFeedback.lightImpact();
     try {
+      // Výhradný slot natívneho playera (just_audio_background = 1 naraz).
+      await AudioExclusive.acquire(_player);
       if (_loadedUrl != url) {
         setState(() => _audioLoading = true);
         await _player.stop();

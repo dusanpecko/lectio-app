@@ -199,7 +199,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  /// Featured carousel: odporúčané cvičenie + projekty Slovo bez hraníc.
+  /// Featured carousel: odporúčané cvičenie + projekty Slovo bez hraníc
+  /// + vstupné body na duchovný obsah (pobožnosti).
   Widget _buildFeaturedCarousel() {
     final mq = MediaQuery.of(context);
     // Na tablete vyššia karta (telefón 180); v landscape ešte vyššia, inak je
@@ -236,6 +237,60 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         title: tr('projects.kurz.hero_title'),
         subtitle: tr('projects.kurz.hero_badge'),
         onTap: () => _push(const KurzLectioScreen(), '/kurz-lectio'),
+      ),
+      FeaturedProjectCard(
+        imageAsset: 'assets/images/station_cross_backround.webp',
+        height: cardH,
+        icon: Icons.church_rounded,
+        badge: tr('devotions'),
+        title: tr('stations_of_cross_title'),
+        subtitle: tr('stations_of_cross_subtitle'),
+        onTap: () => _push(const StationsOfCrossScreen(), '/stations'),
+      ),
+      FeaturedProjectCard(
+        imageAsset: 'assets/images/praying.webp',
+        height: cardH,
+        icon: Icons.church_rounded,
+        badge: tr('devotions'),
+        title: tr('prayers.title'),
+        subtitle: tr('prayers.subtitle'),
+        onTap: () => _push(const PrayersScreen(), '/prayers'),
+      ),
+      FeaturedProjectCard(
+        imageAsset: 'assets/images/pray_slide.webp',
+        height: cardH,
+        icon: Icons.church_rounded,
+        badge: tr('devotions'),
+        title: tr('novena.title'),
+        subtitle: tr('novena.subtitle'),
+        onTap: () => _push(const NovenasScreen(), '/novenas'),
+      ),
+      FeaturedProjectCard(
+        imageAsset: 'assets/images/confession.webp',
+        height: cardH,
+        icon: Icons.church_rounded,
+        badge: tr('devotions'),
+        title: tr('confession.title'),
+        subtitle: tr('confession.subtitle'),
+        onTap: _openConfession,
+      ),
+      FeaturedProjectCard(
+        imageAsset: 'assets/images/rosary_backround.webp',
+        height: cardH,
+        icon: Icons.church_rounded,
+        badge: tr('devotions'),
+        title: tr('rosary_title'),
+        subtitle: tr('rosary_description'),
+        onTap: () => _push(const RosaryScreen(), '/rosary'),
+      ),
+      FeaturedProjectCard(
+        imageAsset: 'assets/images/adoration-background.webp',
+        height: cardH,
+        icon: Icons.church_rounded,
+        badge: tr('devotions'),
+        title: tr('adoration_title'),
+        subtitle: tr('adoration_main_subtitle'),
+        onTap: () => _push(const AdorationScreen(), '/adoration'),
       ),
     ];
 
@@ -410,11 +465,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   /// Pri každom spustení zobrazí náhodný slide vo featured carouseli
-  /// (raz za mount; poradie strán: cvičenie? + Potulky + Kurz).
+  /// (raz za mount; poradie strán: cvičenie? + Potulky + Kurz + pobožnosti).
   void _randomizeFeaturedStart() {
     if (_featuredRandomized) return;
     _featuredRandomized = true;
-    final count = (_exercise != null ? 1 : 0) + 2;
+    // 2 projekty + 6 pobožností (krížová cesta, modlitby, novény,
+    // spytovanie, ruženec, adorácie)
+    final count = (_exercise != null ? 1 : 0) + 8;
     if (count <= 1) return;
     final target = Random().nextInt(count);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -502,6 +559,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         settings: RouteSettings(name: routeName),
       ),
     );
+  }
+
+  /// Vstup do Spytovania svedomia. Jediná analytika celej funkcie: anonymné
+  /// počítadlo ťuknutí TU na home (koľko ľudí sekciu otvára) — nič z obrazoviek
+  /// za PIN bránou sa nemeria (spovedné tajomstvo, viď confession_privacy_sheet).
+  void _openConfession() {
+    UmamiAnalyticsService().trackEvent(
+      'confession_entry',
+      eventData: {'language': context.locale.languageCode},
+    );
+    _push(const ConfessionGateScreen(), '/confession');
   }
 
   void _openLectio(DateTime date) {
@@ -929,7 +997,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               tile(
                 Icons.favorite_border_rounded,
                 'confession.title',
-                () => _push(const ConfessionGateScreen(), '/confession'),
+                _openConfession,
               ),
               tile(
                 Icons.auto_stories_rounded,

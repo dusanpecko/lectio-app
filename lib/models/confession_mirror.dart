@@ -20,6 +20,9 @@ class ConfessionMirror {
   final int displayOrder;
   final List<ConfessionSection> sections;
 
+  /// TTS audio celého zrkadla (úvod → modlitba → sekcie → záver); null = nie je.
+  final String? audioUrl;
+
   const ConfessionMirror({
     required this.id,
     required this.shortcode,
@@ -35,6 +38,7 @@ class ConfessionMirror {
     this.guideContrition,
     required this.displayOrder,
     required this.sections,
+    this.audioUrl,
   });
 
   factory ConfessionMirror.fromJson(Map<String, dynamic> json) {
@@ -64,6 +68,7 @@ class ConfessionMirror {
       guideContrition: opt(json['guide_contrition']),
       displayOrder: (json['display_order'] as num?)?.toInt() ?? 0,
       sections: sections,
+      audioUrl: opt(json['audio_url']),
     );
   }
 

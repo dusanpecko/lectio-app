@@ -1,6 +1,7 @@
 // lib/screens/stations_of_cross_detail_screen.dart
 
 import 'dart:async';
+import '../services/audio_exclusive.dart';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
@@ -105,6 +106,7 @@ class _StationsOfCrossDetailScreenState
     _positionSub?.cancel();
     _durationSub?.cancel();
     _indexSub?.cancel();
+    AudioExclusive.release(_audioPlayer);
     _audioPlayer.dispose();
     _pageController.dispose();
     _playlistPageController.dispose();
@@ -281,6 +283,7 @@ class _StationsOfCrossDetailScreenState
 
     try {
       await _audioPlayer.stop();
+      await AudioExclusive.acquire(_audioPlayer);
       final playlist = ConcatenatingAudioSource(children: sources);
       await _audioPlayer.setAudioSource(playlist);
 
@@ -308,7 +311,7 @@ class _StationsOfCrossDetailScreenState
           _audioPlayer.processingState == ProcessingState.completed) {
         _buildAndPlayPlaylist(fromStation: _currentPage);
       } else {
-        _audioPlayer.play();
+        AudioExclusive.acquire(_audioPlayer).then((_) => _audioPlayer.play());
       }
     }
   }

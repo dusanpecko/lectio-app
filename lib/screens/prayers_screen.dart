@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../services/audio_exclusive.dart';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -532,6 +533,7 @@ class _PrayerDetailScreenState extends State<PrayerDetailScreen> {
   @override
   void dispose() {
     _playerSub?.cancel();
+    AudioExclusive.release(_player);
     _player.dispose();
     _controller.dispose();
     super.dispose();
@@ -544,6 +546,8 @@ class _PrayerDetailScreenState extends State<PrayerDetailScreen> {
     if (url == null) return;
     HapticFeedback.lightImpact();
     try {
+      // Výhradný slot natívneho playera (just_audio_background = 1 naraz).
+      await AudioExclusive.acquire(_player);
       if (_loadedUrl != url) {
         setState(() => _audioLoading = true);
         // just_audio_background vyžaduje MediaItem tag na každom zdroji.

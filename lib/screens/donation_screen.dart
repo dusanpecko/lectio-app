@@ -289,6 +289,9 @@ class _DonationScreenState extends State<DonationScreen> {
       'userId': user.id,
       'email': user.email,
       'platform': 'mobile',
+      // Bez intervalu backend zakladal VŽDY mesačné predplatné, aj pri
+      // voľbe „Ročne" (API čaká 'monthly' | 'yearly').
+      'interval': interval == 'year' ? 'yearly' : 'monthly',
     });
   }
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'audio_exclusive.dart';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
@@ -88,6 +89,8 @@ class MediaPlayerBus extends ChangeNotifier {
         ? AudioSource.uri(Uri.file(localPath), tag: tag)
         // ignore: experimental_member_use  (LockCaching je stabilný napriek @experimental)
         : LockCachingAudioSource(Uri.parse(url), tag: tag);
+    // Výhradný slot natívneho playera (just_audio_background = 1 naraz).
+    await AudioExclusive.acquire(_player);
     await _player.setAudioSource(source);
     notifyListeners();
   }
@@ -119,6 +122,7 @@ class MediaPlayerBus extends ChangeNotifier {
       if (_player.playing) {
         await _player.pause();
       } else {
+        await AudioExclusive.acquire(_player);
         await _player.play();
       }
     } catch (e) {
@@ -152,6 +156,7 @@ class MediaPlayerBus extends ChangeNotifier {
       } else {
         await _player.seek(Duration.zero);
       }
+      await AudioExclusive.acquire(_player);
       await _player.play();
     } catch (e) {
       appLogger.e('❌ MediaPlayerBus.play: $e');

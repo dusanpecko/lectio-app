@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:lectio_divina/screens/auth_screen.dart';
+import 'package:lectio_divina/services/confession_vault_service.dart';
 import 'package:lectio_divina/screens/home_screen.dart';
 import 'package:lectio_divina/screens/lectio_screen.dart';
 import 'package:lectio_divina/screens/onboarding_screen.dart';
@@ -72,6 +73,10 @@ Future<void> main() async {
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
+
+  // Spovedné tajomstvo: iOS Keychain prežíva odinštalovanie — po čerstvej
+  // inštalácii zmaž prípadné pozostatky trezoru (PIN + odpovede).
+  await ConfessionVaultService.instance.ensureWipedAfterReinstall();
 
   // Initialize just_audio_background for lock screen controls
   await JustAudioBackground.init(
@@ -354,7 +359,7 @@ class _FCMInitializerState extends State<FCMInitializer>
 ///   0            → nový používateľ → plný [OnboardingScreen]
 ///   1..CURRENT-1 → existujúci po update → [OnboardingUpdateScreen]
 ///   >= CURRENT   → rovno do appky
-const int kCurrentOnboardingVersion = 2;
+const int kCurrentOnboardingVersion = 3; // 3 = v11.1 (deviatniky, zrkadlo…)
 
 /// DOČASNE: vynúti zobrazenie „Čo je nové" ([OnboardingUpdateScreen]) pri
 /// každom štarte (test). Pred vydaním prepnúť na `false`.

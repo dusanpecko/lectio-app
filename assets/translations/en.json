@@ -1487,7 +1487,20 @@
     "feat_eshop_title": "Shop",
     "feat_eshop_desc": "Browse books and gifts — and support the project with your purchase.",
     "feat_updates_title": "Always up to date",
-    "feat_updates_desc": "When a new version is released, the app will let you know."
+    "feat_updates_desc": "When a new version is released, the app will let you know.",
+    "prev_section": "Version 11.0",
+    "feat_novenas_title": "Novenas",
+    "feat_novenas_desc": "Nine-day prayers with a specific intention — with audio, a daily reminder and progress tracking.",
+    "feat_confession_title": "Examination of conscience",
+    "feat_confession_desc": "Preparation for the sacrament of reconciliation, protected by a PIN. Everything stays encrypted on your phone only — the seal of confession applies here too.",
+    "feat_devotions_home_title": "Devotions right from the home screen",
+    "feat_devotions_home_desc": "Stations of the Cross, prayers, novenas, the Rosary and adorations are now in the new carousel on the home screen.",
+    "feat_intentions_title": "Intentions with notifications",
+    "feat_intentions_desc": "When you submit a prayer intention, we notify you as soon as it is approved.",
+    "feat_audio_title": "Faster audio",
+    "feat_audio_desc": "Playback is cached — repeated listening and seeking are instant and use less data.",
+    "feat_cod_title": "E-shop: cash on delivery & company orders",
+    "feat_cod_desc": "Pay when you receive the parcel, and companies can order with billing details."
   },
   "app_update": {
     "force_title": "Update required",
@@ -1589,7 +1602,18 @@
     "check_payment": "Verify payment",
     "back_to_form": "Back to order",
     "invalid_postal": "Invalid ZIP code (5 digits)",
-    "invalid_phone": "Invalid phone number"
+    "invalid_phone": "Invalid phone number",
+    "company_toggle": "Buying as a company",
+    "company_name": "Company name",
+    "company_ico": "Company ID (IČO)",
+    "company_dic": "Tax ID (DIČ)",
+    "company_icdph": "VAT ID (if registered)",
+    "payment_method": "Payment method",
+    "pay_card": "Card / online (Mollie)",
+    "pay_cod": "Cash on delivery (+€{fee}) — pay on receipt",
+    "cod_fee_label": "Cash on delivery",
+    "cod_success_title": "Order received",
+    "cod_success_desc": "Thank you! We will prepare your order and send it cash on delivery — you pay on receipt. A confirmation with the invoice will arrive by email when the parcel ships."
   },
   "orders": {
     "title": "My orders",
@@ -1813,12 +1837,13 @@
     "info_mic_title": "No microphone",
     "info_mic_body": "The app has no microphone access — it cannot listen or record anything. You can verify this in your phone settings.",
     "info_tracking_title": "No tracking",
-    "info_tracking_body": "There is no analytics on the confession screens. We do not know what you checked, what you wrote, or whether and when you went to confession.",
+    "info_tracking_body": "There is no analytics on the confession screens. We do not know what you checked, what you wrote, or whether and when you went to confession. We only count anonymous opens of this section from the home screen — no content, no identity.",
     "info_delete_title": "Deleted means deleted",
     "info_delete_body": "The “I went to confession” button permanently deletes your entire preparation. The screen is also protected from screenshots (Android).",
     "info_footer": "“I have swept away your offenses like a cloud, your sins like the morning mist; return to me, for I have redeemed you.” (cf. Is 44:22)",
     "info_button": "How is my data protected?",
     "reset_done_button": "Amen",
-    "disclaimer": "Important: This preparation is only an aid for your conscience. The sacrament of reconciliation itself requires a personal encounter with a priest. The app does not replace confession — it helps you prepare for it better and live it in peace."
+    "disclaimer": "Important: This preparation is only an aid for your conscience. The sacrament of reconciliation itself requires a personal encounter with a priest. The app does not replace confession — it helps you prepare for it better and live it in peace.",
+    "awake_note": "The screen stays on during your preparation. You can change this in Settings."
   }
 }

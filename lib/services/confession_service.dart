@@ -17,7 +17,7 @@ class ConfessionService {
             'id, shortcode, lang, title, description, image_url, '
             'intro_text, intro_prayer, closing_prayer, '
             'guide_confession_flow, guide_invocation, guide_contrition, '
-            'display_order, '
+            'display_order, audio_url, '
             'confession_sections(id, sort_order, title, '
             'confession_questions(id, sort_order, text))',
           )

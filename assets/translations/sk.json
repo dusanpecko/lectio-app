@@ -1486,8 +1486,21 @@
     "feat_help_desc": "Jednoduché návody, ako appku používať — nájdeš ich v menu Viac.",
     "feat_eshop_title": "E-shop",
     "feat_eshop_desc": "Nájdeš u nás knihy a darčeky, ktorými podporíš projekt.",
-    "feat_updates_title": "Vždy aktuálni",
-    "feat_updates_desc": "Keď vyjde nová verzia, aplikácia ťa na ňu upozorní."
+    "feat_updates_title": "Vždy aktuálna",
+    "feat_updates_desc": "Keď vyjde nová verzia, aplikácia ťa na ňu upozorní.",
+    "prev_section": "Verzia 11.0",
+    "feat_novenas_title": "Deviatniky",
+    "feat_novenas_desc": "Deväťdňové modlitby s konkrétnym úmyslom — s audiom, dennou pripomienkou a sledovaním postupu.",
+    "feat_confession_title": "Spytovanie svedomia",
+    "feat_confession_desc": "Príprava na sviatosť zmierenia chránená PIN-om. Všetko ostáva šifrované len v tvojom telefóne — spovedné tajomstvo platí aj tu.",
+    "feat_devotions_home_title": "Pobožnosti priamo z úvodnej obrazovky",
+    "feat_devotions_home_desc": "Krížové cesty, modlitby, deviatniky, ruženec aj adorácie nájdeš v novom karuseli na úvodnej obrazovke.",
+    "feat_intentions_title": "Úmysly s notifikáciami",
+    "feat_intentions_desc": "Keď pošleš úmysel modlitby, o jeho schválení ťa hneď informujeme notifikáciou.",
+    "feat_audio_title": "Rýchlejšie audio",
+    "feat_audio_desc": "Prehrávanie sa ukladá do vyrovnávacej pamäte — opakované počúvanie a pretáčanie je okamžité a šetrí dáta.",
+    "feat_cod_title": "E-shop: dobierka a nákup na firmu",
+    "feat_cod_desc": "Zaplatíš pri prevzatí balíka a firmy môžu nakúpiť s fakturačnými údajmi (IČO, DIČ)."
   },
   "app_update": {
     "force_title": "Vyžaduje sa aktualizácia",
@@ -1589,7 +1602,18 @@
     "check_payment": "Overiť platbu",
     "back_to_form": "Späť na objednávku",
     "invalid_postal": "Neplatné PSČ (5 číslic)",
-    "invalid_phone": "Neplatné telefónne číslo"
+    "invalid_phone": "Neplatné telefónne číslo",
+    "company_toggle": "Nakupujem na firmu",
+    "company_name": "Názov firmy",
+    "company_ico": "IČO",
+    "company_dic": "DIČ",
+    "company_icdph": "IČ DPH (ak platiteľ)",
+    "payment_method": "Spôsob platby",
+    "pay_card": "Kartou / online (Mollie)",
+    "pay_cod": "Dobierka (+{fee} €) — platba pri prevzatí",
+    "cod_fee_label": "Dobierka",
+    "cod_success_title": "Objednávka prijatá",
+    "cod_success_desc": "Ďakujeme! Objednávku pripravíme a pošleme na dobierku — zaplatíš pri prevzatí. Potvrdenie s faktúrou ti príde e-mailom pri odoslaní balíka."
   },
   "orders": {
     "title": "Moje objednávky",
@@ -1813,12 +1837,13 @@
     "info_mic_title": "Žiadny mikrofón",
     "info_mic_body": "Aplikácia nemá prístup k mikrofónu — nemôže nič počúvať ani nahrávať. Môžeš si to overiť v nastaveniach telefónu.",
     "info_tracking_title": "Bez sledovania",
-    "info_tracking_body": "Na spovedných obrazovkách nie je žiadna analytika. Nevieme, čo si zaškrtol, čo si napísal, ani či a kedy si sa vyspovedal.",
+    "info_tracking_body": "Na spovedných obrazovkách nie je žiadna analytika. Nevieme, čo si zaškrtol, čo si napísal, ani či a kedy si sa vyspovedal. Meriame len anonymný počet otvorení tejto sekcie z domovskej obrazovky — bez obsahu a bez identity.",
     "info_delete_title": "Zmazané znamená zmazané",
     "info_delete_body": "Tlačidlo „Vyspovedal som sa\" nenávratne zmaže celú prípravu. Aj obrazovka je chránená pred snímkami (Android).",
     "info_footer": "„Zotriem ako oblak tvoje hriechy a ako mrak tvoje previnenia, vráť sa ku mne, áno, vykúpim ťa.\" (Iz 44, 22; SSV)",
     "info_button": "Ako sú chránené moje dáta?",
     "reset_done_button": "Amen",
-    "disclaimer": "Dôležité: Táto príprava je len pomôckou pre tvoje svedomie. Samotná sviatosť zmierenia vyžaduje osobné stretnutie s kňazom. Aplikácia nenahrádza spoveď — pomáha ti lepšie sa na ňu pripraviť a prežiť ju v pokoji."
+    "disclaimer": "Dôležité: Táto príprava je len pomôckou pre tvoje svedomie. Samotná sviatosť zmierenia vyžaduje osobné stretnutie s kňazom. Aplikácia nenahrádza spoveď — pomáha ti lepšie sa na ňu pripraviť a prežiť ju v pokoji.",
+    "awake_note": "Obrazovka počas prípravy nezhasína. Zmeniť to môžeš v Nastaveniach."
   }
 }

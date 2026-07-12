@@ -6,6 +6,7 @@ import 'audio_player_models.dart';
 import 'audio_progress_bar.dart';
 import 'audio_player_controls.dart';
 import '../../shared/app_spacing.dart';
+import '../../services/audio_exclusive.dart';
 
 class UniversalAudioPlayer extends StatefulWidget {
   final UniversalAudioItem audioItem;
@@ -362,6 +363,10 @@ class _UniversalAudioPlayerState extends State<UniversalAudioPlayer> {
         _handleError('Chýba URL pre audio súbor');
         return;
       }
+
+      // Výhradný slot natívneho playera (just_audio_background = 1 naraz) —
+      // MUSÍ byť pred setAudioSource (to je aktivačný bod platformy).
+      await AudioExclusive.acquire(_audioPlayer);
 
       // Nastavenie audio source ak nie je nastavené alebo sa zmenil
       if (_audioPlayer.audioSource == null ||

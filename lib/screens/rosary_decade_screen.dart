@@ -1,6 +1,7 @@
 // lib/screens/rosary_decade_screen.dart
 
 import 'dart:async';
+import '../services/audio_exclusive.dart';
 
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -54,6 +55,7 @@ class _RosaryDecadeScreenState extends State<RosaryDecadeScreen> {
   void dispose() {
     _heartbeatTimer?.cancel();
     _playerStateSub?.cancel();
+    AudioExclusive.release(_audioPlayer);
     _audioPlayer.dispose();
     super.dispose();
   }

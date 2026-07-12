@@ -27,6 +27,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   static const bool _kTestCheckout = false;
 
   final _formKey = GlobalKey<FormState>();
+  // Dobierka (COD): dostupnosť + príplatok z /api/shop/checkout-config.
+  String _paymentMethod = 'card'; // 'card' | 'cod'
+  bool _codEnabled = false;
+  double _codFee = 0.0;
+  bool _codSuccess = false;
+
+  // Nákup na firmu (fakturačné údaje na faktúre).
+  bool _companyEnabled = false;
+  final _coName = TextEditingController();
+  final _coIco = TextEditingController();
+  final _coDic = TextEditingController();
+  final _coIcDph = TextEditingController();
+
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _phone = TextEditingController();
@@ -49,6 +62,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   void initState() {
     super.initState();
+    _loadCheckoutConfig();
     _appLinks = AppLinks();
     // Iba živý stream nových liniek (návrat z Mollie počas behu appky).
     // ZÁMERNE NEpoužívame getInitialLink() — app_links ho vracia opakovane
@@ -108,6 +122,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   /// Predvyplní formulár z uložených údajov prihláseného používateľa
   /// (`users.shipping_address` + `full_name`). Best-effort.
+  Future<void> _loadCheckoutConfig() async {
+    final cfg = await ShopService.instance.fetchCheckoutConfig();
+    if (!mounted) return;
+    setState(() {
+      _codEnabled = cfg.codEnabled;
+      _codFee = cfg.codFee;
+    });
+  }
+
   Future<void> _prefill() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
@@ -203,6 +226,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   void dispose() {
     _linkSub?.cancel();
+    _coName.dispose();
+    _coIco.dispose();
+    _coDic.dispose();
+    _coIcDph.dispose();
     _name.dispose();
     _email.dispose();
     _phone.dispose();
@@ -280,10 +307,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           'postal_code': _postal.text.trim(),
           'country': _country,
         },
+        paymentMethod: _paymentMethod,
+        companyBilling: _companyEnabled
+            ? {
+                'name': _coName.text.trim(),
+                'ico': _coIco.text.trim(),
+                'dic': _coDic.text.trim(),
+                'ic_dph': _coIcDph.text.trim(),
+              }
+            : null,
         test: _kTestCheckout,
       );
       if (!mounted) return;
       _orderId = res['orderId'] as String?;
+      // Dobierka — objednávka prijatá bez online platby.
+      if (res['cod'] == true) {
+        _codSuccess = true;
+        _onPaid();
+        return;
+      }
       // Test režim (admin) — objednávka už zaplatená, preskoč Mollie.
       if (res['test'] == true) {
         _onPaid();
@@ -360,13 +402,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
-              'shop.order_success_title'.tr(),
+              _codSuccess
+                  ? 'shop.cod_success_title'.tr()
+                  : 'shop.order_success_title'.tr(),
               textAlign: TextAlign.center,
               style: HomeV2.serifTitle(context, size: 24),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'shop.order_success_desc'.tr(),
+              _codSuccess
+                  ? 'shop.cod_success_desc'.tr()
+                  : 'shop.order_success_desc'.tr(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -669,6 +715,90 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ],
                 ),
                 _buildCountry(),
+
+                // ── Nákup na firmu ──
+                InkWell(
+                  onTap: () =>
+                      setState(() => _companyEnabled = !_companyEnabled),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.sm,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _companyEnabled
+                              ? Icons.check_box_rounded
+                              : Icons.check_box_outline_blank_rounded,
+                          size: 22,
+                          color: HomeV2.primary,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(
+                          'shop.company_toggle'.tr(),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: HomeV2.textDark(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (_companyEnabled) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  _field(_coName, 'shop.company_name', required: true),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _field(
+                          _coIco,
+                          'shop.company_ico',
+                          required: true,
+                          keyboard: TextInputType.number,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: _field(
+                          _coDic,
+                          'shop.company_dic',
+                          keyboard: TextInputType.number,
+                        ),
+                      ),
+                    ],
+                  ),
+                  _field(_coIcDph, 'shop.company_icdph'),
+                ],
+
+                // ── Spôsob platby (dobierka len ak je zapnutá v nastaveniach) ──
+                if (_codEnabled) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'shop.payment_method'.tr(),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: HomeV2.textDark(context),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _payMethodTile(
+                    value: 'card',
+                    icon: Icons.credit_card_rounded,
+                    label: 'shop.pay_card'.tr(),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  _payMethodTile(
+                    value: 'cod',
+                    icon: Icons.local_shipping_rounded,
+                    label: 'shop.pay_cod'.tr(
+                      namedArgs: {'fee': _codFee.toStringAsFixed(2)},
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
               ],
             ),
           ),
@@ -717,7 +847,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               }
               supporterDiscount =
                   (supporterDiscount * 100).roundToDouble() / 100;
-              final total = cart.subtotal - supporterDiscount + ship.cost;
+              final codFee = _paymentMethod == 'cod' ? _codFee : 0.0;
+              final total =
+                  cart.subtotal - supporterDiscount + ship.cost + codFee;
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -776,6 +908,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         : 'shop.shipping_handling'.tr(),
                     '€${ship.cost.toStringAsFixed(2)}',
                   ),
+                  if (codFee > 0) ...[
+                    const SizedBox(height: 8),
+                    _sumRow(
+                      context,
+                      'shop.cod_fee_label'.tr(),
+                      '€${codFee.toStringAsFixed(2)}',
+                    ),
+                  ],
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       vertical: AppSpacing.sm,
@@ -898,6 +1038,60 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           }
           return null;
         },
+      ),
+    );
+  }
+
+  Widget _payMethodTile({
+    required String value,
+    required IconData icon,
+    required String label,
+  }) {
+    final active = _paymentMethod == value;
+    return InkWell(
+      borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+      onTap: () => setState(() => _paymentMethod = value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: active
+              ? HomeV2.primary.withValues(alpha: 0.08)
+              : HomeV2.card(context),
+          borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+          border: Border.all(
+            color: active
+                ? HomeV2.primary
+                : HomeV2.textMuted(context).withValues(alpha: 0.2),
+            width: active ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              active
+                  ? Icons.radio_button_checked_rounded
+                  : Icons.radio_button_off_rounded,
+              size: 20,
+              color: active ? HomeV2.primary : HomeV2.textMuted(context),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Icon(icon, size: 20, color: HomeV2.textDark(context)),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  color: HomeV2.textDark(context),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

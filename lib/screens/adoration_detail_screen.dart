@@ -1,6 +1,7 @@
 // lib/screens/adoration_detail_screen.dart
 
 import 'dart:async';
+import '../services/audio_exclusive.dart';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
@@ -101,6 +102,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
     _positionSub?.cancel();
     _durationSub?.cancel();
     _indexSub?.cancel();
+    AudioExclusive.release(_audioPlayer);
     _audioPlayer.dispose();
     _playlistPageController.dispose();
     super.dispose();
@@ -342,6 +344,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
 
     try {
       await _audioPlayer.stop();
+      await AudioExclusive.acquire(_audioPlayer);
       final playlist = ConcatenatingAudioSource(children: sources);
       await _audioPlayer.setAudioSource(playlist);
 
@@ -368,7 +371,7 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
           _audioPlayer.processingState == ProcessingState.completed) {
         _buildAndPlayPlaylist();
       } else {
-        _audioPlayer.play();
+        AudioExclusive.acquire(_audioPlayer).then((_) => _audioPlayer.play());
       }
     }
   }

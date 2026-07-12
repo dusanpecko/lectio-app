@@ -1487,7 +1487,20 @@
     "feat_eshop_title": "Tienda",
     "feat_eshop_desc": "Descubre libros y regalos, y apoya el proyecto con tu compra.",
     "feat_updates_title": "Siempre actualizado",
-    "feat_updates_desc": "Cuando salga una nueva versión, la app te avisará."
+    "feat_updates_desc": "Cuando salga una nueva versión, la app te avisará.",
+    "prev_section": "Versión 11.0",
+    "feat_novenas_title": "Novenas",
+    "feat_novenas_desc": "Oraciones de nueve días con una intención concreta: con audio, recordatorio diario y seguimiento del progreso.",
+    "feat_confession_title": "Examen de conciencia",
+    "feat_confession_desc": "Preparación para el sacramento de la reconciliación, protegida con PIN. Todo queda cifrado solo en tu teléfono: el sigilo de confesión también se aplica aquí.",
+    "feat_devotions_home_title": "Devociones desde la pantalla de inicio",
+    "feat_devotions_home_desc": "El Vía Crucis, las oraciones, las novenas, el rosario y las adoraciones están en el nuevo carrusel de la pantalla de inicio.",
+    "feat_intentions_title": "Intenciones con notificaciones",
+    "feat_intentions_desc": "Cuando envías una intención de oración, te avisamos con una notificación en cuanto se aprueba.",
+    "feat_audio_title": "Audio más rápido",
+    "feat_audio_desc": "La reproducción se guarda en caché: volver a escuchar y avanzar es instantáneo y consume menos datos.",
+    "feat_cod_title": "Tienda: contra reembolso y compra de empresa",
+    "feat_cod_desc": "Paga al recibir el paquete; las empresas pueden comprar con datos de facturación."
   },
   "app_update": {
     "force_title": "Actualización necesaria",
@@ -1589,7 +1602,18 @@
     "check_payment": "Verificar pago",
     "back_to_form": "Volver al pedido",
     "invalid_postal": "Código postal no válido (5 dígitos)",
-    "invalid_phone": "Número de teléfono no válido"
+    "invalid_phone": "Número de teléfono no válido",
+    "company_toggle": "Compro como empresa",
+    "company_name": "Nombre de la empresa",
+    "company_ico": "ID de empresa (IČO)",
+    "company_dic": "NIF (DIČ)",
+    "company_icdph": "NIF-IVA (si aplica)",
+    "payment_method": "Método de pago",
+    "pay_card": "Tarjeta / online (Mollie)",
+    "pay_cod": "Contra reembolso (+{fee} €) — pago al recibir",
+    "cod_fee_label": "Contra reembolso",
+    "cod_success_title": "Pedido recibido",
+    "cod_success_desc": "¡Gracias! Prepararemos tu pedido y lo enviaremos contra reembolso: pagas al recibirlo. La confirmación con la factura llegará por correo cuando se envíe."
   },
   "orders": {
     "title": "Mis pedidos",
@@ -1813,12 +1837,13 @@
     "info_mic_title": "Sin micrófono",
     "info_mic_body": "La aplicación no tiene acceso al micrófono: no puede escuchar ni grabar nada. Puedes verificarlo en los ajustes del teléfono.",
     "info_tracking_title": "Sin seguimiento",
-    "info_tracking_body": "No hay analítica en las pantallas de confesión. No sabemos qué marcaste, qué escribiste, ni si te confesaste.",
+    "info_tracking_body": "No hay analítica en las pantallas de confesión. No sabemos qué marcaste, qué escribiste, ni si te confesaste. Solo contamos aperturas anónimas de esta sección desde la pantalla de inicio — sin contenido y sin identidad.",
     "info_delete_title": "Borrado significa borrado",
     "info_delete_body": "El botón «Me confesé» elimina permanentemente toda tu preparación. La pantalla también está protegida contra capturas (Android).",
     "info_footer": "«Deshice como niebla tus rebeldías y como nube tus pecados; vuelve a mí, porque te he redimido.» (cfr. Is 44, 22)",
     "info_button": "¿Cómo se protegen mis datos?",
     "reset_done_button": "Amén",
-    "disclaimer": "Importante: Esta preparación es solo una ayuda para tu conciencia. El sacramento de la reconciliación requiere un encuentro personal con un sacerdote. La aplicación no sustituye la confesión: te ayuda a prepararte mejor y a vivirla en paz."
+    "disclaimer": "Importante: Esta preparación es solo una ayuda para tu conciencia. El sacramento de la reconciliación requiere un encuentro personal con un sacerdote. La aplicación no sustituye la confesión: te ayuda a prepararte mejor y a vivirla en paz.",
+    "awake_note": "La pantalla permanece encendida durante la preparación. Puedes cambiarlo en Ajustes."
   }
 }

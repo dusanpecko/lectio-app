@@ -1487,7 +1487,20 @@
     "feat_eshop_title": "Boutique",
     "feat_eshop_desc": "Découvre des livres et des cadeaux et soutiens le projet par ton achat.",
     "feat_updates_title": "Toujours à jour",
-    "feat_updates_desc": "Quand une nouvelle version sort, l'application te prévient."
+    "feat_updates_desc": "Quand une nouvelle version sort, l'application te prévient.",
+    "prev_section": "Version 11.0",
+    "feat_novenas_title": "Neuvaines",
+    "feat_novenas_desc": "Prières de neuf jours avec une intention précise — avec audio, rappel quotidien et suivi de la progression.",
+    "feat_confession_title": "Examen de conscience",
+    "feat_confession_desc": "Préparation au sacrement de réconciliation, protégée par un code PIN. Tout reste chiffré uniquement sur votre téléphone — le secret de la confession s'applique ici aussi.",
+    "feat_devotions_home_title": "Dévotions depuis l'écran d'accueil",
+    "feat_devotions_home_desc": "Le Chemin de Croix, les prières, les neuvaines, le Rosaire et les adorations se trouvent dans le nouveau carrousel de l'écran d'accueil.",
+    "feat_intentions_title": "Intentions avec notifications",
+    "feat_intentions_desc": "Lorsque vous envoyez une intention de prière, nous vous informons par notification dès qu'elle est approuvée.",
+    "feat_audio_title": "Audio plus rapide",
+    "feat_audio_desc": "La lecture est mise en cache — réécouter et avancer est instantané et consomme moins de données.",
+    "feat_cod_title": "Boutique : paiement à la livraison et achat pro",
+    "feat_cod_desc": "Payez à la réception du colis ; les entreprises peuvent commander avec leurs données de facturation."
   },
   "app_update": {
     "force_title": "Mise à jour requise",
@@ -1589,7 +1602,18 @@
     "check_payment": "Vérifier le paiement",
     "back_to_form": "Retour à la commande",
     "invalid_postal": "Code postal invalide (5 chiffres)",
-    "invalid_phone": "Numéro de téléphone invalide"
+    "invalid_phone": "Numéro de téléphone invalide",
+    "company_toggle": "Achat en tant qu’entreprise",
+    "company_name": "Nom de l’entreprise",
+    "company_ico": "N° d’entreprise (IČO)",
+    "company_dic": "N° fiscal (DIČ)",
+    "company_icdph": "N° TVA (le cas échéant)",
+    "payment_method": "Mode de paiement",
+    "pay_card": "Carte / en ligne (Mollie)",
+    "pay_cod": "Paiement à la livraison (+{fee} €)",
+    "cod_fee_label": "Paiement à la livraison",
+    "cod_success_title": "Commande reçue",
+    "cod_success_desc": "Merci ! Nous préparerons votre commande et l’enverrons contre remboursement — vous payez à la réception. La confirmation avec la facture arrivera par e-mail à l’expédition."
   },
   "orders": {
     "title": "Mes commandes",
@@ -1813,12 +1837,13 @@
     "info_mic_title": "Pas de microphone",
     "info_mic_body": "L’application n’a pas accès au microphone — elle ne peut rien écouter ni enregistrer. Vous pouvez le vérifier dans les réglages du téléphone.",
     "info_tracking_title": "Aucun suivi",
-    "info_tracking_body": "Aucune analyse sur les écrans de confession. Nous ne savons pas ce que vous avez coché, écrit, ni si vous vous êtes confessé.",
+    "info_tracking_body": "Aucune analyse sur les écrans de confession. Nous ne savons pas ce que vous avez coché, écrit, ni si vous vous êtes confessé. Nous comptons uniquement les ouvertures anonymes de cette section depuis l'écran d'accueil — sans contenu ni identité.",
     "info_delete_title": "Supprimé veut dire supprimé",
     "info_delete_body": "Le bouton « Je me suis confessé » supprime définitivement toute votre préparation. L’écran est aussi protégé contre les captures (Android).",
     "info_footer": "« J’ai effacé tes transgressions comme un nuage et tes péchés comme une nuée ; reviens à moi, car je t’ai racheté. » (cf. Is 44, 22)",
     "info_button": "Comment mes données sont-elles protégées ?",
     "reset_done_button": "Amen",
-    "disclaimer": "Important : Cette préparation n’est qu’une aide pour ta conscience. Le sacrement de réconciliation exige une rencontre personnelle avec un prêtre. L’application ne remplace pas la confession — elle t’aide à mieux t’y préparer et à la vivre en paix."
+    "disclaimer": "Important : Cette préparation n’est qu’une aide pour ta conscience. Le sacrement de réconciliation exige une rencontre personnelle avec un prêtre. L’application ne remplace pas la confession — elle t’aide à mieux t’y préparer et à la vivre en paix.",
+    "awake_note": "L’écran reste allumé pendant la préparation. Modifiable dans les Réglages."
   }
 }

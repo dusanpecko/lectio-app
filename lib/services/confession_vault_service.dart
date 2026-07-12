@@ -4,6 +4,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Šifrovaný trezor Spovedného zrkadla — **spovedné tajomstvo**.
 ///
@@ -42,6 +43,21 @@ class ConfessionVaultService {
   static const _kBlob = 'confession_v1_blob';
 
   static const _pbkdf2Iterations = 100000;
+
+  /// Marker inštalácie v SharedPreferences — tie sa pri odinštalovaní appky
+  /// mažú VŽDY, na rozdiel od iOS Keychainu, ktorý odinštalovanie PREŽÍVA.
+  static const _kInstallMarker = 'confession_vault_install_marker';
+
+  /// iOS: Keychain prežíva odinštalovanie appky — bez tohto by PIN aj
+  /// zašifrované odpovede ostali v zariadení aj po zmazaní appky (zistené
+  /// 12.7.2026 na iPhone aj simulátore). Ak marker chýba → čerstvá
+  /// inštalácia → zmaž všetky dáta trezoru. Volať pri štarte appky.
+  Future<void> ensureWipedAfterReinstall() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_kInstallMarker) ?? false) return;
+    await wipeAll();
+    await prefs.setBool(_kInstallMarker, true);
+  }
 
   final _aes = AesGcm.with256bits();
   final _localAuth = LocalAuthentication();
