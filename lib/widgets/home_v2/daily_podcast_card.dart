@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:just_audio/just_audio.dart' show ProcessingState;
+import 'package:just_audio/just_audio.dart' show PlayerState, ProcessingState;
 
 import '../../models/podcast_episode.dart';
 import '../../services/media_player_bus.dart';
@@ -110,11 +110,15 @@ class DailyPodcastCard extends StatelessWidget {
         listenable: controller,
         builder: (context, _) {
           final isCurrent = controller.isCurrent(mediaId);
-          return StreamBuilder<bool>(
-            stream: controller.playingStream,
-            initialData: controller.isPlaying,
+          return StreamBuilder<PlayerState>(
+            stream: controller.playerStateStream,
+            initialData: controller.playerState,
             builder: (context, playSnap) {
-              final isPlaying = isCurrent && (playSnap.data ?? false);
+              final st = playSnap.data;
+              // Po dohraní necháva just_audio playing=true — ukáž ▶.
+              final isPlaying = isCurrent &&
+                  (st?.playing ?? false) &&
+                  st?.processingState != ProcessingState.completed;
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

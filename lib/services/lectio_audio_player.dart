@@ -56,7 +56,11 @@ class LectioAudioPlayer extends ChangeNotifier {
   // Getters
   AudioPlayer get player => _player;
   bool get isInitialized => _isInitialized;
-  bool get isPlaying => _player.playing;
+  /// Po dohraní necháva just_audio `playing=true` (completed) — pre UI to
+  /// znamená ▶, nie ⏸.
+  bool get isPlaying =>
+      _player.playing &&
+      _player.processingState != ProcessingState.completed;
   Duration get position => _player.position;
   Duration? get duration => _player.duration;
   String? get currentTrackKey =>
@@ -460,6 +464,10 @@ class LectioAudioPlayer extends ChangeNotifier {
   Future<void> play() async {
     try {
       if (_currentTrackIndex < 0 && _playlist.isNotEmpty) {
+        await playTrackByIndex(0);
+      } else if (_player.processingState == ProcessingState.completed &&
+          _playlist.isNotEmpty) {
+        // Playlist dohral — ▶ začne odznova (play() na konci by nič neurobil).
         await playTrackByIndex(0);
       } else {
         await AudioExclusive.acquire(_player);

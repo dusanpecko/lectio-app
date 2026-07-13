@@ -55,6 +55,11 @@ class MediaPlayerBus extends ChangeNotifier {
   Stream<Duration> get positionStream => _player.positionStream;
   Stream<Duration?> get durationStream => _player.durationStream;
   Stream<bool> get playingStream => _player.playingStream;
+
+  /// Kombinovaný stav (playing + processingState) — UI z neho vie, že po
+  /// dohraní má ukázať ▶ (just_audio necháva `playing=true` aj po completed).
+  Stream<PlayerState> get playerStateStream => _player.playerStateStream;
+  PlayerState get playerState => _player.playerState;
   Stream<ProcessingState> get processingStateStream =>
       _player.processingStateStream;
 
@@ -119,10 +124,15 @@ class MediaPlayerBus extends ChangeNotifier {
           language: language,
         );
       }
-      if (_player.playing) {
+      if (_player.playing &&
+          _player.processingState != ProcessingState.completed) {
         await _player.pause();
       } else {
         await AudioExclusive.acquire(_player);
+        // Po dohraní začni odznova — play() na konci by nič neurobil.
+        if (_player.processingState == ProcessingState.completed) {
+          await _player.seek(Duration.zero);
+        }
         await _player.play();
       }
     } catch (e) {

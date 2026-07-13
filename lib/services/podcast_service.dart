@@ -24,9 +24,10 @@ class PodcastService {
   };
 
   /// Spotify show URL per jazyk. Pre jazyky bez URL sa tlačidlo skryje.
-  /// TODO: doplniť EN/ES/FR/PT-BR keď Spotify schváli príslušné feedy.
+  /// TODO: doplniť ES/FR/PT-BR keď Spotify schváli príslušné feedy.
   static const Map<String, String> _spotifyShowUrl = {
     'sk': 'https://open.spotify.com/show/033vvO8COOj7q5SOgkai0d',
+    'en': 'https://open.spotify.com/show/033OHr671SKQomABN6RGaV',
   };
 
   /// Fallback cover pre daný jazyk (ak epizóda nemá vlastný `cover_image_url`).
