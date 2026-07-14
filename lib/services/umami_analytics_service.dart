@@ -26,6 +26,15 @@ class UmamiAnalyticsService {
   String? _screenResolution;
   String? _language;
 
+  /// Jazyk zvolený V APLIKÁCII (easy_localization) — má prednosť pred
+  /// jazykom zariadenia, aby štatistika „Language" ukazovala reálne
+  /// používané jazykové mutácie appky (sk/en/es/fr).
+  String? _appLanguage;
+
+  void setAppLanguage(String langCode) {
+    _appLanguage = langCode;
+  }
+
   bool _isInitialized = false;
 
   final List<Function> _pendingEvents = [];
@@ -112,7 +121,7 @@ class UmamiAnalyticsService {
       'website': _websiteId,
       'hostname': _hostname,
       'screen': _screenResolution,
-      'language': _language,
+      'language': _appLanguage ?? _language,
       'title': title ?? path,
       'url': path,
       'referrer': referrer ?? '',
@@ -135,7 +144,7 @@ class UmamiAnalyticsService {
       'website': _websiteId,
       'hostname': _hostname,
       'screen': _screenResolution,
-      'language': _language,
+      'language': _appLanguage ?? _language,
       'url': '/', // Events usually need a URL context
       'name': eventName,
       'data': eventData,

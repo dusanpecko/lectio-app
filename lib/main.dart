@@ -184,6 +184,9 @@ class MyApp extends StatelessWidget {
       textTheme: themeProvider.applyFontSettings(AppTheme.dark.textTheme),
     );
 
+    // Umami: jazyk appky (nie zariadenia) — build beží znova pri zmene locale.
+    UmamiAnalyticsService().setAppLanguage(context.locale.languageCode);
+
     return MaterialApp(
       navigatorKey: NotificationController.instance.navigatorKey,
       title: 'Lectio Divina',
