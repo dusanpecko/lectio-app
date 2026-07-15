@@ -655,7 +655,13 @@ class LocalNotificationsService {
             badgeNumber: 1,
           ),
         ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        // Samsung/Android 14+: bez povolenia presných alarmov padá
+        // exact_alarms_not_permitted → uvítacia notifikácia sa nenaplánovala
+        // vôbec (zistené 15.7.2026 na A33). Inexact stačí — presnosť na
+        // minúty tu nie je podstatná.
+        androidScheduleMode: await canScheduleExactAlarms()
+            ? AndroidScheduleMode.exactAllowWhileIdle
+            : AndroidScheduleMode.inexactAllowWhileIdle,
         payload: payload,
       );
 

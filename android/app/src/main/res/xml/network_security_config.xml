@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cleartext HTTP povolený VÝHRADNE pre loopback (127.0.0.1) — vyžaduje ho
+  lokálny proxy server just_audio (LockCachingAudioSource/StreamAudioSource,
+  disková cache audia). Bez tohto na časti Androidov (Samsung, staršie API)
+  padá VŠETKO streamované audio s CleartextNotPermittedException — na
+  Pixeloch s novším Androidom to prešlo, preto to testovanie nezachytilo
+  (zistené 15.7.2026 na Samsung A33). Všetka ostatná komunikácia ostáva
+  výhradne HTTPS (base-config cleartext zakázaný).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>
