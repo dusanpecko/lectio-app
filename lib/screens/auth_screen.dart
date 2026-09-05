@@ -51,12 +51,13 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Future<void> _loadSavedCredentials() async {
     try {
-      final hasCredentials = await _credentialsService.hasCredentials();
-      if (hasCredentials) {
-        final credentials = await _credentialsService.getCredentials();
+      // Dočistí heslo uložené staršími verziami appky (už sa neukladá).
+      await _credentialsService.purgeLegacyPassword();
+
+      final email = await _credentialsService.getEmail();
+      if (email != null && mounted) {
         setState(() {
-          _emailController.text = credentials['email'] ?? '';
-          _passwordController.text = credentials['password'] ?? '';
+          _emailController.text = email;
           _rememberMe = true;
         });
       }
@@ -156,10 +157,7 @@ class _AuthScreenState extends State<AuthScreen> {
         });
       } else {
         if (_rememberMe) {
-          await _credentialsService.saveCredentials(
-            _emailController.text.trim(),
-            _passwordController.text,
-          );
+          await _credentialsService.saveEmail(_emailController.text.trim());
         } else {
           await _credentialsService.clearCredentials();
         }
@@ -212,26 +210,49 @@ class _AuthScreenState extends State<AuthScreen> {
         });
         return;
       }
+      // Profil v public.users zakladá DB trigger `on_auth_user_created`, ktorý
+      // meno číta z raw_user_meta_data. Klientsky insert by s ním kolidoval a
+      // registrácia by skončila chybou napriek vytvorenému účtu.
       final response = await Supabase.instance.client.auth.signUp(
         email: email,
         password: password,
+        // newsletter_consent ide do metadát tiež, hoci ho trigger zatiaľ
+        // nečíta: keby zápis nižšie zlyhal (napr. pri povinnom potvrdení
+        // e-mailu nie je session), súhlas sa aspoň nestratí a dá sa dopárovať.
+        data: {'full_name': fullName, 'newsletter_consent': _newsletterConsent},
       );
       if (!mounted) return;
       if (response.user == null) {
         setState(() {
           _error = tr('register_failed');
         });
+      } else if (response.session == null) {
+        // Keď je v Supabase Auth zapnuté potvrdzovanie e-mailu, signUp vráti
+        // používateľa BEZ session. Navigovať na HomeScreen by ho pustilo do
+        // appky neprihláseného a vyzeralo by to ako pokazená registrácia.
+        if (_rememberMe) {
+          await _credentialsService.saveEmail(email);
+        }
+        if (!mounted) return;
+        setState(() => _isRegister = false);
+        unawaited(_showConfirmEmailDialog(email));
       } else {
-        final userId = response.user!.id;
-        await Supabase.instance.client.from('users').insert({
-          'id': userId,
-          'full_name': fullName,
-          'email': email,
-          'newsletter_consent': _newsletterConsent,
-        });
+        // Súhlas s newsletterom trigger nepozná — dopĺňame ho best-effort, aby
+        // zlyhanie (napr. chýbajúca session pri e-mailovej verifikácii)
+        // nezhodilo inak úspešnú registráciu.
+        if (_newsletterConsent) {
+          try {
+            await Supabase.instance.client
+                .from('users')
+                .update({'newsletter_consent': true})
+                .eq('id', response.user!.id);
+          } catch (e) {
+            appLogger.w('Failed to store newsletter consent', error: e);
+          }
+        }
 
         if (_rememberMe) {
-          await _credentialsService.saveCredentials(email, password);
+          await _credentialsService.saveEmail(email);
         }
 
         if (!mounted) return;
@@ -271,6 +292,24 @@ class _AuthScreenState extends State<AuthScreen> {
         });
       }
     }
+  }
+
+  /// Registrácia prešla, ale účet čaká na potvrdenie e-mailu.
+  Future<void> _showConfirmEmailDialog(String email) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('signup_confirm_title')),
+        content: Text(tr('signup_confirm_body', namedArgs: {'email': email})),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(tr('ok')),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _signInWithGoogle() async {

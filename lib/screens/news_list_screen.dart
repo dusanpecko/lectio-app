@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'news_detail_screen.dart';
 import '../shared/app_spacing.dart';
+import '../utils/app_logger.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
 
 class NewsListScreen extends StatefulWidget {
@@ -51,8 +52,7 @@ class _NewsListScreenState extends State<NewsListScreen> {
         isLoading = false;
       });
     } catch (e, stacktrace) {
-      debugPrint('ERROR: fetchNews exception: $e');
-      debugPrint('ERROR: Stacktrace: $stacktrace');
+      appLogger.e('fetchNews exception', error: e, stackTrace: stacktrace);
       setState(() {
         isLoading = false;
         errorMessage = tr('news_load_failed');

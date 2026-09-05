@@ -65,7 +65,7 @@ Future<void> bootstrap(AppBuilder builder) async {
 
   // 4. Initialize Core Services
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+  await Supabase.initialize(url: supabaseUrl, publishableKey: supabaseAnonKey);
 
   // 5. Initialize Feature Services
 

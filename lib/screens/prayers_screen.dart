@@ -14,6 +14,7 @@ import '../shared/app_spacing.dart';
 import '../widgets/audio/audio_progress_bar.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
 import '../shared/audio_player_factory.dart';
+import '../utils/app_logger.dart';
 
 const List<String> _kCanonicalLangs = ['sk', 'cs', 'en', 'es', 'fr', 'pt-br'];
 
@@ -577,7 +578,7 @@ class _PrayerDetailScreenState extends State<PrayerDetailScreen> {
         await _player.play();
       }
     } catch (e) {
-      debugPrint('❌ Prayer audio play failed: $e');
+      appLogger.e('Prayer audio play failed', error: e);
       _loadedUrl = null;
       if (mounted) {
         setState(() => _audioLoading = false);

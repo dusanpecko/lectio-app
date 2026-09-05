@@ -1,24 +1,57 @@
 // lib/screens/adoration_detail_screen.dart
 
-import 'dart:async';
-import '../services/audio_exclusive.dart';
-
-import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/adoration_model.dart';
 import '../services/adoration_service.dart';
-import '../services/umami_analytics_service.dart';
-import '../shared/app_colors.dart';
-import '../shared/audio_constants.dart';
+import '../services/media_player_bus.dart';
 import '../shared/app_spacing.dart';
+import '../shared/audio_constants.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
-import '../widgets/collapsible_hero_app_bar.dart';
-import '../widgets/lectio_floating_audio_player.dart';
-import '../shared/audio_player_factory.dart';
+import '../widgets/lectio_v2/lectio_step_card.dart';
+import 'lectio_reader_screen.dart';
+
+// Detail adorácie vo v2 štýle (rovnako ako lectio_screen / krížová cesta):
+//   hero adorácie → „Celé audio" karta (spojené sekcie + meditačná hudba medzi
+//   nimi) → PageView kariet sekcií (každá hrá svoju stopu cez MediaPlayerBus) →
+//   progress dots. Ťuknutie na text karty (alebo ikonka rozbalenia) otvorí
+//   fullscreen čítačku (LectioReaderScreen).
+// Prehrávanie ide výhradne cez zdieľaný MediaPlayerBus (single-source → presná
+// dĺžka/seek; DB dĺžky obchádzajú chybný iOS odhad).
+
+// Poradie sekcií = poradie v spojenom „celom audiu" (backend: úvod →
+// úvodné modlitby → lectio → komentár → meditatio → oratio → contemplatio →
+// actio). Biblický text je bez audia (prvá karta).
+String _processAdorationContent(String content) {
+  final hasBlockTags =
+      RegExp(r'<(p|div|br|h[1-6]|ul|ol|li)', caseSensitive: false).hasMatch(content);
+  return hasBlockTags ? content : content.replaceAll('\n', '<br>');
+}
+
+/// Jedna sekcia adorácie ako karta.
+class _AdorationSection {
+  final String key;
+  final String title;
+  final String? subtitle;
+  final String html; // '' = bez textu
+  final String? audioUrl;
+  final double? durSec;
+
+  const _AdorationSection({
+    required this.key,
+    required this.title,
+    this.subtitle,
+    this.html = '',
+    this.audioUrl,
+    this.durSec,
+  });
+
+  bool get hasHtml => html.trim().isNotEmpty;
+  bool get hasAudio => audioUrl != null && audioUrl!.isNotEmpty;
+}
 
 class AdorationDetailScreen extends StatefulWidget {
   final String adorationId;
@@ -34,374 +67,38 @@ class AdorationDetailScreen extends StatefulWidget {
   State<AdorationDetailScreen> createState() => _AdorationDetailScreenState();
 }
 
-// ── Audio constants ──
-const _kAdorationMusicUrl1 =
-    'https://core.lectio.one/storage/v1/object/public/rosary/lectio-divina-audios/freepik-pure-beauty.mp3';
-const _kAdorationMusicUrl2 =
-    'https://core.lectio.one/storage/v1/object/public/rosary/lectio-divina-audios/freepik-seamlessly-loved.mp3';
-const _kPrefKeyAdorationAudioMode = 'adoration_audio_mode';
-
 class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
-  final AdorationService _adorationService = AdorationService();
-  final AudioPlayer _audioPlayer = createAppAudioPlayer();
+  final AdorationService _service = AdorationService();
 
   Adoration? _adoration;
   bool _isLoading = true;
   String? _error;
-  Adoration? _nextAdoration;
-  Adoration? _previousAdoration;
 
-  // ── Audio (lectio-style floating player) ──
-  bool _showAudioPlayer = false;
-  bool _isMinimized = false;
-  bool _isPlaying = false;
-  bool _isPlayingInterlude = false;
-  String? _currentAudioSection;
-  Duration _currentPosition = Duration.zero;
-  Duration _totalDuration = Duration.zero;
-  // 'none' = no music, 'short' = music 1, 'long' = music 2
-  String _audioMode = 'short';
+  List<_AdorationSection> _sections = [];
 
-  late PageController _playlistPageController;
-  List<Map<String, dynamic>> _tracks = [];
-  // Maps native source index → {type: 'track'|'interlude', trackIndex: int}
-  List<Map<String, dynamic>> _sourceMap = [];
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
 
-  StreamSubscription<PlayerState>? _playerStateSub;
-  StreamSubscription<Duration>? _positionSub;
-  StreamSubscription<Duration?>? _durationSub;
-  StreamSubscription<int?>? _indexSub;
-  Timer? _heartbeatTimer;
+  // Prefix identifikátorov média pre MediaPlayerBus (aby sme pri odchode zastavili
+  // len naše audio, nie iné).
+  String get _mediaPrefix => 'adoration_${widget.adorationId}';
 
-  /// Artwork URI for lock screen / notification
-  Uri? get _artUri {
+  String? get _artUri {
     final img = _adoration?.illustrationImage;
-    // Zmenši pre media notifikáciu (nenačítavaj plné rozlíšenie do pamäte).
     if (img != null && img.isNotEmpty) {
-      return Uri.tryParse(AudioConstants.sizedArtwork(img)!);
+      return AudioConstants.sizedArtwork(img);
     }
-    return Uri.parse(AudioConstants.defaultArtworkUrl);
+    return AudioConstants.defaultArtworkUrl;
   }
 
   @override
   void initState() {
     super.initState();
-    _playlistPageController = PageController(viewportFraction: 0.85);
     if (widget.initialAdoration != null) {
       _adoration = widget.initialAdoration;
       _isLoading = false;
+      _rebuildSections();
     }
-    _setupAudioListeners();
-    _restoreAudioMode();
-  }
-
-  @override
-  void dispose() {
-    _heartbeatTimer?.cancel();
-    _playerStateSub?.cancel();
-    _positionSub?.cancel();
-    _durationSub?.cancel();
-    _indexSub?.cancel();
-    AudioExclusive.release(_audioPlayer);
-    _audioPlayer.dispose();
-    _playlistPageController.dispose();
-    super.dispose();
-  }
-
-  // ── Audio setup ──
-
-  void _setupAudioListeners() {
-    _playerStateSub = _audioPlayer.playerStateStream.listen((state) {
-      if (!mounted) return;
-      final isComplete = state.processingState == ProcessingState.completed;
-      final playing = state.playing && !isComplete;
-      setState(() {
-        _isPlaying = playing;
-      });
-      if (playing) {
-        _startHeartbeat();
-      } else {
-        _stopHeartbeat();
-      }
-    });
-
-    _positionSub = _audioPlayer.positionStream.listen((pos) {
-      if (!mounted) return;
-      setState(() => _currentPosition = pos);
-    });
-
-    _durationSub = _audioPlayer.durationStream.listen((dur) {
-      if (!mounted) return;
-      setState(() => _totalDuration = dur ?? Duration.zero);
-    });
-
-    _indexSub = _audioPlayer.currentIndexStream.listen((nativeIdx) {
-      if (!mounted || nativeIdx == null) return;
-      if (nativeIdx < 0 || nativeIdx >= _sourceMap.length) return;
-
-      final entry = _sourceMap[nativeIdx];
-      final trackIdx = entry['trackIndex'] as int;
-      final isInterlude = entry['type'] == 'interlude';
-
-      setState(() {
-        _isPlayingInterlude = isInterlude;
-        if (!isInterlude && trackIdx < _tracks.length) {
-          _currentAudioSection = _tracks[trackIdx]['key'] as String;
-        }
-      });
-
-      if (_playlistPageController.hasClients) {
-        _playlistPageController.animateToPage(
-          trackIdx,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-      }
-    });
-  }
-
-  void _startHeartbeat() {
-    if (_heartbeatTimer != null) return;
-    _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      final lang = context.locale.languageCode;
-      UmamiAnalyticsService().trackEvent(
-        'audio_heartbeat',
-        eventData: {
-          'content_type': 'adoration',
-          'content_id': widget.adorationId,
-          'language': lang,
-          'position_seconds': _currentPosition.inSeconds,
-        },
-      );
-    });
-  }
-
-  void _stopHeartbeat() {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = null;
-  }
-
-  Future<void> _restoreAudioMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString(_kPrefKeyAdorationAudioMode);
-    if (saved != null && mounted) {
-      setState(() => _audioMode = saved);
-    }
-  }
-
-  Future<void> _saveAudioMode(String mode) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kPrefKeyAdorationAudioMode, mode);
-    if (mounted) setState(() => _audioMode = mode);
-
-    if (mode == 'none') {
-      await _audioPlayer.stop();
-    } else if (_showAudioPlayer) {
-      await _buildAndPlayPlaylist();
-    }
-  }
-
-  String _getInterludeUrl() {
-    switch (_audioMode) {
-      case 'short':
-        return _kAdorationMusicUrl1;
-      case 'long':
-        return _kAdorationMusicUrl2;
-      default:
-        return '';
-    }
-  }
-
-  void _buildTracks() {
-    if (_adoration == null) return;
-    final a = _adoration!;
-    _tracks = [];
-
-    // Build track list from available audio sections
-    final sections = <Map<String, dynamic>>[
-      if (a.introAudio?.isNotEmpty == true)
-        {
-          'key': 'intro',
-          'label': tr('audio_intro'),
-          'url': a.introAudio!,
-          'icon': Icons.play_circle_outline,
-          'color': AppColors.primary,
-        },
-      if (a.introductoryPrayersAudio?.isNotEmpty == true)
-        {
-          'key': 'introductory_prayers',
-          'label': tr('introductory_prayers'),
-          'url': a.introductoryPrayersAudio!,
-          'icon': Icons.auto_stories_outlined,
-          'color': AppColors.primary,
-        },
-      if (a.lectioAudio?.isNotEmpty == true)
-        {
-          'key': 'lectio',
-          'label': 'Lectio',
-          'url': a.lectioAudio!,
-          'icon': Icons.menu_book_rounded,
-          'color': AppColors.primary,
-        },
-      if (a.commentaryAudio?.isNotEmpty == true)
-        {
-          'key': 'commentary',
-          'label': tr('comment'),
-          'url': a.commentaryAudio!,
-          'icon': Icons.comment_outlined,
-          'color': AppColors.accent,
-        },
-      if (a.meditatioAudio?.isNotEmpty == true)
-        {
-          'key': 'meditatio',
-          'label': 'Meditatio',
-          'url': a.meditatioAudio!,
-          'icon': Icons.self_improvement,
-          'color': AppColors.primary,
-        },
-      if (a.oratioAudio?.isNotEmpty == true)
-        {
-          'key': 'oratio',
-          'label': 'Oratio',
-          'url': a.oratioAudio!,
-          'icon': Icons.favorite_rounded,
-          'color': AppColors.primary,
-        },
-      if (a.contemplatioAudio?.isNotEmpty == true)
-        {
-          'key': 'contemplatio',
-          'label': 'Contemplatio',
-          'url': a.contemplatioAudio!,
-          'icon': Icons.visibility_rounded,
-          'color': AppColors.primary,
-        },
-      if (a.actioAudio?.isNotEmpty == true)
-        {
-          'key': 'actio',
-          'label': 'Actio',
-          'url': a.actioAudio!,
-          'icon': Icons.directions_run_rounded,
-          'color': AppColors.primary,
-        },
-    ];
-
-    _tracks = sections;
-  }
-
-  /// Build ConcatenatingAudioSource from section audios + interludes
-  Future<void> _buildAndPlayPlaylist({int fromTrack = 0}) async {
-    if (_adoration == null || _tracks.isEmpty) return;
-    final interludeUrl = _getInterludeUrl();
-
-    final sources = <AudioSource>[];
-    _sourceMap = [];
-
-    final albumName = tr('eucharistic_adoration');
-    final artist = _adoration?.author ?? albumName;
-
-    for (int i = 0; i < _tracks.length; i++) {
-      final track = _tracks[i];
-      final url = track['url'] as String;
-      final label = track['label'] as String;
-      final key = track['key'] as String;
-
-      sources.add(
-        // ignore: experimental_member_use  (LockCaching je stabilný napriek @experimental)
-        LockCachingAudioSource(
-          Uri.parse(url),
-          tag: MediaItem(
-            id: key,
-            album: albumName,
-            title: label,
-            artist: artist,
-            artUri: _artUri,
-          ),
-        ),
-      );
-      _sourceMap.add({'type': 'track', 'trackIndex': i});
-
-      // Interlude between sections (if mode != none)
-      if (interludeUrl.isNotEmpty && i < _tracks.length - 1) {
-        final interludeArtist = _audioMode == 'short' ? 'MudiG' : 'Off Beat';
-        sources.add(
-          // ignore: experimental_member_use  (LockCaching je stabilný napriek @experimental)
-          LockCachingAudioSource(
-            Uri.parse(interludeUrl),
-            tag: MediaItem(
-              id: 'interlude_$i',
-              album: albumName,
-              title: 'Meditačná hudba',
-              artist: interludeArtist,
-              artUri: _artUri,
-            ),
-          ),
-        );
-        _sourceMap.add({'type': 'interlude', 'trackIndex': i});
-      }
-    }
-
-    if (sources.isEmpty) return;
-
-    try {
-      await _audioPlayer.stop();
-      await AudioExclusive.acquire(_audioPlayer);
-      final playlist = ConcatenatingAudioSource(children: sources);
-      await _audioPlayer.setAudioSource(playlist);
-
-      if (fromTrack > 0) {
-        final nativeIdx = _sourceMap.indexWhere(
-          (e) => e['type'] == 'track' && e['trackIndex'] == fromTrack,
-        );
-        if (nativeIdx >= 0) {
-          await _audioPlayer.seek(Duration.zero, index: nativeIdx);
-        }
-      }
-
-      await _audioPlayer.play();
-    } catch (e) {
-      debugPrint('Error building adoration playlist: $e');
-    }
-  }
-
-  void _onPlayPause() {
-    if (_isPlaying) {
-      _audioPlayer.pause();
-    } else {
-      if (_audioPlayer.processingState == ProcessingState.idle ||
-          _audioPlayer.processingState == ProcessingState.completed) {
-        _buildAndPlayPlaylist();
-      } else {
-        AudioExclusive.acquire(_audioPlayer).then((_) => _audioPlayer.play());
-      }
-    }
-  }
-
-  void _onSkipNext() {
-    final currentNative = _audioPlayer.currentIndex ?? 0;
-    for (int i = currentNative + 1; i < _sourceMap.length; i++) {
-      if (_sourceMap[i]['type'] == 'track') {
-        _audioPlayer.seek(Duration.zero, index: i);
-        return;
-      }
-    }
-  }
-
-  void _onSkipPrevious() {
-    final currentNative = _audioPlayer.currentIndex ?? 0;
-    for (int i = currentNative - 1; i >= 0; i--) {
-      if (_sourceMap[i]['type'] == 'track') {
-        _audioPlayer.seek(Duration.zero, index: i);
-        return;
-      }
-    }
-  }
-
-  int get _currentTrackIndex {
-    final nativeIdx = _audioPlayer.currentIndex ?? 0;
-    if (nativeIdx < _sourceMap.length) {
-      return _sourceMap[nativeIdx]['trackIndex'] as int;
-    }
-    return 0;
   }
 
   @override
@@ -410,44 +107,34 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
     _loadAdoration();
   }
 
+  @override
+  void dispose() {
+    // Pri odchode zastav len audio tejto adorácie.
+    final bus = MediaPlayerBus.instance;
+    if (bus.currentId != null && bus.currentId!.startsWith(_mediaPrefix)) {
+      bus.stop();
+    }
+    _pageController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadAdoration() async {
     if (!mounted) return;
-
     setState(() {
-      _isLoading = true;
+      _isLoading = _adoration == null; // initialAdoration len potlačí spinner
       _error = null;
     });
-
     try {
-      final lang = context.locale.languageCode;
-
-      // Load adoration if not provided initially
-      Adoration? adoration = _adoration;
-      if (adoration == null) {
-        adoration = await _adorationService.getAdoration(widget.adorationId);
-        if (adoration == null) {
-          throw Exception(tr('adoration_not_found'));
-        }
-      }
-
-      // Load navigation (next/previous)
-      final next = await _adorationService.getNextAdoration(
-        adoration.order,
-        lang,
-      );
-      final previous = await _adorationService.getPreviousAdoration(
-        adoration.order,
-        lang,
-      );
-
+      // Vždy dotiahni čerstvý detail (kvôli full_audio_url a úplným sekciám),
+      // aj keď máme initialAdoration zo zoznamu.
+      final detail = await _service.getAdoration(widget.adorationId);
+      if (detail == null) throw Exception(tr('adoration_not_found'));
       if (mounted) {
         setState(() {
-          _adoration = adoration;
-          _nextAdoration = next;
-          _previousAdoration = previous;
+          _adoration = detail;
           _isLoading = false;
         });
-        _buildTracks();
+        _rebuildSections();
       }
     } catch (e) {
       if (mounted) {
@@ -459,13 +146,117 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
     }
   }
 
-  void _navigateToAdoration(String adorationId, Adoration adoration) {
-    Navigator.of(context).pushReplacement(
+  // Zostaví usporiadaný zoznam sekcií (poradie = poradie v „celom audiu").
+  void _rebuildSections() {
+    final a = _adoration;
+    if (a == null) {
+      _sections = [];
+      return;
+    }
+    final d = a.audioDurations;
+    // Biblický odkaz (súradnica) + autor sú v hero, nie ako karta.
+    final raw = <_AdorationSection>[
+      _AdorationSection(
+        key: 'intro',
+        title: tr('audio_intro'),
+        html: a.introduction,
+        audioUrl: a.introAudio,
+        durSec: d['uvod'],
+      ),
+      _AdorationSection(
+        key: 'introductory_prayers',
+        title: tr('introductory_prayers'),
+        html: a.introductoryPrayers ?? '',
+        audioUrl: a.introductoryPrayersAudio,
+        durSec: d['uvodne_modlitby'],
+      ),
+      _AdorationSection(
+        key: 'lectio',
+        title: 'Lectio',
+        subtitle: tr('reading'),
+        html: a.lectioText ?? '',
+        audioUrl: a.lectioAudio,
+        durSec: d['lectio'],
+      ),
+      _AdorationSection(
+        key: 'commentary',
+        title: tr('comment'),
+        html: a.commentary ?? '',
+        audioUrl: a.commentaryAudio,
+        durSec: d['komentar'],
+      ),
+      _AdorationSection(
+        key: 'meditatio',
+        title: 'Meditatio',
+        subtitle: tr('meditation'),
+        html: a.meditatioText ?? '',
+        audioUrl: a.meditatioAudio,
+        durSec: d['meditatio'],
+      ),
+      _AdorationSection(
+        key: 'oratio',
+        title: 'Oratio',
+        subtitle: tr('prayer'),
+        html: a.oratioHtml ?? '',
+        audioUrl: a.oratioAudio,
+        durSec: d['oratio'],
+      ),
+      _AdorationSection(
+        key: 'contemplatio',
+        title: 'Contemplatio',
+        subtitle: tr('contemplation'),
+        html: a.contemplatioText ?? '',
+        audioUrl: a.contemplatioAudio,
+        durSec: d['contemplatio'],
+      ),
+      _AdorationSection(
+        key: 'actio',
+        title: 'Actio',
+        subtitle: tr('action'),
+        html: a.actioText ?? '',
+        audioUrl: a.actioAudio,
+        durSec: d['actio'],
+      ),
+    ];
+    // Karta má zmysel len ak má text alebo audio.
+    _sections = raw.where((s) => s.hasHtml || s.hasAudio).toList();
+  }
+
+  // Fullscreen čítačka sekcií (rovnaká ako Lectio/krížová cesta). Zdieľa stepKey
+  // s kartami, takže prehrávanie plynulo nadväzuje.
+  void _openReader(int index) {
+    if (_sections.isEmpty) return;
+
+    final steps = <LectioReaderStep>[];
+    for (var i = 0; i < _sections.length; i++) {
+      final s = _sections[i];
+      if (!s.hasHtml) continue; // preskoč karty bez textu
+      steps.add(
+        LectioReaderStep(
+          stepKey: '${_mediaPrefix}_$i',
+          title: s.title,
+          text: _processAdorationContent(s.html),
+          reference: s.subtitle,
+          audioUrl: s.hasAudio ? s.audioUrl : null,
+          analyticsId: widget.adorationId,
+          language: _adoration?.lang,
+          isHtml: true,
+          contentType: 'adoration',
+          artUri: _artUri,
+        ),
+      );
+    }
+    if (steps.isEmpty) return;
+
+    // Index v čítačke = index v odfiltrovanom zozname (bez kariet bez textu).
+    final readerIndex =
+        _sections.take(index + 1).where((s) => s.hasHtml).length - 1;
+
+    Navigator.of(context).push(
       MaterialPageRoute(
-        settings: RouteSettings(name: '/adoration/$adorationId'),
-        builder: (context) => AdorationDetailScreen(
-          adorationId: adorationId,
-          initialAdoration: adoration,
+        builder: (_) => LectioReaderScreen(
+          steps: steps,
+          initialIndex: readerIndex.clamp(0, steps.length - 1),
         ),
       ),
     );
@@ -473,745 +264,509 @@ class _AdorationDetailScreenState extends State<AdorationDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    if (_isLoading) {
-      return _buildLoadingScreen(theme);
-    }
-
-    if (_error != null || _adoration == null) {
-      return _buildErrorScreen(theme);
-    }
-
-    final hasSectionAudios = _tracks.isNotEmpty;
-
     return Scaffold(
       backgroundColor: HomeV2.background(context),
-      body: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary.withValues(alpha: 0.1),
-                  HomeV2.background(context),
-                  AppColors.accent.withValues(alpha: 0.05),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: CustomScrollView(
-              slivers: [
-                _buildAppBar(theme),
-                SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      // Content
-                      Column(
-                        children: [
-                          _buildBiblicalText(theme),
-                          _buildIntroduction(theme),
-                          if (_adoration!.introductoryPrayers?.isNotEmpty ==
-                              true)
-                            _buildIntroductoryPrayers(theme),
-                          _buildLectioDivinaSections(theme),
-                          if (_adoration!.commentary?.isNotEmpty == true)
-                            _buildComment(theme),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.lg,
-                            ),
-                            child: _buildNavigationButtons(theme),
-                          ),
-                          // Bottom padding for floating player + nav bar
-                          SizedBox(
-                            height:
-                                (_showAudioPlayer
-                                    ? 120 + AppSpacing.xl
-                                    : AppSpacing.xl) +
-                                MediaQuery.of(context).viewPadding.bottom,
-                          ),
-                        ],
-                      ),
-                    ],
+      body: _isLoading
+          ? _buildLoading()
+          : (_error != null || _adoration == null)
+              ? _buildError()
+              : _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    final a = _adoration!;
+    final safe = _sections.isEmpty ? 0 : _currentPage.clamp(0, _sections.length - 1);
+
+    return Column(
+      children: [
+        _AdorationHero(adoration: a),
+        if (a.fullAudioUrl != null && a.fullAudioUrl!.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.md),
+          _FullAudioCard(
+            mediaId: '${_mediaPrefix}_full',
+            url: a.fullAudioUrl!,
+            title: a.title,
+            durationSeconds: a.fullAudioDuration,
+            artUri: _artUri,
+            contentId: widget.adorationId,
+            language: a.lang,
+          ),
+        ],
+        const SizedBox(height: AppSpacing.sm),
+        Expanded(
+          child: _sections.isEmpty
+              ? Center(child: Text(tr('adoration_not_found'),
+                  style: TextStyle(color: HomeV2.textMuted(context))))
+              : PageView.builder(
+                  controller: _pageController,
+                  itemCount: _sections.length,
+                  onPageChanged: (i) => setState(() => _currentPage = i),
+                  itemBuilder: (_, i) => _AdorationCard(
+                    section: _sections[i],
+                    mediaId: '${_mediaPrefix}_$i',
+                    contentId: widget.adorationId,
+                    language: a.lang,
+                    artUri: _artUri,
+                    onExpand: () => _openReader(i),
                   ),
                 ),
-              ],
+        ),
+        if (_sections.length > 1) _buildProgress(_sections.length, safe),
+      ],
+    );
+  }
+
+  Widget _buildProgress(int count, int current) {
+    return Padding(
+      padding: EdgeInsets.only(
+        top: AppSpacing.sm,
+        bottom: AppSpacing.md + MediaQuery.of(context).viewPadding.bottom,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(count, (i) {
+          final active = i == current;
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            width: active ? 22 : 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: active ? HomeV2.primary : HomeV2.primary.withValues(alpha: 0.25),
+              borderRadius: BorderRadius.circular(4),
             ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildLoading() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(HomeV2.primary),
+            strokeWidth: 3,
           ),
-          // Lectio-style floating audio player
-          if (_showAudioPlayer && _tracks.isNotEmpty)
-            LectioFloatingAudioPlayer(
-              tracks: _tracks,
-              currentAudioSection: _currentAudioSection,
-              isPlaying: _isPlaying,
-              isPlayingInterlude: _isPlayingInterlude,
-              isMinimized: _isMinimized,
-              currentPosition: _currentPosition,
-              totalDuration: _totalDuration,
-              audioMode: _audioMode,
-              playlistPageController: _playlistPageController,
-              onPlayPause: _onPlayPause,
-              onSkipPrevious: _currentTrackIndex > 0 ? _onSkipPrevious : null,
-              onSkipNext: _currentTrackIndex < _tracks.length - 1
-                  ? _onSkipNext
-                  : null,
-              onSeekStart: () {},
-              onSeekChanged: (pos) {
-                setState(() => _currentPosition = pos);
-              },
-              onSeekEnd: (value) {
-                _audioPlayer.seek(Duration(milliseconds: value.toInt()));
-              },
-              onPlayTrack: (url, key) {
-                final idx = _tracks.indexWhere((t) => t['key'] == key);
-                if (idx >= 0) {
-                  final nativeIdx = _sourceMap.indexWhere(
-                    (e) => e['type'] == 'track' && e['trackIndex'] == idx,
-                  );
-                  if (nativeIdx >= 0 &&
-                      _audioPlayer.processingState != ProcessingState.idle) {
-                    _audioPlayer.seek(Duration.zero, index: nativeIdx);
-                  } else {
-                    _buildAndPlayPlaylist(fromTrack: idx);
-                  }
-                }
-              },
-              onAudioModeChanged: _saveAudioMode,
-              onMinimize: () {
-                setState(() => _isMinimized = !_isMinimized);
-              },
-              onClose: () async {
-                await _audioPlayer.stop();
-                if (mounted) {
-                  setState(() {
-                    _showAudioPlayer = false;
-                    _isPlaying = false;
-                    _currentAudioSection = null;
-                  });
-                }
-              },
-            ),
-          // FAB to open player when closed (only if there are section audios)
-          if (!_showAudioPlayer && hasSectionAudios)
-            Positioned(
-              right: AppSpacing.lg,
-              bottom:
-                  AppSpacing.xxl + MediaQuery.of(context).viewPadding.bottom,
-              child: FloatingActionButton(
-                heroTag: 'adoration_open_player',
-                backgroundColor: AppColors.primary,
-                onPressed: () {
-                  setState(() {
-                    _showAudioPlayer = true;
-                    if (_tracks.isNotEmpty) {
-                      _currentAudioSection = _tracks[0]['key'] as String;
-                    }
-                  });
-                  _buildAndPlayPlaylist();
-                },
-                child: const Icon(
-                  Icons.music_note_rounded,
-                  color: Colors.white,
-                ),
-              ),
-            ),
+          const SizedBox(height: AppSpacing.xl),
+          Text(tr('loading_adoration'),
+              style: TextStyle(color: HomeV2.textMuted(context))),
         ],
       ),
     );
   }
 
-  Widget _buildLoadingScreen(ThemeData theme) {
-    return Scaffold(
-      backgroundColor: HomeV2.background(context),
-      body: Center(
+  Widget _buildError() {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(HomeV2.primary),
-              strokeWidth: 3,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            Text(
-              tr('loading_adoration'),
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: HomeV2.textDark(context),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              tr('preparing_spiritual_journey'),
-              style: TextStyle(color: HomeV2.textMuted(context)),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorScreen(ThemeData theme) {
-    final topPad = MediaQuery.of(context).padding.top;
-    return Scaffold(
-      backgroundColor: HomeV2.background(context),
-      body: Column(
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-                AppSpacing.sm, topPad + AppSpacing.sm, AppSpacing.sm, 0),
-            child: Align(
-              alignment: Alignment.centerLeft,
+            Align(
+              alignment: Alignment.topLeft,
               child: _CircleButton(
                 icon: Icons.arrow_back_rounded,
                 onTap: () => Navigator.of(context).maybePop(),
               ),
             ),
+            const Spacer(),
+            Icon(Icons.error_outline_rounded, size: 48, color: HomeV2.textMuted(context)),
+            const SizedBox(height: AppSpacing.md),
+            Text(tr('adoration_not_found'),
+                textAlign: TextAlign.center,
+                style: TextStyle(color: HomeV2.textMuted(context))),
+            const Spacer(flex: 2),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Hero adorácie ────────────────────────────────────────────────────────────
+class _AdorationHero extends StatelessWidget {
+  final Adoration adoration;
+  const _AdorationHero({required this.adoration});
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
+    final bg = HomeV2.background(context);
+    final img = adoration.hasImage ? adoration.illustrationImage : null;
+
+    return SizedBox(
+      height: 240,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(HomeV2.radius + 6)),
+            child: img != null
+                ? Image.network(img,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.topCenter,
+                    errorBuilder: (_, _, _) => _HeroFallback())
+                : _HeroFallback(),
           ),
-          Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xxl),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.xl),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFC0392B).withValues(alpha: 0.10),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.error_outline_rounded,
-                          size: 52, color: Color(0xFFC0392B)),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      tr('adoration_not_found'),
-                      style: HomeV2.serifTitle(context, size: 22),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      _error ?? tr('requested_adoration_not_found'),
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.5,
-                        color: HomeV2.textMuted(context),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                          label: Text(tr('back_to_list')),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: HomeV2.primary,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.full),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        TextButton.icon(
-                          onPressed: _loadAdoration,
-                          icon:
-                              Icon(Icons.refresh_rounded, color: HomeV2.primary),
-                          label: Text(
-                            tr('try_again'),
-                            style: TextStyle(
-                                color: HomeV2.primary,
-                                fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(HomeV2.radius + 6)),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [bg.withValues(alpha: 0.45), Colors.transparent, bg.withValues(alpha: 0.7), bg],
+                  stops: const [0.0, 0.25, 0.7, 1.0],
                 ),
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAppBar(ThemeData theme) {
-    // Jednotný zbaliteľný hero (vzor krížové cesty) — CollapsibleHeroAppBar.
-    return CollapsibleHeroAppBar(
-      collapsedTitle: _adoration!.title,
-      imageUrl: _adoration!.hasImage ? _adoration!.illustrationImage : null,
-      expandedContent: HeroCenteredContent(
-        title: _adoration!.title,
-        subtitle: _adoration!.author,
-        icon: Icons.favorite_rounded,
-      ),
-    );
-  }
-
-  Widget _buildBiblicalText(ThemeData theme) {
-    final theme = Theme.of(context);
-    return SizedBox(
-      width: double.infinity,
-      child: Card(
-        margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-        elevation: AppElevation.medium,
-        color: AppColors.primary.withValues(alpha: 0.05),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          side: BorderSide(
-            color: AppColors.primary.withValues(alpha: 0.2),
-            width: 1,
+          Positioned(
+            top: topPad + AppSpacing.sm,
+            left: AppSpacing.lg,
+            child: _CircleButton(
+              icon: Icons.arrow_back_rounded,
+              onTap: () => Navigator.of(context).maybePop(),
+            ),
           ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
+          Positioned(
+            left: AppSpacing.xl,
+            right: AppSpacing.xl,
+            bottom: AppSpacing.md,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  adoration.title,
+                  style: HomeV2.serifTitle(context, size: 20, color: HomeV2.textDark(context), height: 1.1),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (adoration.biblicalText.trim().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    adoration.biblicalText,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w600,
+                      color: HomeV2.iconAccent(context),
                     ),
-                    child: Icon(
-                      Icons.menu_book_rounded,
-                      color: AppColors.primary,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Text(
-                      _adoration!.biblicalText,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIntroduction(ThemeData theme) {
-    final theme = Theme.of(context);
-    if (_adoration!.introduction.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return SizedBox(
-      width: double.infinity,
-      child: Card(
-        margin: const EdgeInsets.symmetric(
-          vertical: AppSpacing.sm,
-          horizontal: AppSpacing.lg,
-        ),
-        elevation: AppElevation.medium,
-        color: theme.cardColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                tr('audio_intro'),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Html(
-                data: _adoration!.introduction,
-                style: {
-                  "body": Style(
-                    margin: Margins.zero,
-                    padding: HtmlPaddings.zero,
-                  ),
-                  "p": Style(
-                    lineHeight: const LineHeight(1.6),
-                    color: theme.colorScheme.onSurface,
-                    margin: Margins.only(top: 0, bottom: 4),
-                  ),
-                  "div": Style(
-                    lineHeight: const LineHeight(1.6),
-                    color: theme.colorScheme.onSurface,
-                    margin: Margins.zero,
-                  ),
-                  "hr": Style(
-                    margin: Margins.only(top: 8, bottom: 8),
-                    border: const Border(
-                      bottom: BorderSide(color: Colors.grey, width: 1),
+                if (adoration.author != null && adoration.author!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    adoration.author!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: HomeV2.textMuted(context),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIntroductoryPrayers(ThemeData theme) {
-    final theme = Theme.of(context);
-    return SizedBox(
-      width: double.infinity,
-      child: Card(
-        margin: const EdgeInsets.symmetric(
-          vertical: AppSpacing.sm,
-          horizontal: AppSpacing.lg,
-        ),
-        elevation: AppElevation.medium,
-        color: theme.cardColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                tr('introductory_prayers'),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Html(
-                data: _adoration!.introductoryPrayers!,
-                style: {
-                  "body": Style(
-                    margin: Margins.zero,
-                    padding: HtmlPaddings.zero,
-                  ),
-                  "p": Style(
-                    lineHeight: const LineHeight(1.6),
-                    color: theme.colorScheme.onSurface,
-                    margin: Margins.only(top: 0, bottom: 4),
-                  ),
-                  "div": Style(
-                    lineHeight: const LineHeight(1.6),
-                    color: theme.colorScheme.onSurface,
-                    margin: Margins.zero,
-                  ),
-                  "hr": Style(
-                    margin: Margins.only(top: 8, bottom: 8),
-                    border: const Border(
-                      bottom: BorderSide(color: Colors.grey, width: 1),
-                    ),
-                  ),
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLectioDivinaSections(ThemeData theme) {
-    final sections = <String, String>{
-      if (_adoration!.lectioText?.isNotEmpty == true)
-        'lectio': _adoration!.lectioText!,
-      if (_adoration!.meditatioText?.isNotEmpty == true)
-        'meditatio': _adoration!.meditatioText!,
-      if (_adoration!.oratioHtml?.isNotEmpty == true)
-        'oratio': _adoration!.oratioHtml!,
-      if (_adoration!.contemplatioText?.isNotEmpty == true)
-        'contemplatio': _adoration!.contemplatioText!,
-      if (_adoration!.actioText?.isNotEmpty == true)
-        'actio': _adoration!.actioText!,
-    };
-
-    if (sections.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      children: sections.entries.map((entry) {
-        final sectionInfo = _getSectionInfo(entry.key);
-        return _buildSection(theme, sectionInfo, entry.value);
-      }).toList(),
-    );
-  }
-
-  Map<String, dynamic> _getSectionInfo(String key) {
-    final lectioDivinaSteps = {
-      'lectio': {
-        'name': 'Lectio',
-        'subtitle': tr('reading'),
-        'color': AppColors.primary,
-      },
-      'meditatio': {
-        'name': 'Meditatio',
-        'subtitle': tr('meditation'),
-        'color': AppColors.primary,
-      },
-      'oratio': {
-        'name': 'Oratio',
-        'subtitle': tr('prayer'),
-        'color': AppColors.primary,
-      },
-      'contemplatio': {
-        'name': 'Contemplatio',
-        'subtitle': tr('contemplation'),
-        'color': AppColors.primary,
-      },
-      'actio': {
-        'name': 'Actio',
-        'subtitle': tr('action'),
-        'color': AppColors.primary,
-      },
-    };
-
-    return lectioDivinaSteps[key] ??
-        {'name': key, 'subtitle': '', 'color': AppColors.primary};
-  }
-
-  Widget _buildSection(
-    ThemeData theme,
-    Map<String, dynamic> sectionInfo,
-    String content,
-  ) {
-    final theme = Theme.of(context);
-    return SizedBox(
-      width: double.infinity,
-      child: Card(
-        margin: const EdgeInsets.symmetric(
-          vertical: AppSpacing.sm,
-          horizontal: AppSpacing.lg,
-        ),
-        elevation: AppElevation.medium,
-        color: theme.cardColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                sectionInfo['name'],
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: sectionInfo['color'],
-                ),
-              ),
-              if (sectionInfo['subtitle'].isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  sectionInfo['subtitle'],
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
+                ],
               ],
-              const SizedBox(height: AppSpacing.sm),
-              Html(
-                data: content,
-                style: {
-                  "body": Style(
-                    margin: Margins.zero,
-                    padding: HtmlPaddings.zero,
-                  ),
-                  "p": Style(
-                    lineHeight: const LineHeight(1.6),
-                    color: theme.colorScheme.onSurface,
-                    margin: Margins.only(top: 0, bottom: 4),
-                  ),
-                  "div": Style(
-                    lineHeight: const LineHeight(1.6),
-                    color: theme.colorScheme.onSurface,
-                    margin: Margins.zero,
-                  ),
-                  "hr": Style(
-                    margin: Margins.only(top: 8, bottom: 8),
-                    border: const Border(
-                      bottom: BorderSide(color: Colors.grey, width: 1),
-                    ),
-                  ),
-                },
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildComment(ThemeData theme) {
-    final theme = Theme.of(context);
-    return SizedBox(
-      width: double.infinity,
-      child: Card(
-        margin: const EdgeInsets.symmetric(
-          vertical: AppSpacing.sm,
-          horizontal: AppSpacing.lg,
-        ),
-        elevation: AppElevation.medium,
-        color: theme.cardColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                tr('comment'),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.accent,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Html(
-                data: _adoration!.commentary!,
-                style: {
-                  "body": Style(
-                    margin: Margins.zero,
-                    padding: HtmlPaddings.zero,
-                  ),
-                  "p": Style(
-                    lineHeight: const LineHeight(1.6),
-                    color: theme.colorScheme.onSurface,
-                    margin: Margins.only(top: 0, bottom: 4),
-                  ),
-                  "div": Style(
-                    lineHeight: const LineHeight(1.6),
-                    color: theme.colorScheme.onSurface,
-                    margin: Margins.zero,
-                  ),
-                  "hr": Style(
-                    margin: Margins.only(top: 8, bottom: 8),
-                    border: const Border(
-                      bottom: BorderSide(color: Colors.grey, width: 1),
-                    ),
-                  ),
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavigationButtons(ThemeData theme) {
-    final hasPrevious = _previousAdoration != null;
-    final hasNext = _nextAdoration != null;
-
-    if (!hasPrevious && !hasNext) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.cardColor.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withValues(alpha: 0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xxl,
-        vertical: AppSpacing.lg,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Previous Button
-          if (hasPrevious)
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => _navigateToAdoration(
-                  _previousAdoration!.id,
-                  _previousAdoration!,
-                ),
-                icon: const Icon(Icons.arrow_back_rounded),
-                label: Text(
-                  tr('previous'),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 14,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-            )
-          else
-            const Expanded(child: SizedBox.shrink()),
-
-          if (hasPrevious && hasNext) const SizedBox(width: AppSpacing.md),
-
-          // Next Button
-          if (hasNext)
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () =>
-                    _navigateToAdoration(_nextAdoration!.id, _nextAdoration!),
-                icon: const Icon(Icons.arrow_forward_rounded),
-                label: Text(
-                  tr('next'),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 14,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-            )
-          else
-            const Expanded(child: SizedBox.shrink()),
         ],
       ),
     );
   }
 }
 
+class _HeroFallback extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [HomeV2.primary, HomeV2.primary.withValues(alpha: 0.65)],
+        ),
+      ),
+      child: Center(
+        child: Icon(Icons.favorite_rounded,
+            size: 64, color: Colors.white.withValues(alpha: 0.35)),
+      ),
+    );
+  }
+}
+
+// ── Karta sekcie (accent podnadpis + názov + play + text) ────────────────────
+class _AdorationCard extends StatelessWidget {
+  final _AdorationSection section;
+  final String mediaId;
+  final String contentId;
+  final String language;
+  final String? artUri;
+  final VoidCallback? onExpand;
+
+  const _AdorationCard({
+    required this.section,
+    required this.mediaId,
+    required this.contentId,
+    required this.language,
+    this.artUri,
+    this.onExpand,
+  });
+
+  String _fmt(double s) {
+    final d = Duration(seconds: s.round());
+    final m = d.inMinutes;
+    final sec = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$sec';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final processed = _processAdorationContent(section.html);
+    final canExpand = onExpand != null && section.hasHtml;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadow(context),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (section.subtitle != null && section.subtitle!.isNotEmpty)
+                        Text(section.subtitle!.toUpperCase(),
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+                                letterSpacing: 1.1, color: HomeV2.iconAccent(context))),
+                      const SizedBox(height: 2),
+                      Text(section.title,
+                          style: HomeV2.serifTitle(context, size: 20, color: HomeV2.primary)),
+                      if (section.durSec != null && section.durSec! > 0) ...[
+                        const SizedBox(height: 2),
+                        Text(_fmt(section.durSec!),
+                            style: TextStyle(fontSize: 12, color: HomeV2.textMuted(context))),
+                      ],
+                    ],
+                  ),
+                ),
+                if (canExpand) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  ExpandButton(onTap: onExpand!),
+                ],
+                if (section.hasAudio) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  StepPlayButton(
+                    stepKey: mediaId,
+                    url: section.audioUrl!,
+                    title: section.title,
+                    analyticsId: contentId,
+                    language: language,
+                    contentType: 'adoration',
+                    artUri: artUri,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.xl),
+              child: section.hasHtml
+                  ? GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: canExpand ? onExpand : null,
+                      child: Html(
+                        data: processed,
+                        style: {
+                          // Typografia musí byť aj na `body`, nielen na `p`:
+                          // časť textov v DB je uložená BEZ `<p>` tagov (napr.
+                          // 9 zo 60 úvodov ruženca), tie by inak vypadli na
+                          // predvolený štýl a v tej istej pobožnosti by sa
+                          // striedali dve rôzne písma.
+                          "body": Style(
+                            margin: Margins.zero,
+                            padding: HtmlPaddings.zero,
+                            lineHeight: const LineHeight(1.6),
+                            color: theme.colorScheme.onSurface,
+                            fontSize: FontSize(theme.textTheme.bodyLarge?.fontSize ?? 16),
+                            fontFamily: theme.textTheme.bodyLarge?.fontFamily,
+                            textAlign: TextAlign.justify,
+                          ),
+                          "p": Style(
+                            lineHeight: const LineHeight(1.6),
+                            color: theme.colorScheme.onSurface,
+                            fontSize: FontSize(theme.textTheme.bodyLarge?.fontSize ?? 16),
+                            fontFamily: theme.textTheme.bodyLarge?.fontFamily,
+                            margin: Margins.only(top: 0, bottom: 12),
+                            textAlign: TextAlign.justify,
+                          ),
+                          "hr": Style(
+                            margin: Margins.only(top: 8, bottom: 8),
+                            border: const Border(bottom: BorderSide(color: Colors.grey, width: 1)),
+                          ),
+                        },
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── „Celé audio" karta (spojený súbor cez MediaPlayerBus) ────────────────────
+class _FullAudioCard extends StatelessWidget {
+  final String mediaId;
+  final String url;
+  final String title;
+  final double? durationSeconds;
+  final String? artUri;
+  final String contentId;
+  final String language;
+
+  const _FullAudioCard({
+    required this.mediaId,
+    required this.url,
+    required this.title,
+    required this.durationSeconds,
+    required this.contentId,
+    required this.language,
+    this.artUri,
+  });
+
+  String _fmt(Duration d) {
+    final m = d.inMinutes;
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bus = MediaPlayerBus.instance;
+    final accent = HomeV2.primary;
+    final dbTotal = (durationSeconds != null && durationSeconds! > 0)
+        ? Duration(milliseconds: (durationSeconds! * 1000).round())
+        : null;
+
+    void toggle() => bus.toggle(
+          id: mediaId,
+          url: url,
+          title: '${tr('full_audio')} — $title',
+          artUri: artUri,
+          contentType: 'adoration',
+          contentId: contentId,
+          language: language,
+        );
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadow(context),
+      ),
+      child: ListenableBuilder(
+        listenable: bus,
+        builder: (context, _) {
+          final isCurrent = bus.isCurrent(mediaId);
+          return StreamBuilder<PlayerState>(
+            stream: bus.playerStateStream,
+            initialData: bus.playerState,
+            builder: (context, stSnap) {
+              final st = stSnap.data;
+              final isCompleted = isCurrent && st?.processingState == ProcessingState.completed;
+              final isPlaying = isCurrent && (st?.playing ?? false) && !isCompleted;
+              return StreamBuilder<Duration>(
+                stream: bus.positionStream,
+                initialData: bus.position,
+                builder: (context, posSnap) {
+                  final pos = isCurrent ? (posSnap.data ?? Duration.zero) : Duration.zero;
+                  final total = dbTotal ?? (isCurrent ? bus.duration : null) ?? Duration.zero;
+                  final maxMs = total.inMilliseconds > 0 ? total.inMilliseconds.toDouble() : 1.0;
+                  final value = pos.inMilliseconds.toDouble().clamp(0.0, maxMs);
+                  return Column(
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.headphones_rounded, size: 18, color: accent),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Text(tr('full_audio'),
+                                style: TextStyle(fontWeight: FontWeight.w700, color: HomeV2.textDark(context))),
+                          ),
+                          GestureDetector(
+                            onTap: toggle,
+                            child: Container(
+                              width: 44, height: 44,
+                              decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+                              child: Icon(
+                                isCompleted ? Icons.replay_rounded : (isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                                color: Colors.white, size: 26,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 3,
+                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                          activeTrackColor: accent,
+                          inactiveTrackColor: accent.withValues(alpha: 0.2),
+                          thumbColor: accent,
+                        ),
+                        child: Slider(
+                          value: value,
+                          min: 0,
+                          max: maxMs,
+                          onChanged: isCurrent ? (v) => bus.seek(Duration(milliseconds: v.round())) : null,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(_fmt(pos), style: TextStyle(fontSize: 11, color: HomeV2.textMuted(context))),
+                            Text(_fmt(total), style: TextStyle(fontSize: 11, color: HomeV2.textMuted(context))),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ── Okrúhle tlačidlo (späť) ──────────────────────────────────────────────────
 class _CircleButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
@@ -1219,17 +774,15 @@ class _CircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: HomeV2.card(context).withValues(alpha: 0.92),
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: SizedBox(
-          width: 44,
-          height: 44,
-          child: Icon(icon, color: HomeV2.primary, size: 22),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40, height: 40,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.35),
+          shape: BoxShape.circle,
         ),
+        child: Icon(icon, color: Colors.white, size: 22),
       ),
     );
   }

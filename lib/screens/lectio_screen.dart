@@ -11,6 +11,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'dart:async';
 
 import '../models/podcast_episode.dart';
+import '../services/app_engagement_service.dart';
 import '../services/audio_download_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/lectio_admin_service.dart';
@@ -23,6 +24,7 @@ import '../utils/app_logger.dart';
 import '../utils/route_observer.dart';
 import '../utils/scripture_reference.dart';
 import '../services/media_player_bus.dart';
+import '../widgets/brand_loading.dart';
 import '../widgets/home_v2/daily_podcast_card.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
 import '../widgets/lectio_v2/lectio_step_card.dart';
@@ -100,6 +102,13 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
       _loaded = true;
       _load();
       _checkAdmin();
+      // Engagement: hodnotenie (po 7 otvoreniach) / podpora (každé 10.) prompt.
+      // Volanie sa stratilo pri v2 redizajne (c5aeb2c) — obnovené.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          AppEngagementService.instance.onLectioScreenOpened(context);
+        }
+      });
     }
   }
 
@@ -554,14 +563,19 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      // Ikony stavového riadka podľa témy, nie natvrdo: `Brightness.dark`
+      // znamená ČIERNE ikony, takže v tmavom režime boli čierne na tmavom
+      // pozadí a hodiny ani wifi nebolo vidieť.
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
+        statusBarIconBrightness:
+            HomeV2.isDark(context) ? Brightness.light : Brightness.dark,
+        statusBarBrightness:
+            HomeV2.isDark(context) ? Brightness.dark : Brightness.light,
       ),
       child: Scaffold(
         backgroundColor: HomeV2.background(context),
-        body: _loading ? const _LectioLoading() : _buildBody(),
+        body: _loading ? const BrandLoading() : _buildBody(),
       ),
     );
   }
@@ -660,6 +674,15 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
     });
   }
 
+  /// Texty z admina môžu prísť ako HTML (`AITextField` s `enableRichText`),
+  /// karty aj čítačka ich však vykresľujú ako čistý text — bez tohto by sa
+  /// používateľovi zobrazili priamo značky `<p>`, `<br>`. Odstraňujeme ich pri
+  /// čítaní, aby jeden zle uložený záznam nepokazil obrazovku.
+  static String _plainText(String? raw) {
+    final s = raw ?? '';
+    return s.contains('<') ? stripReaderHtml(s) : s;
+  }
+
   List<({String label, Widget child})> _buildSlides(Map<String, dynamic> data) {
     final suradnice = ScriptureReference.format(
       data['suradnice_pismo'] as String?,
@@ -671,7 +694,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
 
     // Biblický text (preklad z Nastavení) — prvý slide
     // (podcast je tlačidlo nad slidmi)
-    final bibleText = (data[_selectedBible] as String?) ?? '';
+    final bibleText = _plainText(data[_selectedBible] as String?);
     if (bibleText.trim().isNotEmpty) {
       final bibleTitle =
           (data['nazov_$_selectedBible'] as String?)?.trim().isNotEmpty == true
@@ -707,7 +730,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
     final sourceId = (data['id'] as num?)?.toInt();
 
     void addStep(String labelKey, String textField, String audioField) {
-      final text = (data[textField] as String?) ?? '';
+      final text = _plainText(data[textField] as String?);
       if (text.trim().isEmpty) return;
       final readerIndex = _readerSteps.length;
       _readerSteps.add(
@@ -1304,45 +1327,3 @@ class _CircleButton extends StatelessWidget {
   }
 }
 
-/// Brandovaný loading počas načítavania dňa (jemné pulzovanie loga na pozadí
-/// obrazovky). Zobrazí sa pri prvom načítaní aj pri prepínaní medzi dňami.
-class _LectioLoading extends StatefulWidget {
-  const _LectioLoading();
-
-  @override
-  State<_LectioLoading> createState() => _LectioLoadingState();
-}
-
-class _LectioLoadingState extends State<_LectioLoading>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1100),
-  )..repeat(reverse: true);
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final curved = CurvedAnimation(parent: _c, curve: Curves.easeInOut);
-    return Center(
-      child: FadeTransition(
-        opacity: Tween(begin: 0.45, end: 1.0).animate(curved),
-        child: ScaleTransition(
-          scale: Tween(begin: 0.9, end: 1.06).animate(curved),
-          child: Image.asset(
-            'assets/icon/lectio_logo.png',
-            width: 88,
-            height: 88,
-            errorBuilder: (_, _, _) =>
-                CircularProgressIndicator(color: HomeV2.primary),
-          ),
-        ),
-      ),
-    );
-  }
-}

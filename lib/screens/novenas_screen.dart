@@ -11,21 +11,6 @@ import '../shared/app_spacing.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
 import 'novena_detail_screen.dart';
 
-const List<String> _kCanonicalLangs = ['sk', 'cs', 'en', 'es', 'fr', 'pt-br'];
-
-/// Zoradí jazykové verzie deviatnika: aktuálny jazyk appky prvý.
-List<Novena> _orderVariants(List<Novena> variants, String locale) {
-  final order = <String>[locale, ..._kCanonicalLangs.where((l) => l != locale)];
-  int rank(String lang) {
-    final i = order.indexOf(lang);
-    return i < 0 ? 999 : i;
-  }
-
-  final list = [...variants]
-    ..sort((a, b) => rank(a.lang).compareTo(rank(b.lang)));
-  return list;
-}
-
 /// Zoznam deviatnikov — zoskupené podľa kategórií, s lokálnym progresom
 /// („Deň 3/9", „Dokončený"). Vizuál zrkadlí Základné modlitby.
 class NovenasScreen extends StatefulWidget {
@@ -90,19 +75,16 @@ class _NovenasScreenState extends State<NovenasScreen> {
     return code;
   }
 
-  /// Kategória → zoznam skupín (skupina = jazykové verzie jedného deviatnika).
+  /// Kategória → zoznam deviatnikov (len v jazyku aplikácie, nie všetky verzie).
   List<MapEntry<String, List<List<Novena>>>> _grouped() {
     final locale = context.locale.languageCode;
 
-    final byBase = <String, List<Novena>>{};
-    for (final n in _novenas) {
-      byBase.putIfAbsent(n.baseCode, () => []).add(n);
-    }
-
+    // Zobrazujeme iba deviatnik v jazyku aplikácie; ostatné jazykové verzie
+    // sa nezobrazujú (a detail tak nemá prepínač jazykov).
     final byCat = <String, List<List<Novena>>>{};
-    for (final variants in byBase.values) {
-      final ordered = _orderVariants(variants, locale);
-      byCat.putIfAbsent(ordered.first.category, () => []).add(ordered);
+    for (final n in _novenas) {
+      if (n.lang != locale) continue;
+      byCat.putIfAbsent(n.category, () => []).add([n]);
     }
     for (final groups in byCat.values) {
       groups.sort((a, b) {
@@ -370,6 +352,19 @@ class _NovenasScreenState extends State<NovenasScreen> {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 13,
+                            color: HomeV2.textMuted(context),
+                          ),
+                        ),
+                      ],
+                      if (n.authorName != null && n.authorName!.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '${tr('author_prefix')} ${n.authorName!}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
                             color: HomeV2.textMuted(context),
                           ),
                         ),

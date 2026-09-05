@@ -129,18 +129,42 @@ class ThemeProvider with ChangeNotifier {
     // Check if context is still mounted before using it
     if (!context.mounted) return;
 
-    // Aplikuj zmenu jazyka okamžite
+    // Cieľový jazyk (pri 'system' odvodený zo systémového nastavenia)
+    Locale target;
     if (code != 'system') {
-      await context.setLocale(Locale(code));
+      target = Locale(code);
     } else {
-      // Pre 'system' použij systémový jazyk
       final systemLocale = WidgetsBinding.instance.platformDispatcher.locale;
-      final supportedLanguages = ['en', 'sk', 'es', 'fr'];
-      final systemLang = supportedLanguages.contains(systemLocale.languageCode)
-          ? systemLocale.languageCode
-          : 'en';
-      await context.setLocale(Locale(systemLang));
+      const supportedLanguages = ['en', 'sk', 'es', 'fr'];
+      target = Locale(
+        supportedLanguages.contains(systemLocale.languageCode)
+            ? systemLocale.languageCode
+            : 'en',
+      );
     }
+
+    // Aplikuj zmenu jazyka okamžite
+    await context.setLocale(target);
+    if (!context.mounted) return;
+
+    // Vynúť znovunačítanie prekladov pre `tr()`.
+    //
+    // `tr()` číta zo STATICKÉHO singletonu `Localization.instance`, ktorý
+    // obnovuje až `load()` na easy_localization delegátovi — a Flutter ho po
+    // `setLocale` nevolá spoľahlivo. Namerané 3.8.2026 na Pixeli: pri PRVEJ
+    // zmene jazyka po štarte prebehol „Load Localization Delegate" ešte PRED
+    // „Locale en changed" a potom už nie, takže `tr()` ostal v starom jazyku,
+    // hoci `context.locale` bol nový. Preto sa obsah zo siete prepol (ten
+    // závisí od `context.locale`), ale nadpisy a menu ostali po starom až do
+    // restartu appky — presne to, čo ľudia hlásili, aj na iOS.
+    try {
+      await EasyLocalization.of(context)!.delegates.first.load(target);
+    } catch (e) {
+      debugPrint('Preklady sa nepodarilo znovu načítať: $e');
+    }
+    // Prekreslenie AŽ po načítaní — MyApp nás sleduje, takže sa prestaví celý
+    // podstrom a `tr()` už vráti nové texty.
+    notifyListeners();
   }
 
   /// Vráti správnu font family pre TextStyle

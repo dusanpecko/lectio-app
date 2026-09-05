@@ -15,6 +15,9 @@ import 'package:lectio_divina/screens/notifications_screen.dart';
 import 'package:lectio_divina/screens/profile_screen.dart';
 import 'package:lectio_divina/screens/rosary_category_screen.dart';
 import 'package:lectio_divina/screens/adoration_screen.dart';
+import 'package:lectio_divina/screens/novena_detail_screen.dart';
+import 'package:lectio_divina/services/novenas_service.dart';
+import 'package:lectio_divina/models/novena.dart';
 import 'package:lectio_divina/screens/settings_screen.dart';
 import 'package:lectio_divina/screens/newsletter_list_screen.dart';
 import 'package:lectio_divina/shared/app_colors.dart';
@@ -138,6 +141,11 @@ class NotificationController {
       case 'feedback':
         targetScreen = const FeedbackScreen();
         break;
+      case 'novena':
+        // Deviatnik — načíta sa async podľa baseCode a otvorí detail.
+        final baseCode = params?['baseCode'] as String?;
+        if (baseCode != null) _openNovena(baseCode);
+        return;
       case 'url':
         // Deep link na externý URL z screen_params
         final url = params?['url'] as String?;
@@ -156,6 +164,44 @@ class NotificationController {
         settings: RouteSettings(name: '/$screen'),
       ),
     );
+  }
+
+  /// Otvorí deviatnik podľa baseCode (z notifikácie) — načíta variant v jazyku
+  /// aplikácie a otvorí detail. Fallback na akýkoľvek jazyk daného deviatnika.
+  Future<void> _openNovena(String baseCode) async {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+    final lang = context.locale.languageCode;
+    try {
+      final all = await NovenasService.instance.fetchNovenas();
+      Novena? match;
+      for (final n in all) {
+        if (n.baseCode == baseCode && n.lang == lang) {
+          match = n;
+          break;
+        }
+      }
+      if (match == null) {
+        for (final n in all) {
+          if (n.baseCode == baseCode) {
+            match = n;
+            break;
+          }
+        }
+      }
+      if (match == null) {
+        _logger.w('🔔 Novena z notifikácie sa nenašla: $baseCode');
+        return;
+      }
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (_) => NovenaDetailScreen(variants: [match!]),
+          settings: const RouteSettings(name: '/novena'),
+        ),
+      );
+    } catch (e) {
+      _logger.e('Error opening novena from notification: $e');
+    }
   }
 
   /// Otvorí externý URL (deep link z notifikácie)
@@ -269,6 +315,20 @@ class NotificationController {
             screenParams: dateStr != null ? '{"date":"$dateStr"}' : null,
           );
         });
+      }
+
+      // Deviatnik — otvor konkrétny deviatnik podľa baseCode
+      if (type == 'novena') {
+        final baseCode = data['baseCode'] as String?;
+        _logger.i('📱 Local notification tap - novena: $baseCode');
+        if (baseCode != null) {
+          Future.delayed(const Duration(milliseconds: 300), () {
+            navigateToScreen(
+              'novena',
+              screenParams: jsonEncode({'baseCode': baseCode}),
+            );
+          });
+        }
       }
     } catch (e) {
       _logger.e('❌ Error handling local notification tap: $e');

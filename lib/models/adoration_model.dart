@@ -32,6 +32,14 @@ class Adoration {
   final String? oratioAudio; // oratio_audio
   final String? contemplatioAudio; // contemplatio_audio
   final String? actioAudio; // actio_audio
+  // Reálne dĺžky sekcií (sekundy) z ffprobe: {base → sec}, base = stĺpec bez _audio
+  // (uvod, uvodne_modlitby, lectio, komentar, meditatio, oratio, contemplatio, actio).
+  // Obchádza chybný odhad dĺžky VBR MP3 v iOS AVPlayer pri streame.
+  final Map<String, double> audioDurations;
+
+  // Spojené „celé audio" (sekcie + meditačná hudba medzi nimi) + jeho reálna dĺžka.
+  final String? fullAudioUrl; // full_audio_url
+  final double? fullAudioDuration; // full_audio_duration (ffprobe)
 
   // Timestamps
   final DateTime createdAt;
@@ -63,6 +71,9 @@ class Adoration {
     this.oratioAudio,
     this.contemplatioAudio,
     this.actioAudio,
+    this.audioDurations = const {},
+    this.fullAudioUrl,
+    this.fullAudioDuration,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -94,6 +105,9 @@ class Adoration {
       oratioAudio: json['oratio_audio']?.toString(),
       contemplatioAudio: json['contemplatio_audio']?.toString(),
       actioAudio: json['actio_audio']?.toString(),
+      audioDurations: _parseDurations(json['audio_durations']),
+      fullAudioUrl: json['full_audio_url']?.toString(),
+      fullAudioDuration: _parseDoubleSafely(json['full_audio_duration']),
       createdAt: _parseDateSafely(json['created_at']) ?? DateTime.now(),
       updatedAt: _parseDateSafely(json['updated_at']) ?? DateTime.now(),
     );
@@ -124,6 +138,26 @@ class Adoration {
     if (value is DateTime) return value;
     if (value is String) return DateTime.tryParse(value);
     return null;
+  }
+
+  static double? _parseDoubleSafely(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
+  // audio_durations JSONB {base: sekundy} → Map<String,double>
+  static Map<String, double> _parseDurations(dynamic value) {
+    if (value is Map) {
+      final out = <String, double>{};
+      value.forEach((k, v) {
+        final d = v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '');
+        if (d != null) out[k.toString()] = d;
+      });
+      return out;
+    }
+    return const {};
   }
 
   // Vráti true ak má adorácia dostupné audio

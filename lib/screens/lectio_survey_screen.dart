@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -106,7 +107,13 @@ class _LectioSurveyScreenState extends State<LectioSurveyScreen> {
   Widget build(BuildContext context) {
     final isDark = AppColors.isDark(context);
 
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+      ),
+      child: Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
       body: SafeArea(
         child: Column(
@@ -140,6 +147,7 @@ class _LectioSurveyScreenState extends State<LectioSurveyScreen> {
               _buildFinishButton(isDark),
           ],
         ),
+      ),
       ),
     );
   }
@@ -590,9 +598,10 @@ class _LectioSurveyScreenState extends State<LectioSurveyScreen> {
             physics: const NeverScrollableScrollPhysics(),
             buildDefaultDragHandles: false,
             itemCount: _courseFormatOrder.length,
-            onReorder: (oldIndex, newIndex) {
+            onReorderItem: (oldIndex, newIndex) {
+              // onReorderItem dáva newIndex už upravený po odobraní položky
+              // z oldIndex → netreba manuálne `newIndex--`.
               setState(() {
-                if (newIndex > oldIndex) newIndex--;
                 final item = _courseFormatOrder.removeAt(oldIndex);
                 _courseFormatOrder.insert(newIndex, item);
               });

@@ -10,6 +10,8 @@ class StationsOfCross {
   final String? illustrationImage; // ilustracny_obrazok
   final bool published; // publikovane
   final int order; // poradie
+  final String? fullAudioUrl; // spojené „celé audio" (zastavenia + hudba medzi nimi)
+  final double? fullAudioDuration; // dĺžka celého audia v sekundách (ffprobe)
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -25,6 +27,8 @@ class StationsOfCross {
     this.illustrationImage,
     required this.published,
     required this.order,
+    this.fullAudioUrl,
+    this.fullAudioDuration,
     required this.createdAt,
     required this.updatedAt,
     this.stations = const [],
@@ -50,6 +54,8 @@ class StationsOfCross {
       illustrationImage: json['ilustracny_obrazok']?.toString(),
       published: _parseBoolSafely(json['publikovane']) ?? true,
       order: _parseIntSafely(json['poradie']) ?? 0,
+      fullAudioUrl: json['full_audio_url']?.toString(),
+      fullAudioDuration: Station._parseDoubleSafely(json['full_audio_duration']),
       createdAt: _parseDateSafely(json['created_at']) ?? DateTime.now(),
       updatedAt: _parseDateSafely(json['updated_at']) ?? DateTime.now(),
       stations: stations,
@@ -100,6 +106,7 @@ class Station {
   final String content; // text_obsah (HTML)
   final String? image; // obrazok
   final String? audio; // audio URL
+  final double? audioDuration; // reálna dĺžka audia v sekundách (ffprobe; obchádza chybný iOS odhad)
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -112,6 +119,7 @@ class Station {
     required this.content,
     this.image,
     this.audio,
+    this.audioDuration,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -128,6 +136,7 @@ class Station {
       content: json['text_obsah']?.toString() ?? '',
       image: json['obrazok']?.toString(),
       audio: json['audio']?.toString(),
+      audioDuration: _parseDoubleSafely(json['audio_duration']),
       createdAt:
           DateTime.tryParse(json['created_at']?.toString() ?? '') ??
           DateTime.now(),
@@ -135,6 +144,13 @@ class Station {
           DateTime.tryParse(json['updated_at']?.toString() ?? '') ??
           DateTime.now(),
     );
+  }
+
+  static double? _parseDoubleSafely(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
   }
 
   bool get hasAudio => audio != null && audio!.isNotEmpty;

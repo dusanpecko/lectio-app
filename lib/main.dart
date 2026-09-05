@@ -29,6 +29,7 @@ import 'firebase_options.dart';
 import 'providers/theme_provider.dart';
 import 'services/audio_download_service.dart';
 import 'services/connectivity_service.dart';
+import 'services/credentials_service.dart';
 import 'services/fcm_service.dart';
 import 'services/home_widget_service.dart';
 import 'services/lectio_audio_player.dart';
@@ -54,14 +55,44 @@ Future<Locale> _getStartLocale(String languageCode) async {
   }
 }
 
+/// Krok štartu, ktorý NESMIE zablokovať appku.
+///
+/// Android splash (`installSplashScreen` v MainActivity) zmizne až po prvom
+/// Flutter frame — takže čokoľvek, čo pred `runApp()` zamrzne alebo vyhodí
+/// výnimku, nechá používateľa navždy na splash obrazovke. Presne toto ľudia
+/// hlásili: appka „zamrzne" po kliknutí na notifikáciu (Android medzitým zrušil
+/// Activity → `main()` beží znova) aj bez notifikácie.
+///
+/// Doteraz bol chránený jediný krok (`dotenv`); ostatných osem mohlo štart
+/// zabiť. Timeout je zámerne krátky — v poriadku tieto kroky trvajú desiatky
+/// milisekúnd, takže jeho prekročenie znamená, že sa niečo naozaj zaseklo
+/// a správne je pokračovať bez daného kroku (degradovaná funkcia je vždy lepšia
+/// než zamrznutá appka).
+Future<bool> _startupStep(
+  String name,
+  Future<void> Function() run, {
+  Duration timeout = const Duration(seconds: 6),
+}) async {
+  try {
+    await run().timeout(timeout);
+    return true;
+  } on TimeoutException {
+    _logger.e('⏱️ Štart „$name": prekročil ${timeout.inSeconds} s — pokračujem bez neho');
+    return false;
+  } catch (e, st) {
+    _logger.e('❌ Štart „$name": zlyhalo — pokračujem bez neho', error: e, stackTrace: st);
+    return false;
+  }
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Uzamkni orientáciu na portrait mode
-  await SystemChrome.setPreferredOrientations([
+  await _startupStep('orientácia', () => SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
-  ]);
+  ]), timeout: const Duration(seconds: 3));
 
   // Edge-to-edge display - obsah sa roztiahne za status bar aj navigation bar
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -76,10 +107,18 @@ Future<void> main() async {
 
   // Spovedné tajomstvo: iOS Keychain prežíva odinštalovanie — po čerstvej
   // inštalácii zmaž prípadné pozostatky trezoru (PIN + odpovede).
-  await ConfessionVaultService.instance.ensureWipedAfterReinstall();
+  // Siaha na secure storage (Android Keystore), ktorý vie zlyhať aj zamrznúť.
+  await _startupStep('trezor spovede',
+      () => ConfessionVaultService.instance.ensureWipedAfterReinstall());
 
-  // Initialize just_audio_background for lock screen controls
-  await JustAudioBackground.init(
+  // just_audio_background pre ovládanie na uzamknutej obrazovke.
+  //
+  // ZÁMERNE ostáva PRED `runApp()`: `GlobalMiniPlayer` v `MyApp.builder`
+  // vytvára `AudioPlayer` už pri prvom frame, takže odloženie za `runApp()`
+  // by rozbilo audio. Riziko zamrznutia (viaže sa na audio službu, ktorá môže
+  // po návrate z pozadia ešte žiť) rieši timeout — bez audia v pozadí sa dá
+  // appku používať, so zamrznutou splash nie.
+  await _startupStep('audio v pozadí', () => JustAudioBackground.init(
     androidNotificationChannelId: 'sk.lectio.divina.audio',
     androidNotificationChannelName: 'Lectio Divina Audio',
     androidNotificationOngoing: false,
@@ -93,23 +132,23 @@ Future<void> main() async {
     // IMPORTANT: preloadArtwork must be false to prevent Android crash when offline
     // (artwork URL points to Supabase which is unreachable in airplane mode)
     preloadArtwork: false,
-  );
-  _logger.i('✅ JustAudioBackground initialized');
+  ));
 
   tz.initializeTimeZones();
 
   // .env
-  try {
-    await dotenv.load();
-  } catch (e) {
-    _logger.w('.env loading failed: $e');
-  }
+  await _startupStep('.env', () => dotenv.load());
 
-  await EasyLocalization.ensureInitialized();
+  await _startupStep('lokalizácia', () => EasyLocalization.ensureInitialized());
 
-  // Supabase kľúče
-  final supabaseUrl = dotenv.env['SUPABASE_URL'];
-  final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
+  // Supabase kľúče.
+  //
+  // `dotenv.env` VYHADZUJE `NotInitializedError`, keď `load()` neprebehol —
+  // pôvodný try/catch okolo `load()` teda pred zamrznutím nechránil, len
+  // posunul pád o dva riadky nižšie (a `main()` skončil bez `runApp()`).
+  // Preto sa najprv pýtame na `isInitialized`.
+  final supabaseUrl = dotenv.isInitialized ? dotenv.env['SUPABASE_URL'] : null;
+  final supabaseAnonKey = dotenv.isInitialized ? dotenv.env['SUPABASE_ANON_KEY'] : null;
 
   if (supabaseUrl == null ||
       supabaseUrl.isEmpty ||
@@ -132,11 +171,17 @@ Future<void> main() async {
     return;
   }
 
-  // Firebase pred FCM
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // Firebase pred FCM. Dlhší timeout — Google Play Services vedia byť na
+  // starších Androidoch pomalé, ale nesmú držať splash naveky.
+  await _startupStep(
+    'Firebase',
+    () => Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
+    timeout: const Duration(seconds: 10),
+  );
 
-  // Supabase
-  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+  // Supabase (lokálna operácia — session sa obnovuje na pozadí, nie tu)
+  await _startupStep('Supabase',
+      () => Supabase.initialize(url: supabaseUrl, publishableKey: supabaseAnonKey));
 
   // NOTE: LocalNotificationsService, UmamiAnalytics, ConnectivityService,
   // AudioDownloadService are deferred to _FCMInitializerState to reduce
@@ -144,10 +189,15 @@ Future<void> main() async {
 
   // Inicializuj ThemeProvider
   final themeProvider = ThemeProvider();
-  await themeProvider.initialize();
+  await _startupStep('téma', () => themeProvider.initialize());
 
-  // Získaj správnu štartovaciu lokalizáciu
-  Locale startLocale = await _getStartLocale(themeProvider.languageCode);
+  // Získaj správnu štartovaciu lokalizáciu. Pri zlyhaní ostane `null` —
+  // EasyLocalization vtedy použije naposledy uložený/systémový jazyk. Natvrdo
+  // dosadený jazyk by používateľovi prepol appku na iný, než si zvolil.
+  Locale? startLocale;
+  await _startupStep('jazyk', () async {
+    startLocale = await _getStartLocale(themeProvider.languageCode);
+  }, timeout: const Duration(seconds: 3));
 
   runApp(
     ChangeNotifierProvider.value(
@@ -200,6 +250,20 @@ class MyApp extends StatelessWidget {
       supportedLocales: context.supportedLocales,
       locale: context.locale,
       builder: (context, child) {
+        // Ikony NAVIGAČNEJ lišty podľa témy. Nastavovali sa raz pri štarte
+        // natvrdo na tmavé, takže v tmavom režime boli čierne na tmavom
+        // pozadí (vidno hlavne pri 3-tlačidlovej navigácii). Obrazovky si
+        // cez `AnnotatedRegion` prepisujú len stavový riadok — polia
+        // navigačnej lišty nechávajú `null`, čiže platí táto hodnota.
+        final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+        SystemChrome.setSystemUIOverlayStyle(
+          SystemUiOverlayStyle(
+            systemNavigationBarColor: Colors.transparent,
+            systemNavigationBarIconBrightness:
+                isDarkTheme ? Brightness.light : Brightness.dark,
+          ),
+        );
+
         // Veľkosť písma z Nastavení aplikuj GLOBÁLNE na všetky Text widgety.
         // Skombinuj so systémovým škálovaním (prístupnosť) a clampni.
         final mq = MediaQuery.of(context);
@@ -287,6 +351,22 @@ class _FCMInitializerState extends State<FCMInitializer>
     } catch (e) {
       _logger.e('❌ Error initializing HomeWidgetService: $e');
     }
+
+    // Staršie verzie appky ukladali do secure storage aj heslo. Prihlasovacia
+    // obrazovka ho síce dočistí, ale trvalo prihlásený používateľ ju nemusí
+    // otvoriť nikdy — preto sa maže pri každom štarte.
+    try {
+      await CredentialsService.instance.purgeLegacyPassword();
+    } catch (e) {
+      _logger.w('Nepodarilo sa dočistiť staré uložené heslo: $e');
+    }
+
+    // POZN. (5.9.2026): presun biometrickej kópie kľúča trezoru sa TU
+    // ZÁMERNE nerobí. Zápis do úložiska viazaného na biometriu si vyžiada
+    // systémový prompt, takže sa pýtal na odtlačok hneď na home screene — a
+    // keď neprešiel, stará kópia sa zmazala a odomykanie tvárou/odtlačkom po
+    // aktualizácii zmizlo (vo verzii z obchodu fungovalo). Presun teraz beží
+    // až v `unlockWithPin`, kde je používateľ overený.
   }
 
   @override
@@ -362,7 +442,7 @@ class _FCMInitializerState extends State<FCMInitializer>
 ///   0            → nový používateľ → plný [OnboardingScreen]
 ///   1..CURRENT-1 → existujúci po update → [OnboardingUpdateScreen]
 ///   >= CURRENT   → rovno do appky
-const int kCurrentOnboardingVersion = 3; // 3 = v11.1 (deviatniky, zrkadlo…)
+const int kCurrentOnboardingVersion = 4; // 4 = v11.2 (pobožnosti v2, celé audio…)
 
 /// DOČASNE: vynúti zobrazenie „Čo je nové" ([OnboardingUpdateScreen]) pri
 /// každom štarte (test). Pred vydaním prepnúť na `false`.
@@ -377,7 +457,8 @@ class SessionHandler extends StatefulWidget {
 
 class _SessionHandlerState extends State<SessionHandler> {
   Session? session;
-  late final StreamSubscription<AuthState> _authSubscription;
+  /// Nullable: bez funkčného Supabase sa odber nedá vytvoriť (appka aj tak beží).
+  StreamSubscription<AuthState>? _authSubscription;
   int _onboardingVersion = kCurrentOnboardingVersion;
   bool _loading = true;
 
@@ -388,38 +469,49 @@ class _SessionHandlerState extends State<SessionHandler> {
     _logger.i('🔐 SessionHandler initState() CALLED');
     _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-    session = Supabase.instance.client.auth.currentSession;
+    // Ak Supabase init pri štarte zlyhal (viď `_startupStep`), `instance`
+    // vyhodí výnimku — bez tohto by initState padol a používateľ by ostal na
+    // prázdnej obrazovke. Takto sa appka otvorí neprihlásená.
+    try {
+      session = Supabase.instance.client.auth.currentSession;
+    } catch (e) {
+      _logger.e('🔐 Supabase nie je dostupný — pokračujem ako neprihlásený: $e');
+      session = null;
+    }
     _logger.i(
       '🔐 Current session: ${session != null ? "LOGGED IN" : "NOT LOGGED IN"}',
     );
 
     _checkOnboarding();
 
-    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
-      data,
-    ) {
-      if (!mounted) return;
+    try {
+      _authSubscription =
+          Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+        if (!mounted) return;
 
-      // Ak sa user prihlásil, nastav welcome notification
-      if (data.event == AuthChangeEvent.signedIn) {
-        LocalNotificationsService.instance
-            .setupRegistrationNotification()
-            .catchError((error) {
-              _logger.w('Failed to setup welcome notification: $error');
-            });
-      }
+        // Ak sa user prihlásil, nastav welcome notification
+        if (data.event == AuthChangeEvent.signedIn) {
+          LocalNotificationsService.instance
+              .setupRegistrationNotification()
+              .catchError((error) {
+                _logger.w('Failed to setup welcome notification: $error');
+              });
+        }
 
-      // Ak sa user odhlásil, deaktivuj FCM token
-      if (data.event == AuthChangeEvent.signedOut) {
-        FcmService.instance.deactivateToken().catchError((error) {
-          _logger.w('Failed to deactivate FCM token on logout: $error');
+        // Ak sa user odhlásil, deaktivuj FCM token
+        if (data.event == AuthChangeEvent.signedOut) {
+          FcmService.instance.deactivateToken().catchError((error) {
+            _logger.w('Failed to deactivate FCM token on logout: $error');
+          });
+        }
+
+        setState(() {
+          session = Supabase.instance.client.auth.currentSession;
         });
-      }
-
-      setState(() {
-        session = Supabase.instance.client.auth.currentSession;
       });
-    });
+    } catch (e) {
+      _logger.e('🔐 Odber zmien prihlásenia sa nepodarilo vytvoriť: $e');
+    }
 
     // Kontrola čakajúcej notifikácie + kontrola verzie appky (force/soft update)
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -428,21 +520,33 @@ class _SessionHandlerState extends State<SessionHandler> {
     });
   }
 
+  /// Zistí, či ukázať onboarding.
+  ///
+  /// `_loading` sa vypína v `finally`: keby `SharedPreferences` zlyhalo alebo
+  /// sa zaseklo, appka by inak ostala navždy na točiacom sa kolieske — druhá
+  /// cesta k „zamrznutej obrazovke", ktorú ľudia hlásili.
   Future<void> _checkOnboarding() async {
-    final prefs = await SharedPreferences.getInstance();
-    // Migrácia: starý `onboarding_completed` (bool) → verzia 1 (videli starý
-    // onboarding) ; bez ničoho → 0 (nový používateľ).
-    final stored = prefs.getInt('onboarding_version');
-    final legacyCompleted = prefs.getBool('onboarding_completed') ?? false;
-    // DOČASNE: vynútené zobrazenie „Čo je nové" (predchádzajúca verzia → gate).
-    final version = kForceOnboardingUpdate
-        ? (kCurrentOnboardingVersion > 1 ? kCurrentOnboardingVersion - 1 : 1)
-        : (stored ?? (legacyCompleted ? 1 : 0));
-    if (mounted) {
-      setState(() {
-        _onboardingVersion = version;
-        _loading = false;
-      });
+    int version = kCurrentOnboardingVersion;   // pri zlyhaní rovno do appky
+    try {
+      final prefs = await SharedPreferences.getInstance()
+          .timeout(const Duration(seconds: 5));
+      // Migrácia: starý `onboarding_completed` (bool) → verzia 1 (videli starý
+      // onboarding) ; bez ničoho → 0 (nový používateľ).
+      final stored = prefs.getInt('onboarding_version');
+      final legacyCompleted = prefs.getBool('onboarding_completed') ?? false;
+      // DOČASNE: vynútené zobrazenie „Čo je nové" (predchádzajúca verzia → gate).
+      version = kForceOnboardingUpdate
+          ? (kCurrentOnboardingVersion > 1 ? kCurrentOnboardingVersion - 1 : 1)
+          : (stored ?? (legacyCompleted ? 1 : 0));
+    } catch (e) {
+      _logger.e('Onboarding: nastavenia sa nepodarilo prečítať ($e) — idem do appky');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _onboardingVersion = version;
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -459,7 +563,7 @@ class _SessionHandlerState extends State<SessionHandler> {
 
   @override
   void dispose() {
-    _authSubscription.cancel();
+    _authSubscription?.cancel();
     super.dispose();
   }
 

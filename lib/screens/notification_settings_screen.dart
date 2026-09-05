@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/notification_models.dart';
 import '../services/fcm_service.dart';
@@ -76,6 +77,11 @@ class _NotificationSettingsScreenState
     );
   }
 
+  /// Online (topic) nastavenia vyžadujú účet — bez neho ich API nevráti.
+  /// Neprihlásenému preto ukazujeme len lokálnu časť, nie chybu načítania.
+  bool get _isLoggedIn =>
+      Supabase.instance.client.auth.currentSession != null;
+
   Future<void> _initializeNotificationSettings({
     bool forceRefresh = false,
   }) async {
@@ -99,9 +105,11 @@ class _NotificationSettingsScreenState
         _logger.i('🔄 Force refreshing notification preferences from database');
       }
 
-      final preferencesData = await _fcmService.getNotificationPreferences(
-        forceRefresh: forceRefresh,
-      );
+      final preferencesData = _isLoggedIn
+          ? await _fcmService.getNotificationPreferences(
+              forceRefresh: forceRefresh,
+            )
+          : null;
 
       final localSettings = await _localNotifications.getSettings();
 
@@ -109,7 +117,9 @@ class _NotificationSettingsScreenState
 
       setState(() {
         _preferencesData = preferencesData;
-        _dailyLectioEnabled = _isDailyReadingsTopicEnabled(preferencesData);
+        _dailyLectioEnabled = _isLoggedIn
+            ? _isDailyReadingsTopicEnabled(preferencesData)
+            : true;
         _prayerReminderEnabled =
             localSettings['prayer_reminder_enabled'] ?? false;
         _prayerReminderTime = localSettings['prayer_reminder_time'];
@@ -117,7 +127,7 @@ class _NotificationSettingsScreenState
         _isLoading = false;
       });
 
-      if (preferencesData == null) {
+      if (_isLoggedIn && preferencesData == null) {
         setState(() {
           _errorMessage = 'notifications.error.failed_to_load'.tr();
         });
@@ -247,6 +257,13 @@ class _NotificationSettingsScreenState
   }
 
   Future<void> _onDailyLectioChanged(bool enabled) async {
+    // Zapnutie/vypnutie je topic preference viazaná na účet. Neprihlásené
+    // zariadenie denné lectio dostáva (sender tokeny podľa `user_id`
+    // nefiltruje), ale vypnúť si ho v appke nevie — preto výzva, nie ticho.
+    if (!_isLoggedIn) {
+      _snack('login_to_sync'.tr(), isError: true);
+      return;
+    }
     try {
       final topicId = _getDailyReadingsTopicId(_preferencesData);
       if (topicId == null) {
@@ -787,13 +804,14 @@ class _NotificationSettingsScreenState
   }
 
   Widget _buildTopicsSection() {
-    if (_preferencesData == null) {
-      return const SizedBox.shrink();
-    }
-
-    final groupedTopics = NotificationApiHelper.groupTopicsByCategory(
-      _preferencesData!.topics.where((topic) => topic.isActive).toList(),
-    );
+    // Bez prihlásenia (alebo keď online preferencie nie sú) ostáva lokálna
+    // časť — predtým sa zbalila celá obrazovka a používateľ si nenastavil ani
+    // pripomienku modlitby.
+    final groupedTopics = _preferencesData == null
+        ? const <NotificationCategory, List<NotificationTopic>>{}
+        : NotificationApiHelper.groupTopicsByCategory(
+            _preferencesData!.topics.where((topic) => topic.isActive).toList(),
+          );
 
     return RefreshIndicator(
       onRefresh: () => _initializeNotificationSettings(forceRefresh: true),
@@ -821,7 +839,8 @@ class _NotificationSettingsScreenState
             ),
           ),
           _buildLocalNotificationsSection(),
-          _sectionTitle('notifications.remote.section_title'.tr()),
+          if (groupedTopics.isNotEmpty)
+            _sectionTitle('notifications.remote.section_title'.tr()),
           ...groupedTopics.entries.map((categoryEntry) {
             final category = categoryEntry.key;
             final topics = categoryEntry.value;

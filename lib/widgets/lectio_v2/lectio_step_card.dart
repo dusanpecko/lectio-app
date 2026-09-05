@@ -7,6 +7,7 @@ import '../../services/lectio_admin_service.dart';
 import '../../services/media_player_bus.dart';
 import '../../shared/app_spacing.dart';
 import '../home_v2/home_v2_tokens.dart';
+import '../../utils/app_logger.dart';
 
 /// Karta jedného kroku Lectio (Biblia/Lectio/Meditatio/…) — nadpis, voliteľná
 /// referencia, text a vpravo play/pause s kruhovým priebehom prehrávania.
@@ -21,6 +22,10 @@ class LectioStepCard extends StatelessWidget {
   /// Pre Umami audio_heartbeat — id obsahu (dátum lekcie) a jazyk.
   final String? analyticsId;
   final String? language;
+
+  /// Umami content_type (default 'lectio'; napr. 'stations_of_cross') + obálka.
+  final String contentType;
+  final String? artUri;
 
   /// Admin in-app editácia (len pre 5 lectio krokov). Aktívne keď [isAdmin]
   /// a [sourceId]+[stepField] sú dostupné.
@@ -48,6 +53,8 @@ class LectioStepCard extends StatelessWidget {
     this.audioUrl,
     this.analyticsId,
     this.language,
+    this.contentType = 'lectio',
+    this.artUri,
     this.isAdmin = false,
     this.sourceId,
     this.stepField,
@@ -113,7 +120,7 @@ class LectioStepCard extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.sm),
               if (onExpand != null) ...[
-                _ExpandButton(onTap: onExpand!),
+                ExpandButton(onTap: onExpand!),
                 const SizedBox(width: AppSpacing.sm),
               ],
               _CopyButton(text: text),
@@ -125,6 +132,8 @@ class LectioStepCard extends StatelessWidget {
                   title: title,
                   analyticsId: analyticsId,
                   language: language,
+                  contentType: contentType,
+                  artUri: artUri,
                 ),
               ],
               if (_canAdmin) ...[
@@ -211,9 +220,10 @@ class _CopyButton extends StatelessWidget {
 }
 
 /// Okrúhle tlačidlo na otvorenie fullscreen čítacieho režimu.
-class _ExpandButton extends StatelessWidget {
+/// Verejné — používa ho karta Lectio aj karta zastavenia krížovej cesty.
+class ExpandButton extends StatelessWidget {
   final VoidCallback onTap;
-  const _ExpandButton({required this.onTap});
+  const ExpandButton({super.key, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -389,7 +399,7 @@ class _AdminStepControlsState extends State<AdminStepControls> {
       _snack('Audio pregenerované');
     } catch (e) {
       if (mounted) Navigator.of(context, rootNavigator: true).pop();
-      debugPrint('❌ regenerate audio failed: $e');
+      appLogger.e('regenerate audio failed', error: e);
       _snack('Generovanie zlyhalo: $e', error: true);
     }
   }
@@ -574,6 +584,10 @@ class StepPlayButton extends StatelessWidget {
   final String title;
   final String? analyticsId;
   final String? language;
+  // Umami content_type (default 'lectio'; pre iné pobožnosti napr. 'stations_of_cross').
+  final String contentType;
+  // Voliteľná obálka pre media notifikáciu (lock screen).
+  final String? artUri;
 
   const StepPlayButton({
     super.key,
@@ -582,6 +596,8 @@ class StepPlayButton extends StatelessWidget {
     required this.title,
     this.analyticsId,
     this.language,
+    this.contentType = 'lectio',
+    this.artUri,
   });
 
   @override
@@ -636,7 +652,8 @@ class StepPlayButton extends StatelessWidget {
                               id: stepKey,
                               url: url,
                               title: title,
-                              contentType: 'lectio',
+                              artUri: artUri,
+                              contentType: contentType,
                               contentId: analyticsId,
                               language: language,
                             );

@@ -4,7 +4,9 @@ import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -116,6 +118,14 @@ class FcmService {
   // Callback pre handling notifikácií
   Function(RemoteMessage)? _onNotificationCallback;
 
+  /// Už prebehla plná inicializácia? `init()` sa volá z `didChangeDependencies`,
+  /// ktoré sa spúšťa pri KAŽDEJ zmene závislostí (jazyk, téma, škálovanie
+  /// písma) — bez tejto poistky sa pri každom takom rebuilde znovu pridal
+  /// odber `onMessage`/`onMessageOpenedApp` (duplicitné notifikácie a dvojité
+  /// navigovanie z jedného kliknutia) a znovu sa žiadalo o Android povolenie.
+  bool _initDone = false;
+  String? _initLang;
+
   String _toLocaleCode(String appLang) {
     // DB používa 'cz'; ak v UI máš 'cs', mapujeme na 'cz'
     switch (appLang) {
@@ -178,6 +188,31 @@ class FcmService {
   }
 
   Future<void> init(String appLangCode) async {
+    if (_initDone) {
+      // Zmena jazyka appky: netreba znovu registrovať handlery, len prehlásiť
+      // token a témy pre nový jazyk.
+      if (_initLang != appLangCode) {
+        _logger.i('FCM: jazyk zmenený $_initLang → $appLangCode, preregistrujem');
+        _initLang = appLangCode;
+        await _register(appLangCode);
+      }
+      return;
+    }
+    _initDone = true;
+    _initLang = appLangCode;
+    try {
+      await _initOnce(appLangCode);
+    } catch (e) {
+      // Neúspešný pokus nesmie inicializáciu zamknúť navždy — ďalší rebuild
+      // (alebo zmena jazyka) ju smie zopakovať.
+      _initDone = false;
+      rethrow;
+    }
+  }
+
+  /// Jednorazová časť inicializácie — registrácia handlerov a prvé prihlásenie
+  /// tokenu. Volať LEN cez [init], ktorý drží poistku proti dvojitému spusteniu.
+  Future<void> _initOnce(String appLangCode) async {
     _logger.i('Initializing FCM with language: $appLangCode');
     final m = FirebaseMessaging.instance;
 
@@ -242,12 +277,13 @@ class FcmService {
     // Refresh tokenu
     m.onTokenRefresh.listen((newToken) {
       _currentToken = newToken;
-      _register(appLangCode);
+      _register(_initLang ?? appLangCode);
     });
 
-    // Keď sa zmení prihlásený user, dopíš user_id k tokenu
+    // Keď sa zmení prihlásený user, dopíš user_id k tokenu. Jazyk sa berie
+    // z `_initLang`, aby odber po zmene jazyka nepoužíval starú hodnotu.
     Supabase.instance.client.auth.onAuthStateChange.listen((_) async {
-      await _register(appLangCode);
+      await _register(_initLang ?? appLangCode);
     });
   }
 
@@ -308,34 +344,73 @@ class FcmService {
       // Získaj IANA timezone pre timezone-aware push notifikácie
       final timezone = LocalNotificationsService.instance.currentTimezoneName;
 
-      // Registruj token na backend API (Supabase)
-      // Používame SPRÁVNU tabuľku: user_fcm_tokens (nie push_tokens)
+      // Registrácia ide VŽDY cez /api/public/fcm-token — pre prihlásených aj
+      // neprihlásených. Priamy Supabase upsert tu bol do 5. 9. 2026 a pre
+      // prihlásených padal: `INSERT … ON CONFLICT DO UPDATE` vyžaduje, aby bol
+      // konfliktný riadok viditeľný cez SELECT politiku (`user_id = auth.uid()`),
+      // takže token vytvorený anonymne pred prihlásením používateľ „nevidel"
+      // → 42501 a token sa k účtu nikdy nepripojil. Server (service-role) to
+      // vyrieši jedným zápisom a `user_id` berie z overeného Bearer tokenu.
       try {
-        final userId = Supabase.instance.client.auth.currentUser?.id;
-
-        await Supabase.instance.client.from('user_fcm_tokens').upsert({
-          'token': token,
-          'device_type': platform,
-          'locale_code': code,
-          'app_version': appVersion,
-          'user_id': userId,
-          'timezone': timezone,
-          'is_active': true,
-          'last_used_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-        }, onConflict: 'token');
-
-        _logger.i(
-          '✅ Token successfully registered in Supabase (user_fcm_tokens)',
+        await _registerToken(
+          token: token,
+          deviceType: platform,
+          localeCode: code,
+          appVersion: appVersion,
+          timezone: timezone,
         );
       } catch (dbError) {
-        _logger.e('❌ Supabase registration failed: $dbError');
+        _logger.e('❌ Token registration failed: $dbError');
         // Pokračujeme aj s chybou - token je stále platný lokálne
       }
 
       _logger.i('Successfully completed FCM token registration');
     } catch (e) {
       _logger.e('Error in FCM registration: $e');
+    }
+  }
+
+  /// Backend base URL (www. kvôli apex 301-redirectu).
+  String get _backendUrl =>
+      dotenv.env['NEXT_PUBLIC_BACKEND_URL'] ?? 'https://www.lectio.one';
+
+  /// Registrácia tokenu cez `/api/public/fcm-token` — jediná cesta pre
+  /// prihlásených aj neprihlásených. Ak je session, priloží sa Bearer a server
+  /// z neho vezme `user_id` (a tým prevezme aj token registrovaný anonymne
+  /// pred prihlásením). Bez session sa token uloží s `user_id = NULL`.
+  Future<void> _registerToken({
+    required String token,
+    required String deviceType,
+    required String localeCode,
+    required String appVersion,
+    required String timezone,
+  }) async {
+    try {
+      final session = Supabase.instance.client.auth.currentSession;
+      final res = await http
+          .post(
+            Uri.parse('$_backendUrl/api/public/fcm-token'),
+            headers: {
+              'Content-Type': 'application/json',
+              if (session != null) 'Authorization': 'Bearer ${session.accessToken}',
+            },
+            body: jsonEncode({
+              'token': token,
+              'device_type': deviceType,
+              'locale_code': localeCode,
+              'app_version': appVersion,
+              'timezone': timezone,
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (res.statusCode == 200) {
+        _logger.i('✅ Token registered (${session != null ? 'authed' : 'anon'})');
+      } else {
+        _logger.w('⚠️ fcm-token endpoint ${res.statusCode}: ${res.body}');
+      }
+    } catch (e) {
+      _logger.e('❌ Token registration failed: $e');
     }
   }
 
@@ -348,18 +423,28 @@ class FcmService {
 
       final token = await m.getToken();
       if (token != null) {
-        // Aktualizuj v Supabase DB - použijeme správnu tabuľku user_fcm_tokens
+        // Rovnaká cesta ako pri registrácii — endpoint (upsert po tokene
+        // aktualizuje len poslané polia, ostatné stĺpce nechá tak).
         try {
-          await Supabase.instance.client
-              .from('user_fcm_tokens')
-              .update({
-                'locale_code': newCode,
-                'updated_at': DateTime.now().toIso8601String(),
-              })
-              .eq('token', token);
-          _logger.i('✅ Language updated in Supabase (user_fcm_tokens)');
+          final session = Supabase.instance.client.auth.currentSession;
+          final res = await http
+              .post(
+                Uri.parse('$_backendUrl/api/public/fcm-token'),
+                headers: {
+                  'Content-Type': 'application/json',
+                  if (session != null)
+                    'Authorization': 'Bearer ${session.accessToken}',
+                },
+                body: jsonEncode({'token': token, 'locale_code': newCode}),
+              )
+              .timeout(const Duration(seconds: 15));
+          if (res.statusCode == 200) {
+            _logger.i('✅ Language updated (${session != null ? 'authed' : 'anon'})');
+          } else {
+            _logger.w('⚠️ fcm-token endpoint ${res.statusCode}: ${res.body}');
+          }
         } catch (e) {
-          _logger.w('Failed to update language in Supabase: $e');
+          _logger.w('Failed to update language: $e');
         }
       }
       _logger.i('Language change completed');
@@ -418,15 +503,22 @@ class FcmService {
   Future<void> deactivateToken() async {
     try {
       if (_currentToken != null) {
-        // Deaktivuj v databáze - použijeme správnu tabuľku user_fcm_tokens
-        await Supabase.instance.client
-            .from('user_fcm_tokens')
-            .update({
-              'is_active': false,
-              'updated_at': DateTime.now().toIso8601String(),
-            })
-            .eq('token', _currentToken!);
-        _logger.i('✅ FCM token deactivated (user_fcm_tokens)');
+        // Cez endpoint: `signedOut` prichádza až po zahodení session, takže
+        // priamy UPDATE by RLS ticho zahodila (0 riadkov, bez chyby) a token by
+        // ostal aktívny aj priradený odhlásenému účtu — ten by na tomto
+        // telefóne ďalej dostával osobné notifikácie.
+        final res = await http
+            .post(
+              Uri.parse('$_backendUrl/api/public/fcm-token'),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({'token': _currentToken, 'action': 'logout'}),
+            )
+            .timeout(const Duration(seconds: 15));
+        if (res.statusCode == 200) {
+          _logger.i('✅ FCM token deactivated (logout)');
+        } else {
+          _logger.w('⚠️ fcm-token logout ${res.statusCode}: ${res.body}');
+        }
       }
     } catch (e) {
       _logger.e('Failed to deactivate FCM token: $e');
@@ -529,13 +621,30 @@ class FcmService {
           ? '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}'
           : '08:00';
 
-      await Supabase.instance.client
-          .from('user_fcm_tokens')
-          .update({
-            'preferred_lectio_time': timeStr,
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('token', token);
+      // Cez endpoint, nie priamym zápisom: neprihlásenému RLS priamy update
+      // ticho odmietne (`user_id = auth.uid()` na anonymnom riadku neplatí),
+      // takže by si čas denného lectia nenastavil — a obrazovka nastavení
+      // prihlásenie nevyžaduje.
+      final session = Supabase.instance.client.auth.currentSession;
+      final res = await http
+          .post(
+            Uri.parse('$_backendUrl/api/public/fcm-token'),
+            headers: {
+              'Content-Type': 'application/json',
+              if (session != null)
+                'Authorization': 'Bearer ${session.accessToken}',
+            },
+            body: jsonEncode({
+              'token': token,
+              'preferred_lectio_time': timeStr,
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (res.statusCode != 200) {
+        _logger.w('⚠️ preferred_lectio_time ${res.statusCode}: ${res.body}');
+        return false;
+      }
 
       _logger.i('✅ Preferred lectio time updated to $timeStr');
       return true;
@@ -551,15 +660,22 @@ class FcmService {
       final token = _currentToken ?? await getCurrentToken();
       if (token == null) return null;
 
-      final result = await Supabase.instance.client
-          .from('user_fcm_tokens')
-          .select('preferred_lectio_time')
-          .eq('token', token)
-          .maybeSingle();
+      // Rovnaký dôvod ako pri zápise — anonymnému SELECT cez RLS nevráti nič.
+      final res = await http
+          .get(
+            Uri.parse(
+              '$_backendUrl/api/public/fcm-token?token=${Uri.encodeQueryComponent(token)}',
+            ),
+          )
+          .timeout(const Duration(seconds: 15));
 
-      if (result == null) return null;
+      if (res.statusCode != 200) {
+        _logger.w('⚠️ preferred_lectio_time GET ${res.statusCode}');
+        return null;
+      }
 
-      final timeStr = result['preferred_lectio_time'] as String?;
+      final json = jsonDecode(res.body) as Map<String, dynamic>;
+      final timeStr = json['preferred_lectio_time'] as String?;
       if (timeStr == null) return null;
 
       final parts = timeStr.split(':');

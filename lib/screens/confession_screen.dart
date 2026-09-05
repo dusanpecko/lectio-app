@@ -61,6 +61,14 @@ class _ConfessionScreenState extends State<ConfessionScreen>
 
   bool _loadingAnswers = true;
 
+  /// Blob sa nedá dešifrovať. Kým to platí, obrazovka NESMIE nič zapisovať —
+  /// inak by prázdny stav prepísal dáta, ktoré sa možno ešte dajú zachrániť.
+  bool _vaultError = false;
+
+  /// Rozlišuje súbežné načítania (rýchle prepnutie jazykového variantu),
+  /// aby staršie nedobehlo po novšom a nezobrazilo cudzí obsah.
+  int _loadToken = 0;
+
   /// Prekrytie obsahu hneď pri `inactive` (prepínač aplikácií / snapshot
   /// systému) — inak iOS na 1–2 s ukázal spovedný obsah pri návrate,
   /// kým prebehol pop na home.
@@ -233,7 +241,6 @@ class _ConfessionScreenState extends State<ConfessionScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _notesSaveDebounce?.cancel();
     for (final c in _noteCtrls.values) {
       c.dispose();
     }
@@ -241,8 +248,13 @@ class _ConfessionScreenState extends State<ConfessionScreen>
     AudioExclusive.release(_audio);
     _audio.dispose();
     WakelockPlus.disable();
-    // Zamkni a vypni ochranu obrazovky pri odchode.
-    _vault.lock();
+    // Rozpísaná poznámka (debounce ešte nedobehol) sa musí premietnuť do
+    // dokumentu, inak by sa cancel() nižšie postaral o jej stratu.
+    if (_notesSaveDebounce?.isActive ?? false) _applyAnswers();
+    _notesSaveDebounce?.cancel();
+    // Zamkni AŽ po dopísaní. `flushAndLock` drží poradie sám, takže tu stačí
+    // fire-and-forget — `dispose()` nič awaitovať nevie.
+    unawaited(_vault.flushAndLock());
     ConfessionVaultService.setSecureScreen(false);
     super.dispose();
   }
@@ -258,9 +270,13 @@ class _ConfessionScreenState extends State<ConfessionScreen>
       setState(() => _obscured = true);
     } else if (state == AppLifecycleState.paused && _vault.isUnlocked) {
       _stopAudio();
-      // Zamkni až PO dokončení zápisu — lock počas neawaitovaného save
-      // hádzal "Bad state: Vault locked".
-      _saveAnswersNow().whenComplete(_vault.lock);
+      // Zamkni až PO dokončení zápisu. `flushAndLock` čaká na celú frontu,
+      // takže pop nižšie už nemôže pretiecť so zápisom.
+      if (_notesSaveDebounce?.isActive ?? false) {
+        _notesSaveDebounce!.cancel();
+      }
+      _applyAnswers();
+      unawaited(_vault.flushAndLock());
       if (mounted) Navigator.of(context).pop();
     } else if (state == AppLifecycleState.resumed && mounted) {
       // Len prechodné inactive (ovládacie centrum, hovor…) — odkry.
@@ -272,10 +288,26 @@ class _ConfessionScreenState extends State<ConfessionScreen>
 
   Future<void> _loadAnswers() async {
     if (!_vault.isUnlocked) return;
-    setState(() => _loadingAnswers = true);
-    final data = await _vault.loadData();
+    final token = ++_loadToken;
+    setState(() {
+      _loadingAnswers = true;
+      _vaultError = false;
+    });
+
+    final Map<String, dynamic> data;
+    try {
+      data = await _vault.loadData();
+    } on VaultCorruptedException {
+      if (!mounted || token != _loadToken) return;
+      setState(() {
+        _loadingAnswers = false;
+        _vaultError = true;
+      });
+      return;
+    }
+
     final entry = data[_mirror.id] as Map<String, dynamic>?;
-    if (!mounted) return;
+    if (!mounted || token != _loadToken) return;
     setState(() {
       _checked = ((entry?['checked'] as List?) ?? [])
           .map((e) => e.toString())
@@ -294,20 +326,41 @@ class _ConfessionScreenState extends State<ConfessionScreen>
     });
   }
 
+  /// Premietne aktuálny stav do dokumentu trezoru a zaradí zápis.
+  ///
+  /// Synchrónne — takže sa dá bezpečne zavolať aj z `dispose()`, kde už nie je
+  /// možné nič awaitovať. O poradie zápisov sa stará samotná služba.
+  void _applyAnswers() {
+    if (!_vault.isUnlocked || _vaultError || _loadingAnswers) return;
+    unawaited(
+      _vault
+          .updateEntry(_mirror.id, {
+            'checked': _checked.toList()..sort(),
+            'notes': _notes,
+            'audio_pos': _currentAudioPosSec,
+          })
+          .catchError((_) {
+            // Trezor sa medzitým zamkol — uloží sa pri ďalšej zmene po
+            // odomknutí. Nie je to tichá strata: dokument drží služba.
+          }),
+    );
+  }
+
   Future<void> _saveAnswersNow() async {
-    if (!_vault.isUnlocked) return;
-    try {
-      final data = await _vault.loadData();
-      data[_mirror.id] = {
-        'checked': _checked.toList()..sort(),
-        'notes': _notes,
-        'audio_pos': _currentAudioPosSec,
-      };
-      await _vault.saveData(data);
-    } on StateError {
-      // Trezor sa počas zápisu zamkol (odchod do pozadia) — bez pádu;
-      // odpovede sa uložia pri najbližšej zmene po odomknutí.
+    _applyAnswers();
+    await _vault.flush();
+  }
+
+  /// Dopíše rozpracované zmeny pred odchodom z obrazovky.
+  ///
+  /// Debounce poznámok sa predtým v `dispose()` iba zrušil, takže text napísaný
+  /// tesne pred odchodom (do 700 ms) zmizol.
+  Future<void> _flushBeforeExit() async {
+    if (_notesSaveDebounce?.isActive ?? false) {
+      _notesSaveDebounce!.cancel();
+      _applyAnswers();
     }
+    await _vault.flush();
   }
 
   void _toggleQuestion(String questionId) {
@@ -315,7 +368,7 @@ class _ConfessionScreenState extends State<ConfessionScreen>
     setState(() {
       if (!_checked.remove(questionId)) _checked.add(questionId);
     });
-    _saveAnswersNow();
+    _applyAnswers();
   }
 
   void _onNoteChanged(String sectionId, String text) {
@@ -323,7 +376,7 @@ class _ConfessionScreenState extends State<ConfessionScreen>
     _notesSaveDebounce?.cancel();
     _notesSaveDebounce = Timer(
       const Duration(milliseconds: 700),
-      _saveAnswersNow,
+      _applyAnswers,
     );
   }
 
@@ -349,9 +402,7 @@ class _ConfessionScreenState extends State<ConfessionScreen>
     if (confirmed != true || !_vault.isUnlocked) return;
 
     // Zmaž odpovede tejto jazykovej verzie (PIN aj ostatné zrkadlá ostávajú).
-    final data = await _vault.loadData();
-    data.remove(_mirror.id);
-    await _vault.saveData(data);
+    await _vault.removeEntry(_mirror.id);
     if (!mounted) return;
     setState(() {
       _checked = {};
@@ -498,7 +549,18 @@ class _ConfessionScreenState extends State<ConfessionScreen>
             ? Brightness.dark
             : Brightness.light,
       ),
-      child: Scaffold(
+      // Systémové back / gesto musí najprv dopísať. Bez toho sa poznámka
+      // napísaná tesne pred odchodom stratila spolu so zrušeným debounce.
+      child: PopScope(
+        canPop: _selectedBase == null,
+        onPopInvokedWithResult: (didPop, _) async {
+          if (didPop) return;
+          final navigator = Navigator.of(context);
+          await _flushBeforeExit();
+          if (!mounted) return;
+          navigator.pop();
+        },
+        child: Scaffold(
         backgroundColor: HomeV2.background(context),
         body: Stack(
           children: [
@@ -508,6 +570,8 @@ class _ConfessionScreenState extends State<ConfessionScreen>
                 ? const Center(
                     child: CircularProgressIndicator(color: HomeV2.primary),
                   )
+                : _vaultError
+                ? _buildVaultErrorView()
                 : Column(
                     children: [
                       Expanded(
@@ -554,8 +618,89 @@ class _ConfessionScreenState extends State<ConfessionScreen>
               ),
           ],
         ),
+        ),
       ),
     );
+  }
+
+  /// Trezor sa nepodarilo dešifrovať.
+  ///
+  /// Zámerne samostatná obrazovka namiesto prázdnej prípravy: prázdny stav by
+  /// používateľ považoval za stratu dát a prvým ťuknutím by pôvodný blob
+  /// nenávratne prepísal.
+  Widget _buildVaultErrorView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.report_gmailerrorred_rounded,
+              size: 56,
+              color: HomeV2.primary.withValues(alpha: 0.7),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'confession.vault_error_title'.tr(),
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'confession.vault_error_body'.tr(),
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: HomeV2.textMuted(context),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            FilledButton(
+              onPressed: _loadAnswers,
+              child: Text('confession.vault_error_retry'.tr()),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            TextButton(
+              onPressed: _discardCorruptedVault,
+              child: Text(
+                'confession.vault_error_discard'.tr(),
+                style: const TextStyle(color: Color(0xFFC0392B)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Zahodenie nečitateľnej prípravy — len na výslovné potvrdenie.
+  Future<void> _discardCorruptedVault() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('confession.vault_error_discard'.tr()),
+        content: Text('confession.vault_error_discard_confirm'.tr()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('cancel'.tr()),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'confession.vault_error_discard'.tr(),
+              style: const TextStyle(color: Color(0xFFC0392B)),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _vault.discardCorruptedData();
+    if (!mounted) return;
+    await _loadAnswers();
   }
 
   /// Výber spovedného zrkadla (ak ich admin vytvoril viac — dospelí, deti…).
@@ -712,7 +857,11 @@ class _ConfessionScreenState extends State<ConfessionScreen>
             icon: const Icon(Icons.menu_book_rounded, color: Colors.white),
           ),
         IconButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () async {
+            await _flushBeforeExit();
+            if (!mounted) return;
+            Navigator.of(context).pop();
+          },
           icon: const Icon(Icons.lock_rounded, color: Colors.white),
         ),
       ],
@@ -988,13 +1137,16 @@ class _ConfessionScreenState extends State<ConfessionScreen>
             return GestureDetector(
               onTap: () async {
                 _stopAudio();
+                // Uloženie musí dobehnúť PRED zmenou _mirror, inak by sa
+                // odpovede predchádzajúceho variantu zapísali pod nové id.
                 await _saveAnswersNow();
+                if (!mounted) return;
                 setState(() {
                   _variantIndex = i;
                   _slideIndex = 0;
                 });
                 if (_pageController.hasClients) _pageController.jumpToPage(0);
-                _loadAnswers();
+                await _loadAnswers();
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(

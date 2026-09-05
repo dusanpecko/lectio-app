@@ -177,7 +177,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
                       padding: const EdgeInsets.only(bottom: AppSpacing.lg),
                       child: GestureDetector(
                         onTap: () {
-                          debugPrint('🔥 Action pressed: ${action['key']}');
+                          appLogger.d('Action pressed: ${action['key']}');
                           _handleSecondaryAction(action['key']);
                         },
                         child: Row(
@@ -223,9 +223,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
                             FloatingActionButton(
                               mini: true,
                               onPressed: () {
-                                debugPrint(
-                                  '🔥 Mini FAB pressed: ${action['key']}',
-                                );
+                                appLogger.d('Mini FAB pressed: ${action['key']}');
                                 _handleSecondaryAction(action['key']);
                               },
                               backgroundColor: action['color'],
@@ -251,7 +249,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
         // Main FAB s vlastným dizajnom
         GestureDetector(
           onTap: () {
-            debugPrint('📚 Main FAB pressed, isOpen: $_isOpen');
+            appLogger.d('Main FAB pressed, isOpen: $_isOpen');
             if (_isOpen) {
               _close();
             } else {
@@ -260,7 +258,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB>
           },
           onLongPress: () {
             HapticFeedback.mediumImpact();
-            debugPrint('🔄 Long press - toggling menu');
+            appLogger.d('Long press - toggling menu');
             _toggle();
           },
           child: AnimatedRotation(

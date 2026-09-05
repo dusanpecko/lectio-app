@@ -19,29 +19,25 @@ class OnboardingUpdateScreen extends StatefulWidget {
 }
 
 class _OnboardingUpdateScreenState extends State<OnboardingUpdateScreen> {
-  // Novinky AKTUÁLNEJ verzie (v11.1) — pri ďalšom update uprav (staré presuň
-  // pod oddeľovač do [_featuresPrev], alebo ich vymeň úplne).
+  // Novinky AKTUÁLNEJ verzie (v11.2) — pri ďalšom update uprav (staré presuň
+  // pod oddeľovač do [_featuresPrev], alebo ich vymeň úplne). Nezabudni zvýšiť
+  // `kCurrentOnboardingVersion` v main.dart, inak sa obrazovka nikomu neukáže.
   static const _featuresNew = [
+    (icon: Icons.auto_awesome_rounded, key: 'devotions_v2'),
+    (icon: Icons.headphones_rounded, key: 'full_audio'),
+    (icon: Icons.replay_rounded, key: 'novena_v2'),
+    (icon: Icons.alarm_on_rounded, key: 'push_anon'),
+    (icon: Icons.spellcheck_rounded, key: 'lectio_fix'),
+  ];
+
+  // Novinky predchádzajúcej verzie (v11.1) — pod oddeľovačom.
+  static const _featuresPrev = [
     (icon: Icons.local_fire_department_rounded, key: 'novenas'),
     (icon: Icons.favorite_border_rounded, key: 'confession'),
     (icon: Icons.church_rounded, key: 'devotions_home'),
     (icon: Icons.notifications_active_rounded, key: 'intentions'),
     (icon: Icons.bolt_rounded, key: 'audio'),
     (icon: Icons.local_shipping_rounded, key: 'cod'),
-  ];
-
-  // Novinky predchádzajúcej verzie (v11.0) — pod oddeľovačom.
-  static const _featuresPrev = [
-    (icon: Icons.palette_rounded, key: 'redesign'),
-    (icon: Icons.translate_rounded, key: 'languages'),
-    (icon: Icons.auto_stories_rounded, key: 'lectio'),
-    (icon: Icons.widgets_rounded, key: 'widget'),
-    (icon: Icons.graphic_eq_rounded, key: 'spotify'),
-    (icon: Icons.menu_book_rounded, key: 'prayers'),
-    (icon: Icons.help_outline_rounded, key: 'help'),
-    (icon: Icons.brightness_high_rounded, key: 'screen'),
-    (icon: Icons.shopping_bag_rounded, key: 'eshop'),
-    (icon: Icons.system_update_rounded, key: 'updates'),
   ];
 
   /// E-shopové karty sú len pre SK mutáciu (e-shop zatiaľ len SK; keď pribudne

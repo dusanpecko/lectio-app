@@ -19,7 +19,7 @@ documentation: https://github.com/dusanpecko/lectio-app/wiki
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 11.1.1+6000005
+version: 11.2.0+6000005
 
 environment:
   sdk: ^3.8.0
@@ -77,7 +77,7 @@ dependencies:
   flutter_secure_storage: ^10.0.0
   # Spovedné zrkadlo: PBKDF2 + AES-GCM (čisté Dart) a biometrické odomknutie
   cryptography: ^2.7.0
-  local_auth: ^2.3.0
+  local_auth: ^3.0.2
   flutter_local_notifications: ^22.0.1
   provider: ^6.1.2
   cached_network_image: ^3.4.1
@@ -87,6 +87,11 @@ dependencies:
   connectivity_plus: ^7.2.0
   video_player: ^2.9.3
   webview_flutter: ^4.13.1
+  # Platformové implementácie webview — potrebné explicitne, aby sme mohli
+  # zapnúť INLINE prehrávanie videa (YouTube/Vimeo embed hrá priamo v appke,
+  # nie v natívnom fullscreene / externej aplikácii). Verzie = už resolvované.
+  webview_flutter_android: ^4.13.0
+  webview_flutter_wkwebview: ^3.26.0
   in_app_review: ^2.0.10
   wakelock_plus: ^1.2.8
   showcaseview: ^5.1.0

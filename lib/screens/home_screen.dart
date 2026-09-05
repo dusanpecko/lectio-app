@@ -25,6 +25,7 @@ import '../shared/app_spacing.dart';
 import '../shared/date_limits_config.dart';
 import '../utils/app_logger.dart';
 import '../utils/scripture_reference.dart';
+import '../widgets/inbox_popup.dart';
 import '../widgets/home_v2/daily_actio_card.dart';
 import '../widgets/home_v2/daily_podcast_card.dart';
 import '../widgets/home_v2/featured_exercise_card.dart';
@@ -34,6 +35,7 @@ import '../widgets/home_v2/hero_pulse_button.dart';
 import '../widgets/home_v2/home_hero_section.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
 import '../widgets/home_v2/lectio_date_selector.dart';
+import '../widgets/home_v2/creators_horizontal_list.dart';
 import '../widgets/home_v2/news_horizontal_list.dart';
 import 'about_screen.dart';
 import 'adoration_screen.dart';
@@ -56,6 +58,8 @@ import 'notifications_screen.dart';
 import 'auth_screen.dart';
 import 'profile_screen.dart';
 import 'confession_gate_screen.dart';
+import 'creator_detail_screen.dart';
+import 'creators_screen.dart';
 import 'novenas_screen.dart';
 import 'prayers_screen.dart';
 import 'rosary_screen.dart';
@@ -168,7 +172,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       // Home je nasadený ako root → bezpečné otvoriť Lectio z widgetu
       // (ak appka štartovala ťuknutím na Actio widget).
       HomeWidgetService.markHomeReady();
+      _maybeShowInbox();
     });
+  }
+
+  /// Inbox popup — po dosadnutí home. Krátke oneskorenie, aby sa nekrížil
+  /// s coach marks / widget navigáciou. Ticho nič nespraví, ak nič nevyhovuje.
+  Future<void> _maybeShowInbox() async {
+    await Future.delayed(const Duration(milliseconds: 1200));
+    if (!mounted) return;
+    await maybeShowInboxPopup(context);
   }
 
   @override
@@ -1075,10 +1088,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         56 + MediaQuery.of(context).viewPadding.bottom + AppSpacing.lg;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      // Ikony stavového riadka podľa témy, nie natvrdo: `Brightness.dark`
+      // znamená ČIERNE ikony, takže v tmavom režime boli čierne na tmavom
+      // pozadí a hodiny ani wifi nebolo vidieť.
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
+        statusBarIconBrightness:
+            HomeV2.isDark(context) ? Brightness.light : Brightness.dark,
+        statusBarBrightness:
+            HomeV2.isDark(context) ? Brightness.dark : Brightness.light,
       ),
       child: Scaffold(
         backgroundColor: HomeV2.background(context),
@@ -1175,6 +1193,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             ),
                             onSeeAll: () =>
                                 _push(const NewsListScreen(), '/news-list'),
+                          ),
+                        ],
+                        if (!_isOffline) ...[
+                          const SizedBox(height: 28),
+                          CreatorsHorizontalList(
+                            onSeeAll: () =>
+                                _push(const CreatorsScreen(), '/creators'),
+                            onOpen: (c) => _push(
+                              CreatorDetailScreen(summary: c),
+                              '/creator-detail',
+                            ),
                           ),
                         ],
                       ],

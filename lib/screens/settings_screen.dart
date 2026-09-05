@@ -956,6 +956,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final hasMultipleOptions = availableBibles.length > 1;
     final isDisabled = availableBibles.length == 1;
 
+    // Hodnota MUSÍ byť medzi položkami, inak Flutter vyhodí assertion
+    // („There should be exactly one item with [DropdownButton]'s value").
+    //
+    // Pri zmene jazyka sa to stávalo: `build` prebehne hneď s novým jazykom
+    // (napr. EN → ponuka len `biblia_2`), ale `_selectedBible` je ešte stará
+    // hodnota z predošlého jazyka (`biblia_1`) — prestaví ju až asynchrónne
+    // `_handleLanguageChange` z `didChangeDependencies`. V tej medzere svietila
+    // pol sekundy červená obrazovka. Preto sa hodnota odvodí tu, pri kreslení,
+    // a na časovaní už nezáleží.
+    final bibleValue = availableBibles.contains(_selectedBible)
+        ? _selectedBible
+        : availableBibles.first;
+
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -986,7 +999,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _isLoadingBible
               ? const Center(child: CircularProgressIndicator())
               : DropdownButtonFormField<String>(
-                  initialValue: _selectedBible,
+                  initialValue: bibleValue,
                   onChanged: hasMultipleOptions ? _onBibleChanged : null,
                   isExpanded: true,
                   decoration: _dropdownDecoration(),

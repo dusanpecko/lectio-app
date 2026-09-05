@@ -22,6 +22,10 @@ class Novena {
   final int displayOrder;
   final List<NovenaDay> days;
 
+  /// Meno tvorcu (ak je deviatnik od externého tvorcu) — pre menovku „od {autor}"
+  /// v hlavnom zozname. `null` pri oficiálnom obsahu lectio.one.
+  final String? authorName;
+
   const Novena({
     required this.id,
     required this.shortcode,
@@ -38,6 +42,7 @@ class Novena {
     this.conclusionAudioUrl,
     required this.displayOrder,
     required this.days,
+    this.authorName,
   });
 
   factory Novena.fromJson(Map<String, dynamic> json) {
@@ -51,6 +56,11 @@ class Novena {
             .map((e) => NovenaDay.fromJson(e as Map<String, dynamic>))
             .toList()
           ..sort((a, b) => a.dayNumber.compareTo(b.dayNumber));
+
+    final cp = json['creator_profiles'];
+    final authorName = (cp is Map && cp['display_name'] != null)
+        ? cp['display_name'].toString()
+        : null;
 
     return Novena(
       id: json['id']?.toString() ?? '',
@@ -68,6 +78,7 @@ class Novena {
       conclusionAudioUrl: opt(json['conclusion_audio_url']),
       displayOrder: (json['display_order'] as num?)?.toInt() ?? 0,
       days: days,
+      authorName: authorName,
     );
   }
 

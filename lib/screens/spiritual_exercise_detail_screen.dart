@@ -41,6 +41,25 @@ class _SpiritualExerciseDetailScreenState
     super.dispose();
   }
 
+  /// Počet obsadených miest.
+  ///
+  /// Registračná tabuľka obsahuje osobné údaje, takže sa z klienta nečíta —
+  /// počet vracia RPC, ktoré vydá len číslo.
+  ///
+  /// Zámerne bez fallbacku a bez „0 pri chybe": priamy dotaz by po sprísnení
+  /// RLS nevrátil chybu, ale prázdny výsledok, takže by obrazovka ukázala plný
+  /// termín ako voľný a pustila používateľa do registrácie. Chyba tu preto
+  /// prebubláva a obrazovka skončí vo svojom chybovom stave.
+  Future<int> _fetchRegistrationCount(dynamic exerciseId) async {
+    final count = await Supabase.instance.client.rpc(
+      'spiritual_exercise_registration_count',
+      params: {'p_exercise_id': exerciseId},
+    );
+    if (count is int) return count;
+    if (count is num) return count.toInt();
+    throw StateError('Neočakávaná odpoveď počtu registrácií: $count');
+  }
+
   Future<void> _fetchExercise() async {
     setState(() {
       _isLoading = true;
@@ -65,19 +84,15 @@ class _SpiritualExerciseDetailScreenState
 
       if (response == null) {
         setState(() {
-          _error = 'Duchovné cvičenie sa nenašlo';
+          _error = tr('se_not_found');
           _isLoading = false;
         });
         return;
       }
 
-      final countResponse = await Supabase.instance.client
-          .from('spiritual_exercises_registrations')
-          .select('id')
-          .eq('exercise_id', response['id'])
-          .neq('payment_status', 'cancelled');
-
-      final currentRegistrations = (countResponse as List).length;
+      final currentRegistrations = await _fetchRegistrationCount(
+        response['id'],
+      );
       final maxCapacity = response['max_capacity'];
       final isFull = maxCapacity != null && currentRegistrations >= maxCapacity;
 
@@ -105,7 +120,7 @@ class _SpiritualExerciseDetailScreenState
       appLogger.e('❌ Error fetching exercise: $e');
       if (mounted) {
         setState(() {
-          _error = 'Nastala chyba pri načítaní';
+          _error = tr('se_load_error');
           _isLoading = false;
         });
       }
@@ -180,7 +195,7 @@ class _SpiritualExerciseDetailScreenState
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   Text(
-                    _error ?? 'Duchovné cvičenie sa nenašlo',
+                    _error ?? tr('se_not_found'),
                     style: HomeV2.serifTitle(context, size: 21),
                     textAlign: TextAlign.center,
                   ),
@@ -188,7 +203,7 @@ class _SpiritualExerciseDetailScreenState
                   ElevatedButton.icon(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                    label: const Text('Späť na zoznam'),
+                    label: Text(tr('back_to_list')),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: HomeV2.primary,
                       foregroundColor: Colors.white,
@@ -223,33 +238,33 @@ class _SpiritualExerciseDetailScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (exercise.description != null) ...[
-                _sectionCard('O cvičení', _html(exercise.description)),
+                _sectionCard(tr('se_section_about'), _html(exercise.description)),
                 const SizedBox(height: AppSpacing.lg),
               ],
               if (exercise.fullDescription != null) ...[
-                _sectionCard('Podrobný popis', _html(exercise.fullDescription)),
+                _sectionCard(tr('se_section_details'), _html(exercise.fullDescription)),
                 const SizedBox(height: AppSpacing.lg),
               ],
               if (exercise.leaderName != null &&
                   exercise.leaderBio != null) ...[
-                _sectionCard('Lektor', _buildLeader(exercise)),
+                _sectionCard(tr('se_section_leader'), _buildLeader(exercise)),
                 const SizedBox(height: AppSpacing.lg),
               ],
               if (exercise.gallery.isNotEmpty) ...[
-                _sectionCard('Galéria', _buildGallery(exercise)),
+                _sectionCard(tr('se_section_gallery'), _buildGallery(exercise)),
                 const SizedBox(height: AppSpacing.lg),
               ],
               if (exercise.testimonials.isNotEmpty) ...[
-                _sectionCard('Ohlasy účastníkov', _buildTestimonials(exercise)),
+                _sectionCard(tr('se_section_testimonials'), _buildTestimonials(exercise)),
                 const SizedBox(height: AppSpacing.lg),
               ],
               if (exercise.pricing.isNotEmpty) ...[
-                _sectionCard('Cenník', _buildPricing(exercise)),
+                _sectionCard(tr('se_section_pricing'), _buildPricing(exercise)),
                 const SizedBox(height: AppSpacing.lg),
               ],
-              _sectionCard('Miesto konania', _buildLocation(exercise)),
+              _sectionCard(tr('se_section_location'), _buildLocation(exercise)),
               const SizedBox(height: AppSpacing.lg),
-              _sectionCard('Termín', _buildDates(exercise)),
+              _sectionCard(tr('se_section_dates'), _buildDates(exercise)),
             ],
           ),
         ),
@@ -625,13 +640,16 @@ class _SpiritualExerciseDetailScreenState
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    tr('se_fee_label'),
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: HomeV2.textMuted(context),
+                  Expanded(
+                    child: Text(
+                      tr('se_fee_label'),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: HomeV2.textMuted(context),
+                      ),
                     ),
                   ),
+                  const SizedBox(width: AppSpacing.sm),
                   Text(
                     '${price.price.toStringAsFixed(2)} €',
                     style: TextStyle(
@@ -709,9 +727,9 @@ class _SpiritualExerciseDetailScreenState
     );
     return Row(
       children: [
-        box('Začiatok', _formatDate(exercise.startDate)),
+        box(tr('se_date_start'), _formatDate(exercise.startDate)),
         const SizedBox(width: AppSpacing.md),
-        box('Koniec', _formatDate(exercise.endDate)),
+        box(tr('se_date_end'), _formatDate(exercise.endDate)),
       ],
     );
   }
@@ -739,7 +757,7 @@ class _SpiritualExerciseDetailScreenState
         exercise.isFull ? Icons.block_rounded : Icons.how_to_reg_rounded,
       ),
       label: Text(
-        exercise.isFull ? 'Plne obsadené' : 'Prihlásiť sa',
+        exercise.isFull ? tr('se_full') : tr('se_register'),
         style: const TextStyle(fontWeight: FontWeight.w700),
       ),
     );

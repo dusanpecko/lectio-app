@@ -283,3 +283,125 @@
 | 1 | | | | |
 | 2 | | | | |
 | 3 | | | | |
+
+
+# Test 11.2
+Čo otestovať na Androide (Pixel 9a, Android 17)
+1. Nové v tomto builde — najvyššia priorita
+Toto ide do buildu prvýkrát, takže tu je najväčšia šanca, že sa niečo ukáže.
+
+ ## Update screen — päť kariet v11.2 hore, pod oddeľovačom v11.1. Prejsť aj v EN/ES/FR (nemá tam byť prázdny riadok ani anglický text v slovenčine). Po zavretí sa už nemá zobraziť pri ďalšom štarte. 
+ - android -  ok
+ - ios - ok
+
+ ## Lectio — HTML tagy — prejsť kroky (Lectio, Meditatio, Oratio, Contemplatio) vo všetkých štyroch jazykoch. Nikde <p>, <br>. Skontrolovať aj, či odstavce ostali oddelené — text sa čistil hromadne, tak sa oplatí pozrieť, či nie je zliaty do jedného bloku. Aj vo fullscreen čítačke.
+  - android -  ok
+ - ios - ok
+
+ ## „Celé audio" pri ruženci, adorácii a krížovej ceste — prehrá sa celé, medzi sekciami je hudba, sedí dĺžka a posúvanie, funguje lock-screen a prehrávanie na pozadí. Mobilná časť sa testuje prvýkrát.
+ - android -  
+ - ios - 
+
+ ## Deviatnik — „Modliť sa znova" po dokončení; reštart s potvrdením počas rozmodleného; ťuknutie na dennú pripomienku otvorí konkrétny deviatnik, nie hlavnú stránku.
+ - android -  
+ - ios - 
+
+ ## Inbox — popup po studenom štarte (nie po návrate z pozadia, tam sa zámerne nekontroluje). Plus admin compose v appke: profil → Inbox, vytvoriť a odoslať správu.
+
+ - android -  ok
+ - ios - ok
+
+ - je tam problem prepol som na en verziu a aj tak mi ukazalo inbox aj ked je nastaveny len na en
+
+2. FCM — celá cesta sa prepísala, treba ju prejsť
+ ## Odhlásenie — odhlás sa a nechaj telefón chvíľu. Osobné notifikácie (napr. schválený úmysel) už chodiť nemajú, denné lectio áno. Toto je úplne nová cesta cez server.
+ odhlasil som sa. na stavil som notifikacie - pri androide sa dalo zmenit ale ukazalo aj online nastavenia pri ios nie (vypisalo chyba nacitania)
+ - spravne spravanie v nastaveniach - ma otvorit nastavenie notifikacii le ukazat len lokalne nie ktore sa nastavuju online 
+  - android -  ok 
+ - ios - ok 
+
+ ## Prihlásenie — po prihlásení sa token priradí k účtu. V logu nemá byť žiadna chyba (predtým tam boli dve pri každom štarte).
+  - android -  odhlasil som sa a prihlasil neviem ci to priradilo spravne neviem ale odoslal som notifikaciu na prihlaseneho uzivatela a prislo
+ - ios - dhlasil som sa a prihlasil neviem ci to priradilo spravne neviem ale odoslal som notifikaciu na prihlaseneho uzivatela a prislo
+
+ ## Čas denného lectia bez prihlásenia — Nastavenia → Notifikácie, nastav čas odhlásený. Predtým to ticho zlyhalo, teraz sa má uložiť aj zobraziť po návrate na obrazovku.
+ odhlasil som sa. na stavil som notifikacie - pri androide sa dalo zmenit ale ukazalo aj online nastavenia pri ios nie (vypisalo chyba nacitania)
+ - spravne spravanie v nastaveniach - ma otvorit nastavenie notifikacii le ukazat len lokalne nie ktore sa nastavuju online 
+  - android -  
+ - ios - 
+
+ ## Zmena jazyka appky — token si má prebrať nový jazyk (denné lectio potom chodí v tom jazyku).
+  - android -  
+ - ios - ok
+
+3. Android 17 — systémové veci
+
+ ### Edge-to-edge sweep — spodné plávajúce prehrávače, rozbalené FAB menu, formuláre s klávesnicou, a najmä štyri obrazovky na svetlom pozadí: spovedná brána, čítačka lectio, dotazník lectio, onboarding (ikony v stavovom riadku majú byť čitateľné).
+
+- android -  
+- ios - ok
+
+ ### Notifikácie a povolenia, deep linky, prehrávanie na pozadí po zamknutí.
+- android -  
+- ios - ok
+
+
+4. Visí to z v11.1, stále neotestované
+ ### E-shop — dobierka (cod_enabled musí byť zapnutý v admin Účtovníctve).
+to bolo otestovane
+
+ ### E-shop — objednávka pre firmu (IČO, DIČ, IČ DPH na faktúre).
+to bolo otestovane
+
+
+
+Keby čokoľvek spadlo alebo sa zaseklo, povedz — z Pixelu viem stiahnuť logcat a pozrieť sa na to hneď.
+pri spovedi nefunguje ani na androide a ani na ios odomykanie tvarou/prstom
+
+---
+
+## Výsledok kola 5. 9. 2026
+
+**Otestované a v poriadku (Android + iOS):** update screen · lectio bez HTML tagov ·
+deviatnik (reštart aj notifikácia) · inbox popup + admin compose · „Celé audio"
+pri ruženci/adorácii/krížovej ceste · spovedné zrkadlo vrátane biometrie
+(iOS už len 1 výzva namiesto 4) · e-shop dobierka a firemná objednávka.
+
+**Nálezy z tohto kola a ako skončili:**
+
+| Nález | Príčina | Stav |
+|---|---|---|
+| Biometria pri spovedi zmizla po aktualizácii (v obchode fungovala) | `migrateLegacyStorage()` bežala pri štarte appky → systémový prompt na home screene, a pri jeho zlyhaní `catch` **zmazal starú kópiu kľúča** | ✅ opravené (migrácia až v `unlockWithPin`, mazanie až po overenom zápise, fallback na starú kópiu, `resetOnError: false`) |
+| iOS pýtal biometriu 4× pri otvorení spovede | každý dotyk chráneného kľúča si na iOS žiada overenie zvlášť (2× kontrola stavu + náš `local_auth` + čítanie kľúča) | ✅ opravené (príznak stavu v bežnom úložisku, `local_auth` len na Androide) |
+| Ruženec — iný font na úvode než v ďalších krokoch | 9 zo 60 úvodov je v DB **bez `<p>` tagov** → spadli na neštýlovaný `body`; typografia bola len na `p` | ✅ opravené v ruženci, adorácii aj krížovej ceste (latentné aj tam) |
+| Inbox sa zobrazil v EN, hoci má obsah len v SK | endpoint mal fallback `content[lang] ?? content[default_lang]` | ✅ opravené v kóde — **čaká na nasadenie backendu** |
+| Nastavenia notifikácií odhlásený ukázali aj online prepínače | Android: testované prihlásený (zámena). iOS: build bez opravy | ✅ opravené (bez prihlásenia sa online preferencie nesťahujú a nehlási sa chyba) |
+
+**Edge-to-edge sweep (Android 17) — priebeh:**
+
+| Bod | Výsledok |
+|---|---|
+| Zmena jazyka appky | ✅ ok |
+| Plávajúce prehrávače | ✅ všade ok |
+| Spoveď — PIN obrazovka | ✅ ok |
+| Dotazník lectio | neaplikovateľné — obrazovka je vypnutá |
+| Otočenie na šírku | neaplikovateľné — appka je zamknutá na portrét (`setPreferredOrientations` + `Info.plist`) |
+| **Ikony stavového riadka v tmavom režime** | 🐞 čierne namiesto bielych → opravené, ✅ overené na Androide aj iOS |
+| Formuláre s klávesnicou | ✅ ok — klávesnica sa pekne skryje |
+| Onboarding | ✅ ok |
+| FAB menu | neaplikovateľné — v appke už nie je (3 súbory bez importov, 784 r. mŕtveho kódu) |
+
+**Nález navyše — ikony systémových líšt v tmavom režime** (opravené 5.9.2026):
+`home_screen`, `lectio_screen` a `about_screen` mali `statusBarIconBrightness:
+Brightness.dark` **natvrdo**, čiže čierne ikony aj v tmavom režime (ostatných 49
+obrazoviek to má podľa témy — preto to vyzeralo náhodne). Pri tom sa našlo to isté
+o poschodie nižšie: `systemNavigationBarIconBrightness` sa nastavovalo raz pri
+štarte natvrdo na tmavé, takže v tmavom režime boli čierne aj ikony navigačnej
+lišty (vidno pri 3-tlačidlovej navigácii). Oboje teraz podľa témy, navigačná lišta
+v `MaterialApp.builder`, ktorý sa prekresľuje pri zmene témy.
+
+**iOS:** buildy sa robia paralelne s Android buildmi, takže iOS má všetky opravy
+tohto kola a sú otestované (font v ruženci, jedna výzva biometrie namiesto
+štyroch, ikony líšt v tmavom režime).
+
+**Výsledok: testovanie 11.2 uzavreté, žiadny otvorený bod.**

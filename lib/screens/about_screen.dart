@@ -83,10 +83,15 @@ class _AboutScreenState extends State<AboutScreen> {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      // Ikony stavového riadka podľa témy, nie natvrdo: `Brightness.dark`
+      // znamená ČIERNE ikony, takže v tmavom režime boli čierne na tmavom
+      // pozadí a hodiny ani wifi nebolo vidieť.
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
+        statusBarIconBrightness:
+            HomeV2.isDark(context) ? Brightness.light : Brightness.dark,
+        statusBarBrightness:
+            HomeV2.isDark(context) ? Brightness.dark : Brightness.light,
       ),
       child: Scaffold(
         backgroundColor: HomeV2.background(context),

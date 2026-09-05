@@ -19,7 +19,7 @@ class NovenasService {
             'id, shortcode, lang, category, title, description, image_url, '
             'intro_title, intro_content, intro_audio_url, '
             'conclusion_title, conclusion_content, conclusion_audio_url, '
-            'display_order, '
+            'display_order, owner_profile_id, creator_profiles(display_name), '
             'novena_days(id, day_number, title, content, audio_url)',
           )
           .eq('is_active', true)
@@ -31,6 +31,29 @@ class NovenasService {
     } catch (e) {
       appLogger.e('❌ NovenasService.fetchNovenas: $e');
       rethrow;
+    }
+  }
+
+  /// Jeden deviatnik podľa id (aj creator obsah — zdieľaná tabuľka `novenas`).
+  /// Pre otvorenie deviatnika tvorcu z jeho profilu.
+  Future<Novena?> fetchNovenaById(String id) async {
+    try {
+      final data = await Supabase.instance.client
+          .from('novenas')
+          .select(
+            'id, shortcode, lang, category, title, description, image_url, '
+            'intro_title, intro_content, intro_audio_url, '
+            'conclusion_title, conclusion_content, conclusion_audio_url, '
+            'display_order, owner_profile_id, creator_profiles(display_name), '
+            'novena_days(id, day_number, title, content, audio_url)',
+          )
+          .eq('id', id)
+          .eq('is_active', true)
+          .maybeSingle();
+      return data == null ? null : Novena.fromJson(data);
+    } catch (e) {
+      appLogger.e('❌ NovenasService.fetchNovenaById: $e');
+      return null;
     }
   }
 

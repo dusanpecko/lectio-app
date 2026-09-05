@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/spiritual_exercise.dart';
+import '../services/payment_status_service.dart';
 import '../shared/app_colors.dart';
 import '../utils/app_logger.dart';
 import '../shared/app_spacing.dart';
@@ -68,6 +69,8 @@ class _SpiritualExerciseRegistrationScreenState
   late final AppLinks _appLinks;
   StreamSubscription<Uri>? _linkSub;
   bool _awaitingCardPayment = false;
+  bool _verifyingPayment = false;
+  String? _molliePaymentId;
 
   // Constants
   static const List<String> _referralSources = [
@@ -104,7 +107,7 @@ class _SpiritualExerciseRegistrationScreenState
       if (uri.scheme == 'lectio-divina' &&
           uri.host == 'payment-success' &&
           (uri.queryParameters['type'] ?? '') == 'spiritual_exercise') {
-        _onCardPaid();
+        _onReturnFromMollie();
       }
     });
     _fetchUserProfile();
@@ -117,12 +120,62 @@ class _SpiritualExerciseRegistrationScreenState
     super.dispose();
   }
 
-  /// Návrat z Mollie po úspešnej platbe kartou (deep link).
-  void _onCardPaid() {
-    if (!mounted || !_awaitingCardPayment) return;
+  /// Návrat z Mollie (deep link).
+  ///
+  /// Mollie použije ten istý redirectUrl pri úspechu aj pri zrušení, takže
+  /// návrat nič nedokazuje — stav si vypýtame zo servera.
+  Future<void> _onReturnFromMollie() async {
+    if (!mounted || !_awaitingCardPayment || _verifyingPayment) return;
     _awaitingCardPayment = false;
-    setState(() => _isSubmitting = false);
-    _showSuccessDialog();
+
+    final paymentId = _molliePaymentId;
+    if (paymentId == null) {
+      // Bez ID sa stav overiť nedá — nesľubujeme úspech.
+      setState(() => _isSubmitting = false);
+      _showPaymentPendingDialog();
+      return;
+    }
+
+    setState(() => _verifyingPayment = true);
+    final outcome = await PaymentStatusService.instance.waitForOutcome(
+      paymentId,
+    );
+    if (!mounted) return;
+
+    setState(() {
+      _verifyingPayment = false;
+      _isSubmitting = false;
+    });
+
+    switch (outcome) {
+      case PaymentOutcome.paid:
+        _showSuccessDialog();
+      case PaymentOutcome.cancelled:
+        // Registrácia v DB ostáva ako `pending` — používateľ môže platbu
+        // zopakovať z e-mailu s pokynmi alebo prevodom.
+        setState(() => _serverError = tr('se_payment_cancelled'));
+      case PaymentOutcome.pending:
+        _showPaymentPendingDialog();
+    }
+  }
+
+  void _showPaymentPendingDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(tr('se_payment_pending_title')),
+        content: Text(tr('se_payment_pending')),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pop();
+            },
+            child: Text(tr('ok')),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _fetchUserProfile() async {
@@ -244,6 +297,7 @@ class _SpiritualExerciseRegistrationScreenState
       // Platba kartou → otvor Mollie checkout; po úhrade príde deep link.
       if (_paymentMethod == 'card' && payment?['checkoutUrl'] is String) {
         _awaitingCardPayment = true;
+        _molliePaymentId = payment?['paymentId'] as String?;
         await launchUrl(
           Uri.parse(payment!['checkoutUrl'] as String),
           mode: LaunchMode.externalApplication,

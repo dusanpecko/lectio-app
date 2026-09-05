@@ -29,6 +29,8 @@ val flutterVersionName: String = localProperties.getProperty("flutter.versionNam
 android {
     namespace = "sk.dpapp.app.android604688a88a394"
     compileSdk = 36
+    // Zjednotené s pluginom `jni`, ktorý vyžaduje NDK 28.2 (backward-compatible).
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -43,7 +45,7 @@ android {
     defaultConfig {
         applicationId = "sk.dpapp.app.android604688a88a394"
         minSdk = flutter.minSdkVersion
-        targetSdk = 35
+        targetSdk = 36
         versionCode = flutterVersionCode.toInt()
         versionName = flutterVersionName
     }
@@ -64,6 +66,11 @@ android {
         }
         getByName("release") {
             isMinifyEnabled = true
+            // Odstraňovanie nepoužitých Android zdrojov (Play odporúčanie R8).
+            // Bezpečné: všetky notif./launcher ikony sú @mipmap/launcher_icon
+            // referencované v AndroidManifest (shrinker ich vidí), žiadne
+            // dynamické getIdentifier lookupy. Vyžaduje isMinifyEnabled = true.
+            isShrinkResources = true
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

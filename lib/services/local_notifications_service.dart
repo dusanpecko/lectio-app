@@ -408,6 +408,10 @@ class LocalNotificationsService {
         case 'prayer_reminder':
           _navigateToLectio(DateTime.now());
           break;
+        case 'novena':
+          // Deviatnik — prepošli raw JSON payload callbacku (rovnako ako FCM screen).
+          handleExternalNotificationTap(response.payload);
+          break;
         case 'welcome':
           _navigateToHome();
           break;

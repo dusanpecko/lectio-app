@@ -1,12 +1,13 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_html/flutter_html.dart';
 
 import '../shared/app_spacing.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
 import '../widgets/lectio_v2/lectio_step_card.dart';
 
-/// Jeden krok pre fullscreen čítačku (Biblia/Lectio/Meditatio/…).
+/// Jeden krok pre fullscreen čítačku (Biblia/Lectio/Meditatio/… aj krížová cesta).
 class LectioReaderStep {
   final String stepKey;
   final String title;
@@ -15,6 +16,13 @@ class LectioReaderStep {
   final String? audioUrl;
   final String? analyticsId;
   final String? language;
+
+  /// Text je HTML (napr. zastavenia krížovej cesty) → renderuje sa cez [Html].
+  final bool isHtml;
+
+  /// Umami content_type (default 'lectio'; napr. 'stations_of_cross') + obálka.
+  final String contentType;
+  final String? artUri;
 
   // Admin in-app editácia (rovnaké ako na karte) — len pre 5 lectio krokov.
   final bool isAdmin;
@@ -32,6 +40,9 @@ class LectioReaderStep {
     this.audioUrl,
     this.analyticsId,
     this.language,
+    this.isHtml = false,
+    this.contentType = 'lectio',
+    this.artUri,
     this.isAdmin = false,
     this.sourceId,
     this.stepField,
@@ -52,6 +63,9 @@ class LectioReaderStep {
         audioUrl: audioUrl ?? this.audioUrl,
         analyticsId: analyticsId,
         language: language,
+        isHtml: isHtml,
+        contentType: contentType,
+        artUri: artUri,
         isAdmin: isAdmin,
         sourceId: sourceId,
         stepField: stepField,
@@ -60,6 +74,19 @@ class LectioReaderStep {
         onAudioRegenerated: onAudioRegenerated,
       );
 }
+
+/// Zbaví HTML značiek pre kopírovanie do schránky (čítačka aj karta).
+String stripReaderHtml(String html) => html
+    .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+    .replaceAll(RegExp(r'</p>', caseSensitive: false), '\n\n')
+    .replaceAll(RegExp(r'<[^>]+>'), '')
+    .replaceAll('&nbsp;', ' ')
+    .replaceAll('&amp;', '&')
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'")
+    .trim();
 
 /// Fullscreen čítací režim Lectio — text edge-to-edge, swipe medzi krokmi.
 /// Otvára sa ťuknutím na kartu kroku v [LectioScreen].
@@ -101,7 +128,15 @@ class _LectioReaderScreenState extends State<LectioReaderScreen> {
     final topPad = MediaQuery.of(context).padding.top;
     final bottomPad = MediaQuery.of(context).viewPadding.bottom;
 
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness:
+            HomeV2.isDark(context) ? Brightness.light : Brightness.dark,
+        statusBarBrightness:
+            HomeV2.isDark(context) ? Brightness.dark : Brightness.light,
+      ),
+      child: Scaffold(
       backgroundColor: HomeV2.background(context),
       body: Column(
         children: [
@@ -154,6 +189,7 @@ class _LectioReaderScreenState extends State<LectioReaderScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -224,7 +260,9 @@ class _ReaderPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
-                _ReaderCopyButton(text: step.text),
+                _ReaderCopyButton(
+                  text: step.isHtml ? stripReaderHtml(step.text) : step.text,
+                ),
                 if (step.audioUrl != null && step.audioUrl!.isNotEmpty) ...[
                   const SizedBox(width: AppSpacing.sm),
                   StepPlayButton(
@@ -233,6 +271,8 @@ class _ReaderPage extends StatelessWidget {
                     title: step.title,
                     analyticsId: step.analyticsId,
                     language: step.language,
+                    contentType: step.contentType,
+                    artUri: step.artUri,
                   ),
                 ],
                 if (step.canAdmin) ...[
@@ -253,14 +293,31 @@ class _ReaderPage extends StatelessWidget {
             // Scrollovateľný čítací text — vyplní zvyšok karty.
             Expanded(
               child: SingleChildScrollView(
-                child: Text(
-                  step.text,
-                  style: TextStyle(
-                    fontSize: 18,
-                    height: 1.7,
-                    color: HomeV2.textDark(context),
-                  ),
-                ),
+                child: step.isHtml
+                    ? Html(
+                        data: step.text,
+                        style: {
+                          "body": Style(
+                            margin: Margins.zero,
+                            padding: HtmlPaddings.zero,
+                          ),
+                          "p": Style(
+                            lineHeight: const LineHeight(1.7),
+                            color: HomeV2.textDark(context),
+                            fontSize: FontSize(18),
+                            margin: Margins.only(top: 0, bottom: 14),
+                            textAlign: TextAlign.justify,
+                          ),
+                        },
+                      )
+                    : Text(
+                        step.text,
+                        style: TextStyle(
+                          fontSize: 18,
+                          height: 1.7,
+                          color: HomeV2.textDark(context),
+                        ),
+                      ),
               ),
             ),
           ],

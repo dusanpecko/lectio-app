@@ -13,7 +13,6 @@ import '../services/novena_progress_service.dart';
 import '../shared/app_spacing.dart';
 import '../shared/audio_player_factory.dart';
 import '../widgets/audio/audio_progress_bar.dart';
-import '../widgets/collapsible_hero_app_bar.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
 
 /// Jeden slide dňa deviatnika (úvod / denný text / záver).
@@ -145,20 +144,53 @@ class _NovenaDetailScreenState extends State<NovenaDetailScreen> {
     ).showSnackBar(SnackBar(content: Text('novena.completed_day'.tr())));
   }
 
-  Future<void> _restart() async {
-    // Zruš pripomienky podľa VÄČŠIEHO z počtov (uložený pri štarte vs. živý),
-    // nech nezostane visieť notifikácia, ak sa počet dní medzitým zmenil.
+  /// Reštart „na jeden ťuk" — vynuluje progres a hneď začne od 1. dňa
+  /// (zachová aktuálne nastavenie pripomienky). Použité po dokončení aj počas.
+  Future<void> _restartAndStart() async {
+    HapticFeedback.mediumImpact();
     final storedTotal = _progress?.totalDays ?? 0;
     await NovenaProgressService.instance.reset(
       _novena.baseCode,
       storedTotal > _novena.totalDays ? storedTotal : _novena.totalDays,
     );
+    final p = await NovenaProgressService.instance.start(
+      _novena.baseCode,
+      novenaTitle: _novena.title,
+      totalDays: _novena.totalDays,
+      reminderEnabled: _reminderEnabled,
+      reminderHour: _reminderTime.hour,
+      reminderMinute: _reminderTime.minute,
+    );
     if (!mounted) return;
     setState(() {
-      _progress = null;
+      _progress = p;
       _viewDay = 1;
       _slideIndex = 0;
     });
+  }
+
+  /// Reštart počas rozmodleného deviatnika — najprv potvrdenie (chráni progres).
+  Future<void> _confirmRestart() async {
+    HapticFeedback.lightImpact();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('novena.restart_confirm_title'.tr()),
+        content: Text('novena.restart_confirm_body'.tr()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('cancel'.tr()),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: HomeV2.primary),
+            child: Text('novena.restart'.tr()),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) await _restartAndStart();
   }
 
   Future<void> _openReminderSheet() async {
@@ -399,37 +431,132 @@ class _NovenaDetailScreenState extends State<NovenaDetailScreen> {
     );
   }
 
-  // ── Hero — jednotný zbaliteľný (CollapsibleHeroAppBar, vzor krížové cesty) ──
+  // ── Hero — fixný v2 hero (vzor adorácia / ruženec) ─────────────────────────
 
-  Widget _heroSliver({String? subtitle, bool showActions = false}) {
-    return CollapsibleHeroAppBar(
-      collapsedTitle: _novena.title,
-      imageUrl: _novena.imageUrl,
-      expandedContent: HeroCenteredContent(
-        title: _novena.title,
-        subtitle: subtitle,
-        // Bez ilustrácie dostane hero aspoň ikonu (ako adorácie/ruženec).
-        icon: _novena.imageUrl == null
-            ? Icons.local_fire_department_rounded
-            : null,
-      ),
-      actions: showActions
-          ? [
-              IconButton(
-                onPressed: _copyCurrentSlide,
-                icon: const Icon(Icons.copy_rounded, color: Colors.white),
-              ),
-              IconButton(
-                onPressed: _openReminderSheet,
-                icon: Icon(
-                  _reminderEnabled
-                      ? Icons.notifications_active_rounded
-                      : Icons.notifications_off_rounded,
-                  color: Colors.white,
+  Widget _hero({String? subtitle, bool showActions = false, bool showRestart = false}) {
+    final topPad = MediaQuery.of(context).padding.top;
+    final bg = HomeV2.background(context);
+    final n = _novena;
+    final img = (n.imageUrl != null && n.imageUrl!.isNotEmpty) ? n.imageUrl : null;
+    final author = n.authorName;
+
+    return SizedBox(
+      height: 240,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(HomeV2.radius + 6)),
+            child: img != null
+                ? Image.network(img,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.topCenter,
+                    errorBuilder: (_, _, _) => _heroFallback())
+                : _heroFallback(),
+          ),
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(HomeV2.radius + 6)),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [bg.withValues(alpha: 0.45), Colors.transparent, bg.withValues(alpha: 0.7), bg],
+                  stops: const [0.0, 0.25, 0.7, 1.0],
                 ),
               ),
-            ]
-          : const [],
+            ),
+          ),
+          Positioned(
+            top: topPad + AppSpacing.sm,
+            left: AppSpacing.lg,
+            child: _circleBtn(Icons.arrow_back_rounded, () => Navigator.of(context).maybePop()),
+          ),
+          if (showActions)
+            Positioned(
+              top: topPad + AppSpacing.sm,
+              right: AppSpacing.lg,
+              child: Row(
+                children: [
+                  if (showRestart) ...[
+                    _circleBtn(Icons.restart_alt_rounded, _confirmRestart),
+                    const SizedBox(width: AppSpacing.sm),
+                  ],
+                  _circleBtn(Icons.copy_rounded, _copyCurrentSlide),
+                  const SizedBox(width: AppSpacing.sm),
+                  _circleBtn(
+                    _reminderEnabled ? Icons.notifications_active_rounded : Icons.notifications_off_rounded,
+                    _openReminderSheet,
+                  ),
+                ],
+              ),
+            ),
+          Positioned(
+            left: AppSpacing.xl,
+            right: AppSpacing.xl,
+            bottom: AppSpacing.md,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  n.title,
+                  style: HomeV2.serifTitle(context, size: 20, color: HomeV2.textDark(context), height: 1.1),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (subtitle != null && subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: HomeV2.iconAccent(context)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                if (author != null && author.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '${'author_prefix'.tr()} $author',
+                    style: TextStyle(fontSize: 12, color: HomeV2.textMuted(context)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _heroFallback() {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [HomeV2.primary, HomeV2.primary.withValues(alpha: 0.65)],
+        ),
+      ),
+      child: Center(
+        child: Icon(Icons.local_fire_department_rounded, size: 64, color: Colors.white.withValues(alpha: 0.35)),
+      ),
+    );
+  }
+
+  Widget _circleBtn(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Container(
+        width: 40, height: 40,
+        decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.35), shape: BoxShape.circle),
+        child: Icon(icon, color: Colors.white, size: 22),
+      ),
     );
   }
 
@@ -480,15 +607,15 @@ class _NovenaDetailScreenState extends State<NovenaDetailScreen> {
 
   Widget _buildStartView() {
     final n = _novena;
-    return CustomScrollView(
-      slivers: [
-        _heroSliver(
+    return Column(
+      children: [
+        _hero(
           subtitle: 'novena.days_count'.tr(
             namedArgs: {'count': '${n.totalDays}'},
           ),
         ),
-        SliverToBoxAdapter(
-          child: Padding(
+        Expanded(
+          child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
               AppSpacing.xl,
               AppSpacing.lg,
@@ -604,11 +731,11 @@ class _NovenaDetailScreenState extends State<NovenaDetailScreen> {
   // ── 2) Dokončený ───────────────────────────────────────────────────────────
 
   Widget _buildFinishedView() {
-    return CustomScrollView(
-      slivers: [
-        _heroSliver(subtitle: 'novena.finished_badge'.tr()),
-        SliverToBoxAdapter(
-          child: Padding(
+    return Column(
+      children: [
+        _hero(subtitle: 'novena.finished_badge'.tr()),
+        Expanded(
+          child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
               AppSpacing.xl,
               AppSpacing.lg,
@@ -651,7 +778,7 @@ class _NovenaDetailScreenState extends State<NovenaDetailScreen> {
                         borderRadius: BorderRadius.circular(AppRadius.full),
                       ),
                     ),
-                    onPressed: _restart,
+                    onPressed: _restartAndStart,
                     icon: const Icon(Icons.replay_rounded),
                     label: Text('novena.restart'.tr()),
                   ),
@@ -674,7 +801,26 @@ class _NovenaDetailScreenState extends State<NovenaDetailScreen> {
 
     return Column(
       children: [
-        // Slidy — každý má vlastný zbaliteľný hero (vzor krížové cesty).
+        // Fixný hero (v2) — akcie reštart/kopírovať/pripomienka v pravom hornom rohu.
+        _hero(
+          subtitle: 'novena.day_of'.tr(
+            namedArgs: {
+              'day': '$_viewDay',
+              'total': '${_novena.totalDays}',
+            },
+          ),
+          showActions: true,
+          showRestart: true,
+        ),
+        // Chips (jazyk + dni) — fixné pod hero, mimo swipovateľnej oblasti.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.md, AppSpacing.xl, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [_langChips(), _dayChips()],
+          ),
+        ),
+        // Slidy dňa (úvod → deň → záver).
         Expanded(
           child: PageView.builder(
             controller: _pageController,
@@ -683,33 +829,8 @@ class _NovenaDetailScreenState extends State<NovenaDetailScreen> {
               _stopAudio();
               setState(() => _slideIndex = i);
             },
-            itemBuilder: (_, i) => CustomScrollView(
-              slivers: [
-                _heroSliver(
-                  subtitle: 'novena.day_of'.tr(
-                    namedArgs: {
-                      'day': '$_viewDay',
-                      'total': '${_novena.totalDays}',
-                    },
-                  ),
-                  showActions: true,
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.xl,
-                      AppSpacing.md,
-                      AppSpacing.xl,
-                      0,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [_langChips(), _dayChips()],
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(child: _buildSlide(slides[i], isCompleted)),
-              ],
+            itemBuilder: (_, i) => SingleChildScrollView(
+              child: _buildSlide(slides[i], isCompleted),
             ),
           ),
         ),

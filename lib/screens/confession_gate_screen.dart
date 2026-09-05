@@ -76,11 +76,19 @@ class _ConfessionGateScreenState extends State<ConfessionGateScreen> {
     if (setUp && bioEnabled) _tryBiometrics();
   }
 
-  Future<void> _tryBiometrics() async {
+  /// [manual] = používateľ ťukol na tlačidlo. Pri automatickom pokuse po
+  /// otvorení obrazovky sa hláška nezobrazuje — zrušenie promptu je bežné
+  /// a nie je to chyba. Pri ťuknutí naopak nesmie tlačidlo mlčať.
+  Future<void> _tryBiometrics({bool manual = false}) async {
     final ok = await _vault.unlockWithBiometrics(
       'confession.bio_reason'.tr(),
     );
-    if (ok && mounted) _enter();
+    if (!mounted) return;
+    if (ok) {
+      _enter();
+    } else if (manual) {
+      setState(() => _error = 'confession.bio_failed'.tr());
+    }
   }
 
   Future<void> _submitSetup() async {
@@ -178,7 +186,15 @@ class _ConfessionGateScreenState extends State<ConfessionGateScreen> {
   @override
   Widget build(BuildContext context) {
     final isSetup = _mode == _GateMode.setup;
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness:
+            HomeV2.isDark(context) ? Brightness.light : Brightness.dark,
+        statusBarBrightness:
+            HomeV2.isDark(context) ? Brightness.dark : Brightness.light,
+      ),
+      child: Scaffold(
       backgroundColor: HomeV2.background(context),
       body: SafeArea(
         child: _mode == _GateMode.loading
@@ -308,7 +324,7 @@ class _ConfessionGateScreenState extends State<ConfessionGateScreen> {
                     if (_bioEnabled) ...[
                       const SizedBox(height: AppSpacing.md),
                       TextButton.icon(
-                        onPressed: _tryBiometrics,
+                        onPressed: () => _tryBiometrics(manual: true),
                         icon: const Icon(Icons.fingerprint_rounded),
                         label: Text('confession.bio_button'.tr()),
                       ),
@@ -382,6 +398,7 @@ class _ConfessionGateScreenState extends State<ConfessionGateScreen> {
                   ),
                 ],
               ),
+      ),
       ),
     );
   }

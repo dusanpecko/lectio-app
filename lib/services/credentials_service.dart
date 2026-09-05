@@ -2,6 +2,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../utils/app_logger.dart';
 
+/// Ukladá len e-mail na predvyplnenie prihlasovacieho formulára.
+///
+/// Heslo sa zámerne neukladá: session drží `supabase_flutter` a uložené heslo
+/// by na zdieľanom alebo kompromitovanom zariadení bolo znovupoužiteľné.
+/// `purgeLegacyPassword()` dočisťuje heslá z inštalácií pred touto zmenou.
 class CredentialsService {
   static CredentialsService? _instance;
   static CredentialsService get instance =>
@@ -18,18 +23,21 @@ class CredentialsService {
   static const _storage = FlutterSecureStorage();
 
   static const _emailKey = 'user_email';
-  static const _passwordKey = 'user_password';
+
+  /// Kľúč z historickej verzie, ktorá ukladala aj heslo. Už sa nezapisuje,
+  /// len maže — viď `purgeLegacyPassword()`.
+  static const _legacyPasswordKey = 'user_password';
 
   final _logger = appLogger;
 
-  // Uloží prihlasovacie údaje
-  Future<void> saveCredentials(String email, String password) async {
+  // Uloží e-mail na predvyplnenie
+  Future<void> saveEmail(String email) async {
     try {
       await _storage.write(key: _emailKey, value: email);
-      await _storage.write(key: _passwordKey, value: password);
-      _logger.i('Credentials saved successfully');
+      await _storage.delete(key: _legacyPasswordKey);
+      _logger.i('Email saved successfully');
     } catch (e) {
-      _logger.e('Error saving credentials: $e');
+      _logger.e('Error saving email: $e');
       rethrow;
     }
   }
@@ -44,33 +52,11 @@ class CredentialsService {
     }
   }
 
-  // Načíta heslo
-  Future<String?> getPassword() async {
-    try {
-      return await _storage.read(key: _passwordKey);
-    } catch (e) {
-      _logger.e('Error reading password: $e');
-      return null;
-    }
-  }
-
-  // Načíta oba údaje naraz
-  Future<Map<String, String?>> getCredentials() async {
-    try {
-      final email = await _storage.read(key: _emailKey);
-      final password = await _storage.read(key: _passwordKey);
-      return {'email': email, 'password': password};
-    } catch (e) {
-      _logger.e('Error reading credentials: $e');
-      return {'email': null, 'password': null};
-    }
-  }
-
-  // Vymaže uložené údaje
+  // Vymaže uložené údaje (volané pri odhlásení a pri vypnutí „zapamätať si ma")
   Future<void> clearCredentials() async {
     try {
       await _storage.delete(key: _emailKey);
-      await _storage.delete(key: _passwordKey);
+      await _storage.delete(key: _legacyPasswordKey);
       _logger.i('Credentials cleared successfully');
     } catch (e) {
       _logger.e('Error clearing credentials: $e');
@@ -78,12 +64,19 @@ class CredentialsService {
     }
   }
 
-  // Skontroluje či sú údaje uložené
+  /// Zmaže heslo uložené staršou verziou aplikácie. E-mail ponechá.
+  Future<void> purgeLegacyPassword() async {
+    try {
+      await _storage.delete(key: _legacyPasswordKey);
+    } catch (e) {
+      _logger.w('Failed to purge legacy stored password', error: e);
+    }
+  }
+
+  // Skontroluje či je e-mail uložený
   Future<bool> hasCredentials() async {
     try {
-      final email = await _storage.read(key: _emailKey);
-      final password = await _storage.read(key: _passwordKey);
-      return email != null && password != null;
+      return await _storage.read(key: _emailKey) != null;
     } catch (e) {
       _logger.e('Error checking credentials: $e');
       return false;

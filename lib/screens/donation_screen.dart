@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../shared/app_spacing.dart';
+import '../services/payment_status_service.dart';
 import '../services/umami_analytics_service.dart';
 import '../widgets/donation/support_campaign_card.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
@@ -45,6 +46,10 @@ class _DonationScreenState extends State<DonationScreen> {
   static const _baseUrl = 'https://www.lectio.one';
   static const Color _primaryLight = Color(0xFF6B73A8);
   static const Color _success = Color(0xFF2E9E5B);
+  static const Color _danger = Color(0xFFC0392B);
+
+  /// Mollie ID poslednej spustenej platby — bez neho sa návrat neoveruje.
+  String? _molliePaymentId;
 
   // One-time donation
   int? _selectedQuickAmount;
@@ -188,13 +193,44 @@ class _DonationScreenState extends State<DonationScreen> {
     _linkSubscription = _appLinks.uriLinkStream.listen((Uri uri) {
       if (uri.scheme == 'lectio-divina' && uri.host == 'payment-success') {
         if (!mounted) return;
-        final type = uri.queryParameters['type'] ?? 'donation';
-        final message = type == 'subscription'
-            ? 'donation.subscription_success'.tr()
-            : 'donation.donation_success'.tr();
-        _snack(message, color: _success, seconds: 4);
+        _handlePaymentReturn(uri.queryParameters['type'] ?? 'donation');
       }
     });
+  }
+
+  /// Mollie sa vracia na ten istý redirectUrl pri úspechu aj pri zrušení,
+  /// takže návrat sám o sebe nie je dôkaz daru — pýtame sa servera.
+  Future<void> _handlePaymentReturn(String type) async {
+    final paymentId = _molliePaymentId;
+    if (paymentId == null) {
+      // Bez ID (napr. link z inej obrazovky) radšej nič netvrdíme.
+      return;
+    }
+    _molliePaymentId = null;
+
+    if (mounted) {
+      _snack('donation.payment_verifying'.tr(), color: _primaryLight, seconds: 3);
+    }
+
+    final outcome = await PaymentStatusService.instance.waitForOutcome(
+      paymentId,
+    );
+    if (!mounted) return;
+
+    switch (outcome) {
+      case PaymentOutcome.paid:
+        _snack(
+          type == 'subscription'
+              ? 'donation.subscription_success'.tr()
+              : 'donation.donation_success'.tr(),
+          color: _success,
+          seconds: 4,
+        );
+      case PaymentOutcome.cancelled:
+        _snack('donation.payment_cancelled'.tr(), color: _danger, seconds: 5);
+      case PaymentOutcome.pending:
+        _snack('donation.payment_pending'.tr(), color: _primaryLight, seconds: 6);
+    }
   }
 
   @override
@@ -221,6 +257,7 @@ class _DonationScreenState extends State<DonationScreen> {
         final data = jsonDecode(response.body);
         final url = data['url'] as String?;
         if (url != null) {
+          _molliePaymentId = data['paymentId'] as String?;
           await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
         } else {
           _showError('donation.payment_error'.tr());

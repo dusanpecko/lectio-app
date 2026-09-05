@@ -16,8 +16,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../shared/app_colors.dart';
 import '../utils/app_logger.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
+import '../services/credentials_service.dart';
 import '../services/supporter_discount_service.dart';
 import 'shop/my_orders_screen.dart';
+import 'admin/inbox_admin_list_screen.dart';
 import 'spiritual_exercise_detail_screen.dart';
 import '../shared/app_spacing.dart';
 
@@ -978,6 +980,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         await supabase.auth.signOut(scope: SignOutScope.local);
       } catch (_) {}
     }
+    // Uložený e-mail (a heslo zo starších verzií) nesmie po odhlásení ostať
+    // pripravený na predvyplnenie — zariadenie môže prevziať niekto iný.
+    try {
+      await CredentialsService.instance.clearCredentials();
+    } catch (_) {}
     if (mounted) {
       Navigator.popUntil(context, (route) => route.isFirst);
     }
@@ -1146,8 +1153,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         throw Exception(errorData['error'] ?? 'Failed to delete account');
       }
 
+      // 207 = dáta vymazané, ale Auth účet ostal. Používateľ to musí vedieť —
+      // tvrdiť „účet bol vymazaný" by bolo nepravdivé.
+      final isPartial = response.statusCode == 207;
+
       // Odhláš používateľa lokálne
       await supabase.auth.signOut();
+      try {
+        await CredentialsService.instance.clearCredentials();
+      } catch (_) {}
 
       if (mounted) {
         // Presmeruj na login obrazovku
@@ -1155,8 +1169,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('profile.delete.success'.tr()),
-            backgroundColor: Colors.green,
+            content: Text(
+              isPartial
+                  ? 'profile.delete.partial'.tr()
+                  : 'profile.delete.success'.tr(),
+            ),
+            backgroundColor: isPartial ? Colors.orange : Colors.green,
+            duration: Duration(seconds: isPartial ? 10 : 4),
           ),
         );
       }
@@ -1241,6 +1260,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           // Action Buttons Card
                           _buildActionButtonsCard(theme),
                           const SizedBox(height: AppSpacing.lg),
+
+                          // Admin nástroje (len rola admin) — Inbox správy.
+                          if (_role == 'admin') ...[
+                            _buildAdminCard(theme),
+                            const SizedBox(height: AppSpacing.lg),
+                          ],
 
                           // Billing Info Section
                           _buildBillingInfoSection(theme),
@@ -1499,133 +1524,136 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildProfileInfoCard(ThemeData theme) {
     final theme = Theme.of(context);
     return Container(
-      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: HomeV2.card(context),
         borderRadius: BorderRadius.circular(HomeV2.radius),
         boxShadow: HomeV2.softShadowSm(context),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          children: [
-            TextFormField(
-              controller: _nameCtrl,
-              decoration: InputDecoration(
-                labelText: 'profile.field.fullname'.tr(),
-                prefixIcon: const Icon(Icons.person),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Material(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _nameCtrl,
+                decoration: InputDecoration(
+                  labelText: 'profile.field.fullname'.tr(),
+                  prefixIcon: const Icon(Icons.person),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surface,
                 ),
-                filled: true,
-                fillColor: theme.colorScheme.surface,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'profile.field.fullname_required'.tr()
+                    : null,
               ),
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'profile.field.fullname_required'.tr()
-                  : null,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            ListTile(
-              leading: Icon(Icons.email, color: theme.colorScheme.primary),
-              title: Text('profile.field.email'.tr()),
-              subtitle: Text(_emailCtrl.text),
-              contentPadding: EdgeInsets.zero,
-            ),
-            if (_registeredAt != null) ...[
-              const Divider(),
+              const SizedBox(height: AppSpacing.lg),
               ListTile(
-                leading: Icon(Icons.event, color: theme.colorScheme.primary),
-                title: Text('profile.field.registered_at'.tr()),
-                subtitle: Text(
-                  '${_registeredAt!.day.toString().padLeft(2, '0')}.'
-                  '${_registeredAt!.month.toString().padLeft(2, '0')}.'
-                  '${_registeredAt!.year}',
-                ),
+                leading: Icon(Icons.email, color: theme.colorScheme.primary),
+                title: Text('profile.field.email'.tr()),
+                subtitle: Text(_emailCtrl.text),
                 contentPadding: EdgeInsets.zero,
               ),
-            ],
-            const Divider(),
-            ListTile(
-              leading: Icon(
-                Icons.verified_user,
-                color: theme.colorScheme.primary,
-              ),
-              title: Text('profile.field.role'.tr()),
-              subtitle: Text(_role ?? 'profile.field.role_loading'.tr()),
-              contentPadding: EdgeInsets.zero,
-            ),
-            // Variable Symbol
-            if (_variableSymbol != null && _variableSymbol!.isNotEmpty) ...[
+              if (_registeredAt != null) ...[
+                const Divider(),
+                ListTile(
+                  leading: Icon(Icons.event, color: theme.colorScheme.primary),
+                  title: Text('profile.field.registered_at'.tr()),
+                  subtitle: Text(
+                    '${_registeredAt!.day.toString().padLeft(2, '0')}.'
+                    '${_registeredAt!.month.toString().padLeft(2, '0')}.'
+                    '${_registeredAt!.year}',
+                  ),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ],
               const Divider(),
               ListTile(
-                leading: Icon(Icons.tag, color: theme.colorScheme.primary),
-                title: Text('profile.field.variable_symbol'.tr()),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _variableSymbol!,
-                      style: theme.textTheme.titleMedium!.copyWith(
-                        fontFamily: 'monospace',
+                leading: Icon(
+                  Icons.verified_user,
+                  color: theme.colorScheme.primary,
+                ),
+                title: Text('profile.field.role'.tr()),
+                subtitle: Text(_role ?? 'profile.field.role_loading'.tr()),
+                contentPadding: EdgeInsets.zero,
+              ),
+              // Variable Symbol
+              if (_variableSymbol != null && _variableSymbol!.isNotEmpty) ...[
+                const Divider(),
+                ListTile(
+                  leading: Icon(Icons.tag, color: theme.colorScheme.primary),
+                  title: Text('profile.field.variable_symbol'.tr()),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _variableSymbol!,
+                        style: theme.textTheme.titleMedium!.copyWith(
+                          fontFamily: 'monospace',
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'profile.field.variable_symbol_hint'.tr(),
+                        style: theme.textTheme.labelSmall!.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ],
+              // Support Status
+              if (_subscriptions.isNotEmpty) ...[
+                const Divider(),
+                ListTile(
+                  leading: Icon(Icons.star, color: theme.colorScheme.primary),
+                  title: Text('profile.support_status'.tr()),
+                  subtitle: Text(
+                    _subscriptions.any((s) => s.tier == 'founder')
+                        ? '🏆 ${'profile.tier.founder'.tr()}'
+                        : _subscriptions.any((s) => s.tier == 'patron')
+                        ? '💎 ${'profile.tier.patron'.tr()}'
+                        : '❤️ ${'profile.tier.friend'.tr()}',
+                    style: theme.textTheme.bodyLarge!.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _subscriptions.any((s) => s.tier == 'founder')
+                          ? Colors.purple.shade600
+                          : _subscriptions.any((s) => s.tier == 'patron')
+                          ? Colors.blue.shade600
+                          : Colors.red.shade500,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: Text(
+                      _subscriptions.any((s) => s.tier == 'founder')
+                          ? 'profile.tier_badge.founder'.tr()
+                          : _subscriptions.any((s) => s.tier == 'patron')
+                          ? 'profile.tier_badge.patron'.tr()
+                          : 'profile.tier_badge.friend'.tr(),
+                      style: theme.textTheme.labelSmall!.copyWith(
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Text(
-                      'profile.field.variable_symbol_hint'.tr(),
-                      style: theme.textTheme.labelSmall!.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
+                  ),
+                  contentPadding: EdgeInsets.zero,
                 ),
-                contentPadding: EdgeInsets.zero,
-              ),
+              ],
             ],
-            // Support Status
-            if (_subscriptions.isNotEmpty) ...[
-              const Divider(),
-              ListTile(
-                leading: Icon(Icons.star, color: theme.colorScheme.primary),
-                title: Text('profile.support_status'.tr()),
-                subtitle: Text(
-                  _subscriptions.any((s) => s.tier == 'founder')
-                      ? '🏆 ${'profile.tier.founder'.tr()}'
-                      : _subscriptions.any((s) => s.tier == 'patron')
-                      ? '💎 ${'profile.tier.patron'.tr()}'
-                      : '❤️ ${'profile.tier.friend'.tr()}',
-                  style: theme.textTheme.bodyLarge!.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                trailing: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _subscriptions.any((s) => s.tier == 'founder')
-                        ? Colors.purple.shade600
-                        : _subscriptions.any((s) => s.tier == 'patron')
-                        ? Colors.blue.shade600
-                        : Colors.red.shade500,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  child: Text(
-                    _subscriptions.any((s) => s.tier == 'founder')
-                        ? 'profile.tier_badge.founder'.tr()
-                        : _subscriptions.any((s) => s.tier == 'patron')
-                        ? 'profile.tier_badge.patron'.tr()
-                        : 'profile.tier_badge.friend'.tr(),
-                    style: theme.textTheme.labelSmall!.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -1633,46 +1661,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildActionButtonsCard(ThemeData theme) {
     return Container(
-      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: HomeV2.card(context),
         borderRadius: BorderRadius.circular(HomeV2.radius),
         boxShadow: HomeV2.softShadowSm(context),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          children: [
-            ListTile(
-              leading: Icon(Icons.lock_reset, color: theme.colorScheme.primary),
-              title: Text('profile.button.change_password'.tr()),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: changePassword,
-              contentPadding: EdgeInsets.zero,
-            ),
-            const Divider(height: 1),
-            ListTile(
-              leading: Icon(Icons.download, color: theme.colorScheme.primary),
-              title: Text('profile.button.download_data'.tr()),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: _isSaving ? null : downloadUserData,
-              contentPadding: EdgeInsets.zero,
-            ),
-            const Divider(height: 1),
-            CheckboxListTile(
-              secondary: Icon(Icons.email, color: theme.colorScheme.primary),
-              title: Text(tr('newsletter_consent_label')),
-              subtitle: Text(tr('newsletter_consent_description')),
-              value: _newsletterConsent,
-              onChanged: (value) {
-                setState(() {
-                  _newsletterConsent = value ?? false;
-                });
-              },
-              controlAffinity: ListTileControlAffinity.trailing,
-              contentPadding: EdgeInsets.zero,
-            ),
-          ],
+      child: Material(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            children: [
+              ListTile(
+                leading: Icon(
+                  Icons.lock_reset,
+                  color: theme.colorScheme.primary,
+                ),
+                title: Text('profile.button.change_password'.tr()),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: changePassword,
+                contentPadding: EdgeInsets.zero,
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: Icon(Icons.download, color: theme.colorScheme.primary),
+                title: Text('profile.button.download_data'.tr()),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: _isSaving ? null : downloadUserData,
+                contentPadding: EdgeInsets.zero,
+              ),
+              const Divider(height: 1),
+              CheckboxListTile(
+                secondary: Icon(Icons.email, color: theme.colorScheme.primary),
+                title: Text(tr('newsletter_consent_label')),
+                subtitle: Text(tr('newsletter_consent_description')),
+                value: _newsletterConsent,
+                onChanged: (value) {
+                  setState(() {
+                    _newsletterConsent = value ?? false;
+                  });
+                },
+                controlAffinity: ListTileControlAffinity.trailing,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1759,42 +1793,89 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  /// Samostatná karta „Moje objednávky" (e-shop) — len SK mutácia.
-  Widget _buildOrdersCard(ThemeData theme) {
+  /// Admin nástroje — vstup do správy in-app popup správ (Inbox). Len `admin`.
+  Widget _buildAdminCard(ThemeData theme) {
     return Container(
-      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: HomeV2.card(context),
         borderRadius: BorderRadius.circular(HomeV2.radius),
         boxShadow: HomeV2.softShadowSm(context),
       ),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: HomeV2.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Material(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          leading: Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: HomeV2.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Icon(Icons.inbox_rounded, color: HomeV2.primary, size: 20),
           ),
-          child: Icon(
-            Icons.receipt_long_rounded,
-            color: HomeV2.primary,
-            size: 20,
+          title: Text(
+            'Inbox správy',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          subtitle: Text(
+            'In-app popup správy (admin)',
+            style: theme.textTheme.bodySmall,
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const InboxAdminListScreen()),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.sm,
           ),
         ),
-        title: Text(
-          'orders.title'.tr(),
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  /// Samostatná karta „Moje objednávky" (e-shop) — len SK mutácia.
+  Widget _buildOrdersCard(ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        boxShadow: HomeV2.softShadowSm(context),
+      ),
+      child: Material(
+        color: HomeV2.card(context),
+        borderRadius: BorderRadius.circular(HomeV2.radius),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          leading: Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: HomeV2.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Icon(
+              Icons.receipt_long_rounded,
+              color: HomeV2.primary,
+              size: 20,
+            ),
           ),
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const MyOrdersScreen()),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.sm,
+          title: Text(
+            'orders.title'.tr(),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MyOrdersScreen()),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.sm,
+          ),
         ),
       ),
     );

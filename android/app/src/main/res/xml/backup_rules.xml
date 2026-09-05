@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 11 a nižšie (android:fullBackupContent).
+
+  Trezor spovede je jediná vec v appke, o ktorej používateľovi výslovne
+  tvrdíme, že „nie je súčasťou zálohy telefónu ani prenosu na nové zariadenie"
+  (confession.info_backup_body). flutter_secure_storage ukladá zašifrované
+  hodnoty do SharedPreferences `FlutterSecureStorage`, ktoré Android Auto Backup
+  štandardne zálohuje — bez tejto výnimky by ten sľub neplatil.
+
+  Druhý dôvod je dostupnosť: kľúč z Android Keystore sa neprenáša, takže po
+  obnove na novom zariadení sa hodnoty nedajú dešifrovať a plugin ich pri
+  `resetOnError` (default true) zmaže. Používateľ by prišiel o prípravu bez
+  akéhokoľvek varovania.
+
+  Zvyšok dát appky sa zálohuje ďalej.
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml"/>
+</full-backup-content>

@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../shared/app_spacing.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
+import '../utils/app_logger.dart';
 
 class IntentionSubmitScreen extends StatefulWidget {
   final Map<String, dynamic>? existingIntention;
@@ -73,7 +74,7 @@ class _IntentionSubmitScreenState extends State<IntentionSubmitScreen> {
         }
       } catch (e) {
         // Log error but don't show to user as this is not critical
-        debugPrint('Error loading user role: $e');
+        appLogger.w('Error loading user role', error: e);
       }
     }
   }
@@ -119,7 +120,7 @@ class _IntentionSubmitScreenState extends State<IntentionSubmitScreen> {
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       _snack(tr('submit_error'), isError: true);
-      debugPrint('Error submitting intention: $e');
+      appLogger.e('Error submitting intention', error: e);
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
@@ -179,7 +180,7 @@ class _IntentionSubmitScreenState extends State<IntentionSubmitScreen> {
         if (mounted) Navigator.pop(context, true);
       } catch (e) {
         _snack(tr('delete_error'), isError: true);
-        debugPrint('Error deleting intention: $e');
+        appLogger.e('Error deleting intention', error: e);
       } finally {
         if (mounted) {
           setState(() => isDeleting = false);

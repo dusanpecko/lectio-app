@@ -235,7 +235,7 @@ class NovenaProgressService {
             ),
           ),
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          payload: 'novena:$baseCode',
+          payload: jsonEncode({'type': 'novena', 'baseCode': baseCode}),
         );
         scheduled++;
       } catch (e) {

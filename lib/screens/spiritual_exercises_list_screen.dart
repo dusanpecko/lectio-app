@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/spiritual_exercise.dart';
 import '../shared/app_spacing.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
+import '../utils/app_logger.dart';
 import 'spiritual_exercise_detail_screen.dart';
 
 class SpiritualExercisesListScreen extends StatefulWidget {
@@ -44,7 +45,7 @@ class _SpiritualExercisesListScreenState
         });
       }
     } catch (e) {
-      debugPrint('❌ Error fetching locales: $e');
+      appLogger.e('Error fetching locales', error: e);
     }
   }
 
@@ -97,7 +98,7 @@ class _SpiritualExercisesListScreenState
         });
       }
     } catch (e) {
-      debugPrint('❌ Error fetching exercises: $e');
+      appLogger.e('Error fetching exercises', error: e);
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -106,12 +107,6 @@ class _SpiritualExercisesListScreenState
 
   String _formatDate(DateTime date) {
     return DateFormat('dd.MM.yyyy').format(date);
-  }
-
-  String _getExercisesCountText(int count) {
-    if (count == 1) return '1 cvičenie';
-    if (count >= 2 && count <= 4) return '$count cvičenia';
-    return '$count cvičení';
   }
 
   @override
@@ -206,7 +201,7 @@ class _SpiritualExercisesListScreenState
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Duchovné cvičenia',
+                  tr('spiritual_exercises'),
                   style: HomeV2.serifTitle(
                     context,
                     size: isTablet ? 34 : 28,
@@ -216,7 +211,7 @@ class _SpiritualExercisesListScreenState
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Príďte a zažite čas pokoja, modlitby a duchovnej obnovy.',
+                  tr('se_list_subtitle'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -265,11 +260,11 @@ class _SpiritualExercisesListScreenState
                     fontSize: 14,
                     color: HomeV2.textDark(context),
                   ),
-                  hint: const Text('Všetky jazyky'),
+                  hint: Text(tr('se_all_languages')),
                   items: [
-                    const DropdownMenuItem(
+                    DropdownMenuItem(
                       value: '',
-                      child: Text('Všetky jazyky'),
+                      child: Text(tr('se_all_languages')),
                     ),
                     ..._locales.map(
                       (locale) => DropdownMenuItem(
@@ -297,7 +292,7 @@ class _SpiritualExercisesListScreenState
             )
           else
             Text(
-              _getExercisesCountText(_exercises.length),
+              tr('se_count_exercises', namedArgs: {'count': '${_exercises.length}'}),
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
@@ -335,8 +330,8 @@ class _SpiritualExercisesListScreenState
               const SizedBox(height: AppSpacing.lg),
               Text(
                 _selectedLocale != null
-                    ? 'Pre zvolený jazyk momentálne nemáme žiadne naplánované duchovné cvičenia.'
-                    : 'Momentálne nemáme žiadne naplánované duchovné cvičenia.',
+                    ? tr('se_empty_filtered')
+                    : tr('se_empty'),
                 style: TextStyle(
                   fontSize: 15,
                   height: 1.5,
@@ -501,7 +496,7 @@ class _ExerciseCard extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          'Viac informácií',
+                          tr('se_more_info'),
                           style: TextStyle(
                             color: HomeV2.iconAccent(context),
                             fontWeight: FontWeight.w700,

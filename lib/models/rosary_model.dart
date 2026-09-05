@@ -38,16 +38,34 @@ class RosaryDecade {
   final String introduction; // uvod
   final String? author; // autor
 
-  // Lectio Divina sekcie
+  // Lectio Divina sekcie (rovnaká štruktúra ako adorácia)
+  final String? uvodneModlitby; // uvodne_modlitby
   final String? lectioText;
+  final String? commentary; // komentar
   final String? meditatioText;
   final String? oratioHtml;
   final String? contemplatioText;
   final String? actioText;
 
+  // Per-sekcia audio (uvod → … → actio)
+  final String? introAudio; // uvod_audio
+  final String? uvodneModlitbyAudio; // uvodne_modlitby_audio
+  final String? lectioAudio; // lectio_audio
+  final String? commentaryAudio; // komentar_audio
+  final String? meditatioAudio; // meditatio_audio
+  final String? oratioAudio; // oratio_audio
+  final String? contemplatioAudio; // contemplatio_audio
+  final String? actioAudio; // actio_audio
+  // Reálne dĺžky sekcií {base → sekundy} (ffprobe; obchádza chybný iOS odhad).
+  final Map<String, double> audioDurations;
+
   // Média
   final String? illustrationImage; // ilustracny_obrazok
-  final String? audioRecording; // audio_nahravka
+  final String? audioRecording; // audio_nahravka (staré jednostopové audio)
+
+  // Spojené „celé audio" (sekcie + meditačná hudba medzi nimi) + jeho dĺžka.
+  final String? fullAudioUrl; // full_audio_url
+  final double? fullAudioDuration; // full_audio_duration (ffprobe)
 
   // Timestamps
   final DateTime createdAt;
@@ -63,13 +81,26 @@ class RosaryDecade {
     required this.biblicalText,
     required this.introduction,
     this.author,
+    this.uvodneModlitby,
     this.lectioText,
+    this.commentary,
     this.meditatioText,
     this.oratioHtml,
     this.contemplatioText,
     this.actioText,
+    this.introAudio,
+    this.uvodneModlitbyAudio,
+    this.lectioAudio,
+    this.commentaryAudio,
+    this.meditatioAudio,
+    this.oratioAudio,
+    this.contemplatioAudio,
+    this.actioAudio,
+    this.audioDurations = const {},
     this.illustrationImage,
     this.audioRecording,
+    this.fullAudioUrl,
+    this.fullAudioDuration,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -87,13 +118,26 @@ class RosaryDecade {
       biblicalText: json['biblicky_text']?.toString() ?? '',
       introduction: json['uvod']?.toString() ?? '',
       author: json['autor']?.toString(),
+      uvodneModlitby: json['uvodne_modlitby']?.toString(),
       lectioText: json['lectio_text']?.toString(),
+      commentary: json['komentar']?.toString(),
       meditatioText: json['meditatio_text']?.toString(),
       oratioHtml: json['oratio_html']?.toString(),
       contemplatioText: json['contemplatio_text']?.toString(),
       actioText: json['actio_text']?.toString(),
+      introAudio: json['uvod_audio']?.toString(),
+      uvodneModlitbyAudio: json['uvodne_modlitby_audio']?.toString(),
+      lectioAudio: json['lectio_audio']?.toString(),
+      commentaryAudio: json['komentar_audio']?.toString(),
+      meditatioAudio: json['meditatio_audio']?.toString(),
+      oratioAudio: json['oratio_audio']?.toString(),
+      contemplatioAudio: json['contemplatio_audio']?.toString(),
+      actioAudio: json['actio_audio']?.toString(),
+      audioDurations: _parseDurations(json['audio_durations']),
       illustrationImage: json['ilustracny_obrazok']?.toString(),
       audioRecording: json['audio_nahravka']?.toString(),
+      fullAudioUrl: json['full_audio_url']?.toString(),
+      fullAudioDuration: _parseDoubleSafely(json['full_audio_duration']),
       createdAt: _parseDateSafely(json['created_at']) ?? DateTime.now(),
       updatedAt: _parseDateSafely(json['updated_at']) ?? DateTime.now(),
     );
@@ -124,6 +168,26 @@ class RosaryDecade {
     if (value is DateTime) return value;
     if (value is String) return DateTime.tryParse(value);
     return null;
+  }
+
+  static double? _parseDoubleSafely(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
+  // audio_durations JSONB {base: sekundy} → Map<String,double>
+  static Map<String, double> _parseDurations(dynamic value) {
+    if (value is Map) {
+      final out = <String, double>{};
+      value.forEach((k, v) {
+        final d = v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '');
+        if (d != null) out[k.toString()] = d;
+      });
+      return out;
+    }
+    return const {};
   }
 
   Map<String, dynamic> toJson() {

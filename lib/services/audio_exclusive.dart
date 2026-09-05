@@ -40,4 +40,18 @@ class AudioExclusive {
   static void release(AudioPlayer player) {
     if (identical(_holder, player)) _holder = null;
   }
+
+  /// Zastaví to, čo práve hrá, bez preberania slotu — pre neaudio prehrávače
+  /// (in-app video), ktoré nie sú [AudioPlayer], ale nesmú hrať súčasne
+  /// s audiom (napr. lectio z busu + video v časti série).
+  static Future<void> stopCurrent() async {
+    final prev = _holder;
+    _holder = null;
+    if (prev == null) return;
+    try {
+      await prev.stop();
+    } catch (e) {
+      appLogger.w('AudioExclusive: stopCurrent zlyhalo: $e');
+    }
+  }
 }
