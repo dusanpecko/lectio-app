@@ -34,6 +34,27 @@ class ShopService {
     }
   }
 
+  /// Produkty pre featured carousel na home (admin: hviezda + poradie).
+  /// Server filtruje aktívne, featured a na sklade; poradie = sort_order.
+  /// Chyba → prázdny zoznam: home nesmie spadnúť kvôli e-shopu.
+  Future<List<ShopProduct>> fetchFeaturedProducts() async {
+    try {
+      final res = await http
+          .get(Uri.parse('$_baseUrl/api/shop/products?featured=1'))
+          .timeout(const Duration(seconds: 12));
+      if (res.statusCode != 200) return [];
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final list = (data['products'] as List?) ?? const [];
+      return list
+          .whereType<Map>()
+          .map((e) => ShopProduct.fromJson(e.cast<String, dynamic>()))
+          .toList();
+    } catch (e) {
+      appLogger.w('ShopService.fetchFeaturedProducts: $e');
+      return [];
+    }
+  }
+
   /// Vytvorí objednávku + Mollie platbu. Vráti odpoveď servera:
   /// `{ url }` (normálne) alebo `{ test: true, orderId, invoiceNumber }`
   /// (dočasný admin test režim — preskočí platbu). Hodí výnimku pri chybe.

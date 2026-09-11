@@ -13,10 +13,15 @@ import '../utils/app_logger.dart';
 class InboxButton {
   final String label;
   final String screenKey;
-  InboxButton({required this.label, required this.screenKey});
+
+  /// Parameter cieľa (napr. slug produktu pre `shop_product`).
+  final String? screenParam;
+
+  InboxButton({required this.label, required this.screenKey, this.screenParam});
   factory InboxButton.fromJson(Map<String, dynamic> j) => InboxButton(
         label: (j['label'] ?? '').toString(),
         screenKey: (j['screen_key'] ?? '').toString(),
+        screenParam: j['screen_param']?.toString(),
       );
 }
 

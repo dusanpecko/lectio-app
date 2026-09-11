@@ -5,10 +5,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../models/shop_category.dart';
 import '../../models/shop_product.dart';
-import '../../services/cart_service.dart';
 import '../../services/shop_service.dart';
 import '../../shared/app_spacing.dart';
 import '../../widgets/home_v2/home_v2_tokens.dart';
+import '../../widgets/shop/cart_icon_button.dart';
 import 'cart_screen.dart';
 import 'product_detail_screen.dart';
 
@@ -220,42 +220,8 @@ class _ShopScreenState extends State<ShopScreen> {
   }
 
   Widget _cartButton() {
-    return ListenableBuilder(
-      listenable: CartService.instance,
-      builder: (context, _) {
-        final count = CartService.instance.count;
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            _CircleButton(icon: Icons.shopping_bag_rounded, onTap: _openCart),
-            if (count > 0)
-              Positioned(
-                right: -2,
-                top: -2,
-                child: Container(
-                  padding: const EdgeInsets.all(5),
-                  decoration: const BoxDecoration(
-                    color: HomeV2.gold,
-                    shape: BoxShape.circle,
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 20,
-                    minHeight: 20,
-                  ),
-                  child: Text(
-                    '$count',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
+    return CartBadge(
+      child: _CircleButton(icon: Icons.shopping_bag_rounded, onTap: _openCart),
     );
   }
 

@@ -9,10 +9,13 @@ import '../screens/news_list_screen.dart';
 import '../screens/novenas_screen.dart';
 import '../screens/prayers_screen.dart';
 import '../screens/rosary_screen.dart';
+import '../models/shop_product.dart';
+import '../screens/shop/product_detail_screen.dart';
 import '../screens/shop/shop_screen.dart';
 import '../screens/spiritual_exercises_list_screen.dart';
 import '../screens/stations_of_cross_screen.dart';
 import '../services/inbox_service.dart';
+import '../services/shop_service.dart';
 import '../services/umami_analytics_service.dart';
 import '../shared/app_colors.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
@@ -67,17 +70,55 @@ class _InboxDialog extends StatelessWidget {
       'button': index,
       'screen': btn.screenKey,
     });
-    Navigator.of(context).pop();
+    // NavigatorState treba zachytiť PRED zavretím dialógu — po pop-e je context
+    // dialógu mŕtvy a asynchrónne otvorenie produktu by nemalo kam pushnúť.
+    final nav = Navigator.of(context);
+    nav.pop();
+
+    // Konkrétny produkt (screen_param = slug) — jediný parametrizovaný cieľ.
+    if (btn.screenKey == 'shop_product') {
+      _openProduct(nav, btn.screenParam);
+      return;
+    }
 
     final builder = _inboxScreens[btn.screenKey];
     if (builder != null) {
-      Navigator.of(context).push(
+      nav.push(
         MaterialPageRoute(
           builder: (_) => builder(),
           settings: RouteSettings(name: '/${btn.screenKey}'),
         ),
       );
     }
+  }
+
+  /// Otvorí produkt podľa slug-u. Keď sa nenájde (medzičasom deaktivovaný,
+  /// preklep v admine) alebo fetch zlyhá, otvorí sa e-shop — tlačidlo nesmie
+  /// skončiť tichým nič.
+  Future<void> _openProduct(NavigatorState nav, String? slug) async {
+    ShopProduct? found;
+    if (slug != null && slug.isNotEmpty) {
+      try {
+        final products = await ShopService.instance.fetchProducts();
+        for (final p in products) {
+          if (p.slug == slug) {
+            found = p;
+            break;
+          }
+        }
+      } catch (_) {}
+    }
+    if (!nav.mounted) return;
+    final product = found;
+    nav.push(
+      MaterialPageRoute(
+        builder: (_) => product != null
+            ? ProductDetailScreen(product: product)
+            : const ShopScreen(),
+        settings:
+            RouteSettings(name: product != null ? '/shop-product' : '/shop'),
+      ),
+    );
   }
 
   @override

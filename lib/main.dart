@@ -124,6 +124,11 @@ Future<void> main() async {
     androidNotificationOngoing: false,
     androidShowNotificationBadge: true,
     androidStopForegroundOnPause: false,
+    // Obal v medianotifikácii sa načítaval v plnom rozlíšení (Play Console
+    // upozorňoval na audio_service.loadArtBitmap bez inSampleSize) — obaly
+    // z CMS môžu byť veľké. 512 px bohato stačí notifikácii aj lock screenu.
+    artDownscaleWidth: 512,
+    artDownscaleHeight: 512,
     // Fast forward/rewind intervals
     fastForwardInterval: const Duration(seconds: 10),
     rewindInterval: const Duration(seconds: 10),

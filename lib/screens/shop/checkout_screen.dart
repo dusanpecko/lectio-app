@@ -162,9 +162,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           if (_postal.text.isEmpty) {
             _postal.text = addr['postal_code']?.toString() ?? '';
           }
-          // E-shop je zatiaľ len pre Slovensko.
-          if (addr['country']?.toString().toUpperCase() == 'SK') {
-            _country = 'SK';
+          // Len krajiny, do ktorých posielame (SK, CZ).
+          final saved = addr['country']?.toString().toUpperCase();
+          if (saved == 'SK' || saved == 'CZ') {
+            _country = saved!;
           }
         }
       });
@@ -773,7 +774,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ],
 
                 // ── Spôsob platby (dobierka len ak je zapnutá v nastaveniach) ──
-                if (_codEnabled) ...[
+                if (_codEnabled && _country == 'SK') ...[
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     'shop.payment_method'.tr(),
@@ -848,8 +849,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               supporterDiscount =
                   (supporterDiscount * 100).roundToDouble() / 100;
               final codFee = _paymentMethod == 'cod' ? _codFee : 0.0;
+              // Prirážka za zahraničie — zhodná so serverom (lib/shipping.ts).
+              final intlSurcharge = shippingSurchargeFor(_country);
+              final shippingTotal = ship.cost + intlSurcharge;
               final total =
-                  cart.subtotal - supporterDiscount + ship.cost + codFee;
+                  cart.subtotal - supporterDiscount + shippingTotal + codFee;
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -906,7 +910,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ship.hasDiscount
                         ? '${'shop.shipping_handling'.tr()}  (−${ship.discountPercent}%)'
                         : 'shop.shipping_handling'.tr(),
-                    '€${ship.cost.toStringAsFixed(2)}',
+                    '€${shippingTotal.toStringAsFixed(2)}',
                   ),
                   if (codFee > 0) ...[
                     const SizedBox(height: 8),
@@ -1107,9 +1111,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             borderRadius: BorderRadius.circular(HomeV2.radiusSm),
           ),
         ),
-        // E-shop je zatiaľ len pre Slovensko (poštovné je country-agnostické).
-        items: const [DropdownMenuItem(value: 'SK', child: Text('Slovensko'))],
-        onChanged: (v) => setState(() => _country = v ?? 'SK'),
+        // SK + CZ (10.9.2026). Pre CZ platí fixná prirážka k poštovnému
+        // a dobierka nie je dostupná (server ju aj tak odmietne).
+        items: const [
+          DropdownMenuItem(value: 'SK', child: Text('Slovensko')),
+          DropdownMenuItem(value: 'CZ', child: Text('Česká republika')),
+        ],
+        onChanged: (v) => setState(() {
+          _country = v ?? 'SK';
+          if (_country != 'SK' && _paymentMethod == 'cod') {
+            _paymentMethod = 'card';
+          }
+        }),
       ),
     );
   }

@@ -1611,7 +1611,8 @@
     "pay_cod": "Paiement à la livraison (+{fee} €)",
     "cod_fee_label": "Paiement à la livraison",
     "cod_success_title": "Commande reçue",
-    "cod_success_desc": "Merci ! Nous préparerons votre commande et l’enverrons contre remboursement — vous payez à la réception. La confirmation avec la facture arrivera par e-mail à l’expédition."
+    "cod_success_desc": "Merci ! Nous préparerons votre commande et l’enverrons contre remboursement — vous payez à la réception. La confirmation avec la facture arrivera par e-mail à l’expédition.",
+    "view_cart": "Voir le panier"
   },
   "orders": {
     "title": "Mes commandes",

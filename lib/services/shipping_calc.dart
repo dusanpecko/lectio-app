@@ -63,3 +63,15 @@ ShippingResult computeShipping(
     totalQty: totalQty,
   );
 }
+
+/// Prirážka k poštovnému (€) na CELÚ objednávku podľa krajiny doručenia —
+/// zrkadlí `backend/src/lib/shipping.ts` (INTL_SHIPPING_SURCHARGE), aby
+/// zobrazené poštovné == účtované. Pridáva sa AŽ PO zľave podľa počtu kusov.
+const Map<String, double> kIntlShippingSurcharge = {
+  'CZ': 3.0,
+};
+
+/// Prirážka pre danú krajinu (0 pre SK/neznáme).
+double shippingSurchargeFor(String? country) =>
+    kIntlShippingSurcharge[(country ?? '').toUpperCase()] ?? 0;
+

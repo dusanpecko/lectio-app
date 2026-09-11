@@ -9,6 +9,8 @@ import '../../models/shop_product.dart';
 import '../../services/cart_service.dart';
 import '../../shared/app_spacing.dart';
 import '../../widgets/home_v2/home_v2_tokens.dart';
+import '../../widgets/shop/cart_icon_button.dart';
+import 'cart_screen.dart';
 import 'checkout_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -32,6 +34,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     super.dispose();
   }
 
+  void _openCart() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CartScreen()),
+    );
+  }
+
   void _addToCart({bool thenCheckout = false}) {
     HapticFeedback.lightImpact();
     CartService.instance.add(p, qty: _qty);
@@ -41,10 +50,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         MaterialPageRoute(builder: (_) => const CheckoutScreen()),
       );
     } else {
+      // Akcia vedie rovno do košíka — bez nej sa po pridaní nedalo ku košíku
+      // dostať inak než návratom do zoznamu obchodu.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('shop.added_to_cart'.tr()),
           behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'shop.view_cart'.tr(),
+            textColor: HomeV2.goldLight,
+            onPressed: _openCart,
+          ),
         ),
       );
     }
@@ -100,6 +116,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         child: _CircleButton(
                           icon: Icons.arrow_back_rounded,
                           onTap: () => Navigator.of(context).maybePop(),
+                        ),
+                      ),
+                      Positioned(
+                        top: MediaQuery.of(context).padding.top + AppSpacing.sm,
+                        right: AppSpacing.lg,
+                        child: CartBadge(
+                          child: _CircleButton(
+                            icon: Icons.shopping_bag_rounded,
+                            onTap: _openCart,
+                          ),
                         ),
                       ),
                       // Indikátor strán (len pri viacerých fotkách)

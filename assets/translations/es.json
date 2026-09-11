@@ -1611,7 +1611,8 @@
     "pay_cod": "Contra reembolso (+{fee} €) — pago al recibir",
     "cod_fee_label": "Contra reembolso",
     "cod_success_title": "Pedido recibido",
-    "cod_success_desc": "¡Gracias! Prepararemos tu pedido y lo enviaremos contra reembolso: pagas al recibirlo. La confirmación con la factura llegará por correo cuando se envíe."
+    "cod_success_desc": "¡Gracias! Prepararemos tu pedido y lo enviaremos contra reembolso: pagas al recibirlo. La confirmación con la factura llegará por correo cuando se envíe.",
+    "view_cart": "Ver cesta"
   },
   "orders": {
     "title": "Mis pedidos",

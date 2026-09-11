@@ -29,6 +29,9 @@ import '../widgets/inbox_popup.dart';
 import '../widgets/home_v2/daily_actio_card.dart';
 import '../widgets/home_v2/daily_podcast_card.dart';
 import '../widgets/home_v2/featured_exercise_card.dart';
+import '../models/shop_product.dart';
+import '../services/shop_service.dart';
+import '../widgets/home_v2/featured_product_card.dart';
 import '../widgets/home_v2/featured_project_card.dart';
 import '../widgets/home_v2/glass_bottom_nav.dart';
 import '../widgets/home_v2/hero_pulse_button.dart';
@@ -45,6 +48,7 @@ import 'feedback_screen.dart';
 import 'help_screen.dart';
 import 'projects/potulky_bibliou_screen.dart';
 import 'projects/kurz_lectio_screen.dart';
+import 'shop/product_detail_screen.dart';
 import 'shop/shop_screen.dart';
 import 'intentions_list_screen.dart';
 import 'intro_screen.dart';
@@ -118,6 +122,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final PageController _featuredController = PageController();
   int _featuredPage = 0;
   bool _featuredRandomized = false; // náhodný štartovací slide raz za spustenie
+  List<ShopProduct> _featuredProducts = const [];
 
   String? _avatarUrl;
   bool _isSupporter = false;
@@ -305,6 +310,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         subtitle: tr('adoration_main_subtitle'),
         onTap: () => _push(const AdorationScreen(), '/adoration'),
       ),
+      // Produkty z e-shopu — ktoré a v akom poradí určuje admin (hviezda +
+      // šípky v admin e-shope). Mimo SK mutácie je zoznam prázdny.
+      for (final product in _featuredProducts)
+        FeaturedProductCard(
+          product: product,
+          locale: context.locale.languageCode,
+          height: cardH,
+          onTap: () => _push(
+            ProductDetailScreen(product: product),
+            '/shop-product',
+          ),
+        ),
     ];
 
     return Column(
@@ -444,15 +461,33 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _loadAll() async {
     _loadedDay = DateTime.now();
+    // Náhodný štartovací slide sa losuje až keď sú doma OBA sieťové vstupy
+    // carouselu (cvičenie + produkty) — inak by produkty nikdy nemohli byť
+    // štartovacím slidom, lebo los prebehol skôr, než prišli zo siete.
+    final featuredInputs = Future.wait([
+      _loadExercise(),
+      _loadFeaturedProducts(),
+    ]).then((_) => _randomizeFeaturedStart());
+
     await Future.wait([
       _loadPodcast(),
       _loadActio(),
       _loadNews(),
       _loadProfile(),
-      _loadExercise(),
+      featuredInputs,
       _loadDocumentsAccess(),
       _loadAdmin(),
     ]);
+  }
+
+  /// Featured produkty do carouselu — len SK mutácia (e-shop je zatiaľ len
+  /// slovenský; rovnaká podmienka ako e-shopové karty v update screene).
+  /// Max 3, aby duchovný obsah ostal ťažiskom home obrazovky.
+  Future<void> _loadFeaturedProducts() async {
+    if (!mounted || context.locale.languageCode != 'sk') return;
+    final products = await ShopService.instance.fetchFeaturedProducts();
+    if (!mounted) return;
+    setState(() => _featuredProducts = products.take(3).toList());
   }
 
   Future<void> _loadDocumentsAccess() async {
@@ -474,19 +509,47 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
     if (!mounted) return;
     setState(() => _exercise = ex);
-    _randomizeFeaturedStart();
+  }
+
+  /// Každé N-té otvorenie home štartuje carousel na produkte z e-shopu —
+  /// čistá náhoda by mu pri ~10 kartách dala len ~1 z 10 spustení.
+  static const int _productSlideEvery = 4;
+
+  /// Počítadlo otvorení pre rytmus produktového slidu. Počíta sa KAŽDÉ
+  /// otvorenie (aj keď produkty nie sú — offline, EN mutácia), aby rytmus
+  /// nezávisel od toho, či sa fetch práve podaril.
+  Future<bool> _isProductStartTurn() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final n = (prefs.getInt('featured_start_counter') ?? 0) + 1;
+      await prefs.setInt('featured_start_counter', n);
+      return n % _productSlideEvery == 0;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Pri každom spustení zobrazí náhodný slide vo featured carouseli
-  /// (raz za mount; poradie strán: cvičenie? + Potulky + Kurz + pobožnosti).
-  void _randomizeFeaturedStart() {
+  /// (raz za mount; poradie strán: cvičenie? + projekty + pobožnosti
+  /// + produkty na konci). Každé [_productSlideEvery]. otvorenie štartuje
+  /// na produkte, ostatné losujú z pevných kariet.
+  Future<void> _randomizeFeaturedStart() async {
     if (_featuredRandomized) return;
     _featuredRandomized = true;
     // 2 projekty + 6 pobožností (krížová cesta, modlitby, novény,
-    // spytovanie, ruženec, adorácie)
-    final count = (_exercise != null ? 1 : 0) + 8;
-    if (count <= 1) return;
-    final target = Random().nextInt(count);
+    // spytovanie, ruženec, adorácie). Konštanta 8 musí sedieť s pevnými
+    // kartami v _buildFeaturedCarousel.
+    final fixedCount = (_exercise != null ? 1 : 0) + 8;
+    final productTurn = await _isProductStartTurn();
+    if (!mounted) return;
+
+    final int target;
+    if (productTurn && _featuredProducts.isNotEmpty) {
+      target = fixedCount + Random().nextInt(_featuredProducts.length);
+    } else {
+      if (fixedCount <= 1) return;
+      target = Random().nextInt(fixedCount);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (_featuredController.hasClients) {

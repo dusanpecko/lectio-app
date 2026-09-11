@@ -1611,7 +1611,8 @@
     "pay_cod": "Cash on delivery (+€{fee}) — pay on receipt",
     "cod_fee_label": "Cash on delivery",
     "cod_success_title": "Order received",
-    "cod_success_desc": "Thank you! We will prepare your order and send it cash on delivery — you pay on receipt. A confirmation with the invoice will arrive by email when the parcel ships."
+    "cod_success_desc": "Thank you! We will prepare your order and send it cash on delivery — you pay on receipt. A confirmation with the invoice will arrive by email when the parcel ships.",
+    "view_cart": "View cart"
   },
   "orders": {
     "title": "My orders",

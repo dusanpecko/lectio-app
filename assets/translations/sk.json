@@ -1611,7 +1611,8 @@
     "pay_cod": "Dobierka (+{fee} €) — platba pri prevzatí",
     "cod_fee_label": "Dobierka",
     "cod_success_title": "Objednávka prijatá",
-    "cod_success_desc": "Ďakujeme! Objednávku pripravíme a pošleme na dobierku — zaplatíš pri prevzatí. Potvrdenie s faktúrou ti príde e-mailom pri odoslaní balíka."
+    "cod_success_desc": "Ďakujeme! Objednávku pripravíme a pošleme na dobierku — zaplatíš pri prevzatí. Potvrdenie s faktúrou ti príde e-mailom pri odoslaní balíka.",
+    "view_cart": "Zobraziť košík"
   },
   "orders": {
     "title": "Moje objednávky",
