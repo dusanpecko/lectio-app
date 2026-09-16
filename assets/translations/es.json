@@ -997,7 +997,12 @@
       "prayer_disabled": "Recordatorio de oración desactivado",
       "prayer_error": "Error al configurar el recordatorio",
       "disable_tooltip": "Desactivar",
-      "set_time_tooltip": "Establecer hora"
+      "set_time_tooltip": "Establecer hora",
+      "announcements_title": "Avisos y novedades",
+      "announcements_subtitle": "Avisos ocasionales de la app en este dispositivo",
+      "announcements_enabled": "Avisos activados",
+      "announcements_disabled": "Avisos desactivados",
+      "announcements_error": "Error al configurar los avisos"
     },
     "remote": {
       "section_title": "Notificaciones remotas"
@@ -1031,7 +1036,9 @@
     "empty_hint": "Cuando recibas nuevas notificaciones, aparecerán aquí.",
     "load_error": "No se pudieron cargar las notificaciones.",
     "yesterday": "Ayer",
-    "settings_subtitle": "Recordatorios, lecturas diarias y categorías de notificaciones"
+    "settings_subtitle": "Recordatorios, lecturas diarias y categorías de notificaciones",
+    "mark_all_read": "Marcar todo como leído",
+    "open_target": "Abrir"
   },
   "settings_screen": {
     "theme": {
@@ -1938,5 +1945,21 @@
     "other": "{count} elementos"
   },
   "signup_confirm_title": "Confirma tu correo",
-  "signup_confirm_body": "Hemos creado tu cuenta. Enviamos un enlace de confirmación a {email}: ábrelo y luego inicia sesión."
+  "signup_confirm_body": "Hemos creado tu cuenta. Enviamos un enlace de confirmación a {email}: ábrelo y luego inicia sesión.",
+  "news_poll": {
+    "title": "Votación",
+    "vote": "Votar",
+    "change_vote": "Cambiar voto",
+    "voted": "Gracias, tu voto cuenta.",
+    "login_required": "Inicia sesión para votar. La cuenta es gratuita.",
+    "login": "Iniciar sesión y votar",
+    "early_for_supporters": "Los colaboradores ya están votando. La votación se abre para todos el {date}.",
+    "supporter_early": "Como colaborador, votas con antelación.",
+    "opens_at": "La votación se abre el {date}.",
+    "closed": "La votación está cerrada.",
+    "votes": "{count} votos",
+    "results_later": "Los resultados se publicarán al cerrar la votación.",
+    "load_error": "No se pudo cargar la votación.",
+    "submit_error": "No se pudo guardar tu voto."
+  }
 }

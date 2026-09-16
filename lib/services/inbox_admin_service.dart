@@ -49,14 +49,24 @@ const List<String> kInboxDonorSegments = [
 class InboxBtn {
   String label;
   String screenKey;
-  InboxBtn({this.label = '', this.screenKey = ''});
+  /// Jediná hodnota parametra cieľa (slug produktu, ID článku…). Mobilný
+  /// admin editor ju zatiaľ neupravuje, ale musí ju zachovať — predtým sa pri
+  /// uložení z appky zahodila.
+  String? screenParam;
+  InboxBtn({this.label = '', this.screenKey = '', this.screenParam});
 
   factory InboxBtn.fromJson(Map<String, dynamic> j) => InboxBtn(
         label: (j['label'] ?? '').toString(),
         screenKey: (j['screen_key'] ?? '').toString(),
+        screenParam: j['screen_param']?.toString(),
       );
 
-  Map<String, dynamic> toJson() => {'label': label, 'screen_key': screenKey};
+  Map<String, dynamic> toJson() => {
+        'label': label,
+        'screen_key': screenKey,
+        if (screenParam != null && screenParam!.isNotEmpty)
+          'screen_param': screenParam,
+      };
 }
 
 /// Obsah pre jeden jazyk.

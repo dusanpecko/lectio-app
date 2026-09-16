@@ -9,6 +9,7 @@ import 'package:lectio_divina/models/rosary_model.dart';
 import 'package:lectio_divina/screens/donation_screen.dart';
 import 'package:lectio_divina/screens/feedback_screen.dart';
 import 'package:lectio_divina/screens/lectio_screen.dart';
+import 'package:lectio_divina/screens/news_detail_screen.dart';
 import 'package:lectio_divina/screens/news_list_screen.dart';
 import 'package:lectio_divina/screens/notification_settings_screen.dart';
 import 'package:lectio_divina/screens/notifications_screen.dart';
@@ -16,10 +17,21 @@ import 'package:lectio_divina/screens/profile_screen.dart';
 import 'package:lectio_divina/screens/rosary_category_screen.dart';
 import 'package:lectio_divina/screens/adoration_screen.dart';
 import 'package:lectio_divina/screens/novena_detail_screen.dart';
+import 'package:lectio_divina/services/lectio_data_service.dart';
 import 'package:lectio_divina/services/novenas_service.dart';
 import 'package:lectio_divina/models/novena.dart';
 import 'package:lectio_divina/screens/settings_screen.dart';
 import 'package:lectio_divina/screens/newsletter_list_screen.dart';
+import 'package:lectio_divina/screens/novenas_screen.dart';
+import 'package:lectio_divina/screens/prayers_screen.dart';
+import 'package:lectio_divina/screens/rosary_screen.dart';
+import 'package:lectio_divina/screens/shop/product_detail_screen.dart';
+import 'package:lectio_divina/screens/shop/shop_screen.dart';
+import 'package:lectio_divina/screens/spiritual_exercises_list_screen.dart';
+import 'package:lectio_divina/screens/stations_of_cross_screen.dart';
+import 'package:lectio_divina/models/shop_product.dart';
+import 'package:lectio_divina/services/shop_service.dart';
+import 'package:lectio_divina/services/umami_analytics_service.dart';
 import 'package:lectio_divina/shared/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -106,6 +118,10 @@ class NotificationController {
         final date = dateStr != null ? DateTime.tryParse(dateStr) : null;
         targetScreen = LectioScreen(selectedDate: date ?? DateTime.now());
         break;
+      case 'home':
+        // Domov = koreň navigácie — zavrie všetko, čo je nad ním.
+        navigatorKey.currentState?.popUntil((r) => r.isFirst);
+        return;
       case 'profile':
         targetScreen = const ProfileScreen();
         break;
@@ -119,17 +135,48 @@ class NotificationController {
         targetScreen = const NotificationSettingsScreen();
         break;
       case 'rosary':
-        final categoryStr = params?['category'] as String? ?? 'joyful';
+        // S kategóriou otvorí desiatok, bez nej prehľad ruženca (ako inbox).
+        final categoryStr = params?['category'] as String?;
+        if (categoryStr == null || categoryStr.isEmpty) {
+          targetScreen = const RosaryScreen();
+          break;
+        }
         final category = RosaryCategory.values.firstWhere(
           (c) => c.name == categoryStr,
           orElse: () => RosaryCategory.joyful,
         );
         targetScreen = RosaryCategoryScreen(category: category);
         break;
+      case 'stations':
+        targetScreen = const StationsOfCrossScreen();
+        break;
+      case 'prayers':
+        targetScreen = const PrayersScreen();
+        break;
+      case 'novenas':
+        targetScreen = const NovenasScreen();
+        break;
+      case 'spiritual-exercises':
+        targetScreen = const SpiritualExercisesListScreen();
+        break;
+      case 'shop':
+        targetScreen = const ShopScreen();
+        break;
+      case 'shop_product':
+        // Produkt podľa slug-u; keď sa nenájde, otvorí sa e-shop.
+        _openShopProduct(params?['slug'] as String?);
+        return;
       case 'adoration':
         targetScreen = const AdorationScreen();
         break;
       case 'news':
+      case 'article': // starší kľúč z admin formulára — alias
+        // S ID otvorí konkrétny článok, bez ID zoznam noviniek.
+        final newsId = _parseNewsId(params);
+        if (newsId != null) {
+          _openNewsArticle(newsId);
+          return;
+        }
         targetScreen = const NewsListScreen();
         break;
       case 'newsletters':
@@ -162,6 +209,108 @@ class NotificationController {
       MaterialPageRoute(
         builder: (context) => targetScreen!,
         settings: RouteSettings(name: '/$screen'),
+      ),
+    );
+  }
+
+  /// Kľúč parametra, pod ktorý sa zabalí jediná hodnota `screen_param`
+  /// z inbox tlačidla (inbox posiela hodnotu, nie JSON objekt).
+  static const Map<String, String> _singleParamKey = {
+    'shop_product': 'slug',
+    'novena': 'baseCode',
+    'news': 'id',
+    'url': 'url',
+    'lectio': 'date',
+    'rosary': 'category',
+  };
+
+  /// Navigácia z inbox tlačidla: `screen_key` + voliteľná jediná hodnota
+  /// `screen_param`. Rovnaký register cieľov ako push (`navigateToScreen`).
+  void navigateToKey(String key, {String? param}) {
+    final paramKey = _singleParamKey[key];
+    final hasParam = param != null && param.isNotEmpty;
+    navigateToScreen(
+      key,
+      screenParams: hasParam && paramKey != null
+          ? jsonEncode({paramKey: param})
+          : null,
+    );
+  }
+
+  /// Otvorí produkt e-shopu podľa slug-u. Keď sa nenájde (deaktivovaný,
+  /// preklep) alebo fetch zlyhá, otvorí sa e-shop — klik neskončí tichým nič.
+  Future<void> _openShopProduct(String? slug) async {
+    ShopProduct? found;
+    if (slug != null && slug.isNotEmpty) {
+      try {
+        final products = await ShopService.instance.fetchProducts();
+        for (final p in products) {
+          if (p.slug == slug) {
+            found = p;
+            break;
+          }
+        }
+      } catch (e) {
+        _logger.w('🔔 Produkt z notifikácie sa nepodarilo načítať: $e');
+      }
+    }
+    final nav = navigatorKey.currentState;
+    if (nav == null) return;
+    final product = found;
+    nav.push(
+      MaterialPageRoute(
+        builder: (_) => product != null
+            ? ProductDetailScreen(product: product)
+            : const ShopScreen(),
+        settings: RouteSettings(
+          name: product != null ? '/shop-product' : '/shop',
+        ),
+      ),
+    );
+  }
+
+  /// Umami: otvorenie notifikácie (push aj lokálna pripomienka).
+  void _trackOpened({required String source, String? screen, String? type}) {
+    UmamiAnalyticsService().trackEvent(
+      'notification_opened',
+      eventData: {
+        'source': source,
+        'screen': ?screen,
+        'type': ?type,
+      },
+    );
+  }
+
+  /// ID článku zo `screen_params` — akceptuje `id`, `articleId` aj `newsId`,
+  /// ako číslo alebo reťazec (admin píše JSON ručne).
+  static int? _parseNewsId(Map<String, dynamic>? params) {
+    if (params == null) return null;
+    final raw = params['id'] ?? params['articleId'] ?? params['newsId'];
+    if (raw is int) return raw;
+    if (raw is String) return int.tryParse(raw.trim());
+    return null;
+  }
+
+  /// Otvorí detail článku podľa ID z notifikácie. Keď sa článok nenájde
+  /// alebo fetch zlyhá, otvorí zoznam noviniek — klik neskončí tichým nič.
+  Future<void> _openNewsArticle(int id) async {
+    final article = await LectioDataService.instance.getNewsById(id);
+    final nav = navigatorKey.currentState;
+    if (nav == null) return;
+    if (article == null) {
+      _logger.w('🔔 Článok z notifikácie sa nenašiel: $id');
+      nav.push(
+        MaterialPageRoute(
+          builder: (_) => const NewsListScreen(),
+          settings: const RouteSettings(name: '/news'),
+        ),
+      );
+      return;
+    }
+    nav.push(
+      MaterialPageRoute(
+        builder: (_) => NewsDetailScreen(newsData: article),
+        settings: const RouteSettings(name: '/news-detail'),
       ),
     );
   }
@@ -244,6 +393,7 @@ class NotificationController {
       final screen = message.data['screen'] as String?;
       final screenParams = message.data['screen_params'] as String?;
       final url = message.data['url'] as String?;
+      _trackOpened(source: 'push', screen: screen ?? (url != null ? 'url' : null));
 
       if (url != null) {
         _openUrl(url);
@@ -282,6 +432,14 @@ class NotificationController {
 
       // Parse payload
       final data = jsonDecode(payload);
+
+      // FCM správy zobrazené cez lokálny plugin majú vždy `timestamp` zo servera;
+      // bez neho ide o naozaj lokálnu pripomienku (modlitba, deviatnik, uvítanie).
+      _trackOpened(
+        source: data['timestamp'] != null ? 'push' : 'local',
+        screen: data['screen'] as String?,
+        type: data['type'] as String?,
+      );
 
       // Ak je URL, otvor priamo
       final url = data['url'] as String?;

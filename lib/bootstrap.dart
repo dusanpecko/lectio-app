@@ -7,7 +7,7 @@ import 'package:lectio_divina/controllers/notification_controller.dart';
 import 'package:lectio_divina/shared/env_error_app.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'firebase_options.dart';

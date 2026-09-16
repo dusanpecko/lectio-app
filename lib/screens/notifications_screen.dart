@@ -2,8 +2,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../controllers/notification_controller.dart';
 import '../utils/app_logger.dart';
 import '../shared/app_spacing.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
@@ -17,6 +19,9 @@ class NotificationLog {
   final DateTime sentAt;
   final String? imageUrl;
   final int subscriberCount;
+  /// Deep link (rovnaké kľúče ako push) — z histórie sa dá otvoriť cieľ.
+  final String? screen;
+  final String? screenParams;
 
   NotificationLog({
     required this.id,
@@ -26,7 +31,11 @@ class NotificationLog {
     required this.sentAt,
     this.imageUrl,
     this.subscriberCount = 0,
+    this.screen,
+    this.screenParams,
   });
+
+  bool get hasTarget => screen != null && screen!.isNotEmpty;
 
   factory NotificationLog.fromJson(Map<String, dynamic> json) {
     return NotificationLog(
@@ -37,6 +46,8 @@ class NotificationLog {
       sentAt: DateTime.parse(json['sent_at'] as String),
       imageUrl: json['image_url'] as String?,
       subscriberCount: json['subscriber_count'] as int? ?? 0,
+      screen: json['screen'] as String?,
+      screenParams: json['screen_params'] as String?,
     );
   }
 }
@@ -49,10 +60,97 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
+  static const _readIdsKey = 'notifications_read_ids';
+  static const _readBaselineKey = 'notifications_read_baseline';
+  static const _fallbackLocaleIds = {'sk': 1, 'en': 2, 'es': 4, 'fr': 7};
+  static Map<String, int>? _localeIdCache;
+
   List<NotificationLog> _notifications = [];
   bool _isLoading = true;
   String? _errorMessage;
   bool _initialized = false;
+
+  // Stav „prečítané" je lokálny (SharedPreferences): ID otvorených + baseline —
+  // všetko odoslané pred prvým otvorením tejto verzie sa berie ako prečítané,
+  // nech používateľ po update nevidí 50 „nových".
+  Set<String> _readIds = {};
+  DateTime? _readBaseline;
+
+  bool _isRead(NotificationLog n) {
+    if (_readIds.contains(n.id)) return true;
+    final baseline = _readBaseline;
+    return baseline != null && !n.sentAt.isAfter(baseline);
+  }
+
+  int get _unreadCount => _notifications.where((n) => !_isRead(n)).length;
+
+  Future<void> _loadReadState() async {
+    final prefs = await SharedPreferences.getInstance();
+    var baselineStr = prefs.getString(_readBaselineKey);
+    if (baselineStr == null) {
+      baselineStr = DateTime.now().toUtc().toIso8601String();
+      await prefs.setString(_readBaselineKey, baselineStr);
+    }
+    _readIds = (prefs.getStringList(_readIdsKey) ?? const []).toSet();
+    _readBaseline = DateTime.tryParse(baselineStr);
+  }
+
+  Future<void> _markRead(NotificationLog n) async {
+    if (_isRead(n)) return;
+    setState(() => _readIds.add(n.id));
+    final prefs = await SharedPreferences.getInstance();
+    final list = _readIds.toList();
+    // Strop — staršie položky aj tak padnú pod baseline.
+    await prefs.setStringList(
+      _readIdsKey,
+      list.length > 200 ? list.sublist(list.length - 200) : list,
+    );
+  }
+
+  Future<void> _markAllRead() async {
+    HapticFeedback.lightImpact();
+    final now = DateTime.now().toUtc();
+    setState(() {
+      _readBaseline = now;
+      _readIds = {};
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_readBaselineKey, now.toIso8601String());
+    await prefs.setStringList(_readIdsKey, const []);
+  }
+
+  /// code → locale_id z tabuľky `locales` (cache na dobu behu); pri zlyhaní
+  /// pôvodná pevná mapa. Predtým bola mapa natvrdo a nový jazyk by potichu
+  /// spadol na slovenčinu.
+  Future<Map<String, int>> _loadLocaleIds(SupabaseClient supabase) async {
+    final cached = _localeIdCache;
+    if (cached != null) return cached;
+    try {
+      final rows = await supabase.from('locales').select('id, code');
+      final map = <String, int>{};
+      for (final row in rows as List) {
+        final code = row['code'] as String?;
+        final id = row['id'];
+        if (code != null && id is int) map[code] = id;
+      }
+      if (map.isNotEmpty) {
+        _localeIdCache = map;
+        return map;
+      }
+    } catch (e) {
+      appLogger.w('locales fetch failed, using fallback map: $e');
+    }
+    return _fallbackLocaleIds;
+  }
+
+  /// Otvorí cieľ notifikácie (deep link) cez spoločný register obrazoviek.
+  void _openTarget(NotificationLog n) {
+    if (!n.hasTarget) return;
+    NotificationController.instance.navigateToScreen(
+      n.screen!,
+      screenParams: n.screenParams,
+    );
+  }
 
   @override
   void didChangeDependencies() {
@@ -74,16 +172,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final locale = context.locale.languageCode;
       final userId = supabase.auth.currentUser?.id;
 
-      // Mapovanie jazyka na locale_id z tabuľky `locales` (hardcoded pre výkon).
-      // sk=1, en=2, (cs=3), es=4, fr=7. Pozn.: es je 4 (nie 3 — id 3 je čeština)!
-      final localeIdMap = {'sk': 1, 'en': 2, 'es': 4, 'fr': 7};
-      final localeId = localeIdMap[locale] ?? 1; // Default: slovenčina
+      await _loadReadState();
+
+      final localeIdMap = await _loadLocaleIds(supabase);
+      // Appka používa 'cs', DB kód je 'cz'.
+      final localeId =
+          localeIdMap[locale] ?? localeIdMap[locale == 'cs' ? 'cz' : locale] ?? 1;
 
       // Načítaj broadcast notifikácie pre daný jazyk
       final broadcastResponse = await supabase
           .from('notification_logs')
           .select(
-            'id, title, body, topic, sent_at, image_url, subscriber_count',
+            'id, title, body, topic, sent_at, image_url, subscriber_count, screen, screen_params',
           )
           .eq('locale_id', localeId)
           .eq('is_targeted', false)
@@ -100,7 +200,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         final targetedResponse = await supabase
             .from('notification_logs')
             .select(
-              'id, title, body, topic, sent_at, image_url, subscriber_count',
+              'id, title, body, topic, sent_at, image_url, subscriber_count, screen, screen_params',
             )
             .eq('is_targeted', true)
             .order('sent_at', ascending: false)
@@ -221,6 +321,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 onTap: () => Navigator.of(context).maybePop(),
               ),
               const Spacer(),
+              if (_unreadCount > 0) ...[
+                Tooltip(
+                  message: tr('notifications.mark_all_read'),
+                  child: _CircleButton(
+                    icon: Icons.done_all_rounded,
+                    onTap: _markAllRead,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+              ],
               if (_notifications.isNotEmpty)
                 _CircleButton(
                   icon: Icons.refresh_rounded,
@@ -284,6 +394,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   // ── Karta notifikácie ─────────────────────────────────────────────────────
   Widget _buildNotificationCard(NotificationLog n) {
+    final unread = !_isRead(n);
     return Container(
       margin: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
@@ -302,6 +413,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         child: InkWell(
           onTap: () {
             HapticFeedback.lightImpact();
+            _markRead(n);
             _showNotificationDetail(n);
           },
           child: Padding(
@@ -315,16 +427,35 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        n.title,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          height: 1.25,
-                          color: HomeV2.textDark(context),
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (unread)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6, right: 6),
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: HomeV2.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                          Expanded(
+                            child: Text(
+                              n.title,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                height: 1.25,
+                                color: HomeV2.textDark(context),
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -354,6 +485,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               color: HomeV2.textMuted(context),
                             ),
                           ),
+                          if (n.hasTarget) ...[
+                            const SizedBox(width: 10),
+                            Icon(
+                              Icons.open_in_new_rounded,
+                              size: 13,
+                              color: HomeV2.iconAccent(context),
+                            ),
+                          ],
                         ],
                       ),
                     ],
@@ -449,8 +588,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) =>
-          _NotificationDetailSheet(notification: notification),
+      builder: (context) => _NotificationDetailSheet(
+        notification: notification,
+        onOpen: notification.hasTarget ? () => _openTarget(notification) : null,
+      ),
     );
   }
 }
@@ -458,8 +599,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 /// Bottom sheet pre detail notifikácie
 class _NotificationDetailSheet extends StatelessWidget {
   final NotificationLog notification;
+  /// Otvorí cieľ deep linku (null = notifikácia cieľ nemá).
+  final VoidCallback? onOpen;
 
-  const _NotificationDetailSheet({required this.notification});
+  const _NotificationDetailSheet({required this.notification, this.onOpen});
 
   @override
   Widget build(BuildContext context) {
@@ -556,28 +699,79 @@ class _NotificationDetailSheet extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxl),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: HomeV2.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding:
-                          const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.full),
+                if (onOpen != null) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // Najprv zavri sheet, potom naviguj cez root navigator.
+                        Navigator.of(context).pop();
+                        onOpen!();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: HomeV2.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.lg,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.full),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      tr('common.close'),
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                      icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                      label: Text(
+                        tr('notifications.open_target'),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
+                SizedBox(
+                  width: double.infinity,
+                  child: onOpen != null
+                      ? TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: TextButton.styleFrom(
+                            foregroundColor: HomeV2.primary,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.md,
+                            ),
+                          ),
+                          child: Text(
+                            tr('common.close'),
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        )
+                      : ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: HomeV2.primary,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.lg,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.full),
+                            ),
+                          ),
+                          child: Text(
+                            tr('common.close'),
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
                 ),
               ],
             ),

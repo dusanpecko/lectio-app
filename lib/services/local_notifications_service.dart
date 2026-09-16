@@ -4,9 +4,10 @@ import 'dart:io';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../controllers/notification_controller.dart';
@@ -91,6 +92,21 @@ class LocalNotificationsService {
 
   /// Získa názov timezone z operačného systému
   Future<String> _getNativeTimezoneName() async {
+    // 1) Skutočná IANA zóna zo systému (flutter_timezone). Server z nej počíta
+    //    aktuálny UTC offset vrátane letného času — predtým sa zóna hádala
+    //    z posunu (SK v lete = „Europe/Kyiv") a po zmene času sa denný push
+    //    posunul o hodinu, kým používateľ appku neotvoril.
+    try {
+      final info = await FlutterTimezone.getLocalTimezone();
+      final id = info.identifier;
+      if (id.contains('/') || id == 'UTC') {
+        return id;
+      }
+      _logger.w('⚠️ flutter_timezone vrátil neštandardný identifikátor: $id');
+    } catch (e) {
+      _logger.w('⚠️ flutter_timezone zlyhal, hádam zónu z posunu: $e');
+    }
+
     try {
       if (Platform.isAndroid || Platform.isIOS) {
         // Na mobile získame timezone cez symlink alebo system property
@@ -122,13 +138,25 @@ class LocalNotificationsService {
     }
   }
 
-  /// Odhadne timezone na základe aktuálneho offsetu a DST
+  /// Odhadne timezone na základe aktuálneho offsetu.
+  ///
+  /// Primárne vráti zónu s pevným posunom (`Etc/GMT±N`), ktorá má vždy presne
+  /// aktuálny čas zariadenia. Mapa „posun → mesto“ nižšie je až posledná
+  /// možnosť pre polhodinové zóny: mestá majú vlastné pravidlá letného času,
+  /// takže napr. +2 h v lete mapované na Europe/Kyiv (v lete +3 h) posunulo
+  /// každú lokálnu pripomienku o hodinu (a cez „už prešlo“ na ďalší deň).
   String _guessTimezoneFromOffset() {
     final now = DateTime.now();
     final offsetHours = now.timeZoneOffset.inHours;
     final offsetMinutes = now.timeZoneOffset.inMinutes % 60;
 
     _logger.i('🕐 Current offset: ${offsetHours}h ${offsetMinutes}m');
+
+    if (offsetMinutes == 0) {
+      if (offsetHours == 0) return 'UTC';
+      // Etc/GMT má obrátené znamienko: UTC+2 = Etc/GMT-2.
+      return 'Etc/GMT${offsetHours > 0 ? '-' : '+'}${offsetHours.abs()}';
+    }
 
     // Mapa offsetov na bežné timezone (priorita pre európske kvôli cieľovej skupine)
     // Formát: offset v hodinách -> timezone name
@@ -342,6 +370,7 @@ class LocalNotificationsService {
         _logger.i('✅ Local notifications initialized successfully');
 
         await _setupWelcomeNotificationIfNeeded();
+        await _restorePrayerReminderIfEnabled();
         await _processInitialNotificationLaunch();
 
         return true;
@@ -551,16 +580,25 @@ class LocalNotificationsService {
     return 'en';
   }
 
-  /// Navigácia na LectioScreen
+  /// Navigácia na LectioScreen. Callback (NotificationController) očakáva
+  /// JSON so `screen` — holý reťazec 'daily_lectio' skončil vo FormatException
+  /// a ťuknutie na pripomienku nikam neviedlo.
   void _navigateToLectio(DateTime date) {
     _logger.i('🧭 Navigate to Lectio for date: $date');
-    _notificationCallback?.call('daily_lectio');
+    _notificationCallback?.call(
+      jsonEncode({
+        'screen': 'lectio',
+        'screen_params': jsonEncode({
+          'date': date.toIso8601String().substring(0, 10),
+        }),
+      }),
+    );
   }
 
   /// Navigácia na Home
   void _navigateToHome() {
     _logger.i('🧭 Navigate to Home');
-    _notificationCallback?.call('home');
+    _notificationCallback?.call(jsonEncode({'screen': 'home'}));
   }
 
   /// Nastavenie registračnej notifikácie
@@ -723,7 +761,39 @@ class LocalNotificationsService {
     _logger.i('⏰ Prayer reminder set for ${time.hour}:${time.minute}');
   }
 
-  /// Naplánovanie pripomenutia modlitby
+  /// Po štarte appky obnoví dennú pripomienku, ak je zapnutá. Predtým sa
+  /// plánovalo len pri zmene času v nastaveniach, 7 samostatných alarmov na
+  /// 7 dní dopredu — po týždni pripomienky potichu vyhasli. Volanie je
+  /// idempotentné (zruší + naplánuje jednu opakujúcu sa), takže zároveň
+  /// migruje staré inštalácie na nový mechanizmus.
+  Future<void> _restorePrayerReminderIfEnabled() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool(_prayerReminderEnabled) != true) return;
+      final time = _parseStoredTime(prefs.getString(_prayerReminderTime));
+      if (time == null) return;
+      await _schedulePrayerReminder(time);
+    } catch (e) {
+      _logger.w('⚠️ Could not restore prayer reminder: $e');
+    }
+  }
+
+  /// „H:M" z SharedPreferences → TimeOfDay; poškodená hodnota → null (predtým
+  /// int.parse bez ochrany zhodil načítanie obrazovky nastavení).
+  TimeOfDay? _parseStoredTime(String? raw) {
+    if (raw == null) return null;
+    final parts = raw.split(':');
+    if (parts.length != 2) return null;
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null || h < 0 || h > 23 || m < 0 || m > 59) {
+      return null;
+    }
+    return TimeOfDay(hour: h, minute: m);
+  }
+
+  /// Naplánovanie pripomenutia modlitby — JEDNA notifikácia opakovaná denne
+  /// (`matchDateTimeComponents: time`), nie 7 samostatných alarmov.
   Future<void> _schedulePrayerReminder(TimeOfDay time) async {
     try {
       // Skontroluj povolenie pre presné alarmy
@@ -734,76 +804,72 @@ class LocalNotificationsService {
         );
       }
 
-      // Zruš existujúce
+      // Zruš existujúce (aj staré 7-dňové ID — migrácia po update)
       await _cancelPrayerReminder();
 
-      // Naplánuj na každý deň na najbližších N dní
-      for (int i = 0; i < NotificationConstants.scheduleDaysAhead; i++) {
-        final date = DateTime.now().add(Duration(days: i));
-        var scheduledTime = DateTime(
-          date.year,
-          date.month,
-          date.day,
-          time.hour,
-          time.minute,
-        );
-
-        // Ak je čas dnes už prešiel, začni od zajtra
-        if (i == 0 && scheduledTime.isBefore(DateTime.now())) {
-          continue;
-        }
-
-        final payload = jsonEncode({
-          'type': 'prayer_reminder',
-          'date': scheduledTime.toIso8601String(),
-        });
-
-        // Použij exact alebo inexact scheduling podľa dostupnosti povolenia
-        final scheduleMode = canSchedule
-            ? AndroidScheduleMode.exactAllowWhileIdle
-            : AndroidScheduleMode.inexactAllowWhileIdle;
-
-        await _notifications.zonedSchedule(
-          id: prayerReminderBaseId + i,
-          title: _getNotificationText('prayer_title'),
-          body: _getNotificationText('prayer_body'),
-          scheduledDate: tz.TZDateTime.from(scheduledTime, _currentTimezone),
-          notificationDetails: const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'prayer_reminder_channel',
-              'Pripomenutie modlitby',
-              channelDescription: 'Pripomienky času na modlitbu',
-              importance: Importance.high,
-              priority: Priority.high,
-              icon: '@mipmap/launcher_icon',
-              fullScreenIntent: true,
-              number: 1,
-            ),
-            iOS: DarwinNotificationDetails(
-              presentAlert: true,
-              presentBadge: true,
-              presentSound: true,
-              badgeNumber: 1,
-            ),
-            macOS: DarwinNotificationDetails(
-              presentAlert: true,
-              presentBadge: true,
-              presentSound: true,
-              badgeNumber: 1,
-            ),
-          ),
-          androidScheduleMode: scheduleMode,
-          payload: payload,
-        );
+      // Prvý výskyt: dnes o zvolenom čase, ak už prešiel, tak zajtra.
+      final now = tz.TZDateTime.now(_currentTimezone);
+      var first = tz.TZDateTime(
+        _currentTimezone,
+        now.year,
+        now.month,
+        now.day,
+        time.hour,
+        time.minute,
+      );
+      if (!first.isAfter(now)) {
+        first = first.add(const Duration(days: 1));
       }
 
-      _logger.i('📅 Scheduled prayer reminders for 7 days');
+      // Bez dátumu — pri ťuknutí sa otvorí dnešné lectio.
+      final payload = jsonEncode({'type': 'prayer_reminder'});
+
+      await _notifications.zonedSchedule(
+        id: prayerReminderBaseId,
+        title: _getNotificationText('prayer_title'),
+        body: _getNotificationText('prayer_body'),
+        scheduledDate: first,
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'prayer_reminder_channel',
+            'Pripomenutie modlitby',
+            channelDescription: 'Pripomienky času na modlitbu',
+            importance: Importance.high,
+            priority: Priority.high,
+            icon: '@mipmap/launcher_icon',
+            fullScreenIntent: true,
+            number: 1,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+            badgeNumber: 1,
+          ),
+          macOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+            badgeNumber: 1,
+          ),
+        ),
+        androidScheduleMode: canSchedule
+            ? AndroidScheduleMode.exactAllowWhileIdle
+            : AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: payload,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+
+      _logger.i(
+        '📅 Prayer reminder scheduled daily at ${time.hour}:${time.minute.toString().padLeft(2, '0')} (first: $first)',
+      );
     } catch (e) {
       _logger.e('❌ Error scheduling prayer reminder: $e');
     }
   }
 
-  /// Zrušenie pripomenutia modlitby
+  /// Zrušenie pripomenutia modlitby (vrátane starých ID 3000–3006 z čias
+  /// siedmich samostatných alarmov).
   Future<void> _cancelPrayerReminder() async {
     for (int i = 0; i < NotificationConstants.scheduleDaysAhead; i++) {
       await _notifications.cancel(id: prayerReminderBaseId + i);
@@ -815,16 +881,7 @@ class LocalNotificationsService {
   Future<Map<String, dynamic>> getSettings() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final prayerTimeStr = prefs.getString(_prayerReminderTime);
-    TimeOfDay? prayerTime;
-
-    if (prayerTimeStr != null) {
-      final parts = prayerTimeStr.split(':');
-      prayerTime = TimeOfDay(
-        hour: int.parse(parts[0]),
-        minute: int.parse(parts[1]),
-      );
-    }
+    final prayerTime = _parseStoredTime(prefs.getString(_prayerReminderTime));
 
     return {
       'prayer_reminder_enabled': prefs.getBool(_prayerReminderEnabled) ?? false,

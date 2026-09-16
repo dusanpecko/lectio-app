@@ -999,7 +999,12 @@
       "prayer_disabled": "Pripomenutie modlitby vypnuté",
       "prayer_error": "Chyba pri nastavovaní pripomenutia",
       "disable_tooltip": "Vypnúť",
-      "set_time_tooltip": "Nastaviť čas"
+      "set_time_tooltip": "Nastaviť čas",
+      "announcements_title": "Oznamy a novinky",
+      "announcements_subtitle": "Príležitostné oznamy z appky na tomto zariadení",
+      "announcements_enabled": "Oznamy zapnuté",
+      "announcements_disabled": "Oznamy vypnuté",
+      "announcements_error": "Chyba pri nastavovaní oznamov"
     },
     "remote": {
       "section_title": "Vzdialené notifikácie"
@@ -1033,7 +1038,9 @@
     "empty_hint": "Keď dostanete nové notifikácie, zobrazia sa tu.",
     "load_error": "Nepodarilo sa načítať notifikácie.",
     "yesterday": "Včera",
-    "settings_subtitle": "Pripomienky, denné čítania a kategórie notifikácií"
+    "settings_subtitle": "Pripomienky, denné čítania a kategórie notifikácií",
+    "mark_all_read": "Označiť všetko ako prečítané",
+    "open_target": "Otvoriť"
   },
   "settings_screen": {
     "theme": {
@@ -1939,5 +1946,21 @@
     "other": "{count} položiek"
   },
   "signup_confirm_title": "Potvrď svoj e-mail",
-  "signup_confirm_body": "Účet sme vytvorili. Na adresu {email} sme poslali potvrdzovací odkaz — otvor ho a potom sa prihlás."
+  "signup_confirm_body": "Účet sme vytvorili. Na adresu {email} sme poslali potvrdzovací odkaz — otvor ho a potom sa prihlás.",
+  "news_poll": {
+    "title": "Hlasovanie",
+    "vote": "Hlasovať",
+    "change_vote": "Zmeniť hlas",
+    "voted": "Ďakujeme, váš hlas sa počíta.",
+    "login_required": "Na hlasovanie sa prihláste. Účet je zdarma.",
+    "login": "Prihlásiť sa a hlasovať",
+    "early_for_supporters": "Podporovatelia už hlasujú. Pre všetkých sa hlasovanie otvorí {date}.",
+    "supporter_early": "Ako podporovateľ hlasujete v predstihu.",
+    "opens_at": "Hlasovanie sa otvorí {date}.",
+    "closed": "Hlasovanie je uzavreté.",
+    "votes": "{count} hlasov",
+    "results_later": "Výsledky zverejníme po uzavretí hlasovania.",
+    "load_error": "Hlasovanie sa nepodarilo načítať.",
+    "submit_error": "Hlas sa nepodarilo uložiť."
+  }
 }

@@ -997,7 +997,12 @@
       "prayer_disabled": "Prayer reminder disabled",
       "prayer_error": "Error setting reminder",
       "disable_tooltip": "Disable",
-      "set_time_tooltip": "Set time"
+      "set_time_tooltip": "Set time",
+      "announcements_title": "Announcements & news",
+      "announcements_subtitle": "Occasional announcements from the app on this device",
+      "announcements_enabled": "Announcements enabled",
+      "announcements_disabled": "Announcements disabled",
+      "announcements_error": "Could not update announcements"
     },
     "remote": {
       "section_title": "Remote Notifications"
@@ -1031,7 +1036,9 @@
     "empty_hint": "When you receive new notifications, they will appear here.",
     "load_error": "Failed to load notifications.",
     "yesterday": "Yesterday",
-    "settings_subtitle": "Reminders, daily readings and notification categories"
+    "settings_subtitle": "Reminders, daily readings and notification categories",
+    "mark_all_read": "Mark all as read",
+    "open_target": "Open"
   },
   "settings_screen": {
     "theme": {
@@ -1938,5 +1945,21 @@
     "other": "{count} items"
   },
   "signup_confirm_title": "Confirm your e-mail",
-  "signup_confirm_body": "Your account has been created. We sent a confirmation link to {email} — open it and then sign in."
+  "signup_confirm_body": "Your account has been created. We sent a confirmation link to {email} — open it and then sign in.",
+  "news_poll": {
+    "title": "Vote",
+    "vote": "Vote",
+    "change_vote": "Change vote",
+    "voted": "Thank you, your vote counts.",
+    "login_required": "Sign in to vote. An account is free.",
+    "login": "Sign in and vote",
+    "early_for_supporters": "Supporters are already voting. Voting opens for everyone on {date}.",
+    "supporter_early": "As a supporter you vote early.",
+    "opens_at": "Voting opens on {date}.",
+    "closed": "Voting is closed.",
+    "votes": "{count} votes",
+    "results_later": "Results will be published after voting closes.",
+    "load_error": "Could not load the vote.",
+    "submit_error": "Could not save your vote."
+  }
 }

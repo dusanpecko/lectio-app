@@ -39,6 +39,9 @@ class _NotificationSettingsScreenState
   bool _prayerReminderEnabled = false;
   TimeOfDay? _prayerReminderTime;
   TimeOfDay? _dailyLectioTime;
+  // Ručné oznamy pre toto zariadenie (prepínač pre neprihlásených — prihlásení
+  // majú témy).
+  bool _announcementsEnabled = true;
 
   @override
   void initState() {
@@ -113,17 +116,20 @@ class _NotificationSettingsScreenState
 
       final localSettings = await _localNotifications.getSettings();
 
-      final preferredLectioTime = await _fcmService.getPreferredLectioTime();
+      // Nastavenia viazané na zariadenie (čas lectia + príznaky odhlásenia) —
+      // pre neprihlásených je to jediný spôsob, ako si niečo vypnúť.
+      final device = await _fcmService.getDeviceNotificationSettings();
 
       setState(() {
         _preferencesData = preferencesData;
         _dailyLectioEnabled = _isLoggedIn
             ? _isDailyReadingsTopicEnabled(preferencesData)
-            : true;
+            : (device?.dailyLectioEnabled ?? true);
+        _announcementsEnabled = device?.announcementsEnabled ?? true;
         _prayerReminderEnabled =
             localSettings['prayer_reminder_enabled'] ?? false;
         _prayerReminderTime = localSettings['prayer_reminder_time'];
-        _dailyLectioTime = preferredLectioTime;
+        _dailyLectioTime = device?.preferredLectioTime;
         _isLoading = false;
       });
 
@@ -257,11 +263,25 @@ class _NotificationSettingsScreenState
   }
 
   Future<void> _onDailyLectioChanged(bool enabled) async {
-    // Zapnutie/vypnutie je topic preference viazaná na účet. Neprihlásené
-    // zariadenie denné lectio dostáva (sender tokeny podľa `user_id`
-    // nefiltruje), ale vypnúť si ho v appke nevie — preto výzva, nie ticho.
+    // Bez účtu: príznak na zariadení (tokene) — denný cron ho rešpektuje.
+    // Predtým sa neprihlásenému len zobrazila výzva na prihlásenie a denný
+    // push si vypnúť nevedel.
     if (!_isLoggedIn) {
-      _snack('login_to_sync'.tr(), isError: true);
+      final ok = await _fcmService.setDeviceNotificationFlags(
+        dailyLectioEnabled: enabled,
+      );
+      if (!mounted) return;
+      if (!ok) {
+        _snack('notifications.local.daily_lectio_error'.tr(), isError: true);
+        return;
+      }
+      setState(() => _dailyLectioEnabled = enabled);
+      _snack(
+        enabled
+            ? 'notifications.local.daily_lectio_enabled'.tr()
+            : 'notifications.local.daily_lectio_disabled'.tr(),
+        isError: false,
+      );
       return;
     }
     try {
@@ -288,6 +308,26 @@ class _NotificationSettingsScreenState
       if (!mounted) return;
       _snack('notifications.local.daily_lectio_error'.tr(), isError: true);
     }
+  }
+
+  /// Ručné oznamy (broadcasty z admina) pre toto zariadenie — pre
+  /// neprihlásených; prihlásení to riadia témami nižšie.
+  Future<void> _onAnnouncementsChanged(bool enabled) async {
+    final ok = await _fcmService.setDeviceNotificationFlags(
+      announcementsEnabled: enabled,
+    );
+    if (!mounted) return;
+    if (!ok) {
+      _snack('notifications.local.announcements_error'.tr(), isError: true);
+      return;
+    }
+    setState(() => _announcementsEnabled = enabled);
+    _snack(
+      enabled
+          ? 'notifications.local.announcements_enabled'.tr()
+          : 'notifications.local.announcements_disabled'.tr(),
+      isError: false,
+    );
   }
 
   Future<void> _onDailyLectioTimeChanged() async {
@@ -749,6 +789,16 @@ class _NotificationSettingsScreenState
             ],
           ),
         ),
+        if (!_isLoggedIn)
+          _tile(
+            emoji: '📣',
+            title: 'notifications.local.announcements_title'.tr(),
+            subtitle: 'notifications.local.announcements_subtitle'.tr(),
+            trailing: _v2Switch(
+              _announcementsEnabled,
+              _isLoading ? null : (v) => _onAnnouncementsChanged(v),
+            ),
+          ),
         _tile(
           emoji: '🙏',
           title: 'notifications.local.prayer_title'.tr(),

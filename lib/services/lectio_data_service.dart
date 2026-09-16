@@ -175,6 +175,23 @@ class LectioDataService {
     }
   }
 
+  /// Fetch a single news article by id (deep link z push notifikácie).
+  /// Vracia null, keď článok neexistuje alebo fetch zlyhá — volajúci má
+  /// fallback na zoznam noviniek.
+  Future<Map<String, dynamic>?> getNewsById(int id) async {
+    try {
+      final res = await _supabase
+          .from('news')
+          .select()
+          .eq('id', id)
+          .maybeSingle();
+      return res == null ? null : Map<String, dynamic>.from(res);
+    } catch (e) {
+      appLogger.e('❌ Service: Error fetching news by id $id: $e');
+      return null;
+    }
+  }
+
   /// Fetch featured spiritual exercise
   Future<SpiritualExercise?> getFeaturedExercise({
     required String locale,

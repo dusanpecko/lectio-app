@@ -10,6 +10,7 @@ import '../services/media_player_bus.dart';
 import '../utils/app_logger.dart';
 import '../shared/app_spacing.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
+import '../widgets/news_poll_card.dart';
 
 class NewsDetailScreen extends StatefulWidget {
   final Map<String, dynamic> newsData;
@@ -386,6 +387,13 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildArticleCard(imageUrl, title, htmlContent),
+                    if (((widget.newsData['poll_id'] as String?) ?? '').isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.lg),
+                      NewsPollCard(
+                        pollId: widget.newsData['poll_id'] as String,
+                        onLoginRequired: _showLoginPrompt,
+                      ),
+                    ],
                     if (_formUrl != null) ...[
                       const SizedBox(height: AppSpacing.lg),
                       _buildFormCard(),
@@ -492,6 +500,18 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
               ),
             ),
           const SizedBox(height: AppSpacing.lg),
+          if (((widget.newsData['prefix'] as String?)?.trim() ?? '').isNotEmpty) ...[
+            Text(
+              (widget.newsData['prefix'] as String).trim().toUpperCase(),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+                color: HomeV2.iconAccent(context),
+              ),
+            ),
+            const SizedBox(height: 6),
+          ],
           Text(
             title,
             style: HomeV2.serifTitle(context, size: 24, height: 1.2),

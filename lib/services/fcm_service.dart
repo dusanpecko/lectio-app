@@ -15,6 +15,7 @@ import '../models/notification_models.dart';
 import '../utils/app_logger.dart';
 import 'local_notifications_service.dart';
 import 'notification_api.dart';
+import 'umami_analytics_service.dart';
 
 /// Logger pre background handler (musí byť top-level kvôli izolovanému kontextu)
 final _backgroundLogger = appLogger;
@@ -91,6 +92,21 @@ Future<void> _showLocalNotification(RemoteMessage message) async {
   } catch (e) {
     _backgroundLogger.e('Error showing local notification: $e');
   }
+}
+
+/// Nastavenia notifikácií viazané na zariadenie (FCM token) — fungujú aj bez
+/// účtu. Server ich číta pri dennom pushi (`daily_lectio_enabled`) a pri
+/// ručných broadcastoch (`announcements_enabled`).
+class DeviceNotificationSettings {
+  final TimeOfDay? preferredLectioTime;
+  final bool dailyLectioEnabled;
+  final bool announcementsEnabled;
+
+  const DeviceNotificationSettings({
+    this.preferredLectioTime,
+    this.dailyLectioEnabled = true,
+    this.announcementsEnabled = true,
+  });
 }
 
 class FcmService {
@@ -218,6 +234,7 @@ class FcmService {
 
     // Povolenia pre FCM
     if (Platform.isIOS) {
+      final before = await m.getNotificationSettings();
       final settings = await m.requestPermission(
         alert: true,
         badge: true,
@@ -226,6 +243,10 @@ class FcmService {
       _logger.i(
         'iOS notification permission status: ${settings.authorizationStatus}',
       );
+      // Umami len pri skutočnom rozhodnutí (prvý dialóg), nie pri každom štarte.
+      if (before.authorizationStatus == AuthorizationStatus.notDetermined) {
+        _trackPermissionResult(_authStatusName(settings.authorizationStatus));
+      }
       await m.setForegroundNotificationPresentationOptions(
         alert: true,
         badge: true,
@@ -237,6 +258,7 @@ class FcmService {
       if (!st.isGranted) {
         final result = await Permission.notification.request();
         _logger.i('Android permission request result: $result');
+        _trackPermissionResult(result.isGranted ? 'granted' : 'denied');
       }
     }
 
@@ -250,7 +272,10 @@ class FcmService {
       _logger.i('Body: ${message.notification?.body}');
       _logger.i('Data: ${message.data}');
 
-      // Zobraz lokálnu notifikáciu cez zdieľaný plugin (LocalNotificationsService)
+      // iOS: systémový banner zobrazí sám (presentation options alert:true) a
+      // ťuknutie príde cez onMessageOpenedApp — vlastná lokálna kópia bola
+      // duplikát. Android systém v popredí nič nezobrazí, tam ju kreslíme my.
+      if (Platform.isIOS) return;
       await _showForegroundNotification(message);
     });
 
@@ -565,15 +590,41 @@ class FcmService {
           badge: true,
           sound: true,
         );
+        _trackPermissionResult(_authStatusName(settings.authorizationStatus));
         return settings.authorizationStatus == AuthorizationStatus.authorized;
       } else if (Platform.isAndroid) {
         final result = await Permission.notification.request();
+        _trackPermissionResult(result.isGranted ? 'granted' : 'denied');
         return result.isGranted;
       }
       return false;
     } catch (e) {
       _logger.e('Failed to request notification permissions: $e');
       return false;
+    }
+  }
+
+  /// Umami: výsledok žiadosti o povolenie notifikácií.
+  void _trackPermissionResult(String result) {
+    UmamiAnalyticsService().trackEvent(
+      'notification_permission',
+      eventData: {
+        'result': result,
+        'platform': Platform.isIOS ? 'ios' : 'android',
+      },
+    );
+  }
+
+  static String _authStatusName(AuthorizationStatus status) {
+    switch (status) {
+      case AuthorizationStatus.authorized:
+        return 'granted';
+      case AuthorizationStatus.provisional:
+        return 'provisional';
+      case AuthorizationStatus.denied:
+        return 'denied';
+      case AuthorizationStatus.notDetermined:
+        return 'not_determined';
     }
   }
 
@@ -655,12 +706,17 @@ class FcmService {
   }
 
   /// Získa preferovaný čas denného lectia z user_fcm_tokens
-  Future<TimeOfDay?> getPreferredLectioTime() async {
+  Future<TimeOfDay?> getPreferredLectioTime() async =>
+      (await getDeviceNotificationSettings())?.preferredLectioTime;
+
+  /// Nastavenia zariadenia (čas denného lectia + príznaky odhlásenia) podľa
+  /// FCM tokenu. Rovnaký dôvod pre endpoint ako pri zápise — anonymnému
+  /// SELECT cez RLS nevráti nič. `null` = token nie je / sieť zlyhala.
+  Future<DeviceNotificationSettings?> getDeviceNotificationSettings() async {
     try {
       final token = _currentToken ?? await getCurrentToken();
       if (token == null) return null;
 
-      // Rovnaký dôvod ako pri zápise — anonymnému SELECT cez RLS nevráti nič.
       final res = await http
           .get(
             Uri.parse(
@@ -670,25 +726,70 @@ class FcmService {
           .timeout(const Duration(seconds: 15));
 
       if (res.statusCode != 200) {
-        _logger.w('⚠️ preferred_lectio_time GET ${res.statusCode}');
+        _logger.w('⚠️ device settings GET ${res.statusCode}');
         return null;
       }
 
       final json = jsonDecode(res.body) as Map<String, dynamic>;
+      TimeOfDay? time;
       final timeStr = json['preferred_lectio_time'] as String?;
-      if (timeStr == null) return null;
-
-      final parts = timeStr.split(':');
-      if (parts.length >= 2) {
-        return TimeOfDay(
-          hour: int.parse(parts[0]),
-          minute: int.parse(parts[1]),
-        );
+      if (timeStr != null) {
+        final parts = timeStr.split(':');
+        final h = parts.isNotEmpty ? int.tryParse(parts[0]) : null;
+        final m = parts.length > 1 ? int.tryParse(parts[1]) : null;
+        if (h != null && m != null) time = TimeOfDay(hour: h, minute: m);
       }
-      return null;
+      return DeviceNotificationSettings(
+        preferredLectioTime: time,
+        dailyLectioEnabled: json['daily_lectio_enabled'] as bool? ?? true,
+        announcementsEnabled: json['announcements_enabled'] as bool? ?? true,
+      );
     } catch (e) {
-      _logger.e('Failed to get preferred lectio time: $e');
+      _logger.e('Failed to get device notification settings: $e');
       return null;
+    }
+  }
+
+  /// Zapne/vypne denný push lectia alebo ručné oznamy pre TOTO zariadenie —
+  /// funguje aj bez účtu (predtým si neprihlásený nevedel vypnúť nič).
+  Future<bool> setDeviceNotificationFlags({
+    bool? dailyLectioEnabled,
+    bool? announcementsEnabled,
+  }) async {
+    if (dailyLectioEnabled == null && announcementsEnabled == null) return true;
+    try {
+      final token = _currentToken ?? await getCurrentToken();
+      if (token == null) {
+        _logger.w('Cannot update device flags: no FCM token');
+        return false;
+      }
+      final session = Supabase.instance.client.auth.currentSession;
+      final res = await http
+          .post(
+            Uri.parse('$_backendUrl/api/public/fcm-token'),
+            headers: {
+              'Content-Type': 'application/json',
+              if (session != null)
+                'Authorization': 'Bearer ${session.accessToken}',
+            },
+            body: jsonEncode({
+              'token': token,
+              'daily_lectio_enabled': ?dailyLectioEnabled,
+              'announcements_enabled': ?announcementsEnabled,
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
+      if (res.statusCode != 200) {
+        _logger.w('⚠️ device flags POST ${res.statusCode}: ${res.body}');
+        return false;
+      }
+      _logger.i(
+        '✅ Device flags updated (daily: $dailyLectioEnabled, announcements: $announcementsEnabled)',
+      );
+      return true;
+    } catch (e) {
+      _logger.e('❌ Failed to update device flags: $e');
+      return false;
     }
   }
 }

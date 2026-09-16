@@ -22,7 +22,7 @@ import 'package:lectio_divina/widgets/global_mini_player.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/data/latest_all.dart' as tz;
 
 import 'controllers/notification_controller.dart';
 import 'firebase_options.dart';

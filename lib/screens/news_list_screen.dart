@@ -45,6 +45,9 @@ class _NewsListScreenState extends State<NewsListScreen> {
           .select()
           .eq('lang', locale)
           .lte('published_at', now)
+          // Ručné poradie z admina (NULL až za zaradenými), potom od najnovšieho —
+          // rovnako radí web aj /api/news.
+          .order('sort_order', ascending: true, nullsFirst: false)
           .order('published_at', ascending: false);
 
       setState(() {
@@ -185,6 +188,7 @@ class _NewsListScreenState extends State<NewsListScreen> {
   Widget _buildCard(Map<String, dynamic> article) {
     final imageUrl = article['image_url'] as String?;
     final title = article['title'] as String? ?? '';
+    final prefix = (article['prefix'] as String?)?.trim() ?? '';
     final summary = article['summary'] as String? ?? '';
     final likes = article['likes'] is int
         ? article['likes']
@@ -227,6 +231,18 @@ class _NewsListScreenState extends State<NewsListScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (prefix.isNotEmpty) ...[
+                      Text(
+                        prefix.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                          color: HomeV2.iconAccent(context),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                    ],
                     Text(
                       title,
                       style: HomeV2.serifTitle(context, size: 19, height: 1.2),

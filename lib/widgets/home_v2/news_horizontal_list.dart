@@ -112,6 +112,7 @@ class _NewsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final imageUrl = article['image_url'] as String?;
     final title = (article['title'] as String?) ?? tr('untitled_article');
+    final prefix = (article['prefix'] as String?)?.trim() ?? '';
 
     return GestureDetector(
       onTap: onTap,
@@ -159,16 +160,36 @@ class _NewsCard extends StatelessWidget {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
-                    color: HomeV2.textDark(context),
-                  ),
-                  maxLines: 4,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (prefix.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          prefix.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.6,
+                            color: HomeV2.iconAccent(context),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.35,
+                        fontWeight: FontWeight.w600,
+                        color: HomeV2.textDark(context),
+                      ),
+                      maxLines: prefix.isNotEmpty ? 3 : 4,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
             ),

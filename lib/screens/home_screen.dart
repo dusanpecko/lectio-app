@@ -610,6 +610,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           .select()
           .eq('lang', _localeCode)
           .lte('published_at', now)
+          .order('sort_order', ascending: true, nullsFirst: false)
           .order('published_at', ascending: false)
           .limit(8);
       if (!mounted) return;

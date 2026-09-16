@@ -2,37 +2,15 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import '../screens/adoration_screen.dart';
-import '../screens/donation_screen.dart';
-import '../screens/lectio_screen.dart';
-import '../screens/news_list_screen.dart';
-import '../screens/novenas_screen.dart';
-import '../screens/prayers_screen.dart';
-import '../screens/rosary_screen.dart';
-import '../models/shop_product.dart';
-import '../screens/shop/product_detail_screen.dart';
-import '../screens/shop/shop_screen.dart';
-import '../screens/spiritual_exercises_list_screen.dart';
-import '../screens/stations_of_cross_screen.dart';
+import '../controllers/notification_controller.dart';
 import '../services/inbox_service.dart';
-import '../services/shop_service.dart';
 import '../services/umami_analytics_service.dart';
 import '../shared/app_colors.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
 
-// screen_key → obrazovka (rovnaké kľúče ako vyberá admin vo web editore).
-final Map<String, Widget Function()> _inboxScreens = {
-  'lectio': () => const LectioScreen(),
-  'rosary': () => const RosaryScreen(),
-  'adoration': () => const AdorationScreen(),
-  'novenas': () => const NovenasScreen(),
-  'prayers': () => const PrayersScreen(),
-  'stations': () => const StationsOfCrossScreen(),
-  'spiritual-exercises': () => const SpiritualExercisesListScreen(),
-  'news': () => const NewsListScreen(),
-  'donation': () => const DonationScreen(),
-  'shop': () => const ShopScreen(),
-};
+// Ciele tlačidiel (screen_key) rieši NotificationController.navigateToKey —
+// jeden register obrazoviek pre inbox aj push deep linky (predtým mal inbox
+// vlastnú mapu a kľúče sa s pushom rozchádzali).
 
 /// Zavolaj po načítaní home. Stiahne aktívnu inbox správu a ak nejaká je,
 /// zobrazí popup. Ticho nič nespraví, ak nič nevyhovuje / offline.
@@ -70,54 +48,13 @@ class _InboxDialog extends StatelessWidget {
       'button': index,
       'screen': btn.screenKey,
     });
-    // NavigatorState treba zachytiť PRED zavretím dialógu — po pop-e je context
-    // dialógu mŕtvy a asynchrónne otvorenie produktu by nemalo kam pushnúť.
-    final nav = Navigator.of(context);
-    nav.pop();
-
-    // Konkrétny produkt (screen_param = slug) — jediný parametrizovaný cieľ.
-    if (btn.screenKey == 'shop_product') {
-      _openProduct(nav, btn.screenParam);
-      return;
-    }
-
-    final builder = _inboxScreens[btn.screenKey];
-    if (builder != null) {
-      nav.push(
-        MaterialPageRoute(
-          builder: (_) => builder(),
-          settings: RouteSettings(name: '/${btn.screenKey}'),
-        ),
-      );
-    }
-  }
-
-  /// Otvorí produkt podľa slug-u. Keď sa nenájde (medzičasom deaktivovaný,
-  /// preklep v admine) alebo fetch zlyhá, otvorí sa e-shop — tlačidlo nesmie
-  /// skončiť tichým nič.
-  Future<void> _openProduct(NavigatorState nav, String? slug) async {
-    ShopProduct? found;
-    if (slug != null && slug.isNotEmpty) {
-      try {
-        final products = await ShopService.instance.fetchProducts();
-        for (final p in products) {
-          if (p.slug == slug) {
-            found = p;
-            break;
-          }
-        }
-      } catch (_) {}
-    }
-    if (!nav.mounted) return;
-    final product = found;
-    nav.push(
-      MaterialPageRoute(
-        builder: (_) => product != null
-            ? ProductDetailScreen(product: product)
-            : const ShopScreen(),
-        settings:
-            RouteSettings(name: product != null ? '/shop-product' : '/shop'),
-      ),
+    // Najprv zavri dialóg, potom naviguj cez root navigator controllera —
+    // spoločná cesta s push deep linkmi (produkt podľa slug-u s fallbackom
+    // na e-shop, článok podľa ID s fallbackom na zoznam atď.).
+    Navigator.of(context).pop();
+    NotificationController.instance.navigateToKey(
+      btn.screenKey,
+      param: btn.screenParam,
     );
   }
 

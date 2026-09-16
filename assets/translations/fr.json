@@ -997,7 +997,12 @@
       "prayer_disabled": "Rappel de prière désactivé",
       "prayer_error": "Erreur lors de la configuration du rappel",
       "disable_tooltip": "Désactiver",
-      "set_time_tooltip": "Définir l'heure"
+      "set_time_tooltip": "Définir l'heure",
+      "announcements_title": "Annonces et actualités",
+      "announcements_subtitle": "Annonces occasionnelles de l'app sur cet appareil",
+      "announcements_enabled": "Annonces activées",
+      "announcements_disabled": "Annonces désactivées",
+      "announcements_error": "Erreur lors du réglage des annonces"
     },
     "remote": {
       "section_title": "Notifications à distance"
@@ -1031,7 +1036,9 @@
     "empty_hint": "Lorsque vous recevrez de nouvelles notifications, elles apparaîtront ici.",
     "load_error": "Échec du chargement des notifications.",
     "yesterday": "Hier",
-    "settings_subtitle": "Rappels, lectures du jour et catégories de notifications"
+    "settings_subtitle": "Rappels, lectures du jour et catégories de notifications",
+    "mark_all_read": "Tout marquer comme lu",
+    "open_target": "Ouvrir"
   },
   "settings_screen": {
     "theme": {
@@ -1938,5 +1945,21 @@
     "other": "{count} éléments"
   },
   "signup_confirm_title": "Confirmez votre e-mail",
-  "signup_confirm_body": "Votre compte a été créé. Nous avons envoyé un lien de confirmation à {email} — ouvrez-le puis connectez-vous."
+  "signup_confirm_body": "Votre compte a été créé. Nous avons envoyé un lien de confirmation à {email} — ouvrez-le puis connectez-vous.",
+  "news_poll": {
+    "title": "Vote",
+    "vote": "Voter",
+    "change_vote": "Changer de vote",
+    "voted": "Merci, votre vote compte.",
+    "login_required": "Connectez-vous pour voter. Le compte est gratuit.",
+    "login": "Se connecter et voter",
+    "early_for_supporters": "Les soutiens votent déjà. Le vote s'ouvre à tous le {date}.",
+    "supporter_early": "En tant que soutien, vous votez en avance.",
+    "opens_at": "Le vote s'ouvre le {date}.",
+    "closed": "Le vote est clos.",
+    "votes": "{count} votes",
+    "results_later": "Les résultats seront publiés à la clôture du vote.",
+    "load_error": "Impossible de charger le vote.",
+    "submit_error": "Impossible d'enregistrer votre vote."
+  }
 }
