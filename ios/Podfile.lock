@@ -7,7 +7,7 @@ PODS:
   - AppAuth/Core (2.1.0)
   - AppAuth/ExternalUserAgent (2.1.0):
     - AppAuth/Core
-  - AppCheckCore (11.3.1):
+  - AppCheckCore (11.3.2):
     - GoogleUtilities/Environment (~> 8.0)
     - GoogleUtilities/UserDefaults (~> 8.0)
     - PromisesObjC (~> 2.4)
@@ -22,32 +22,32 @@ PODS:
     - Flutter
   - device_info_plus (0.0.1):
     - Flutter
-  - Firebase/CoreOnly (12.15.0):
-    - FirebaseCore (~> 12.15.0)
-  - Firebase/Messaging (12.15.0):
+  - Firebase/CoreOnly (12.19.0):
+    - FirebaseCore (~> 12.19.0)
+  - Firebase/Messaging (12.19.0):
     - Firebase/CoreOnly
-    - FirebaseMessaging (~> 12.15.0)
-  - firebase_core (4.12.1):
-    - Firebase/CoreOnly (= 12.15.0)
+    - FirebaseMessaging (~> 12.19.0)
+  - firebase_core (4.15.0):
+    - Firebase/CoreOnly (= 12.19.0)
     - Flutter
-  - firebase_messaging (16.4.3):
-    - Firebase/Messaging (= 12.15.0)
+  - firebase_messaging (16.7.0):
+    - Firebase/Messaging (= 12.19.0)
     - firebase_core
     - Flutter
-  - FirebaseCore (12.15.0):
-    - FirebaseCoreInternal (~> 12.15.0)
+  - FirebaseCore (12.19.0):
+    - FirebaseCoreInternal (~> 12.19.0)
     - GoogleUtilities/Environment (~> 8.1)
     - GoogleUtilities/Logger (~> 8.1)
-  - FirebaseCoreInternal (12.15.0):
+  - FirebaseCoreInternal (12.19.0):
     - "GoogleUtilities/NSData+zlib (~> 8.1)"
-  - FirebaseInstallations (12.15.0):
-    - FirebaseCore (~> 12.15.0)
+  - FirebaseInstallations (12.19.0):
+    - FirebaseCore (~> 12.19.0)
     - GoogleUtilities/Environment (~> 8.1)
     - GoogleUtilities/UserDefaults (~> 8.1)
     - PromisesObjC (~> 2.4)
-  - FirebaseMessaging (12.15.0):
-    - FirebaseCore (~> 12.15.0)
-    - FirebaseInstallations (~> 12.15.0)
+  - FirebaseMessaging (12.19.0):
+    - FirebaseCore (~> 12.19.0)
+    - FirebaseInstallations (~> 12.19.0)
     - GoogleDataTransport (~> 10.1)
     - GoogleUtilities/AppDelegateSwizzler (~> 8.1)
     - GoogleUtilities/Environment (~> 8.1)
@@ -67,7 +67,7 @@ PODS:
     - FlutterMacOS
     - GoogleSignIn (~> 9.0)
     - GTMSessionFetcher (>= 3.4.0)
-  - GoogleDataTransport (10.1.0):
+  - GoogleDataTransport (10.1.1):
     - nanopb (~> 3.30910.0)
     - PromisesObjC (~> 2.4)
   - GoogleSignIn (9.2.0):
@@ -75,28 +75,28 @@ PODS:
     - AppCheckCore (~> 11.0)
     - GTMAppAuth (~> 5.0)
     - GTMSessionFetcher/Core (~> 3.3)
-  - GoogleUtilities/AppDelegateSwizzler (8.1.2):
+  - GoogleUtilities/AppDelegateSwizzler (8.1.3):
     - GoogleUtilities/Environment
     - GoogleUtilities/Logger
     - GoogleUtilities/Network
     - GoogleUtilities/Privacy
-  - GoogleUtilities/Environment (8.1.2):
+  - GoogleUtilities/Environment (8.1.3):
     - GoogleUtilities/Privacy
-  - GoogleUtilities/Logger (8.1.2):
+  - GoogleUtilities/Logger (8.1.3):
     - GoogleUtilities/Environment
     - GoogleUtilities/Privacy
-  - GoogleUtilities/Network (8.1.2):
+  - GoogleUtilities/Network (8.1.3):
     - GoogleUtilities/Logger
     - "GoogleUtilities/NSData+zlib"
     - GoogleUtilities/Privacy
     - GoogleUtilities/Reachability
-  - "GoogleUtilities/NSData+zlib (8.1.2)":
+  - "GoogleUtilities/NSData+zlib (8.1.3)":
     - GoogleUtilities/Privacy
-  - GoogleUtilities/Privacy (8.1.2)
-  - GoogleUtilities/Reachability (8.1.2):
+  - GoogleUtilities/Privacy (8.1.3)
+  - GoogleUtilities/Reachability (8.1.3):
     - GoogleUtilities/Logger
     - GoogleUtilities/Privacy
-  - GoogleUtilities/UserDefaults (8.1.2):
+  - GoogleUtilities/UserDefaults (8.1.3):
     - GoogleUtilities/Logger
     - GoogleUtilities/Privacy
   - GTMAppAuth (5.0.0):
@@ -261,26 +261,26 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   app_links: a754cbec3c255bd4bbb4d236ecc06f28cd9a7ce8
   AppAuth: ef4da5a3fc2e10b90c09a0a94a9baeaedc0341d5
-  AppCheckCore: e215d35177a9cf469927863e69c13e220df32a8b
+  AppCheckCore: be8fce5469f68d7f6a29aa94b25f097409ff7fdc
   audio_service: aa99a6ba2ae7565996015322b0bb024e1d25c6fd
   audio_session: 9bb7f6c970f21241b19f5a3658097ae459681ba0
   connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
   device_info_plus: 21fcca2080fbcd348be798aa36c3e5ed849eefbe
-  Firebase: a8539b633d474fbeb654c7043f9c1649e274045b
-  firebase_core: 1c1e250a77e2df9e80bb8bf0875c8b427044a697
-  firebase_messaging: 90cf2b62f5058120ab19f29ceff1503ba0f51ba7
-  FirebaseCore: 2e86a4ea1684d4381707069e4a6d89ac808e901e
-  FirebaseCoreInternal: 6ab6a02c94446c026d2cf35cf5383842ebaa4992
-  FirebaseInstallations: eb29ccbf64eaedf86fd5b2ccc7fabde567660b52
-  FirebaseMessaging: 40017d7bc8457ee295b0f41d480a80fdabc9994e
-  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  Firebase: 7ca191e43724142f79fae653547b3382c45413cc
+  firebase_core: 55de508663ceda7d1dc369a32b327a5655019ae2
+  firebase_messaging: df68cb5feefa02766144a50fa5348362a0127008
+  FirebaseCore: c990214798d7c568ad436a15ba7da25c7a278c9a
+  FirebaseCoreInternal: 656b1c2fd5a1c5976183dc54b73deda78fb26ee3
+  FirebaseInstallations: f70a49eed611f5602f373e40974b3b01556ac217
+  FirebaseMessaging: c15f48126adbe8b4d3238a5e1fa24bab3ad3e472
+  Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
   flutter_local_notifications: 643a3eda1ce1c0599413ca31672536d423dee214
   flutter_secure_storage_darwin: acdb3f316ed05a3e68f856e0353b133eec373a23
   flutter_timezone: 7c838e17ffd4645d261e87037e5bebf6d38fe544
-  google_sign_in_ios: 000870aa06da9b28d1d0bf7ef70ff0213059dd28
-  GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
+  google_sign_in_ios: d66ab4c862f03eb4b3cac147ba2d9d7e56ef03f7
+  GoogleDataTransport: a24e58982ab3ba2f64d79613e027fe7f57e88539
   GoogleSignIn: e449a40a92e9f2eea56e98b5214d13725dc5a00a
-  GoogleUtilities: 766ace00c6b10d8148408f329d10c4f051931850
+  GoogleUtilities: 4e0c2ad9fa0d0d18b5c4df8bf57b461cba35b0bb
   GTMAppAuth: 217a876b249c3c585a54fd6f73e6b58c4f5c4238
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
   home_widget: 54b4f6b36ed8d64cfee594a476225c35c3e45091
@@ -300,7 +300,7 @@ SPEC CHECKSUMS:
   sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
   video_player_avfoundation: 3453f792138786248960ca029747fcd9f318ef52
-  wakelock_plus: e29112ab3ef0b318e58cfa5c32326458be66b556
+  wakelock_plus: d4ca1e4e4bc9de42cb55d57b5bdc158af318e3c6
   webview_flutter_wkwebview: 8ebf4fded22593026f7dbff1fbff31ea98573c8d
 
 PODFILE CHECKSUM: 069570c89f29f9eb8f2863f29b986ccdeb158d3f

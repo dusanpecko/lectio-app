@@ -327,7 +327,7 @@ class FcmService {
                 'APNS token not available yet, retrying in 2 seconds... (attempt $_apnsRetryCount/$_maxApnsRetries)',
               );
               await Future.delayed(const Duration(seconds: 2));
-              return _register(appLangCode); // Rekurzívne zavolanie
+              return await _register(appLangCode); // Rekurzívne zavolanie
             } else {
               _logger.w(
                 'Max APNS token retry attempts reached. Continuing without APNS token.',
@@ -625,6 +625,9 @@ class FcmService {
         return 'denied';
       case AuthorizationStatus.notDetermined:
         return 'not_determined';
+      // firebase_messaging 16.7+: systém už dialóg nezobrazí (trvalé zamietnutie).
+      case AuthorizationStatus.deniedPermanently:
+        return 'denied_permanently';
     }
   }
 
@@ -636,9 +639,10 @@ class FcmService {
       if (Platform.isIOS) {
         final settings =
             await FirebaseMessaging.instance.getNotificationSettings();
-        // `denied` = používateľ to už raz zamietol → iOS znova nepýta.
+        // `denied` / `deniedPermanently` = používateľ to už zamietol → iOS znova nepýta.
         // `notDetermined` = ešte sa nepýtalo → dialóg sa dá zobraziť.
-        return settings.authorizationStatus == AuthorizationStatus.denied;
+        return settings.authorizationStatus == AuthorizationStatus.denied ||
+            settings.authorizationStatus == AuthorizationStatus.deniedPermanently;
       } else if (Platform.isAndroid) {
         // Permanentne zamietnuté (Android 13+) → request() už dialóg nezobrazí.
         return await Permission.notification.isPermanentlyDenied;

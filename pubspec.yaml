@@ -19,7 +19,7 @@ documentation: https://github.com/dusanpecko/lectio-app/wiki
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 11.2.2+6000008
+version: 11.2.3+6000009
 
 environment:
   sdk: ^3.8.0
@@ -80,7 +80,7 @@ dependencies:
   local_auth: ^3.0.2
   flutter_local_notifications: ^22.0.1
   provider: ^6.1.2
-  cached_network_image: ^3.4.1
+  cached_network_image: ^4.0.0
   # Priamy prístup k disk cache, ktorú používa cached_network_image — pre
   # predcachovanie podcast coverov na offline použitie.
   flutter_cache_manager: ^3.4.1
@@ -97,6 +97,14 @@ dependencies:
   showcaseview: ^5.1.0
   flutter_markdown_plus: ^1.0.7
   flutter_timezone: ^5.1.0
+
+# Pripnuté transitívne verzie — dôvod pri každej položke.
+dependency_overrides:
+  # flutter_html 3.0.0 (posledné vydanie 2025) importuje privátne
+  # `package:html/src/query_selector.dart` a volá top-level `matches()`, ktorú
+  # html 0.15.7 odstránil → release build padá „Method not found: 'matches'".
+  # Držať 0.15.6, kým flutter_html nenahradíme (plán v11.3).
+  html: 0.15.6
 
 dev_dependencies:
   flutter_test:
