@@ -39,6 +39,7 @@ import '../widgets/home_v2/home_hero_section.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
 import '../widgets/home_v2/lectio_date_selector.dart';
 import '../widgets/home_v2/creators_horizontal_list.dart';
+import '../widgets/home_v2/sponsors_horizontal_list.dart';
 import '../widgets/home_v2/news_horizontal_list.dart';
 import 'about_screen.dart';
 import 'adoration_screen.dart';
@@ -1269,6 +1270,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               '/creator-detail',
                             ),
                           ),
+                          const SizedBox(height: 28),
+                          // „Podporili nás" — logá sponzorov; bez zverejnených
+                          // sponzorov sa sekcia nezobrazí (fail-soft).
+                          const SponsorsHorizontalList(),
                         ],
                       ],
                     ),

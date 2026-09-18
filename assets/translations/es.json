@@ -1900,6 +1900,10 @@
     "bio_failed": "No se pudo desbloquear con biometría. Usa tu PIN."
   },
   "creators_title": "Creadores",
+  "sponsors_title": "Nos apoyan",
+  "sponsors_about_description": "Gracias a los colaboradores y donantes que ayudan a que lectio.one crezca y siga siendo gratuito para todos.",
+  "sponsor_supported_with": "Aportaron",
+  "sponsor_visit_website": "Visitar el sitio web",
   "creators_subtitle": "Descubre creadores de contenido espiritual",
   "creators_empty": "Aún no hay creadores.",
   "creator_section_series": "Series",

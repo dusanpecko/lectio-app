@@ -1900,6 +1900,10 @@
     "bio_failed": "Odomknutie biometriou sa nepodarilo. Použi PIN."
   },
   "creators_title": "Tvorcovia",
+  "sponsors_title": "Podporili nás",
+  "sponsors_about_description": "Ďakujeme partnerom a darcom, ktorí pomáhajú, aby lectio.one mohlo rásť a ostať pre všetkých zadarmo.",
+  "sponsor_supported_with": "Podporili sumou",
+  "sponsor_visit_website": "Navštíviť web",
   "creators_subtitle": "Objavte tvorcov duchovného obsahu",
   "creators_empty": "Zatiaľ žiadni tvorcovia.",
   "creator_section_series": "Série",

@@ -1900,6 +1900,10 @@
     "bio_failed": "Biometric unlock failed. Please use your PIN."
   },
   "creators_title": "Creators",
+  "sponsors_title": "Our Supporters",
+  "sponsors_about_description": "Thank you to the partners and donors who help lectio.one grow and stay free for everyone.",
+  "sponsor_supported_with": "Supported with",
+  "sponsor_visit_website": "Visit website",
   "creators_subtitle": "Discover creators of spiritual content",
   "creators_empty": "No creators yet.",
   "creator_section_series": "Series",

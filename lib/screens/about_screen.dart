@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../shared/app_spacing.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
+import '../widgets/sponsor_sheet.dart';
 import 'privacy_screen.dart';
 
 class AboutScreen extends StatefulWidget {
@@ -154,6 +155,7 @@ class _AboutScreenState extends State<AboutScreen> {
               ),
             ),
             _buildTeamSection(context),
+            const SponsorsAboutSection(),
             _section(
               'about.bible_title'.tr(),
               Text('about.bible_copyrights'.tr(), style: _body(context, small: true)),

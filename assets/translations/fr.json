@@ -1900,6 +1900,10 @@
     "bio_failed": "Le déverrouillage biométrique a échoué. Utilisez votre code PIN."
   },
   "creators_title": "Créateurs",
+  "sponsors_title": "Ils nous soutiennent",
+  "sponsors_about_description": "Merci aux partenaires et donateurs qui aident lectio.one à grandir et à rester gratuit pour tous.",
+  "sponsor_supported_with": "Ont soutenu avec",
+  "sponsor_visit_website": "Visiter le site",
   "creators_subtitle": "Découvrez des créateurs de contenu spirituel",
   "creators_empty": "Aucun créateur pour l'instant.",
   "creator_section_series": "Séries",
