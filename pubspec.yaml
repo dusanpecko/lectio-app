@@ -97,6 +97,7 @@ dependencies:
   showcaseview: ^5.1.0
   flutter_markdown_plus: ^1.0.7
   flutter_timezone: ^5.1.0
+  visibility_detector: ^0.4.0+2
 
 # Pripnuté transitívne verzie — dôvod pri každej položke.
 dependency_overrides:

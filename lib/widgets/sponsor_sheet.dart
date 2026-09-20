@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 import '../models/sponsor.dart';
 import '../services/sponsors_service.dart';
@@ -114,7 +115,12 @@ Future<void> showSponsorSheet(
   HapticFeedback.lightImpact();
   UmamiAnalyticsService().trackEvent(
     'sponsor_open',
-    eventData: {'sponsor': sponsor.name, 'source': source},
+    eventData: {
+      'sponsor': sponsor.name,
+      'sponsor_id':
+          sponsor.id, // stabilné naprieč jazykmi — admin ráta podľa ID
+      'source': source,
+    },
   );
 
   return showModalBottomSheet<void>(
@@ -207,7 +213,11 @@ Future<void> showSponsorSheet(
                     onPressed: () async {
                       UmamiAnalyticsService().trackEvent(
                         'sponsor_link',
-                        eventData: {'sponsor': sponsor.name, 'source': source},
+                        eventData: {
+                          'sponsor': sponsor.name,
+                          'sponsor_id': sponsor.id,
+                          'source': source,
+                        },
                       );
                       await launchUrl(
                         Uri.parse(sponsor.websiteUrl!),
@@ -227,6 +237,15 @@ Future<void> showSponsorSheet(
   );
 }
 
+/// Zaznamená `sponsors_view` (Umami), keď je aspoň polovica sekcie na obrazovke —
+/// raz za život widgetu. Admin z toho vidí, koľkí ľudia sa pri sekcii zastavili.
+void trackSponsorsView(String source, int count) {
+  UmamiAnalyticsService().trackEvent(
+    'sponsors_view',
+    eventData: {'source': source, 'count': count},
+  );
+}
+
 /// Sekcia „Podporili nás" pre O aplikácii — karta s logami vo Wrap-e.
 /// Načítava sa sama; bez sponzorov sa nezobrazí.
 class SponsorsAboutSection extends StatefulWidget {
@@ -239,6 +258,7 @@ class SponsorsAboutSection extends StatefulWidget {
 class _SponsorsAboutSectionState extends State<SponsorsAboutSection> {
   List<Sponsor> _sponsors = const [];
   String? _loadedLang;
+  bool _viewed = false;
 
   @override
   void didChangeDependencies() {
@@ -259,52 +279,61 @@ class _SponsorsAboutSectionState extends State<SponsorsAboutSection> {
   @override
   Widget build(BuildContext context) {
     if (_sponsors.isEmpty) return const SizedBox.shrink();
-    return Container(
-      margin: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        0,
-        AppSpacing.lg,
-        AppSpacing.lg,
-      ),
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: HomeV2.card(context),
-        borderRadius: BorderRadius.circular(HomeV2.radius),
-        boxShadow: HomeV2.softShadow(context),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            tr('sponsors_title'),
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: HomeV2.iconAccent(context),
+    return VisibilityDetector(
+      key: const Key('sponsors-about-section'),
+      onVisibilityChanged: (info) {
+        if (!_viewed && info.visibleFraction >= 0.5) {
+          _viewed = true;
+          trackSponsorsView('about', _sponsors.length);
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          0,
+          AppSpacing.lg,
+          AppSpacing.lg,
+        ),
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        decoration: BoxDecoration(
+          color: HomeV2.card(context),
+          borderRadius: BorderRadius.circular(HomeV2.radius),
+          boxShadow: HomeV2.softShadow(context),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              tr('sponsors_title'),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: HomeV2.iconAccent(context),
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            tr('sponsors_about_description'),
-            style: TextStyle(
-              fontSize: 13.5,
-              height: 1.6,
-              color: HomeV2.textDark(context),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              tr('sponsors_about_description'),
+              style: TextStyle(
+                fontSize: 13.5,
+                height: 1.6,
+                color: HomeV2.textDark(context),
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            children: [
-              for (final s in _sponsors)
-                SponsorLogoTile(
-                  sponsor: s,
-                  onTap: () => showSponsorSheet(context, s, source: 'about'),
-                ),
-            ],
-          ),
-        ],
+            const SizedBox(height: AppSpacing.lg),
+            Wrap(
+              spacing: AppSpacing.md,
+              runSpacing: AppSpacing.md,
+              children: [
+                for (final s in _sponsors)
+                  SponsorLogoTile(
+                    sponsor: s,
+                    onTap: () => showSponsorSheet(context, s, source: 'about'),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

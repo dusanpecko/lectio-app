@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../models/sponsor.dart';
 import '../../services/sponsors_service.dart';
@@ -21,6 +22,7 @@ class _SponsorsHorizontalListState extends State<SponsorsHorizontalList> {
   List<Sponsor> _sponsors = const [];
   bool _loading = true;
   String? _loadedLang;
+  bool _viewed = false;
 
   static const double _tileW = 128;
   static const double _tileH = 76;
@@ -48,41 +50,58 @@ class _SponsorsHorizontalListState extends State<SponsorsHorizontalList> {
   Widget build(BuildContext context) {
     if (!_loading && _sponsors.isEmpty) return const SizedBox.shrink();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Text(
-            tr('sponsors_title'),
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: HomeV2.textDark(context),
+    return VisibilityDetector(
+      key: const Key('sponsors-home-section'),
+      onVisibilityChanged: (info) {
+        if (!_viewed &&
+            !_loading &&
+            _sponsors.isNotEmpty &&
+            info.visibleFraction >= 0.5) {
+          _viewed = true;
+          trackSponsorsView('home', _sponsors.length);
+        }
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Text(
+              tr('sponsors_title'),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: HomeV2.textDark(context),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        SizedBox(
-          height: _tileH,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            itemCount: _loading ? 3 : _sponsors.length,
-            separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
-            itemBuilder: (_, i) {
-              if (_loading) return const _SponsorTileSkeleton(width: _tileW, height: _tileH);
-              final s = _sponsors[i];
-              return SponsorLogoTile(
-                sponsor: s,
-                width: _tileW,
-                height: _tileH,
-                onTap: () => showSponsorSheet(context, s, source: 'home'),
-              );
-            },
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            height: _tileH,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              itemCount: _loading ? 3 : _sponsors.length,
+              separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
+              itemBuilder: (_, i) {
+                if (_loading) {
+                  return const _SponsorTileSkeleton(
+                    width: _tileW,
+                    height: _tileH,
+                  );
+                }
+                final s = _sponsors[i];
+                return SponsorLogoTile(
+                  sponsor: s,
+                  width: _tileW,
+                  height: _tileH,
+                  onTap: () => showSponsorSheet(context, s, source: 'home'),
+                );
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
