@@ -953,7 +953,13 @@
       "request": "Povoliť notifikácie",
       "blocked_title": "Notifikácie sú zakázané",
       "blocked_message": "Povolenie notifikácií ste predtým zamietli. Zapnite ich v systémových nastaveniach aplikácie.",
-      "open_settings": "Otvoriť nastavenia"
+      "open_settings": "Otvoriť nastavenia",
+      "prompt_title": "Ranná pripomienka evanjelia",
+      "prompt_body": "Každý deň ti pošleme prvú vetu evanjelia a jedným ťuknutím spustíš dnešné lectio. Bez reklám a spamu, jedna správa denne.",
+      "prompt_time": "Čas pripomienky",
+      "prompt_enable": "Zapnúť pripomienku",
+      "prompt_later": "Teraz nie",
+      "prompt_enabled": "Pripomienka nastavená na {}"
     },
     "settings": {
       "title": "Nastavenia notifikácií",

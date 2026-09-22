@@ -951,7 +951,13 @@
       "request": "Activer les notifications",
       "blocked_title": "Les notifications sont désactivées",
       "blocked_message": "Tu as précédemment refusé l'autorisation des notifications. Active-la dans les paramètres système de l'application.",
-      "open_settings": "Ouvrir les paramètres"
+      "open_settings": "Ouvrir les paramètres",
+      "prompt_title": "Rappel matinal de l'Évangile",
+      "prompt_body": "Chaque jour, nous t'enverrons la première phrase de l'Évangile. Un geste suffit pour lancer la lectio du jour. Sans publicité ni spam, un seul message par jour.",
+      "prompt_time": "Heure du rappel",
+      "prompt_enable": "Activer le rappel",
+      "prompt_later": "Pas maintenant",
+      "prompt_enabled": "Rappel réglé à {}"
     },
     "settings": {
       "title": "Paramètres des notifications",

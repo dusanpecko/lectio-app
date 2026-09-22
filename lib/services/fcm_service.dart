@@ -232,20 +232,25 @@ class FcmService {
     _logger.i('Initializing FCM with language: $appLangCode');
     final m = FirebaseMessaging.instance;
 
-    // Povolenia pre FCM
+    // Povolenia pre FCM.
+    // 11.2.4: systémový dialóg sa už NEpýta pri štarte — za 8 mesiacov ho povolili
+    // len ~3 % zariadení. Pýta ho NotificationPromptService po prvom dočítanom /
+    // dopočúvanom lectiu, s vysvetlením a výberom času. Tu len zistíme stav a pri
+    // už udelenom povolení dokončíme registráciu (iOS: requestPermission bez
+    // dialógu zaregistruje APNs).
     if (Platform.isIOS) {
       final before = await m.getNotificationSettings();
-      final settings = await m.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
-      _logger.i(
-        'iOS notification permission status: ${settings.authorizationStatus}',
-      );
-      // Umami len pri skutočnom rozhodnutí (prvý dialóg), nie pri každom štarte.
       if (before.authorizationStatus == AuthorizationStatus.notDetermined) {
-        _trackPermissionResult(_authStatusName(settings.authorizationStatus));
+        _logger.i('iOS notification permission not determined — dialóg až po lectiu');
+      } else {
+        final settings = await m.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+        _logger.i(
+          'iOS notification permission status: ${settings.authorizationStatus}',
+        );
       }
       await m.setForegroundNotificationPresentationOptions(
         alert: true,
@@ -254,12 +259,7 @@ class FcmService {
       );
     } else if (Platform.isAndroid) {
       final st = await Permission.notification.status;
-      _logger.i('Android notification permission status: $st');
-      if (!st.isGranted) {
-        final result = await Permission.notification.request();
-        _logger.i('Android permission request result: $result');
-        _trackPermissionResult(result.isGranted ? 'granted' : 'denied');
-      }
+      _logger.i('Android notification permission status: $st (dialóg až po lectiu)');
     }
 
     // Registruj background handler (top-level funkcia)
@@ -656,6 +656,14 @@ class FcmService {
 
   /// Otvorí systémové nastavenia aplikácie (sekcia povolení).
   Future<bool> openSystemNotificationSettings() => openAppSettings();
+
+  /// Po udelení povolenia (NotificationPromptService / nastavenia) znova
+  /// zaregistruje token — na iOS sa až teraz dá získať APNs token.
+  Future<void> refreshRegistration() async {
+    if (!_initDone) return;
+    _apnsRetryCount = 0;
+    await _register(_initLang ?? 'sk');
+  }
 
   /// Nastaví callback pre spracovanie notifikácií
   void setNotificationCallback(Function(RemoteMessage) callback) {

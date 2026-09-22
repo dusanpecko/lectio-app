@@ -116,7 +116,13 @@ class NotificationController {
       case 'lectio':
         final dateStr = params?['date'] as String?;
         final date = dateStr != null ? DateTime.tryParse(dateStr) : null;
-        targetScreen = LectioScreen(selectedDate: date ?? DateTime.now());
+        // 11.2.4: denný push nesie autoplay → lectio dňa rovno spustí audio
+        final ap = params?['autoplay'];
+        final autoplay = ap == true || ap == 'true' || ap == 1;
+        targetScreen = LectioScreen(
+          selectedDate: date ?? DateTime.now(),
+          autoplay: autoplay,
+        );
         break;
       case 'home':
         // Domov = koreň navigácie — zavrie všetko, čo je nad ním.

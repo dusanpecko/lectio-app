@@ -10,6 +10,8 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'dart:async';
 
+import 'package:just_audio/just_audio.dart' show PlayerState, ProcessingState;
+
 import '../models/podcast_episode.dart';
 import '../services/app_engagement_service.dart';
 import '../services/audio_download_service.dart';
@@ -24,6 +26,7 @@ import '../utils/app_logger.dart';
 import '../utils/route_observer.dart';
 import '../utils/scripture_reference.dart';
 import '../services/media_player_bus.dart';
+import '../services/notification_prompt_service.dart';
 import '../widgets/brand_loading.dart';
 import '../widgets/home_v2/daily_podcast_card.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
@@ -36,9 +39,11 @@ import 'settings_screen.dart';
 /// Hero → podcast → výber biblie → karty krokov (s per-step audiom) → poznámky.
 class LectioScreen extends StatefulWidget {
   final DateTime? selectedDate;
+  /// Z denného pushu (11.2.4): po načítaní dňa rovno spustí kombinované audio.
+  final bool autoplay;
   final String? selectedLang;
 
-  const LectioScreen({super.key, this.selectedDate, this.selectedLang});
+  const LectioScreen({super.key, this.selectedDate, this.selectedLang, this.autoplay = false});
 
   @override
   State<LectioScreen> createState() => _LectioScreenState();
@@ -82,15 +87,69 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
 
   bool _loaded = false;
   bool _isAdmin = false;
+  bool _autoplayDone = false;
+  StreamSubscription<PlayerState>? _finishSub;
 
   String get _locale => widget.selectedLang ?? context.locale.languageCode;
 
   @override
   void dispose() {
+    _finishSub?.cancel();
     appRouteObserver.unsubscribe(this);
     WakelockPlus.disable();
     _pageController.dispose();
     super.dispose();
+  }
+
+  /// Dohrané kombinované audio DNEŠNÉHO dňa = dokončené lectio → ponuka
+  /// rannej pripomienky (NotificationPromptService si sám rozhodne, či ju ukáže).
+  void _listenForAudioFinish() {
+    _finishSub ??= MediaPlayerBus.instance.playerStateStream.listen((st) {
+      if (!mounted || st.processingState != ProcessingState.completed) return;
+      final bus = MediaPlayerBus.instance;
+      final dayId = DateFormat('yyyy-MM-dd').format(_date);
+      if (bus.currentContentId == dayId && (bus.currentId ?? '').startsWith('lectio_audio_')) {
+        NotificationPromptService.instance.onLectioFinished(context);
+      }
+    });
+  }
+
+  /// Z denného pushu: spusti kombinované audio dňa (rovnaké id/URL ako
+  /// DailyPodcastCard, aby karta ukazovala stav prehrávania).
+  void _maybeAutoplay(Map<String, dynamic> data) {
+    if (!widget.autoplay || _autoplayDone) return;
+    final episode = _audioEpisode(data);
+    if (episode == null) return;
+    _autoplayDone = true;
+    final long = episode.fullLongAudio?.trim() ?? '';
+    final short = episode.fullShortAudio?.trim() ?? '';
+    String url;
+    String variant;
+    if (_lectioAudioMode == 'short' && short.isNotEmpty) {
+      url = short; variant = 'short';
+    } else if (long.isNotEmpty) {
+      url = long; variant = 'long';
+    } else if (short.isNotEmpty) {
+      url = short; variant = 'short';
+    } else {
+      url = episode.audioUrl ?? ''; variant = 'podcast';
+    }
+    if (url.isEmpty) return;
+    final mediaId = variant == 'podcast' ? 'podcast_${episode.id}' : 'lectio_audio_${episode.id}_$variant';
+    final bus = MediaPlayerBus.instance;
+    if (bus.isCurrent(mediaId) && bus.isPlaying) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      bus.toggle(
+        id: mediaId,
+        url: url,
+        title: episode.title ?? tr('daily_lectio_audio'),
+        artUri: episode.coverImageUrl ?? PodcastService.channelCover(episode.lang),
+        contentType: variant == 'podcast' ? 'podcast' : 'lectio',
+        contentId: episode.publishDate ?? episode.id,
+        language: episode.lang,
+      );
+    });
   }
 
   @override
@@ -292,6 +351,10 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
       _isDownloaded = cached != null;
       _loading = false;
     });
+    if (_data != null) {
+      _listenForAudioFinish();
+      _maybeAutoplay(_data!);
+    }
   }
 
   // ── Prepínanie dňa ────────────────────────────────────────────────────────
@@ -614,7 +677,13 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
           child: PageView.builder(
             controller: _pageController,
             itemCount: slides.length,
-            onPageChanged: (i) => setState(() => _currentPage = i),
+            onPageChanged: (i) {
+              setState(() => _currentPage = i);
+              // Posledný krok (Actio) = dočítané lectio → ponuka rannej pripomienky
+              if (i == slides.length - 1) {
+                NotificationPromptService.instance.onLectioFinished(context);
+              }
+            },
             itemBuilder: (_, i) => slides[i].child,
           ),
         ),
@@ -665,7 +734,12 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
         builder: (_) => LectioReaderScreen(
           steps: List.of(_readerSteps),
           initialIndex: index,
-          onIndexChanged: (i) => lastIndex = i,
+          onIndexChanged: (i) {
+            lastIndex = i;
+            if (i == _readerSteps.length - 1 && mounted) {
+              NotificationPromptService.instance.onLectioFinished(context);
+            }
+          },
         ),
       ),
     ).then((_) {

@@ -951,7 +951,13 @@
       "request": "Enable Notifications",
       "blocked_title": "Notifications are disabled",
       "blocked_message": "You previously denied notification permission. Enable it in the app's system settings.",
-      "open_settings": "Open settings"
+      "open_settings": "Open settings",
+      "prompt_title": "Morning Gospel reminder",
+      "prompt_body": "Every day we'll send you the first line of the Gospel. One tap starts today's lectio. No ads, no spam, one message a day.",
+      "prompt_time": "Reminder time",
+      "prompt_enable": "Turn on reminder",
+      "prompt_later": "Not now",
+      "prompt_enabled": "Reminder set for {}"
     },
     "settings": {
       "title": "Notification Settings",

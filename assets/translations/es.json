@@ -951,7 +951,13 @@
       "request": "Habilitar notificaciones",
       "blocked_title": "Las notificaciones están desactivadas",
       "blocked_message": "Anteriormente denegaste el permiso de notificaciones. Actívalo en los ajustes del sistema de la app.",
-      "open_settings": "Abrir ajustes"
+      "open_settings": "Abrir ajustes",
+      "prompt_title": "Recordatorio matutino del Evangelio",
+      "prompt_body": "Cada día te enviaremos la primera frase del Evangelio. Con un toque empieza la lectio de hoy. Sin anuncios ni spam, un solo mensaje al día.",
+      "prompt_time": "Hora del recordatorio",
+      "prompt_enable": "Activar recordatorio",
+      "prompt_later": "Ahora no",
+      "prompt_enabled": "Recordatorio fijado a las {}"
     },
     "settings": {
       "title": "Ajustes de notificaciones",
