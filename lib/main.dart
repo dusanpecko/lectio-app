@@ -35,7 +35,7 @@ import 'services/home_widget_service.dart';
 import 'services/lectio_audio_player.dart';
 import 'services/local_notifications_service.dart';
 import 'services/app_activity_service.dart';
-import 'services/notification_prompt_service.dart';
+import 'services/lectio_completion_service.dart';
 import 'services/umami_analytics_service.dart';
 import '../shared/app_spacing.dart';
 
@@ -337,7 +337,7 @@ class _FCMInitializerState extends State<FCMInitializer>
       AppActivityService.instance.recordOpen();
       AppActivityService.instance.hookAuthChanges();
       // 11.2.4: dohrané audio lectia kdekoľvek v appke → ponuka pripomienky
-      NotificationPromptService.instance.hookPlayer(
+      LectioCompletionService.instance.hookPlayer(
         NotificationController.instance.navigatorKey,
       );
       _logger.i('✅ UmamiAnalyticsService initialized (deferred)');
@@ -419,7 +419,7 @@ class _FCMInitializerState extends State<FCMInitializer>
       // Retencia (11.2.4): návrat do popredia = otvorenie (max 1× za deň)
       AppActivityService.instance.recordOpen();
       // Audio lectia dohralo na pozadí → ponuka pripomienky až teraz
-      NotificationPromptService.instance.onAppResumed();
+      LectioCompletionService.instance.onAppResumed();
 
       // Kontrola pending notifikácie keď aplikácia prejde do popredia
       NotificationController.instance.checkPendingNotification(mounted);

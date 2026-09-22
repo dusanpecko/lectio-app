@@ -1397,6 +1397,11 @@
       "message": "Nous ne pouvons offrir notre application gratuitement que grâce à la générosité de notre communauté. Rejoignez-nous et aidez-nous à poursuivre cette mission.",
       "tiers": "Ami · Bienfaiteur · Fondateur",
       "support_now": "Soutenez-nous",
+      "contextual_title": "Merci de prier avec nous",
+      "contextual_message": "Lectio est gratuite et sans publicité pour tous. Mais chaque jour a un coût : l'enregistrement de l'audio, les traductions dans d'autres langues et les serveurs. 3 € par mois financent une journée complète de lectio – texte, audio et traductions pour toutes les langues.",
+      "contextual_bonus": "En tant qu'Ami, vous recevez un badge dans votre profil et, une fois par an, un court rapport sur ce que nous avons accompli ensemble. L'application reste la même pour tous.",
+      "contextual_now": "Je veux soutenir",
+      "contextual_later": "Pas maintenant",
       "later": "Peut-être plus tard"
     }
   },

@@ -1,14 +1,11 @@
-import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart' show ProcessingState;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../widgets/notification_prompt_sheet.dart';
 import 'fcm_service.dart';
-import 'media_player_bus.dart';
 import 'umami_analytics_service.dart';
 
 /// Povolenie notifikácií v správnej chvíli (11.2.4).
@@ -42,42 +39,6 @@ class NotificationPromptService {
   bool _showing = false;
   bool _firedThisSession = false;
 
-  StreamSubscription? _playerSub;
-  GlobalKey<NavigatorState>? _navigatorKey;
-  bool _pendingAfterResume = false;
-
-  /// Globálne sledovanie prehrávača: dohrané kombinované audio lectia
-  /// KDEKOĽVEK v appke (karta na Home, mini prehrávač, po odchode z lectia,
-  /// zamknutý telefón) = dokončené lectio. Predtým to sledovala len otvorená
-  /// obrazovka lectia (Dušan 22. 9.: „keď si pustí lectio na home a dohrá?“).
-  void hookPlayer(GlobalKey<NavigatorState> navigatorKey) {
-    _navigatorKey = navigatorKey;
-    _playerSub ??= MediaPlayerBus.instance.playerStateStream.listen((st) {
-      if (st.processingState != ProcessingState.completed) return;
-      if (!(MediaPlayerBus.instance.currentId ?? '').startsWith('lectio_audio_')) return;
-      _fireFromPlayer();
-    });
-  }
-
-  /// Z main.dart pri návrate do popredia — ak audio dohralo na pozadí
-  /// (zamknutá obrazovka, iná appka), sheet ukážeme až teraz.
-  void onAppResumed() {
-    if (!_pendingAfterResume) return;
-    _pendingAfterResume = false;
-    Future.delayed(const Duration(milliseconds: 800), _fireFromPlayer);
-  }
-
-  void _fireFromPlayer() {
-    final ctx = _navigatorKey?.currentContext;
-    final inForeground =
-        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
-    if (ctx == null || !inForeground) {
-      _pendingAfterResume = true;
-      return;
-    }
-    onLectioFinished(ctx);
-  }
-
   /// Onboarding: ulož želaný čas bez systémového dialógu.
   Future<void> setPendingTime(TimeOfDay time) async {
     final prefs = await SharedPreferences.getInstance();
@@ -99,30 +60,30 @@ class NotificationPromptService {
 
   /// Zavolať po dokončení lectia (Actio / dohrané audio). Bezpečné volať
   /// opakovane — samo si rozhodne, či má zmysel niečo ukázať.
-  Future<void> onLectioFinished(BuildContext context) async {
-    if (_showing || _firedThisSession) return;
+  Future<bool> onLectioFinished(BuildContext context) async {
+    if (_showing || _firedThisSession) return false;
     _firedThisSession = true;
     try {
       final prefs = await SharedPreferences.getInstance();
-      if (prefs.getBool(_kDone) == true) return;
+      if (prefs.getBool(_kDone) == true) return false;
 
       // Už povolené (napr. cez nastavenia) → hotovo, viac sa nepýtať.
       if (await FcmService.instance.hasNotificationPermissions()) {
         await prefs.setBool(_kDone, true);
-        return;
+        return false;
       }
 
       final count = prefs.getInt(_kCount) ?? 0;
-      if (count >= _maxAttempts) return;
+      if (count >= _maxAttempts) return false;
       final last = prefs.getString(_kLastShown);
       if (last != null) {
         final lastDate = DateTime.tryParse(last);
         if (lastDate != null &&
             DateTime.now().difference(lastDate).inDays < _cooldownDays) {
-          return;
+          return false;
         }
       }
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
 
       await prefs.setInt(_kCount, count + 1);
       await prefs.setString(
@@ -132,14 +93,14 @@ class NotificationPromptService {
       _track('shown', extra: {'attempt': count + 1});
 
       final pending = await pendingTime();
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
       _showing = true;
       final result = await showNotificationPromptSheet(context, initialTime: pending);
       _showing = false;
 
       if (result == null) {
         _track('declined');
-        return;
+        return true;
       }
 
       // Systémový dialóg až teraz — používateľ vie, načo je.
@@ -150,7 +111,7 @@ class NotificationPromptService {
         if (blocked && context.mounted) {
           await _offerSystemSettings(context);
         }
-        return;
+        return true;
       }
 
       _track('accepted', extra: {'hour': result.hour, 'minute': result.minute});
@@ -172,9 +133,11 @@ class NotificationPromptService {
           ),
         );
       }
+      return true;
     } catch (e) {
       debugPrint('NotificationPrompt: $e');
       _showing = false;
+      return false;
     }
   }
 

@@ -12,7 +12,6 @@ import 'dart:async';
 
 
 import '../models/podcast_episode.dart';
-import '../services/app_engagement_service.dart';
 import '../services/audio_download_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/lectio_admin_service.dart';
@@ -26,7 +25,7 @@ import '../utils/route_observer.dart';
 import '../utils/scripture_reference.dart';
 import '../services/media_player_bus.dart';
 import '../services/umami_analytics_service.dart';
-import '../services/notification_prompt_service.dart';
+import '../services/lectio_completion_service.dart';
 import '../widgets/brand_loading.dart';
 import '../widgets/home_v2/daily_podcast_card.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
@@ -208,13 +207,8 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
       _loaded = true;
       _load();
       _checkAdmin();
-      // Engagement: hodnotenie (po 7 otvoreniach) / podpora (každé 10.) prompt.
-      // Volanie sa stratilo pri v2 redizajne (c5aeb2c) — obnovené.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          AppEngagementService.instance.onLectioScreenOpened(context);
-        }
-      });
+      // Hodnotenie a výzva na podporu už nie sú „pri otvorení“ — idú až po
+      // dokončení lectia cez LectioCompletionService (11.2.4).
     }
   }
 
@@ -727,7 +721,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
               setState(() => _currentPage = i);
               // Posledný krok (Actio) = dočítané lectio → ponuka rannej pripomienky
               if (i == slides.length - 1) {
-                NotificationPromptService.instance.onLectioFinished(context);
+                LectioCompletionService.instance.onLectioFinished(context);
               }
             },
             itemBuilder: (_, i) => slides[i].child,
@@ -783,7 +777,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
           onIndexChanged: (i) {
             lastIndex = i;
             if (i == _readerSteps.length - 1 && mounted) {
-              NotificationPromptService.instance.onLectioFinished(context);
+              LectioCompletionService.instance.onLectioFinished(context);
             }
           },
         ),

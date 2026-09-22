@@ -1397,6 +1397,11 @@
       "message": "Našu aplikáciu môžeme poskytovať bezplatne len vďaka štedrosti komunity. Pridajte sa k nám a pomôžte nám pokračovať v tejto službe.",
       "tiers": "Priateľ · Patrón · Zakladateľ",
       "support_now": "Chcem podporiť",
+      "contextual_title": "Ďakujeme, že sa modlíš s nami",
+      "contextual_message": "Lectio je zadarmo a bez reklám pre každého. Každý deň však stojí nahovorenie audia, preklady do ďalších jazykov a servery. 3 € mesačne zaplatia jeden celý deň lectia – text, audio aj preklady pre všetky jazyky.",
+      "contextual_bonus": "Ako Priateľ dostaneš označenie v profile a raz za rok krátky report, čo sme spolu dokázali. Appka ostáva rovnaká pre všetkých.",
+      "contextual_now": "Chcem podporiť",
+      "contextual_later": "Teraz nie",
       "later": "Možno neskôr"
     }
   },

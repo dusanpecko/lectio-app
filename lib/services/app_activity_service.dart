@@ -30,6 +30,11 @@ class AppActivityService {
   /// Bolo dnešné hlásenie odoslané s prihláseným účtom? Ak nie a používateľ sa
   /// prihlási, pošle sa znova — server doplní user_id k dnešnému dňu.
   static const _kLastDayAuthed = 'app_activity_last_day_authed';
+  /// Lokálne počítadlo RÔZNYCH dní, v ktorých bola appka otvorená (aj offline,
+  /// nezávisle od úspechu hlásenia). Používa ho kontextová výzva na podporu
+  /// a hodnotenie (11.2.4: „po 7 rôznych dňoch používania“).
+  static const _kDaysCount = 'app_activity_days_count';
+  static const _kDaysCountLastDay = 'app_activity_days_count_last_day';
 
   String? _appLanguage;
   bool _inFlight = false;
@@ -53,6 +58,12 @@ class AppActivityService {
   String get _baseUrl =>
       dotenv.env['NEXT_PUBLIC_BACKEND_URL'] ?? 'https://www.lectio.one';
 
+  /// Počet rôznych lokálnych dní, v ktorých bola appka otvorená (od 11.2.4).
+  Future<int> activeDaysCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_kDaysCount) ?? 0;
+  }
+
   /// Zavolať pri štarte a pri každom návrate do popredia. Idempotentné:
   /// druhé volanie v ten istý lokálny deň nič neposiela.
   Future<void> recordOpen() async {
@@ -63,6 +74,10 @@ class AppActivityService {
       final now = DateTime.now();
       final today =
           '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      if (prefs.getString(_kDaysCountLastDay) != today) {
+        await prefs.setString(_kDaysCountLastDay, today);
+        await prefs.setInt(_kDaysCount, (prefs.getInt(_kDaysCount) ?? 0) + 1);
+      }
       final hasSessionNow =
           Supabase.instance.client.auth.currentSession?.accessToken != null;
       if (prefs.getString(_kLastDay) == today) {

@@ -1397,6 +1397,11 @@
       "message": "Podemos ofrecer nuestra app de forma gratuita solo gracias a la generosidad de la comunidad. Únete a nosotros y ayúdanos a continuar con esta labor.",
       "tiers": "Amigo · Patrón · Fundador",
       "support_now": "Quiero apoyar",
+      "contextual_title": "Gracias por rezar con nosotros",
+      "contextual_message": "Lectio es gratuita y sin publicidad para todos. Pero cada día cuesta: grabar el audio, traducir a otros idiomas y mantener los servidores. 3 € al mes pagan un día completo de lectio: texto, audio y traducciones para todos los idiomas.",
+      "contextual_bonus": "Como Amigo recibes una insignia en tu perfil y, una vez al año, un breve informe de lo que logramos juntos. La app sigue siendo la misma para todos.",
+      "contextual_now": "Quiero apoyar",
+      "contextual_later": "Ahora no",
       "later": "Quizás más tarde"
     }
   },
