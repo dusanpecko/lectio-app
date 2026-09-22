@@ -34,6 +34,7 @@ import 'services/fcm_service.dart';
 import 'services/home_widget_service.dart';
 import 'services/lectio_audio_player.dart';
 import 'services/local_notifications_service.dart';
+import 'services/app_activity_service.dart';
 import 'services/umami_analytics_service.dart';
 import '../shared/app_spacing.dart';
 
@@ -241,6 +242,7 @@ class MyApp extends StatelessWidget {
 
     // Umami: jazyk appky (nie zariadenia) — build beží znova pri zmene locale.
     UmamiAnalyticsService().setAppLanguage(context.locale.languageCode);
+    AppActivityService.instance.setAppLanguage(context.locale.languageCode);
 
     return MaterialApp(
       navigatorKey: NotificationController.instance.navigatorKey,
@@ -331,6 +333,7 @@ class _FCMInitializerState extends State<FCMInitializer>
 
     try {
       await UmamiAnalyticsService().initialize();
+      AppActivityService.instance.recordOpen();
       _logger.i('✅ UmamiAnalyticsService initialized (deferred)');
     } catch (e) {
       _logger.e('❌ Error initializing UmamiAnalyticsService: $e');
@@ -407,6 +410,8 @@ class _FCMInitializerState extends State<FCMInitializer>
     if (state == AppLifecycleState.resumed) {
       _logger.i('✅ App RESUMED from background');
       NotificationController.instance.clearAppBadge();
+      // Retencia (11.2.4): návrat do popredia = otvorenie (max 1× za deň)
+      AppActivityService.instance.recordOpen();
 
       // Kontrola pending notifikácie keď aplikácia prejde do popredia
       NotificationController.instance.checkPendingNotification(mounted);
