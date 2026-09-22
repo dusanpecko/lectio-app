@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart' show ProcessingState;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../widgets/notification_prompt_sheet.dart';
 import 'fcm_service.dart';
+import 'media_player_bus.dart';
 import 'umami_analytics_service.dart';
 
 /// Povolenie notifikácií v správnej chvíli (11.2.4).
@@ -38,6 +41,42 @@ class NotificationPromptService {
 
   bool _showing = false;
   bool _firedThisSession = false;
+
+  StreamSubscription? _playerSub;
+  GlobalKey<NavigatorState>? _navigatorKey;
+  bool _pendingAfterResume = false;
+
+  /// Globálne sledovanie prehrávača: dohrané kombinované audio lectia
+  /// KDEKOĽVEK v appke (karta na Home, mini prehrávač, po odchode z lectia,
+  /// zamknutý telefón) = dokončené lectio. Predtým to sledovala len otvorená
+  /// obrazovka lectia (Dušan 22. 9.: „keď si pustí lectio na home a dohrá?“).
+  void hookPlayer(GlobalKey<NavigatorState> navigatorKey) {
+    _navigatorKey = navigatorKey;
+    _playerSub ??= MediaPlayerBus.instance.playerStateStream.listen((st) {
+      if (st.processingState != ProcessingState.completed) return;
+      if (!(MediaPlayerBus.instance.currentId ?? '').startsWith('lectio_audio_')) return;
+      _fireFromPlayer();
+    });
+  }
+
+  /// Z main.dart pri návrate do popredia — ak audio dohralo na pozadí
+  /// (zamknutá obrazovka, iná appka), sheet ukážeme až teraz.
+  void onAppResumed() {
+    if (!_pendingAfterResume) return;
+    _pendingAfterResume = false;
+    Future.delayed(const Duration(milliseconds: 800), _fireFromPlayer);
+  }
+
+  void _fireFromPlayer() {
+    final ctx = _navigatorKey?.currentContext;
+    final inForeground =
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    if (ctx == null || !inForeground) {
+      _pendingAfterResume = true;
+      return;
+    }
+    onLectioFinished(ctx);
+  }
 
   /// Onboarding: ulož želaný čas bez systémového dialógu.
   Future<void> setPendingTime(TimeOfDay time) async {

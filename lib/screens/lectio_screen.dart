@@ -10,7 +10,6 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'dart:async';
 
-import 'package:just_audio/just_audio.dart' show PlayerState, ProcessingState;
 
 import '../models/podcast_episode.dart';
 import '../services/app_engagement_service.dart';
@@ -89,30 +88,15 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
   bool _loaded = false;
   bool _isAdmin = false;
   bool _autoplayDone = false;
-  StreamSubscription<PlayerState>? _finishSub;
 
   String get _locale => widget.selectedLang ?? context.locale.languageCode;
 
   @override
   void dispose() {
-    _finishSub?.cancel();
     appRouteObserver.unsubscribe(this);
     WakelockPlus.disable();
     _pageController.dispose();
     super.dispose();
-  }
-
-  /// Dohrané kombinované audio DNEŠNÉHO dňa = dokončené lectio → ponuka
-  /// rannej pripomienky (NotificationPromptService si sám rozhodne, či ju ukáže).
-  void _listenForAudioFinish() {
-    _finishSub ??= MediaPlayerBus.instance.playerStateStream.listen((st) {
-      if (!mounted || st.processingState != ProcessingState.completed) return;
-      final bus = MediaPlayerBus.instance;
-      final dayId = DateFormat('yyyy-MM-dd').format(_date);
-      if (bus.currentContentId == dayId && (bus.currentId ?? '').startsWith('lectio_audio_')) {
-        NotificationPromptService.instance.onLectioFinished(context);
-      }
-    });
   }
 
   /// Z denného pushu: spusti kombinované audio dňa (rovnaké id/URL ako
@@ -415,7 +399,6 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
       _loading = false;
     });
     if (_data != null) {
-      _listenForAudioFinish();
       _maybeAutoplay(_data!);
     }
   }
