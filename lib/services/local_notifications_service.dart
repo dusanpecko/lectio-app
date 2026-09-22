@@ -337,19 +337,23 @@ class LocalNotificationsService {
       }
 
       // iOS nastavenia
+      // 11.2.4: NEpýtať povolenie pri inicializácii — iOS by ukázal systémový
+      // dialóg hneď na prvej obrazovke onboardingu (Dušan to zachytil 22. 9.).
+      // Povolenie pýta NotificationPromptService po prvom dokončenom lectiu
+      // (rovnaké iOS povolenie platí pre lokálne aj push notifikácie).
       const DarwinInitializationSettings initializationSettingsDarwin =
           DarwinInitializationSettings(
-            requestAlertPermission: true,
-            requestBadgePermission: true,
-            requestSoundPermission: true,
+            requestAlertPermission: false,
+            requestBadgePermission: false,
+            requestSoundPermission: false,
           );
 
       // macOS nastavenia
       const DarwinInitializationSettings initializationSettingsMacOS =
           DarwinInitializationSettings(
-            requestAlertPermission: true,
-            requestBadgePermission: true,
-            requestSoundPermission: true,
+            requestAlertPermission: false,
+            requestBadgePermission: false,
+            requestSoundPermission: false,
           );
 
       final InitializationSettings initializationSettings =
