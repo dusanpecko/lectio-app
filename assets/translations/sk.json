@@ -945,6 +945,10 @@
   "error_recording_prayer": "Chyba pri zaznamenaní modlitby",
   "intention_deleted": "Úmysel bol odstránený",
   "error_deleting_intention": "Chyba pri odstraňovaní úmyslu",
+  "lectio_autoplay_title": "Prehrať dnešné lectio?",
+  "lectio_autoplay_body": "Prišiel si z rannej pripomienky. Spustiť audio hneď, alebo si ho radšej prečítaš?",
+  "lectio_autoplay_play": "Prehrať",
+  "lectio_autoplay_skip": "Nie, budem čítať",
   "notifications": {
     "title": "Notifikácie",
     "permission": {

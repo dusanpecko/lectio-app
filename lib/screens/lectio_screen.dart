@@ -26,6 +26,7 @@ import '../utils/app_logger.dart';
 import '../utils/route_observer.dart';
 import '../utils/scripture_reference.dart';
 import '../services/media_player_bus.dart';
+import '../services/umami_analytics_service.dart';
 import '../services/notification_prompt_service.dart';
 import '../widgets/brand_loading.dart';
 import '../widgets/home_v2/daily_podcast_card.dart';
@@ -138,8 +139,16 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
     final mediaId = variant == 'podcast' ? 'podcast_${episode.id}' : 'lectio_audio_${episode.id}_$variant';
     final bus = MediaPlayerBus.instance;
     if (bus.isCurrent(mediaId) && bus.isPlaying) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Dušan (22. 9.): nechcené ťuknutie na notifikáciu by zbytočne spustilo
+    // audio → najprv krátka otázka, audio až po „Prehrať“.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+      final play = await _askAutoplay();
+      UmamiAnalyticsService().trackEvent(
+        'autoplay_prompt',
+        eventData: {'action': play == true ? 'play' : play == false ? 'skip' : 'dismiss'},
+      );
+      if (play != true || !mounted) return;
       bus.toggle(
         id: mediaId,
         url: url,
@@ -150,6 +159,60 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
         language: episode.lang,
       );
     });
+  }
+
+  /// Krátky sheet „Prehrať dnešné lectio?“ — true = prehrať, false = nie,
+  /// null = zavreté potiahnutím.
+  Future<bool?> _askAutoplay() {
+    return showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return SafeArea(
+          child: Container(
+            margin: const EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: HomeV2.card(ctx),
+              borderRadius: BorderRadius.circular(HomeV2.radius),
+              boxShadow: HomeV2.softShadowSm(ctx),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.headphones_rounded, color: theme.colorScheme.primary),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        tr('lectio_autoplay_title'),
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(tr('lectio_autoplay_body'), style: theme.textTheme.bodyMedium?.copyWith(height: 1.4)),
+                const SizedBox(height: AppSpacing.lg),
+                FilledButton.icon(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: Text(tr('lectio_autoplay_play')),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: Text(tr('lectio_autoplay_skip')),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override

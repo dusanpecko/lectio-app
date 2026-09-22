@@ -943,6 +943,10 @@
     "story_title": "Notre histoire",
     "story_subtitle": "Pourquoi lectio.one et notre vision"
   },
+  "lectio_autoplay_title": "Écouter la lectio du jour ?",
+  "lectio_autoplay_body": "Tu viens du rappel du matin. Lancer l'audio maintenant, ou préfères-tu lire ?",
+  "lectio_autoplay_play": "Écouter",
+  "lectio_autoplay_skip": "Non, je vais lire",
   "notifications": {
     "title": "Notifications",
     "permission": {
