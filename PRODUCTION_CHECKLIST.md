@@ -195,7 +195,7 @@
 - [x] **Notifikácie overené v produkcii 16.9.2026 (Dušan: „notifikácie fungujú“)** ✅ — SK denný push odišiel o 06:00 UTC = 8:00 (1 352 zariadení, 4 zlyhania), po hotfixe zón správny čas; polnočná skupina „0:00“ (Pixel + iPhone s časom 0:00) dostala lectio 15.9. namiesto 16.9. → oprava lokálneho dátumu (riadok vyššie, nasadená). Lokálne pripomienky aj push deep linky fungujú na Pixeli aj iPhone.
 - [ ] **Ostáva do vydania 11.2.2:** ~~test na Pixeli — ťuknutie na pripomienku modlitby, cold start z pushu, obrázok v Android notifikácii, anonymné prepínače, história (bodky, Otvoriť); iOS banner v popredí (iPhone)~~ ✅ 15.9.2026 (viď riadok vyššie); ~~push serverovej opravy zón + admin 401~~ ✅ nasadené 15.9. 23:25 (f0df598); ~~push opravy lokálneho dátumu~~ ✅ 189bbc5 nasadené; iOS build s opravou zón ✅ (simulátor aj reálny iPhone cez Xcode Profile); ~~ráno 16.9. skontrolovať SK push o 06:00 UTC~~ ✅ (1 352 ok); **16.9.: AAB + commit mobilu + push na main (Xcode Cloud → iOS archív) → submit do Play Console a App Store Connect.** Stav 12.9.2026: `flutter analyze` = 0, `flutter test` OK, `tsc` = 0, `eslint` = 0. ~~Bump `pubspec` na **11.2.2+6000008**~~ ✅ 14.9.2026 (iOS aj Android čítajú verziu z pubspecu cez FLUTTER_BUILD_NAME/NUMBER); backend deploy — **vo Verceli pridať env `NOTIFICATION_DELETE_CODE`** (inak mazanie v admine hlási „nie je nakonfigurované"). **iOS Notification Service Extension** pre natívny obrázok = samostatné kolo (11.3).
 
-### v11.2.3 — september 2026
+### v11.2.3 — september 2026 — ✅ vydané (iOS aj Android schválené 22. 9. 2026)
 
 > **Kontext (17.9.2026, Dušan):** po vydaní 11.2.2 najprv aktualizovať Flutter a balíčky, potom pokračovať drobnosťami; väčšie veci (toolchain Androidu, výmena balíkov) idú do 11.3.
 
