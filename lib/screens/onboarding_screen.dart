@@ -16,7 +16,7 @@ import '../shared/app_colors.dart';
 import '../shared/app_spacing.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
 import '../services/local_notifications_service.dart';
-import '../services/fcm_service.dart';
+import '../services/notification_prompt_service.dart';
 import '../providers/theme_provider.dart';
 import '../utils/app_logger.dart';
 
@@ -83,7 +83,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   _Slide1(isDark: isDark),
                   _Slide2(isDark: isDark),
                   _Slide3(isDark: isDark),
-                  _Slide4(isDark: isDark),
+                  _Slide4(isDark: isDark, onLater: _nextPage),
                   _Slide5(isDark: isDark, onComplete: widget.onComplete),
                 ],
               ),
@@ -994,7 +994,8 @@ class _ArcPainter extends CustomPainter {
 
 class _Slide4 extends StatefulWidget {
   final bool isDark;
-  const _Slide4({required this.isDark});
+  final VoidCallback onLater;
+  const _Slide4({required this.isDark, required this.onLater});
 
   @override
   State<_Slide4> createState() => _Slide4State();
@@ -1018,10 +1019,12 @@ class _Slide4State extends State<_Slide4> {
     try {
       await _localNotifications.initialize();
       final settings = await _localNotifications.getSettings();
+      final pending = await NotificationPromptService.instance.pendingTime();
       if (mounted) {
         setState(() {
-          _isEnabled = settings['prayer_reminder_enabled'] ?? false;
+          _isEnabled = pending != null || (settings['prayer_reminder_enabled'] ?? false);
           _selectedTime =
+              pending ??
               settings['prayer_reminder_time'] ??
               const TimeOfDay(hour: 7, minute: 0);
         });
@@ -1120,24 +1123,11 @@ class _Slide4State extends State<_Slide4> {
   Future<void> _enableReminder() async {
     setState(() => _isSaving = true);
     try {
-      final hasPermission = await FcmService.instance
-          .requestNotificationPermissions();
-      if (!hasPermission) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(tr('notifications.error.permission_denied')),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        setState(() => _isSaving = false);
-        return;
-      }
-
-      await _localNotifications.requestIgnoreBatteryOptimizations();
-      await _localNotifications.requestExactAlarmPermission();
-      await _localNotifications.setPrayerReminderTime(_selectedTime);
+      // 11.2.4: onboarding už NEpýta systémové povolenie — „Nepovoliť“ je na iOS
+      // navždy a starší používateľ sa z Nastavení nevráti. Uložíme len želaný
+      // čas; dialóg s povolením príde po prvom dokončenom lectiu
+      // (NotificationPromptService) s týmto časom predvyplneným.
+      await NotificationPromptService.instance.setPendingTime(_selectedTime);
 
       if (mounted) {
         setState(() {
@@ -1148,7 +1138,7 @@ class _Slide4State extends State<_Slide4> {
           SnackBar(
             content: Text(
               tr(
-                'notifications.local.prayer_enabled',
+                'onboarding.slide4_saved',
                 args: [
                   '${_selectedTime.hour}:${_selectedTime.minute.toString().padLeft(2, '0')}',
                 ],
@@ -1204,7 +1194,12 @@ class _Slide4State extends State<_Slide4> {
                     onPressed: null,
                     icon: const Icon(Icons.check_circle_rounded, size: 20),
                     label: Text(
-                      '${tr('onboarding.slide4_enable')} ✔',
+                      tr(
+                        'onboarding.slide4_enabled',
+                        args: [
+                          '${_selectedTime.hour}:${_selectedTime.minute.toString().padLeft(2, '0')}',
+                        ],
+                      ),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -1253,7 +1248,7 @@ class _Slide4State extends State<_Slide4> {
         ),
         const SizedBox(height: AppSpacing.md),
         TextButton(
-          onPressed: () {},
+          onPressed: widget.onLater,
           child: Text(
             tr('onboarding.slide4_later'),
             style: TextStyle(

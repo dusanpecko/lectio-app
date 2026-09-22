@@ -6,24 +6,25 @@ import 'home_v2/home_v2_tokens.dart';
 
 /// Sheet „Ranná pripomienka evanjelia“ (11.2.4). Vráti vybraný čas, keď
 /// používateľ ťukne „Zapnúť pripomienku“, inak null.
-Future<TimeOfDay?> showNotificationPromptSheet(BuildContext context) {
+Future<TimeOfDay?> showNotificationPromptSheet(BuildContext context, {TimeOfDay? initialTime}) {
   return showModalBottomSheet<TimeOfDay>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => const _NotificationPromptSheet(),
+    builder: (_) => _NotificationPromptSheet(initialTime: initialTime),
   );
 }
 
 class _NotificationPromptSheet extends StatefulWidget {
-  const _NotificationPromptSheet();
+  const _NotificationPromptSheet({this.initialTime});
+  final TimeOfDay? initialTime;
 
   @override
   State<_NotificationPromptSheet> createState() => _NotificationPromptSheetState();
 }
 
 class _NotificationPromptSheetState extends State<_NotificationPromptSheet> {
-  TimeOfDay _time = const TimeOfDay(hour: 7, minute: 0);
+  late TimeOfDay _time = widget.initialTime ?? const TimeOfDay(hour: 7, minute: 0);
 
   Future<void> _pickTime() async {
     final picked = await showTimePicker(

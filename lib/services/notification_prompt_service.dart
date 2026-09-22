@@ -29,11 +29,34 @@ class NotificationPromptService {
   static const _kCount = 'notif_prompt_count';
   static const _kLastShown = 'notif_prompt_last_shown'; // yyyy-MM-dd
   static const _kDone = 'notif_prompt_done'; // povolené / už netreba
+  /// Čas, ktorý si používateľ vybral v onboardingu (HH:mm) — onboarding už
+  /// systémový dialóg NEpýta (Dušan 22. 9.: „Nie“ je na iOS navždy), len si
+  /// zapamätá želanie; dialóg príde po prvom lectiu s týmto časom predvyplneným.
+  static const _kPendingTime = 'notif_prompt_pending_time';
   static const int _maxAttempts = 3;
   static const int _cooldownDays = 14;
 
   bool _showing = false;
   bool _firedThisSession = false;
+
+  /// Onboarding: ulož želaný čas bez systémového dialógu.
+  Future<void> setPendingTime(TimeOfDay time) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kPendingTime, '${time.hour}:${time.minute}');
+    _track('onboarding_time_saved', extra: {'hour': time.hour, 'minute': time.minute});
+  }
+
+  Future<TimeOfDay?> pendingTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kPendingTime);
+    if (raw == null) return null;
+    final parts = raw.split(':');
+    if (parts.length != 2) return null;
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null) return null;
+    return TimeOfDay(hour: h, minute: m);
+  }
 
   /// Zavolať po dokončení lectia (Actio / dohrané audio). Bezpečné volať
   /// opakovane — samo si rozhodne, či má zmysel niečo ukázať.
@@ -69,9 +92,10 @@ class NotificationPromptService {
       );
       _track('shown', extra: {'attempt': count + 1});
 
+      final pending = await pendingTime();
       if (!context.mounted) return;
       _showing = true;
-      final result = await showNotificationPromptSheet(context);
+      final result = await showNotificationPromptSheet(context, initialTime: pending);
       _showing = false;
 
       if (result == null) {
@@ -92,6 +116,7 @@ class NotificationPromptService {
 
       _track('accepted', extra: {'hour': result.hour, 'minute': result.minute});
       await prefs.setBool(_kDone, true);
+      await prefs.remove(_kPendingTime);
       // Token sa dá zaregistrovať až teraz (iOS APNs) + čas a zapnutý denný push.
       await FcmService.instance.refreshRegistration();
       await FcmService.instance.updatePreferredLectioTime(result);
