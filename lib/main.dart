@@ -334,6 +334,7 @@ class _FCMInitializerState extends State<FCMInitializer>
     try {
       await UmamiAnalyticsService().initialize();
       AppActivityService.instance.recordOpen();
+      AppActivityService.instance.hookAuthChanges();
       _logger.i('✅ UmamiAnalyticsService initialized (deferred)');
     } catch (e) {
       _logger.e('❌ Error initializing UmamiAnalyticsService: $e');

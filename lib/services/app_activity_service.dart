@@ -27,9 +27,25 @@ class AppActivityService {
 
   static const _kDeviceId = 'app_activity_device_id';
   static const _kLastDay = 'app_activity_last_day';
+  /// Bolo dnešné hlásenie odoslané s prihláseným účtom? Ak nie a používateľ sa
+  /// prihlási, pošle sa znova — server doplní user_id k dnešnému dňu.
+  static const _kLastDayAuthed = 'app_activity_last_day_authed';
 
   String? _appLanguage;
   bool _inFlight = false;
+  bool _authHooked = false;
+
+  /// Po prihlásení zopakuj dnešné hlásenie (anonymné → s účtom). Volať raz.
+  void hookAuthChanges() {
+    if (_authHooked) return;
+    _authHooked = true;
+    Supabase.instance.client.auth.onAuthStateChange.listen((state) {
+      if (state.event == AuthChangeEvent.signedIn ||
+          state.event == AuthChangeEvent.initialSession) {
+        recordOpen();
+      }
+    });
+  }
 
   /// Jazyk appky (volá main.dart pri zmene locale, rovnako ako pre Umami).
   void setAppLanguage(String langCode) => _appLanguage = langCode;
@@ -47,7 +63,13 @@ class AppActivityService {
       final now = DateTime.now();
       final today =
           '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-      if (prefs.getString(_kLastDay) == today) return;
+      final hasSessionNow =
+          Supabase.instance.client.auth.currentSession?.accessToken != null;
+      if (prefs.getString(_kLastDay) == today) {
+        // Dnes už nahlásené — znova len ak to bolo anonymne a teraz sme prihlásení.
+        final authedToday = prefs.getBool(_kLastDayAuthed) ?? false;
+        if (authedToday || !hasSessionNow) return;
+      }
 
       var deviceId = prefs.getString(_kDeviceId);
       if (deviceId == null || deviceId.isEmpty) {
@@ -105,6 +127,7 @@ class AppActivityService {
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         await prefs.setString(_kLastDay, today);
+        await prefs.setBool(_kLastDayAuthed, token != null);
       } else {
         debugPrint('AppActivity: /api/app/open → ${response.statusCode}');
       }

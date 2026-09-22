@@ -95,6 +95,7 @@ Future<void> bootstrap(AppBuilder builder) async {
     // Retencia (11.2.4): 1× za deň nahlásiť otvorenie — nečakáme na odpoveď;
     // odložené o 3 s, aby stihla nabehnúť Supabase session (prihlásený → user_id)
     Future<void>.delayed(const Duration(seconds: 3), AppActivityService.instance.recordOpen);
+    AppActivityService.instance.hookAuthChanges();
   } catch (e) {
     logger.e('❌ Analytics init failed: $e');
   }
