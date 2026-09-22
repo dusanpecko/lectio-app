@@ -944,7 +944,7 @@
     "story_subtitle": "Why lectio.one and where we're heading"
   },
   "lectio_autoplay_title": "Play today's lectio?",
-  "lectio_autoplay_body": "You came from the morning reminder. Start the audio now, or would you rather read?",
+  "lectio_autoplay_body": "You opened today's lectio from a notification. Listen to it, or would you rather read?",
   "lectio_autoplay_play": "Play",
   "lectio_autoplay_skip": "No, I'll read",
   "notifications": {

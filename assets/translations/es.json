@@ -944,7 +944,7 @@
     "story_subtitle": "Por qué lectio.one y hacia dónde vamos"
   },
   "lectio_autoplay_title": "¿Reproducir la lectio de hoy?",
-  "lectio_autoplay_body": "Has llegado desde el recordatorio matutino. ¿Iniciar el audio ahora o prefieres leer?",
+  "lectio_autoplay_body": "Has abierto la lectio de hoy desde una notificación. ¿Quieres escucharla o prefieres leer?",
   "lectio_autoplay_play": "Reproducir",
   "lectio_autoplay_skip": "No, prefiero leer",
   "notifications": {
