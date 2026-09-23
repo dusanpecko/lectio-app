@@ -75,113 +75,129 @@ class LectioStepCard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (text.trim().isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.sm,
-        AppSpacing.lg,
-        AppSpacing.sm,
-      ),
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: HomeV2.card(context),
-        borderRadius: BorderRadius.circular(HomeV2.radius),
-        boxShadow: HomeV2.softShadow(context),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Fixná hlavička: názov + referencia + play
-          Row(
+    // Ikony akcií sedia na hornom okraji karty — polkruh nad kartou, polkruh
+    // v nej (Dušan 23. 9.: v hlavičke ich bolo priveľa a názov sa lámal).
+    // Názov + referencia idú pod ikony na celú šírku.
+    final actions = <Widget>[
+      if (onReport != null) ReportButton(onTap: onReport!),
+      if (onExpand != null) ExpandButton(onTap: onExpand!),
+      _CopyButton(text: text),
+      if (audioUrl != null && audioUrl!.isNotEmpty)
+        StepPlayButton(
+          stepKey: stepKey,
+          url: audioUrl!,
+          title: title,
+          analyticsId: analyticsId,
+          language: language,
+          contentType: contentType,
+          artUri: artUri,
+        ),
+      if (_canAdmin)
+        AdminStepControls(
+          sourceId: sourceId!,
+          stepField: stepField!,
+          textField: textField!,
+          currentText: text,
+          title: title,
+          onTextSaved: onTextSaved,
+          onAudioRegenerated: onAudioRegenerated,
+        ),
+    ];
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          margin: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.sm + _actionOverlap,
+            AppSpacing.lg,
+            AppSpacing.sm,
+          ),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl,
+            _actionHalf + AppSpacing.sm,
+            AppSpacing.xl,
+            AppSpacing.xl,
+          ),
+          decoration: BoxDecoration(
+            color: HomeV2.card(context),
+            borderRadius: BorderRadius.circular(HomeV2.radius),
+            boxShadow: HomeV2.softShadow(context),
+          ),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.1,
-                        color: HomeV2.iconAccent(context),
-                      ),
-                    ),
-                    if (reference != null && reference!.trim().isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        reference!,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontStyle: FontStyle.italic,
-                          color: HomeV2.textMuted(context),
-                        ),
-                      ),
-                    ],
-                  ],
+              Text(
+                title.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.1,
+                  color: HomeV2.iconAccent(context),
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              if (onReport != null) ...[
-                ReportButton(onTap: onReport!),
-                const SizedBox(width: AppSpacing.sm),
-              ],
-              if (onExpand != null) ...[
-                ExpandButton(onTap: onExpand!),
-                const SizedBox(width: AppSpacing.sm),
-              ],
-              _CopyButton(text: text),
-              if (audioUrl != null && audioUrl!.isNotEmpty) ...[
-                const SizedBox(width: AppSpacing.sm),
-                StepPlayButton(
-                  stepKey: stepKey,
-                  url: audioUrl!,
-                  title: title,
-                  analyticsId: analyticsId,
-                  language: language,
-                  contentType: contentType,
-                  artUri: artUri,
-                ),
-              ],
-              if (_canAdmin) ...[
-                const SizedBox(width: AppSpacing.sm),
-                AdminStepControls(
-                  sourceId: sourceId!,
-                  stepField: stepField!,
-                  textField: textField!,
-                  currentText: text,
-                  title: title,
-                  onTextSaved: onTextSaved,
-                  onAudioRegenerated: onAudioRegenerated,
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          // Scrollovateľný text — vyplní zvyšok slidu. Ťuknutie naň otvorí
-          // fullscreen čítací režim (ak je dostupný).
-          Expanded(
-            child: SingleChildScrollView(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: onExpand,
-                child: Text(
-                  text,
+              if (reference != null && reference!.trim().isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  reference!,
                   style: TextStyle(
-                    fontSize: 16,
-                    height: 1.6,
-                    color: HomeV2.textDark(context),
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                    color: HomeV2.textMuted(context),
+                  ),
+                ),
+              ],
+              const SizedBox(height: AppSpacing.md),
+              // Scrollovateľný text — vyplní zvyšok slidu. Ťuknutie naň otvorí
+              // fullscreen čítací režim (ak je dostupný).
+              Expanded(
+                child: SingleChildScrollView(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onExpand,
+                    child: Text(
+                      text,
+                      style: TextStyle(
+                        fontSize: 16,
+                        height: 1.6,
+                        color: HomeV2.textDark(context),
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+        // Rad ikon: stred kruhu presne na hornom okraji karty.
+        Positioned(
+          top: AppSpacing.sm,
+          right: AppSpacing.lg + AppSpacing.md,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < actions.length; i++) ...[
+                if (i > 0) const SizedBox(width: AppSpacing.xs),
+                actions[i],
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
+
+/// Dotykový box ikony je 46 px, kruh 38 px → kruh začína 4 px pod okrajom boxu
+/// a jeho polovica (19 px) má trčať nad kartu.
+const double _actionHalf = 19;
+const double _actionOverlap = _actionHalf + 4;
+
+/// Plný podklad kruhu ikony: tint akcentu zmiešaný s farbou karty, aby kruh
+/// vyzeral rovnako nad kartou aj v nej (priesvitný by nad pozadím zmenil odtieň).
+Color actionCircleColor(BuildContext context, Color accent) =>
+    Color.alphaBlend(accent.withValues(alpha: 0.14), HomeV2.card(context));
 
 /// Okrúhle tlačidlo na skopírovanie textu kroku do schránky.
 class _CopyButton extends StatelessWidget {
@@ -217,7 +233,8 @@ class _CopyButton extends StatelessWidget {
             height: 38,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: accent.withValues(alpha: 0.12),
+              color: actionCircleColor(context, accent),
+              boxShadow: HomeV2.softShadowSm(context),
             ),
             child: Icon(Icons.copy_rounded, color: accent, size: 20),
           ),
@@ -251,7 +268,8 @@ class ReportButton extends StatelessWidget {
               height: 38,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: accent.withValues(alpha: 0.12),
+                color: actionCircleColor(context, accent),
+                boxShadow: HomeV2.softShadowSm(context),
               ),
               child: Icon(Icons.flag_outlined, color: accent, size: 18),
             ),
@@ -285,7 +303,8 @@ class ExpandButton extends StatelessWidget {
             height: 38,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: accent.withValues(alpha: 0.12),
+              color: actionCircleColor(context, accent),
+              boxShadow: HomeV2.softShadowSm(context),
             ),
             child: Icon(Icons.open_in_full_rounded, color: accent, size: 18),
           ),
@@ -460,7 +479,8 @@ class _AdminStepControlsState extends State<AdminStepControls> {
             height: 38,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: HomeV2.gold.withValues(alpha: 0.18),
+              color: actionCircleColor(context, HomeV2.gold),
+              boxShadow: HomeV2.softShadowSm(context),
             ),
             child: Icon(Icons.tune_rounded, color: HomeV2.gold, size: 20),
           ),
@@ -724,7 +744,8 @@ class StepPlayButton extends StatelessWidget {
                                   height: 38,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: accent.withValues(alpha: 0.12),
+                                    color: actionCircleColor(context, accent),
+                                    boxShadow: HomeV2.softShadowSm(context),
                                   ),
                                   child: Icon(
                                     isPlaying
