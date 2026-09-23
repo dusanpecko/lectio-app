@@ -74,9 +74,32 @@ class QuickActionsService {
         _typeIntention: 'quick_actions.intention'.tr(),
       };
 
+  /// Pri studenom štarte príde akcia skôr, než je hotová navigácia
+  /// (`navigatorKey.currentState == null`) — vtedy sa len zapamätá a vykoná
+  /// hneď, ako je obrazovka pripravená. Bez toho sa otvorila len úvodná
+  /// obrazovka (Android, 23. 9. 2026).
+  String? _pending;
+  int _drainTries = 0;
+
   void _handle(String type) {
+    _pending = type;
+    _drainTries = 0;
+    _drain();
+  }
+
+  void _drain() {
+    final type = _pending;
+    if (type == null) return;
     final nav = _navigatorKey?.currentState;
-    if (nav == null) return;
+    if (nav == null) {
+      if (_drainTries++ > 60) {
+        _pending = null; // ~15 s — appka sa zjavne nespustila, nedrž to večne
+        return;
+      }
+      Future.delayed(const Duration(milliseconds: 250), _drain);
+      return;
+    }
+    _pending = null;
     UmamiAnalyticsService().trackEvent('quick_action', eventData: {'type': type});
     switch (type) {
       case _typeLectio:
