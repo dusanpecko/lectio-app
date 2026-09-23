@@ -738,7 +738,21 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
   /// vyrobí syntetickú epizódu priamo z dát — aby sa prehrávač zobrazil aj bez
   /// vygenerovaného podcastu (napr. sviatky / jazyky bez podcast epizódy).
   PodcastEpisode? _audioEpisode(Map<String, dynamic> data) {
-    if (_episode != null) return _episode;
+    // Epizóda dňa musí patriť tomu istému lectio záznamu, ktorý zobrazujeme.
+    // 23. 9. 2026: stale epizóda (lang sk, ale lectio 417 = EN) vyhrala výber
+    // podľa dátumu a SK lectio hralo po anglicky. Pri nezhode ID epizódu
+    // ignorujeme a audio berieme priamo zo zobrazeného záznamu.
+    final ep = _episode;
+    if (ep != null) {
+      final dataId = data['id']?.toString();
+      final epSourceId = ep.lectioSourceId?.toString();
+      if (epSourceId == null || dataId == null || epSourceId == dataId) {
+        return ep;
+      }
+      appLogger.w(
+        '🎧 Epizóda dňa patrí inému lectiu ($epSourceId ≠ $dataId) — ignorujem',
+      );
+    }
 
     final long = (data['full_long_audio'] as String?)?.trim();
     final short = (data['full_short_audio'] as String?)?.trim();

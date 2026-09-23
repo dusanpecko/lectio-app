@@ -20,6 +20,11 @@ class PodcastEpisode {
   final String? fullLongAudio;
   final String? fullShortAudio;
 
+  /// ID lectio záznamu, ku ktorému epizóda patrí. Obrazovka lectia ho porovnáva
+  /// s ID zobrazeného záznamu — 23. 9. 2026 stale epizóda pre iný záznam (417 EN)
+  /// spôsobila anglické audio v slovenskom lectiu.
+  final int? lectioSourceId;
+
   const PodcastEpisode({
     required this.id,
     required this.lang,
@@ -32,6 +37,7 @@ class PodcastEpisode {
     this.coverImageUrl,
     this.fullLongAudio,
     this.fullShortAudio,
+    this.lectioSourceId,
   });
 
   factory PodcastEpisode.fromJson(Map<String, dynamic> json) {
@@ -47,6 +53,7 @@ class PodcastEpisode {
       coverImageUrl: json['cover_image_url'] as String?,
       fullLongAudio: json['full_long_audio'] as String?,
       fullShortAudio: json['full_short_audio'] as String?,
+      lectioSourceId: (json['lectio_source_id'] as num?)?.toInt(),
     );
   }
 
@@ -60,6 +67,7 @@ class PodcastEpisode {
         'publish_date': publishDate,
         'episode_number': episodeNumber,
         'cover_image_url': coverImageUrl,
+        'lectio_source_id': lectioSourceId,
       };
 
   /// Čistý názov bez biblickej súradnice.
