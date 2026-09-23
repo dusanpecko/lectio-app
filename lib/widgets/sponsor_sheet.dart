@@ -321,16 +321,21 @@ class _SponsorsAboutSectionState extends State<SponsorsAboutSection> {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            Wrap(
-              spacing: AppSpacing.md,
-              runSpacing: AppSpacing.md,
-              children: [
-                for (final s in _sponsors)
-                  SponsorLogoTile(
-                    sponsor: s,
-                    onTap: () => showSponsorSheet(context, s, source: 'about'),
-                  ),
-              ],
+            // Vodorovný posuv — pri desiatkach sponzorov by zoznam pod sebou
+            // natiahol obrazovku donekonečna (Dušan 23. 9.).
+            SizedBox(
+              height: 92,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.zero,
+                itemCount: _sponsors.length,
+                separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
+                itemBuilder: (_, i) => SponsorLogoTile(
+                  sponsor: _sponsors[i],
+                  onTap: () =>
+                      showSponsorSheet(context, _sponsors[i], source: 'about'),
+                ),
+              ),
             ),
           ],
         ),

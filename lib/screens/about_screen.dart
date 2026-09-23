@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../shared/app_spacing.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
+import '../services/app_share_service.dart';
 import '../widgets/sponsor_sheet.dart';
 import 'privacy_screen.dart';
 
@@ -196,10 +197,6 @@ class _AboutScreenState extends State<AboutScreen> {
               ),
             ),
             _section(
-              'about.supporters_title'.tr(),
-              Text('about.supporters_list'.tr(), style: _body(context)),
-            ),
-            _section(
               'about.privacy_title'.tr(),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,6 +284,16 @@ class _AboutScreenState extends State<AboutScreen> {
             child: _CircleButton(
               icon: Icons.arrow_back_rounded,
               onTap: () => Navigator.of(context).maybePop(),
+            ),
+          ),
+          // Zdieľanie aplikácie — na obrazovke „O aplikácii“ ho hľadá najviac ľudí
+          Positioned(
+            top: topPad + AppSpacing.sm,
+            right: AppSpacing.lg,
+            child: _CircleButton(
+              icon: Icons.ios_share_rounded,
+              onTap: () => AppShareService.instance
+                  .shareApp(context, source: 'about'),
             ),
           ),
           Positioned(

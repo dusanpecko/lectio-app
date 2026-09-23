@@ -314,9 +314,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _CircleButton(
-            icon: Icons.arrow_back_rounded,
-            onTap: () => Navigator.of(context).maybePop(),
+          Row(
+            children: [
+              _CircleButton(
+                icon: Icons.arrow_back_rounded,
+                onTap: () => Navigator.of(context).maybePop(),
+              ),
+              const Spacer(),
+              _CircleButton(
+                icon: Icons.ios_share_rounded,
+                onTap: () => AppShareService.instance
+                    .shareApp(context, source: 'settings_header'),
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(
@@ -1007,10 +1017,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             tr('privacy.info_section'),
           ),
           const SizedBox(height: AppSpacing.xs),
-          row(Icons.ios_share_rounded, tr('share_app.title'), () {
-            AppShareService.instance.shareApp(context, source: 'settings');
-          }),
-          Divider(height: 1, color: HomeV2.primary.withValues(alpha: 0.08)),
           row(Icons.info_outline_rounded, tr('about_title'), () {
             Navigator.push(
               context,

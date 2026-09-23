@@ -28,7 +28,10 @@ class AppShareService {
   /// Najprv nechá vybrať znenie pozvánky (3 varianty — Dušan 23. 9.), potom
   /// otvorí systémové zdieľanie. iOS popover sa umiestni podľa widgetu.
   Future<void> shareApp(BuildContext context, {String source = 'more_menu'}) async {
-    final variant = await showShareAppSheet(context);
+    final variant = await showShareAppSheet(
+      context,
+      linkPreview: shareUrl.replaceFirst('https://', ''),
+    );
     if (variant == null || !context.mounted) return;
 
     final box = context.findRenderObject() as RenderBox?;
