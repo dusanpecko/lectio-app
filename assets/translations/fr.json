@@ -1149,6 +1149,23 @@
   "register_for_exercise": "S'inscrire à l'exercice",
   "see_all": "Voir tout",
   "rosary_description": "Prière du Rosaire sous forme de Lectio divina",
+  "error_report": {
+    "title": "Signaler une erreur",
+    "tooltip": "Signaler une erreur",
+    "type_typo": "Faute de frappe",
+    "type_grammar": "Grammaire",
+    "type_meaning": "Sens / traduction",
+    "type_audio": "Audio défectueux",
+    "notes_label": "Qu'est-ce qui ne va pas ?",
+    "notes_hint": "Indiquez où se trouve l'erreur, p. ex. le mot ou la phrase.",
+    "notes_label_audio": "Remarque (facultatif)",
+    "notes_hint_audio": "P. ex. audio coupé, mauvaise prononciation…",
+    "corrected_label": "Quelle serait la bonne version ? (facultatif)",
+    "send": "Envoyer",
+    "need_text": "Écrivez brièvement ce qui ne va pas.",
+    "sent": "Merci, nous avons reçu le signalement et le corrigerons.",
+    "failed": "Envoi impossible. Réessayez plus tard."
+  },
   "feedback": {
     "menu_label": "Écrivez-nous",
     "title": "Retour",

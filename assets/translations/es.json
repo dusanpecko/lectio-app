@@ -1149,6 +1149,23 @@
   "register_for_exercise": "Inscribirme al ejercicio",
   "see_all": "Ver todo",
   "rosary_description": "Oración del rosario en formato Lectio divina",
+  "error_report": {
+    "title": "Informar de un error",
+    "tooltip": "Informar de un error",
+    "type_typo": "Errata",
+    "type_grammar": "Gramática",
+    "type_meaning": "Sentido / traducción",
+    "type_audio": "Audio mal grabado",
+    "notes_label": "¿Qué está mal?",
+    "notes_hint": "Indica dónde está el error, p. ej. la palabra o la frase.",
+    "notes_label_audio": "Nota (opcional)",
+    "notes_hint_audio": "P. ej. audio cortado, mala pronunciación…",
+    "corrected_label": "¿Cómo debería decir? (opcional)",
+    "send": "Enviar",
+    "need_text": "Escribe brevemente qué está mal.",
+    "sent": "Gracias, hemos recibido el aviso y lo corregiremos.",
+    "failed": "No se pudo enviar. Inténtalo más tarde."
+  },
   "feedback": {
     "menu_label": "Escríbenos",
     "title": "Comentarios",

@@ -1149,6 +1149,23 @@
   "register_for_exercise": "Register for Exercise",
   "see_all": "See All",
   "rosary_description": "Rosary prayer in Lectio divina form",
+  "error_report": {
+    "title": "Report an error",
+    "tooltip": "Report an error",
+    "type_typo": "Typo",
+    "type_grammar": "Grammar",
+    "type_meaning": "Meaning / translation",
+    "type_audio": "Bad audio",
+    "notes_label": "What is wrong?",
+    "notes_hint": "Tell us where the error is – e.g. the word or sentence.",
+    "notes_label_audio": "Note (optional)",
+    "notes_hint_audio": "E.g. audio cut off, wrong pronunciation…",
+    "corrected_label": "How should it read? (optional)",
+    "send": "Send",
+    "need_text": "Please write briefly what is wrong.",
+    "sent": "Thank you, we received the report and will fix it.",
+    "failed": "Could not send. Please try again later."
+  },
   "feedback": {
     "menu_label": "Write to Us",
     "title": "Feedback",

@@ -44,6 +44,9 @@ class LectioStepCard extends StatelessWidget {
   /// ťuknutím na text.
   final VoidCallback? onExpand;
 
+  /// Nahlásiť chybu (preklep / audio) — null = skryté.
+  final VoidCallback? onReport;
+
   const LectioStepCard({
     super.key,
     required this.stepKey,
@@ -62,6 +65,7 @@ class LectioStepCard extends StatelessWidget {
     this.onTextSaved,
     this.onAudioRegenerated,
     this.onExpand,
+    this.onReport,
   });
 
   bool get _canAdmin =>
@@ -119,6 +123,10 @@ class LectioStepCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
+              if (onReport != null) ...[
+                ReportButton(onTap: onReport!),
+                const SizedBox(width: AppSpacing.sm),
+              ],
               if (onExpand != null) ...[
                 ExpandButton(onTap: onExpand!),
                 const SizedBox(width: AppSpacing.sm),
@@ -212,6 +220,41 @@ class _CopyButton extends StatelessWidget {
               color: accent.withValues(alpha: 0.12),
             ),
             child: Icon(Icons.copy_rounded, color: accent, size: 20),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Okrúhle tlačidlo „Nahlásiť chybu“ (preklep, gramatika, zlé audio).
+class ReportButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const ReportButton({super.key, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = HomeV2.iconAccent(context);
+    return Tooltip(
+      message: 'error_report.tooltip'.tr(),
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: SizedBox(
+          width: 46,
+          height: 46,
+          child: Center(
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: accent.withValues(alpha: 0.12),
+              ),
+              child: Icon(Icons.flag_outlined, color: accent, size: 18),
+            ),
           ),
         ),
       ),

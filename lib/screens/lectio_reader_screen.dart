@@ -32,6 +32,9 @@ class LectioReaderStep {
   final void Function(String newText)? onTextSaved;
   final void Function(String newUrl)? onAudioRegenerated;
 
+  /// Nahlásiť chybu v tomto kroku (null = skryté).
+  final VoidCallback? onReport;
+
   const LectioReaderStep({
     required this.stepKey,
     required this.title,
@@ -49,6 +52,7 @@ class LectioReaderStep {
     this.textField,
     this.onTextSaved,
     this.onAudioRegenerated,
+    this.onReport,
   });
 
   bool get canAdmin =>
@@ -72,6 +76,7 @@ class LectioReaderStep {
         textField: textField,
         onTextSaved: onTextSaved,
         onAudioRegenerated: onAudioRegenerated,
+        onReport: onReport,
       );
 }
 
@@ -162,7 +167,18 @@ class _LectioReaderScreenState extends State<LectioReaderScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 48), // symetria k close tlačidlu
+              // Nahlásiť chybu v aktuálnom kroku (inak prázdne miesto pre symetriu)
+              if (_steps[_index].onReport != null)
+                IconButton(
+                  tooltip: 'error_report.tooltip'.tr(),
+                  icon: Icon(
+                    Icons.flag_outlined,
+                    color: HomeV2.textDark(context),
+                  ),
+                  onPressed: _steps[_index].onReport,
+                )
+              else
+                const SizedBox(width: 48), // symetria k close tlačidlu
             ],
           ),
           Expanded(

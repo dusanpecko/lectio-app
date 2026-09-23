@@ -19,6 +19,8 @@ import '../services/lectio_cache_service.dart';
 import '../services/lectio_data_service.dart';
 import '../services/podcast_service.dart';
 import '../services/supporter_service.dart';
+import '../services/error_report_service.dart';
+import '../widgets/error_report_sheet.dart';
 import '../shared/app_spacing.dart';
 import '../shared/date_limits_config.dart';
 import '../utils/app_logger.dart';
@@ -256,6 +258,36 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
         _offlineDaysPref = days;
       });
     }
+  }
+
+  /// Nahlásiť chybu v kroku (preklep / gramatika / význam / zlé audio) →
+  /// /api/report-error → admin „Správa chýb“ + push adminom.
+  Future<void> _reportError(String stepKey, String stepTitle, String stepText) async {
+    final data = _data;
+    final input = await showErrorReportSheet(
+      context,
+      stepTitle: stepTitle,
+      hasAudio: ((data?[stepKey] as String?) ?? '').isNotEmpty,
+    );
+    if (input == null || !mounted) return;
+    final ok = await ErrorReportService.instance.submit(
+      kind: input.kind,
+      lang: _locale,
+      stepKey: stepKey,
+      stepName: stepTitle,
+      lectioId: (data?['id'] as num?)?.toInt(),
+      lectioDate: DateFormat('yyyy-MM-dd').format(_date),
+      originalText: stepText.length > 1500 ? stepText.substring(0, 1500) : stepText,
+      correctedText: input.corrected,
+      notes: input.notes,
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(tr(ok ? 'error_report.sent' : 'error_report.failed')),
+        backgroundColor: ok ? Colors.green : Colors.red,
+      ),
+    );
   }
 
   /// Po uložení upraveného textu kroku — aktualizuj lokálne dáta + rebuild.
@@ -894,6 +926,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
           audioUrl: data['${_selectedBible}_audio'] as String?,
           analyticsId: dateId,
           language: _locale,
+          onReport: () => _reportError('${_selectedBible}_audio', bibleTitle, bibleText),
         ),
       );
       slides.add((
@@ -907,6 +940,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
           analyticsId: dateId,
           language: _locale,
           onExpand: () => _openReader(readerIndex),
+          onReport: () => _reportError('${_selectedBible}_audio', bibleTitle, bibleText),
         ),
       ));
     }
@@ -931,6 +965,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
           textField: textField,
           onTextSaved: (t) => _onStepTextSaved(textField, t),
           onAudioRegenerated: (url) => _onStepAudioRegenerated(audioField, url),
+          onReport: () => _reportError(audioField, tr(labelKey), text),
         ),
       );
       slides.add((
@@ -943,6 +978,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
           analyticsId: dateId,
           language: _locale,
           onExpand: () => _openReader(readerIndex),
+          onReport: () => _reportError(audioField, tr(labelKey), text),
           // Admin in-app editácia
           isAdmin: _isAdmin,
           sourceId: sourceId,

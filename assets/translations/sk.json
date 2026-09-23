@@ -1149,6 +1149,23 @@
   "gdpr_info_content": "Vaše osobné údaje budú spracované v súlade s GDPR za účelom organizácie duchovných cvičení. Údaje budú uchovávané po dobu nevyhnutnú na splnenie účelu spracovania.",
   "close": "Zavrieť",
   "register_for_exercise": "Prihlásiť sa na cvičenie",
+  "error_report": {
+    "title": "Nahlásiť chybu",
+    "tooltip": "Nahlásiť chybu",
+    "type_typo": "Preklep",
+    "type_grammar": "Gramatika",
+    "type_meaning": "Význam / preklad",
+    "type_audio": "Zle nahovorené audio",
+    "notes_label": "Čo je zle?",
+    "notes_hint": "Napíš, kde je chyba – napr. slovo alebo vetu.",
+    "notes_label_audio": "Poznámka (nepovinné)",
+    "notes_hint_audio": "Napr. audio je useknuté, zlá výslovnosť…",
+    "corrected_label": "Ako to má byť správne? (nepovinné)",
+    "send": "Odoslať",
+    "need_text": "Napíš aspoň krátko, čo je zle.",
+    "sent": "Ďakujeme, chybu sme dostali a opravíme ju.",
+    "failed": "Nepodarilo sa odoslať. Skús to neskôr."
+  },
   "feedback": {
     "menu_label": "Napíšte nám",
     "title": "Spätná väzba",
