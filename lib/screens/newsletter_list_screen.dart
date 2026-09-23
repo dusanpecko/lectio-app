@@ -1,4 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -36,24 +39,38 @@ class _NewsletterListScreenState extends State<NewsletterListScreen> {
       errorMessage = null;
     });
     try {
-      final supabase = Supabase.instance.client;
+      // 23. 9. 2026: čítame cez API, nie priamo z tabuľky. Server podľa
+      // prihlásenia pridá aj kampane určené podporovateľom alebo adresne
+      // tomuto človeku a správne prevedie kód jazyka (cs → cz, pt → pt-br).
       final locale = context.locale.languageCode;
+      final token = Supabase.instance.client.auth.currentSession?.accessToken;
+      final baseUrl =
+          dotenv.env['NEXT_PUBLIC_BACKEND_URL'] ?? 'https://www.lectio.one';
 
       appLogger.d('Fetching newsletters for lang=$locale');
 
-      final response = await supabase
-          .from('newsletter_campaigns')
-          .select(
-            'id, name, subject, html_content, sender_name, sent_at, created_at, language',
+      final res = await http
+          .get(
+            Uri.parse('$baseUrl/api/public/newsletters?lang=$locale&limit=50'),
+            headers: {
+              if (token != null && token.isNotEmpty)
+                'Authorization': 'Bearer $token',
+            },
           )
-          .eq('status', 'sent')
-          .eq('language', locale)
-          .order('sent_at', ascending: false)
-          .limit(50);
+          .timeout(const Duration(seconds: 12));
+
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        throw Exception('HTTP ${res.statusCode}');
+      }
+      final decoded = jsonDecode(res.body) as Map<String, dynamic>;
+      final list = (decoded['newsletters'] as List?) ?? const [];
 
       if (!mounted) return;
       setState(() {
-        newsletters = List<Map<String, dynamic>>.from(response);
+        newsletters = list
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
         isLoading = false;
       });
     } catch (e, stacktrace) {
