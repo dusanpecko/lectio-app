@@ -18,6 +18,7 @@ import 'package:lectio_divina/screens/rosary_category_screen.dart';
 import 'package:lectio_divina/screens/adoration_screen.dart';
 import 'package:lectio_divina/screens/novena_detail_screen.dart';
 import 'package:lectio_divina/services/lectio_data_service.dart';
+import 'package:lectio_divina/widgets/home_v2/home_v2_tokens.dart';
 import 'package:lectio_divina/services/novenas_service.dart';
 import 'package:lectio_divina/models/novena.dart';
 import 'package:lectio_divina/screens/settings_screen.dart';
@@ -95,6 +96,95 @@ class NotificationController {
         });
       }
     }
+  }
+
+  /// Popup so správou z pushu (`screen_params.popup_title` / `popup_body`).
+  void _maybeShowPopup(Map<String, dynamic>? params) {
+    final title = (params?['popup_title'] as String?)?.trim();
+    final body = (params?['popup_body'] as String?)?.trim();
+    if (title == null || title.isEmpty || body == null || body.isEmpty) return;
+    Future.delayed(const Duration(milliseconds: 700), () {
+      final ctx = navigatorKey.currentContext;
+      if (ctx == null || !ctx.mounted) return;
+      showModalBottomSheet<void>(
+        context: ctx,
+        backgroundColor: Colors.transparent,
+        builder: (sheetCtx) {
+          final theme = Theme.of(sheetCtx);
+          return SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(AppSpacing.md),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.md,
+                AppSpacing.lg,
+                AppSpacing.lg,
+              ),
+              decoration: BoxDecoration(
+                color: HomeV2.card(sheetCtx),
+                borderRadius: BorderRadius.circular(HomeV2.radius),
+                boxShadow: HomeV2.softShadow(sheetCtx),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: HomeV2.textMuted(sheetCtx).withValues(alpha: 0.35),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: HomeV2.gold.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+                        ),
+                        child: const Icon(Icons.favorite_rounded, color: HomeV2.gold),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: HomeV2.textDark(sheetCtx),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    body,
+                    style: TextStyle(fontSize: 15, height: 1.5, color: HomeV2.textDark(sheetCtx)),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  FilledButton(
+                    onPressed: () => Navigator.of(sheetCtx).pop(),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: HomeV2.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                    ),
+                    child: Text('close'.tr()),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    });
   }
 
   /// Naviguje na obrazovku podľa screen name z push notifikácie
@@ -217,6 +307,11 @@ class NotificationController {
         settings: RouteSettings(name: '/$screen'),
       ),
     );
+
+    // 11.2.4: push môže niesť správu, ktorá sa po otvorení cieľa ukáže ako popup
+    // (napr. „Ďakujeme, opravené“ z admin Správy chýb). Staršie appky
+    // parametre ignorujú a len otvoria cieľ.
+    _maybeShowPopup(params);
   }
 
   /// Kľúč parametra, pod ktorý sa zabalí jediná hodnota `screen_param`
