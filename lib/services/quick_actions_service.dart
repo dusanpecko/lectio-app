@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:quick_actions/quick_actions.dart';
@@ -38,25 +40,42 @@ class QuickActionsService {
   /// Po zmene jazyka appky prepíš názvy položiek.
   Future<void> refreshItems(String lang) async {
     if (_itemsLang == lang) return;
+    final titles = _titles();
+    // Pri prvom builde ešte nemusia byť načítané preklady — `tr()` vtedy vráti
+    // samotný kľúč a na ploche by svietilo „quick_actions.lectio“.
+    // Vtedy to skúsime znova po prvom vykreslení.
+    if (titles.values.any((t) => t.startsWith('quick_actions.'))) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => refreshItems(lang));
+      return;
+    }
     _itemsLang = lang;
+    // Ikony len na Androide: iOS berie `icon` ako template obrázok z asset
+    // katalógu a bez neho ukáže čistý text (v iOS menu je to bežné).
+    final androidIcons = Platform.isAndroid;
     await _quickActions.setShortcutItems(<ShortcutItem>[
       ShortcutItem(
         type: _typeLectio,
-        localizedTitle: 'quick_actions.lectio'.tr(),
-        icon: 'ic_shortcut_lectio',
+        localizedTitle: titles[_typeLectio]!,
+        icon: androidIcons ? 'ic_shortcut_lectio' : null,
       ),
       ShortcutItem(
         type: _typeAudio,
-        localizedTitle: 'quick_actions.audio'.tr(),
-        icon: 'ic_shortcut_audio',
+        localizedTitle: titles[_typeAudio]!,
+        icon: androidIcons ? 'ic_shortcut_audio' : null,
       ),
       ShortcutItem(
         type: _typeIntention,
-        localizedTitle: 'quick_actions.intention'.tr(),
-        icon: 'ic_shortcut_intention',
+        localizedTitle: titles[_typeIntention]!,
+        icon: androidIcons ? 'ic_shortcut_intention' : null,
       ),
     ]);
   }
+
+  Map<String, String> _titles() => {
+        _typeLectio: 'quick_actions.lectio'.tr(),
+        _typeAudio: 'quick_actions.audio'.tr(),
+        _typeIntention: 'quick_actions.intention'.tr(),
+      };
 
   void _handle(String type) {
     final nav = _navigatorKey?.currentState;
