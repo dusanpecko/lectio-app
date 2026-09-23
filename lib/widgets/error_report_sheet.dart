@@ -231,10 +231,18 @@ class _ErrorReportSheetState extends State<_ErrorReportSheet> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                Wrap(
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.sm,
-                  children: [for (final k in kinds) _kindPill(k)],
+                // Typy chyby v jednom rade, posúvateľné do strany (Dušan 23. 9.)
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  child: Row(
+                    children: [
+                      for (var i = 0; i < kinds.length; i++) ...[
+                        if (i > 0) const SizedBox(width: AppSpacing.sm),
+                        _kindPill(kinds[i]),
+                      ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 TextField(
