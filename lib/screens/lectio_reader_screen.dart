@@ -308,8 +308,12 @@ class _ReaderPage extends StatelessWidget {
             // Scrollovateľný čítací text — vyplní zvyšok karty.
             Expanded(
               child: SingleChildScrollView(
+                // Dlhý stisk na slovo → výber + systémové menu (kopírovať, zdieľať).
+                // Overené widget testom (test/widgets/selectable_text_longpress_test.dart)
+                // na Flutter 3.47.4 — bez červenej obrazovky.
                 child: step.isHtml
-                    ? Html(
+                    ? SelectionArea(
+                        child: Html(
                         data: step.text,
                         style: {
                           "body": Style(
@@ -324,8 +328,9 @@ class _ReaderPage extends StatelessWidget {
                             textAlign: TextAlign.justify,
                           ),
                         },
+                        ),
                       )
-                    : Text(
+                    : SelectableText(
                         step.text,
                         style: TextStyle(
                           fontSize: 18,

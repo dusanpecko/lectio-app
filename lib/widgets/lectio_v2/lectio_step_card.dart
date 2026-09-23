@@ -154,16 +154,15 @@ class LectioStepCard extends StatelessWidget {
               // fullscreen čítací režim (ak je dostupný).
               Expanded(
                 child: SingleChildScrollView(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
+                  // Ťuknutie otvorí čítačku, dlhý stisk vyberie slovo
+                  // (kopírovanie časti textu) — Dušan 23. 9.
+                  child: SelectableText(
+                    text,
                     onTap: onExpand,
-                    child: Text(
-                      text,
-                      style: TextStyle(
-                        fontSize: 16,
-                        height: 1.6,
-                        color: HomeV2.textDark(context),
-                      ),
+                    style: TextStyle(
+                      fontSize: 16,
+                      height: 1.6,
+                      color: HomeV2.textDark(context),
                     ),
                   ),
                 ),
