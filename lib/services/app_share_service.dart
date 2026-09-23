@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../widgets/share_app_sheet.dart';
 import 'umami_analytics_service.dart';
 
 /// Zdieľanie aplikácie (11.2.4) — v appke dovtedy nebolo, hoci odporúčanie
@@ -24,14 +25,21 @@ class AppShareService {
   static const shareUrl = 'https://onelink.to/7urysx';
 
 
-  /// Otvorí systémové zdieľanie s krátkym textom a odkazom.
-  /// [origin] je widget, z ktorého sa zdieľa — iOS podľa neho umiestni popover.
+  /// Najprv nechá vybrať znenie pozvánky (3 varianty — Dušan 23. 9.), potom
+  /// otvorí systémové zdieľanie. iOS popover sa umiestni podľa widgetu.
   Future<void> shareApp(BuildContext context, {String source = 'more_menu'}) async {
+    final variant = await showShareAppSheet(context);
+    if (variant == null || !context.mounted) return;
+
     final box = context.findRenderObject() as RenderBox?;
-    final text = '${'share_app.message'.tr()}\n\n$shareUrl';
+    final text = '${'share_app.v${variant}_text'.tr()}\n\n$shareUrl';
     UmamiAnalyticsService().trackEvent(
       'share_app',
-      eventData: {'source': source, 'language': context.locale.languageCode},
+      eventData: {
+        'source': source,
+        'variant': variant,
+        'language': context.locale.languageCode,
+      },
     );
     await SharePlus.instance.share(
       ShareParams(

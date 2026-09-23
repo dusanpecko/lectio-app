@@ -1169,7 +1169,13 @@
   "share_app": {
     "title": "Zdieľať aplikáciu",
     "subject": "Lectio Divina — modlitba s Božím slovom",
-    "message": "Každý deň sa modlím s aplikáciou Lectio Divina — evanjelium dňa, zamyslenie a audio. Je zadarmo a bez reklám. Skúste to tiež:"
+        "choose": "Vyberte, čo chcete poslať",
+    "v1_label": "CHVÍĽA BEZ HLUKU",
+    "v1_text": "Nie každá chvíľa pri mobile musí znamenať ďalší hluk. Táto môže patriť Božiemu slovu. Skús Lectio Divina – evanjelium dňa, zamyslenie aj audio. Zadarmo a bez reklám.",
+    "v2_label": "POZVANIE NA CHVÍĽU TICHA",
+    "v2_text": "Posielam ti pozvanie na chvíľu ticha. V aplikácii Lectio Divina nájdeš každý deň evanjelium, zamyslenie a audio, ktoré ti pomôžu zastaviť sa pri Božom slove. Je zadarmo a bez reklám.",
+    "v3_label": "OSOBNÉ ODPORÚČANIE",
+    "v3_text": "Chcem sa s tebou podeliť o aplikáciu Lectio Divina. Pomáha mi každý deň zastaviť sa pri Božom slove. Nájdeš v nej evanjelium dňa, zamyslenie aj audio. Je zadarmo a bez reklám. Skús ju:"
   },
   "feedback": {
     "menu_label": "Napíšte nám",

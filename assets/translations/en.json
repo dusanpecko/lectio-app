@@ -1169,7 +1169,13 @@
   "share_app": {
     "title": "Share the app",
     "subject": "Lectio Divina — praying with the Word of God",
-    "message": "I pray every day with the Lectio Divina app — the Gospel of the day, a reflection and audio. It is free and ad-free. Give it a try:"
+        "choose": "Choose what to send",
+    "v1_label": "A MOMENT WITHOUT NOISE",
+    "v1_text": "Not every moment on your phone has to be more noise. This one can belong to God's word. Try Lectio Divina – the Gospel of the day, a reflection and audio. Free and ad-free.",
+    "v2_label": "AN INVITATION TO SILENCE",
+    "v2_text": "I'm sending you an invitation to a moment of silence. In the Lectio Divina app you'll find the Gospel, a reflection and audio every day to help you pause with God's word. It's free and ad-free.",
+    "v3_label": "A PERSONAL RECOMMENDATION",
+    "v3_text": "I'd like to share the Lectio Divina app with you. It helps me pause with God's word every day. You'll find the Gospel of the day, a reflection and audio. It's free and ad-free. Give it a try:"
   },
   "feedback": {
     "menu_label": "Write to Us",

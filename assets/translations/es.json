@@ -1169,7 +1169,13 @@
   "share_app": {
     "title": "Compartir la aplicación",
     "subject": "Lectio Divina — orar con la Palabra de Dios",
-    "message": "Rezo cada día con la aplicación Lectio Divina: el Evangelio del día, una reflexión y audio. Es gratuita y sin publicidad. Pruébala tú también:"
+        "choose": "Elige qué quieres enviar",
+    "v1_label": "UN MOMENTO SIN RUIDO",
+    "v1_text": "No todos los momentos con el móvil tienen que ser más ruido. Este puede pertenecer a la Palabra de Dios. Prueba Lectio Divina: el Evangelio del día, una reflexión y audio. Gratis y sin publicidad.",
+    "v2_label": "INVITACIÓN AL SILENCIO",
+    "v2_text": "Te envío una invitación a un momento de silencio. En la aplicación Lectio Divina encontrarás cada día el Evangelio, una reflexión y audio que te ayudarán a detenerte ante la Palabra de Dios. Es gratuita y sin publicidad.",
+    "v3_label": "RECOMENDACIÓN PERSONAL",
+    "v3_text": "Quiero compartir contigo la aplicación Lectio Divina. Me ayuda a detenerme cada día ante la Palabra de Dios. Encontrarás el Evangelio del día, una reflexión y audio. Es gratuita y sin publicidad. Pruébala:"
   },
   "feedback": {
     "menu_label": "Escríbenos",

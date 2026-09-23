@@ -1169,7 +1169,13 @@
   "share_app": {
     "title": "Partager l'application",
     "subject": "Lectio Divina — prier avec la Parole de Dieu",
-    "message": "Je prie chaque jour avec l'application Lectio Divina : l'Évangile du jour, une méditation et l'audio. Elle est gratuite et sans publicité. Essayez-la vous aussi :"
+        "choose": "Choisissez ce que vous voulez envoyer",
+    "v1_label": "UN MOMENT SANS BRUIT",
+    "v1_text": "Tout moment passé sur son téléphone n'est pas forcément du bruit en plus. Celui-ci peut appartenir à la Parole de Dieu. Essayez Lectio Divina : l'Évangile du jour, une méditation et l'audio. Gratuit et sans publicité.",
+    "v2_label": "INVITATION AU SILENCE",
+    "v2_text": "Je vous envoie une invitation à un moment de silence. Dans l'application Lectio Divina, vous trouverez chaque jour l'Évangile, une méditation et l'audio pour vous arrêter auprès de la Parole de Dieu. Elle est gratuite et sans publicité.",
+    "v3_label": "RECOMMANDATION PERSONNELLE",
+    "v3_text": "Je voudrais partager avec vous l'application Lectio Divina. Elle m'aide à m'arrêter chaque jour auprès de la Parole de Dieu. Vous y trouverez l'Évangile du jour, une méditation et l'audio. Elle est gratuite et sans publicité. Essayez-la :"
   },
   "feedback": {
     "menu_label": "Écrivez-nous",
