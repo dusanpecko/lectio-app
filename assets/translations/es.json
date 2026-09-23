@@ -1408,12 +1408,18 @@
       "message": "Podemos ofrecer nuestra app de forma gratuita solo gracias a la generosidad de la comunidad. Únete a nosotros y ayúdanos a continuar con esta labor.",
       "tiers": "Amigo · Patrón · Fundador",
       "support_now": "Quiero apoyar",
+      "later": "Quizás más tarde",
       "contextual_title": "Gracias por rezar con nosotros",
-      "contextual_message": "Lectio es gratuita y sin publicidad para todos. Mantener el proyecto – audio, traducciones, servidores, revisiones y las personas que lo hacen posible – cuesta unos 54 € al día. Bastan 18 personas con 3 € al mes para cubrir un día de cada mes.",
-      "contextual_bonus": "Como colaborador tienes la lectio hasta 60 días atrás y 14 adelante, descarga sin conexión de 14 días, una insignia en tu perfil y un breve informe anual. A nadie se le quita nada; quienes apoyan solo reciben algo más.",
-      "contextual_now": "Quiero apoyar",
-      "contextual_later": "Ahora no",
-      "later": "Quizás más tarde"
+      "contextual_intro": "Lectio sigue siendo gratuita y sin publicidad para todos.",
+      "contextual_costs": "Pero cada día trae costes reales: audio, traducciones, servidores, revisiones y las personas que preparan Lectio. En total, unos 54 € al día.",
+      "contextual_math": "Cada 18 colaboradores con 3 € cubren cada mes los costes de un día completo de Lectio.",
+      "contextual_live": "Ahora mismo nos apoyan {} personas. En total se han reunido {} €, unos {} días de funcionamiento de Lectio.",
+      "contextual_live_supporters": "Ahora mismo nos apoyan {} personas.",
+      "contextual_bonus_title": "💙 Como colaborador recibes algo más:",
+      "contextual_bonus": "Lectio hasta 60 días atrás y 14 días adelante, descarga sin conexión de 14 días, una insignia en tu perfil y, una vez al año, un breve informe de lo que tu apoyo hizo posible.",
+      "contextual_outro": "Tu apoyo ayuda a que Lectio siga siendo gratuita y sin publicidad para todos.",
+      "contextual_now": "🤲 Quiero apoyar",
+      "contextual_later": "Ahora no"
     }
   },
   "survey": {

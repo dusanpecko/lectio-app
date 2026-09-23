@@ -1408,12 +1408,18 @@
       "message": "We can offer our app for free only thanks to the generosity of our community. Join us and help us continue this mission.",
       "tiers": "Friend · Patron · Founder",
       "support_now": "Support us",
+      "later": "Maybe later",
       "contextual_title": "Thank you for praying with us",
-      "contextual_message": "Lectio is free and ad-free for everyone. Running the project – audio, translations, servers, proofreading and the people behind it – costs about €54 a day. It takes just 18 people giving €3 a month to cover one day of every month.",
-      "contextual_bonus": "As a supporter you get lectio up to 60 days back and 14 days ahead, offline download for 14 days, a badge in your profile and a short yearly report. Nothing is taken from anyone; supporters simply get a little extra.",
-      "contextual_now": "I want to support",
-      "contextual_later": "Not now",
-      "later": "Maybe later"
+      "contextual_intro": "Lectio stays free and ad-free for everyone.",
+      "contextual_costs": "Yet every day brings real costs – audio, translations, servers, proofreading and the people who prepare Lectio. Together it is about €54 a day.",
+      "contextual_math": "Every 18 supporters giving €3 cover the costs of one full day of Lectio each month.",
+      "contextual_live": "Right now {} people support us. Together {} € has been raised, about {} days of running Lectio.",
+      "contextual_live_supporters": "Right now {} people support us.",
+      "contextual_bonus_title": "💙 As a supporter you get a little extra:",
+      "contextual_bonus": "Lectio up to 60 days back and 14 days ahead, offline download for 14 days, a badge in your profile and, once a year, a short report on what your support made possible.",
+      "contextual_outro": "Your support helps Lectio stay free and ad-free for everyone.",
+      "contextual_now": "🤲 I want to support",
+      "contextual_later": "Not now"
     }
   },
   "survey": {

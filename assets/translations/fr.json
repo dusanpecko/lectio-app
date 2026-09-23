@@ -1408,12 +1408,18 @@
       "message": "Nous ne pouvons offrir notre application gratuitement que grâce à la générosité de notre communauté. Rejoignez-nous et aidez-nous à poursuivre cette mission.",
       "tiers": "Ami · Bienfaiteur · Fondateur",
       "support_now": "Soutenez-nous",
+      "later": "Peut-être plus tard",
       "contextual_title": "Merci de prier avec nous",
-      "contextual_message": "Lectio est gratuite et sans publicité pour tous. Faire vivre le projet – audio, traductions, serveurs, relectures et les personnes qui s'en occupent – coûte environ 54 € par jour. Il suffit de 18 personnes donnant 3 € par mois pour couvrir une journée de chaque mois.",
-      "contextual_bonus": "En tant que soutien, vous avez la lectio jusqu'à 60 jours en arrière et 14 jours en avant, le téléchargement hors ligne sur 14 jours, un badge dans votre profil et un court rapport annuel. Rien n'est retiré à personne ; les soutiens reçoivent simplement un peu plus.",
-      "contextual_now": "Je veux soutenir",
-      "contextual_later": "Pas maintenant",
-      "later": "Peut-être plus tard"
+      "contextual_intro": "Lectio reste gratuite et sans publicité pour tous.",
+      "contextual_costs": "Mais chaque jour a un coût réel : l'audio, les traductions, les serveurs, les relectures et les personnes qui préparent Lectio. Au total, environ 54 € par jour.",
+      "contextual_math": "Chaque groupe de 18 soutiens à 3 € couvre chaque mois les frais d’une journée complète de Lectio.",
+      "contextual_live": "En ce moment, {} personnes nous soutiennent. Au total, {} € ont été réunis, soit environ {} jours de fonctionnement de Lectio.",
+      "contextual_live_supporters": "En ce moment, {} personnes nous soutiennent.",
+      "contextual_bonus_title": "💙 En tant que soutien, vous recevez un peu plus :",
+      "contextual_bonus": "Lectio jusqu'à 60 jours en arrière et 14 jours en avant, le téléchargement hors ligne sur 14 jours, un badge dans votre profil et, une fois par an, un court rapport sur ce que votre soutien a rendu possible.",
+      "contextual_outro": "Votre soutien aide Lectio à rester gratuite et sans publicité pour tous.",
+      "contextual_now": "🤲 Je veux soutenir",
+      "contextual_later": "Pas maintenant"
     }
   },
   "survey": {

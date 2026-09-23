@@ -1408,12 +1408,18 @@
       "message": "Našu aplikáciu môžeme poskytovať bezplatne len vďaka štedrosti komunity. Pridajte sa k nám a pomôžte nám pokračovať v tejto službe.",
       "tiers": "Priateľ · Patrón · Zakladateľ",
       "support_now": "Chcem podporiť",
+      "later": "Možno neskôr",
       "contextual_title": "Ďakujeme, že sa modlíš s nami",
-      "contextual_message": "Lectio je zadarmo a bez reklám pre každého. Chod projektu – audio, preklady, servery, korektúry aj ľudia, ktorí to robia – stojí asi 54 € na deň. Stačí 18 ľudí po 3 € mesačne a jeden deň v každom mesiaci je zaplatený.",
-      "contextual_bonus": "Ako podporovateľ máš lectio až 60 dní dozadu a 14 dopredu, offline sťahovanie na 14 dní, označenie v profile a raz za rok krátky report. Nikomu nič neuberáme, podporovatelia dostávajú len niečo naviac.",
-      "contextual_now": "Chcem podporiť",
-      "contextual_later": "Teraz nie",
-      "later": "Možno neskôr"
+      "contextual_intro": "Lectio zostáva zadarmo a bez reklám pre každého.",
+      "contextual_costs": "Každý deň však prináša aj konkrétne náklady – audio, preklady, servery, korektúry a ľudí, ktorí Lectio pripravujú. Spolu je to približne 54 € denne.",
+      "contextual_math": "Každých 18 podporovateľov po 3 € nám každý mesiac pokryje náklady na jeden celý deň Lectia.",
+      "contextual_live": "Aktuálne nás podporuje {} ľudí. Spolu sa vyzbieralo {} €, to je približne {} dní chodu Lectia.",
+      "contextual_live_supporters": "Aktuálne nás podporuje {} ľudí.",
+      "contextual_bonus_title": "💙 Ako podporovateľ dostávaš niečo navyše:",
+      "contextual_bonus": "Lectio až 60 dní dozadu a 14 dní dopredu, offline stiahnutie na 14 dní, označenie v profile a raz za rok krátky report o tom, čo sa aj vďaka tvojej podpore podarilo.",
+      "contextual_outro": "Podpora nám pomáha, aby Lectio mohlo zostať zadarmo a bez reklám pre všetkých.",
+      "contextual_now": "🤲 Chcem podporiť",
+      "contextual_later": "Teraz nie"
     }
   },
   "survey": {
