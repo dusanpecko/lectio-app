@@ -35,6 +35,7 @@ import 'services/home_widget_service.dart';
 import 'services/lectio_audio_player.dart';
 import 'services/local_notifications_service.dart';
 import 'services/app_activity_service.dart';
+import 'services/supporter_service.dart';
 import 'services/lectio_completion_service.dart';
 import 'services/umami_analytics_service.dart';
 import '../shared/app_spacing.dart';
@@ -336,6 +337,7 @@ class _FCMInitializerState extends State<FCMInitializer>
       await UmamiAnalyticsService().initialize();
       AppActivityService.instance.recordOpen();
       AppActivityService.instance.hookAuthChanges();
+      SupporterService.instance.hookAuthChanges();
       // 11.2.4: dohrané audio lectia kdekoľvek v appke → ponuka pripomienky
       LectioCompletionService.instance.hookPlayer(
         NotificationController.instance.navigatorKey,

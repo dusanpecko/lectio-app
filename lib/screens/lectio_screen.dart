@@ -18,6 +18,7 @@ import '../services/lectio_admin_service.dart';
 import '../services/lectio_cache_service.dart';
 import '../services/lectio_data_service.dart';
 import '../services/podcast_service.dart';
+import '../services/supporter_service.dart';
 import '../shared/app_spacing.dart';
 import '../shared/date_limits_config.dart';
 import '../utils/app_logger.dart';
@@ -79,13 +80,19 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
   /// Textové kroky pre fullscreen čítačku (Biblia + Lectio…Actio), bez poznámok.
   List<LectioReaderStep> _readerSteps = [];
 
-  static const int _offlineDays = 7;
+  /// Offline sťahovanie: 7 dní pre všetkých; podporovateľ si môže v Nastaveniach
+  /// zvoliť 30 (bonus navyše, default ostáva 7 — 30 dní audia je veľa miesta).
+  static const int _offlineDaysMax = 30;
+  int _offlineDaysPref = 7;
+  int get _offlineDays =>
+      (_isSupporter && _offlineDaysPref == 30) ? 30 : 7;
   bool _isDownloading = false;
   double _downloadProgress = 0;
   bool _isDownloaded = false;
 
   bool _loaded = false;
   bool _isAdmin = false;
+  bool _isSupporter = false;
   bool _autoplayDone = false;
 
   String get _locale => widget.selectedLang ?? context.locale.languageCode;
@@ -207,6 +214,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
       _loaded = true;
       _load();
       _checkAdmin();
+      _loadSupporter();
       // Hodnotenie a výzva na podporu už nie sú „pri otvorení“ — idú až po
       // dokončení lectia cez LectioCompletionService (11.2.4).
     }
@@ -233,6 +241,20 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
   Future<void> _checkAdmin() async {
     final admin = await LectioAdminService.instance.isAdmin();
     if (mounted && admin) setState(() => _isAdmin = admin);
+  }
+
+  /// Podporovateľ: širšie dátumové okno (60/14) a voľba offline 7/30 dní.
+  Future<void> _loadSupporter() async {
+    final prefs = await SharedPreferences.getInstance();
+    final days = prefs.getInt('lectio_offline_days') == 30 ? 30 : 7;
+    final supporter = await SupporterService.instance.isActiveSupporter();
+    if (!mounted) return;
+    if (supporter != _isSupporter || days != _offlineDaysPref) {
+      setState(() {
+        _isSupporter = supporter;
+        _offlineDaysPref = days;
+      });
+    }
   }
 
   /// Po uložení upraveného textu kroku — aktualizuj lokálne dáta + rebuild.
@@ -412,8 +434,12 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
   }
 
   // Admin nemá obmedzenie pohybu po dátumoch (môže do minulosti aj budúcnosti).
-  bool get _canPrev => _isAdmin || DateLimitsConfig.canGoToPreviousDay(_date);
-  bool get _canNext => _isAdmin || DateLimitsConfig.canGoToNextDay(_date);
+  bool get _canPrev =>
+      _isAdmin ||
+      DateLimitsConfig.canGoToPreviousDay(_date, isSupporter: _isSupporter);
+  bool get _canNext =>
+      _isAdmin ||
+      DateLimitsConfig.canGoToNextDay(_date, isSupporter: _isSupporter);
 
   void _previousDay() {
     if (!_canPrev) return;
@@ -427,8 +453,12 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
 
   Future<void> _showDatePicker() async {
     // Admin: bez obmedzenia (široký rozsah); bežný používateľ: limity.
-    final firstDate = _isAdmin ? DateTime(2000) : DateLimitsConfig.getMinDate();
-    final lastDate = _isAdmin ? DateTime(2100) : DateLimitsConfig.getMaxDate();
+    final firstDate = _isAdmin
+        ? DateTime(2000)
+        : DateLimitsConfig.getMinDate(isSupporter: _isSupporter);
+    final lastDate = _isAdmin
+        ? DateTime(2100)
+        : DateLimitsConfig.getMaxDate(isSupporter: _isSupporter);
     // initialDate MUSÍ byť v [firstDate, lastDate], inak sa picker v release
     // builde (vypnuté asserty) na Androide správa chybne (nedá sa posúvať).
     var initialDate = _date;
@@ -448,6 +478,30 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
 
   Future<void> _downloadOffline() async {
     if (_isDownloading || _isDownloaded || _data == null) return;
+    if (_offlineDays >= 30) {
+      // 30 dní audia = veľa miesta → vedomé rozhodnutie s odhadom veľkosti
+      // (~40 MB/deň: 5 krokov + 3 biblie + dlhé a krátke celé audio).
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(tr('offline.download_confirm_title')),
+          content: Text(
+            tr('offline.download_confirm_body', args: ['${_offlineDays * 40}']),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(tr('cancel')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(tr('offline.download_confirm_ok')),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+    }
     setState(() {
       _isDownloading = true;
       _downloadProgress = 0;
@@ -625,7 +679,8 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
   }
 
   Future<void> _removeOffline() async {
-    for (int i = 0; i < _offlineDays; i++) {
+    // Maž celé možné okno — používateľ mohol stiahnuť 30 a potom prepnúť na 7.
+    for (int i = 0; i < _offlineDaysMax; i++) {
       final dateStr = DateFormat(
         'yyyy-MM-dd',
       ).format(_date.add(Duration(days: i)));
@@ -1349,8 +1404,8 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
       subtitle = '${(_downloadProgress * 100).round()} %';
     } else {
       leading = Icon(Icons.download_rounded, color: accent, size: 24);
-      title = tr('offline.download_7_days');
-      subtitle = tr('offline.download_description');
+      title = tr('offline.download_days', args: ['$_offlineDays']);
+      subtitle = tr('offline.download_description_days', args: ['$_offlineDays']);
     }
 
     return Container(

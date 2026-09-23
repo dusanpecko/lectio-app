@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../utils/app_logger.dart';
+import 'supporter_service.dart';
 
 /// Súhrn profilu pre header — avatar + úroveň podpory.
 class ProfileSummary {
@@ -45,24 +46,10 @@ class SupportService {
       appLogger.d('Support: avatar load skipped: $e');
     }
 
-    try {
-      // Podporovateľ = aktívne predplatné, ktoré EŠTE neskončilo.
-      // Bez kontroly current_period_end by zlatý prstenec ostal aj po vypršaní
-      // (napr. zrušené cancel_at_period_end alebo nedobehnutý renewal webhook).
-      final nowIso = DateTime.now().toUtc().toIso8601String();
-      final sub = await _supabase
-          .from('subscriptions')
-          .select('tier, status, current_period_end')
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .gte('current_period_end', nowIso)
-          .order('current_period_end', ascending: false)
-          .limit(1)
-          .maybeSingle();
-      tier = sub?['tier'] as String?;
-    } catch (e) {
-      appLogger.d('Support: subscription load skipped: $e');
-    }
+    // Jediný zdroj pravdy „je podporovateľ?“ — SupporterService (kontroluje aj
+    // current_period_end; ručné programy z admina sú tiež v `subscriptions`).
+    // force: Home sa načítava po štarte / návrate — nech je prstenec vždy čerstvý.
+    tier = (await SupporterService.instance.status(force: true)).tier;
 
     return ProfileSummary(avatarUrl: avatarUrl, supportTier: tier);
   }

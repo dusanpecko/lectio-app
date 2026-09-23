@@ -659,8 +659,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _openDatePicker() async {
     // Admin: bez obmedzenia (široký rozsah); bežný používateľ: limity.
-    final firstDate = _isAdmin ? DateTime(2000) : DateLimitsConfig.getMinDate();
-    final lastDate = _isAdmin ? DateTime(2100) : DateLimitsConfig.getMaxDate();
+    final firstDate = _isAdmin
+        ? DateTime(2000)
+        : DateLimitsConfig.getMinDate(isSupporter: _isSupporter);
+    final lastDate = _isAdmin
+        ? DateTime(2100)
+        : DateLimitsConfig.getMaxDate(isSupporter: _isSupporter);
     // initialDate MUSÍ byť v [firstDate, lastDate], inak sa picker v release
     // builde na Androide správa chybne (nedá sa posúvať).
     var initialDate = _selectedDate;

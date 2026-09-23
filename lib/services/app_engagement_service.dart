@@ -4,7 +4,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../screens/donation_screen.dart';
@@ -13,6 +12,7 @@ import '../shared/app_colors.dart';
 import '../shared/app_spacing.dart';
 import '../utils/app_logger.dart';
 import 'app_activity_service.dart';
+import 'supporter_service.dart';
 import 'umami_analytics_service.dart';
 
 /// Engagement po DOKONČENÍ lectia (11.2.4) — nie pri otvorení obrazovky.
@@ -67,16 +67,6 @@ class AppEngagementService {
 
   // TESTING FLAG — vždy zobrazí rating prompt (ignoruje cooldown a has_rated)
   static const bool _testingAlwaysShowRating = false;
-
-  /// Supporter tiers - ak má user aktívne predplatné, nezobrazí sa výzva
-  static const List<String> _supporterTiers = [
-    'friend',
-    'friend_plus',
-    'patron_mini',
-    'patron_plus',
-    'patron',
-    'founder',
-  ];
 
   bool _showing = false;
 
@@ -409,33 +399,10 @@ class AppEngagementService {
     return true;
   }
 
-  /// Skontroluje či má user aktívne predplatné na supporter tier-e
-  Future<bool> _isActiveSupporter() async {
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return false;
-
-      final data = await Supabase.instance.client
-          .from('subscriptions')
-          .select('tier, status')
-          .eq('user_id', user.id)
-          .eq('status', 'active');
-
-      if ((data as List).isEmpty) return false;
-
-      for (final sub in data) {
-        final tier = sub['tier'] as String?;
-        if (tier != null && _supporterTiers.contains(tier.toLowerCase())) {
-          return true;
-        }
-      }
-
-      return false;
-    } catch (e) {
-      _logger.e('Error checking supporter status: $e');
-      return false;
-    }
-  }
+  /// Aktívny podporovateľ (jediný zdroj pravdy: SupporterService — kontroluje
+  /// aj current_period_end, takže prepadnuté predplatné výzvu nepotlačí).
+  Future<bool> _isActiveSupporter() =>
+      SupporterService.instance.isActiveSupporter();
 
   /// Kontextová výzva na podporu (sheet) — po dopočúvaní/dočítaní lectia.
   Future<void> _showSupportPrompt(

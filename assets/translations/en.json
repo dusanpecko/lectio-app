@@ -36,6 +36,10 @@
     "connect": "Connect",
     "download_title": "Download offline data",
     "download_7_days": "Download for 7 days",
+    "download_description_days": "Download Lectio Divina for the next {} days to use it without internet.",
+    "download_confirm_title": "Download 30 days?",
+    "download_confirm_body": "Texts and audio for 30 days take about {} MB. It will take a while, best on Wi-Fi.",
+    "download_confirm_ok": "Download",
     "download_progress": "Downloading data...",
     "download_success": "Data downloaded successfully",
     "download_error": "Download error",
@@ -1078,6 +1082,13 @@
       "french": "French"
     },
     "theme_changed": "Theme has been changed. Restart the app for full effect.",
+    "offline": {
+      "title": "Offline download",
+      "days_7": "7 days",
+      "days_7_desc": "Default. Texts and audio for the week ahead.",
+      "days_30": "30 days",
+      "days_30_desc": "For supporters. About 1.2 GB, download on Wi-Fi."
+    },
     "lectio_audio": {
       "title": "Lectio audio",
       "long": "Long – with music",
@@ -1399,7 +1410,7 @@
       "support_now": "Support us",
       "contextual_title": "Thank you for praying with us",
       "contextual_message": "Lectio is free and ad-free for everyone. Yet every day costs: recording the audio, translating into other languages and running the servers. €3 a month pays for one full day of lectio – text, audio and translations for all languages.",
-      "contextual_bonus": "As a Friend you get a badge in your profile and, once a year, a short report on what we achieved together. The app stays the same for everyone.",
+      "contextual_bonus": "As a supporter you get lectio up to 60 days back and 14 days ahead, offline download for 30 days, a badge in your profile and a short yearly report. Nothing is taken from anyone; supporters simply get a little extra.",
       "contextual_now": "I want to support",
       "contextual_later": "Not now",
       "later": "Maybe later"

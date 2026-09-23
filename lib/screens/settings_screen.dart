@@ -14,6 +14,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../services/supporter_service.dart';
 import '../shared/app_spacing.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
 
@@ -33,6 +34,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// Režim prehrávania Lectio audia: 'long' (celé s hudbou, default),
   /// 'short' (celé bez hudby) alebo 'steps' (po krokoch).
   String _lectioAudioMode = 'long';
+
+  /// Offline sťahovanie: 7 dní default; podporovateľ môže zvoliť 30 (bonus navyše).
+  int _offlineDays = 7;
+  bool _isSupporter = false;
 
   @override
   void initState() {
@@ -102,12 +107,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final keepOn = prefs.getBool('keep_screen_on') ?? true;
     final savedAudioMode = prefs.getString('lectio_audio_mode');
     final audioMode = savedAudioMode == 'short' ? 'short' : 'long';
+    final offlineDays = prefs.getInt('lectio_offline_days') == 30 ? 30 : 7;
+    final supporter = await SupporterService.instance.isActiveSupporter();
 
     if (!mounted) return;
     setState(() {
       _selectedBible = bible;
       _keepScreenOn = keepOn;
       _lectioAudioMode = audioMode;
+      _offlineDays = offlineDays;
+      _isSupporter = supporter;
       _isLoadingBible = false;
     });
   }
@@ -117,6 +126,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _lectioAudioMode = mode);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('lectio_audio_mode', mode);
+  }
+
+  Future<void> _onOfflineDaysChanged(int? days) async {
+    if (days == null) return;
+    setState(() => _offlineDays = days);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('lectio_offline_days', days);
   }
 
   Future<void> _setKeepScreenOn(bool value) async {
@@ -249,6 +265,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: AppSpacing.md),
                   _buildLectioAudioCard(),
                   const SizedBox(height: AppSpacing.md),
+                  if (_isSupporter) ...[
+                    _buildOfflineCard(),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
                   _buildLanguageCard(themeProvider),
                   const SizedBox(height: AppSpacing.md),
                   _buildFontCard(themeProvider),
@@ -591,6 +611,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   tr('settings_screen.lectio_audio.short'),
                   tr('settings_screen.lectio_audio.short_desc'),
                   'short',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Offline (len podporovatelia) ─────────────────────────────────────────
+  Widget _buildOfflineCard() {
+    Widget tile(IconData icon, String title, String desc, int value) {
+      return RadioListTile<int>(
+        contentPadding: EdgeInsets.zero,
+        activeColor: HomeV2.primary,
+        title: Row(
+          children: [
+            Icon(icon, size: 20, color: HomeV2.textMuted(context)),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: HomeV2.textDark(context),
+                ),
+              ),
+            ),
+          ],
+        ),
+        subtitle: Text(
+          desc,
+          style: TextStyle(color: HomeV2.textMuted(context), fontSize: 12.5),
+        ),
+        value: value,
+      );
+    }
+
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader(
+            Icons.download_for_offline_rounded,
+            tr('settings_screen.offline.title'),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          RadioGroup<int>(
+            groupValue: _offlineDays,
+            onChanged: (value) => _onOfflineDaysChanged(value),
+            child: Column(
+              children: [
+                tile(
+                  Icons.calendar_view_week_rounded,
+                  tr('settings_screen.offline.days_7'),
+                  tr('settings_screen.offline.days_7_desc'),
+                  7,
+                ),
+                tile(
+                  Icons.calendar_month_rounded,
+                  tr('settings_screen.offline.days_30'),
+                  tr('settings_screen.offline.days_30_desc'),
+                  30,
                 ),
               ],
             ),
