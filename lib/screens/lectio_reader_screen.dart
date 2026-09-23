@@ -1,5 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+
+import '../widgets/error_report_sheet.dart' show kReportRed;
 import 'package:flutter/services.dart';
 import 'package:flutter_html/flutter_html.dart';
 
@@ -171,10 +173,7 @@ class _LectioReaderScreenState extends State<LectioReaderScreen> {
               if (_steps[_index].onReport != null)
                 IconButton(
                   tooltip: 'error_report.tooltip'.tr(),
-                  icon: Icon(
-                    Icons.flag_outlined,
-                    color: HomeV2.textDark(context),
-                  ),
+                  icon: const Icon(Icons.flag_outlined, color: kReportRed),
                   onPressed: _steps[_index].onReport,
                 )
               else

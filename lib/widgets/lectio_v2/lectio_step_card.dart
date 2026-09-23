@@ -6,6 +6,7 @@ import 'package:just_audio/just_audio.dart';
 import '../../services/lectio_admin_service.dart';
 import '../../services/media_player_bus.dart';
 import '../../shared/app_spacing.dart';
+import '../error_report_sheet.dart' show kReportRed;
 import '../home_v2/home_v2_tokens.dart';
 import '../../utils/app_logger.dart';
 
@@ -245,13 +246,14 @@ class _CopyButton extends StatelessWidget {
 }
 
 /// Okrúhle tlačidlo „Nahlásiť chybu“ (preklep, gramatika, zlé audio).
+/// Jemne červený podklad — nech je jasné, že ide o „chybu“ (Dušan 23. 9.).
 class ReportButton extends StatelessWidget {
   final VoidCallback onTap;
   const ReportButton({super.key, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final accent = HomeV2.iconAccent(context);
+    const accent = kReportRed;
     return Tooltip(
       message: 'error_report.tooltip'.tr(),
       child: GestureDetector(
