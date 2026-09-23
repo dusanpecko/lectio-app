@@ -1166,6 +1166,11 @@
     "sent": "Gracias, hemos recibido el aviso y lo corregiremos.",
     "failed": "No se pudo enviar. Inténtalo más tarde."
   },
+  "quick_actions": {
+    "lectio": "Lectio de hoy",
+    "audio": "Escuchar el audio",
+    "intention": "Añadir intención"
+  },
   "share_app": {
     "title": "Compartir la aplicación",
     "subject": "Lectio Divina — orar con la Palabra de Dios",

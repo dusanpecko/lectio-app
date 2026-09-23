@@ -1166,6 +1166,11 @@
     "sent": "Ďakujeme, že pomáhate zlepšovať Lectio. Chybu sme dostali a opravíme ju.",
     "failed": "Nepodarilo sa odoslať. Skúste to neskôr."
   },
+  "quick_actions": {
+    "lectio": "Dnešné lectio",
+    "audio": "Vypočuť audio",
+    "intention": "Pridať úmysel"
+  },
   "share_app": {
     "title": "Zdieľať aplikáciu",
     "subject": "Lectio Divina — modlitba s Božím slovom",

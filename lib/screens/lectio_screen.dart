@@ -45,7 +45,17 @@ class LectioScreen extends StatefulWidget {
   final bool autoplay;
   final String? selectedLang;
 
-  const LectioScreen({super.key, this.selectedDate, this.selectedLang, this.autoplay = false});
+  /// Z rýchlej akcie na ploche („Audio“) je zámer jasný → prehraj bez otázky.
+  /// Z notifikácie sa najprv pýtame (nechcené ťuknutie).
+  final bool askBeforeAutoplay;
+
+  const LectioScreen({
+    super.key,
+    this.selectedDate,
+    this.selectedLang,
+    this.autoplay = false,
+    this.askBeforeAutoplay = true,
+  });
 
   @override
   State<LectioScreen> createState() => _LectioScreenState();
@@ -136,12 +146,14 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
     // audio → najprv krátka otázka, audio až po „Prehrať“.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      final play = await _askAutoplay();
-      UmamiAnalyticsService().trackEvent(
-        'autoplay_prompt',
-        eventData: {'action': play == true ? 'play' : play == false ? 'skip' : 'dismiss'},
-      );
-      if (play != true || !mounted) return;
+      if (widget.askBeforeAutoplay) {
+        final play = await _askAutoplay();
+        UmamiAnalyticsService().trackEvent(
+          'autoplay_prompt',
+          eventData: {'action': play == true ? 'play' : play == false ? 'skip' : 'dismiss'},
+        );
+        if (play != true || !mounted) return;
+      }
       bus.toggle(
         id: mediaId,
         url: url,

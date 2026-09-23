@@ -35,6 +35,7 @@ import 'services/home_widget_service.dart';
 import 'services/lectio_audio_player.dart';
 import 'services/local_notifications_service.dart';
 import 'services/app_activity_service.dart';
+import 'services/quick_actions_service.dart';
 import 'services/supporter_service.dart';
 import 'services/lectio_completion_service.dart';
 import 'services/umami_analytics_service.dart';
@@ -245,6 +246,11 @@ class MyApp extends StatelessWidget {
     // Umami: jazyk appky (nie zariadenia) — build beží znova pri zmene locale.
     UmamiAnalyticsService().setAppLanguage(context.locale.languageCode);
     AppActivityService.instance.setAppLanguage(context.locale.languageCode);
+    // Rýchle akcie na ploche (dlhé stlačenie ikony) — názvy v jazyku appky.
+    QuickActionsService.instance.init(
+      NotificationController.instance.navigatorKey,
+      context.locale.languageCode,
+    );
 
     return MaterialApp(
       navigatorKey: NotificationController.instance.navigatorKey,

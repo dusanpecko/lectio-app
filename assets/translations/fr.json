@@ -1166,6 +1166,11 @@
     "sent": "Merci, nous avons reçu le signalement et le corrigerons.",
     "failed": "Envoi impossible. Réessayez plus tard."
   },
+  "quick_actions": {
+    "lectio": "Lectio du jour",
+    "audio": "Écouter l'audio",
+    "intention": "Ajouter une intention"
+  },
   "share_app": {
     "title": "Partager l'application",
     "subject": "Lectio Divina — prier avec la Parole de Dieu",

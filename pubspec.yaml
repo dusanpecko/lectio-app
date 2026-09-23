@@ -98,6 +98,7 @@ dependencies:
   flutter_markdown_plus: ^1.0.7
   flutter_timezone: ^5.1.0
   visibility_detector: ^0.4.0+2
+  quick_actions: ^1.1.1
 
 # Pripnuté transitívne verzie — dôvod pri každej položke.
 dependency_overrides:
