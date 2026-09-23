@@ -1166,6 +1166,11 @@
     "sent": "Merci, nous avons reçu le signalement et le corrigerons.",
     "failed": "Envoi impossible. Réessayez plus tard."
   },
+  "share_app": {
+    "title": "Partager l'application",
+    "subject": "Lectio Divina — prier avec la Parole de Dieu",
+    "message": "Je prie chaque jour avec l'application Lectio Divina : l'Évangile du jour, une méditation et l'audio. Elle est gratuite et sans publicité. Essayez-la vous aussi :"
+  },
   "feedback": {
     "menu_label": "Écrivez-nous",
     "title": "Retour",

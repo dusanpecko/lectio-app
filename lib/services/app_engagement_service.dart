@@ -12,6 +12,7 @@ import '../shared/app_colors.dart';
 import '../shared/app_spacing.dart';
 import '../utils/app_logger.dart';
 import 'app_activity_service.dart';
+import 'app_share_service.dart';
 import 'supporter_service.dart';
 import 'umami_analytics_service.dart';
 
@@ -332,7 +333,7 @@ class AppEngagementService {
           }
         } else {
           _logger.i('🧪 TESTING Android: Opening Play Store listing');
-          await inAppReview.openStoreListing(appStoreId: '6744299762');
+          await inAppReview.openStoreListing(appStoreId: AppShareService.appStoreId);
         }
         return;
       }
@@ -344,7 +345,7 @@ class AppEngagementService {
         await inAppReview.requestReview();
       } else {
         _logger.i('🏪 In-app review not available, opening store listing');
-        await inAppReview.openStoreListing(appStoreId: '6744299762');
+        await inAppReview.openStoreListing(appStoreId: AppShareService.appStoreId);
       }
     } catch (e) {
       _logger.e('Error opening in-app review: $e');
@@ -353,14 +354,14 @@ class AppEngagementService {
         if (Platform.isIOS) {
           await launchUrl(
             Uri.parse(
-              'https://apps.apple.com/app/id6744299762?action=write-review',
+              '${AppShareService.iosUrl}?action=write-review',
             ),
             mode: LaunchMode.externalApplication,
           );
         } else if (Platform.isAndroid) {
           await launchUrl(
             Uri.parse(
-              'https://play.google.com/store/apps/details?id=sk.lectio.divina',
+              AppShareService.androidUrl,
             ),
             mode: LaunchMode.externalApplication,
           );

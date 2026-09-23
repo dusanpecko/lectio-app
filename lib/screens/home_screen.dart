@@ -19,6 +19,7 @@ import '../services/lectio_admin_service.dart';
 import '../services/lectio_cache_service.dart';
 import '../services/podcast_service.dart';
 import '../services/spiritual_exercise_service.dart';
+import '../services/app_share_service.dart';
 import '../services/support_service.dart';
 import '../services/umami_analytics_service.dart';
 import '../shared/app_spacing.dart';
@@ -900,6 +901,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           Icons.favorite_rounded,
                           'support_lectio',
                           () => _push(const DonationScreen(), '/donation'),
+                        ),
+                        // Odporúčanie od známeho = najlacnejší nový používateľ
+                        tile(
+                          Icons.ios_share_rounded,
+                          'share_app.title',
+                          () => AppShareService.instance.shareApp(context),
                         ),
                         // E-shop je len pre SK → dlaždica len v SK mutácii.
                         if (context.locale.languageCode == 'sk')

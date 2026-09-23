@@ -1166,6 +1166,11 @@
     "sent": "Ďakujeme, že pomáhate zlepšovať Lectio. Chybu sme dostali a opravíme ju.",
     "failed": "Nepodarilo sa odoslať. Skúste to neskôr."
   },
+  "share_app": {
+    "title": "Zdieľať aplikáciu",
+    "subject": "Lectio Divina — modlitba s Božím slovom",
+    "message": "Každý deň sa modlím s aplikáciou Lectio Divina — evanjelium dňa, zamyslenie a audio. Je zadarmo a bez reklám. Skúste to tiež:"
+  },
   "feedback": {
     "menu_label": "Napíšte nám",
     "title": "Spätná väzba",

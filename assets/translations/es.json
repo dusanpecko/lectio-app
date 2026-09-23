@@ -1166,6 +1166,11 @@
     "sent": "Gracias, hemos recibido el aviso y lo corregiremos.",
     "failed": "No se pudo enviar. Inténtalo más tarde."
   },
+  "share_app": {
+    "title": "Compartir la aplicación",
+    "subject": "Lectio Divina — orar con la Palabra de Dios",
+    "message": "Rezo cada día con la aplicación Lectio Divina: el Evangelio del día, una reflexión y audio. Es gratuita y sin publicidad. Pruébala tú también:"
+  },
   "feedback": {
     "menu_label": "Escríbenos",
     "title": "Comentarios",

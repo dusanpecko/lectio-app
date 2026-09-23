@@ -14,6 +14,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../services/app_share_service.dart';
 import '../services/supporter_service.dart';
 import '../shared/app_spacing.dart';
 import '../widgets/home_v2/home_v2_tokens.dart';
@@ -1006,6 +1007,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             tr('privacy.info_section'),
           ),
           const SizedBox(height: AppSpacing.xs),
+          row(Icons.ios_share_rounded, tr('share_app.title'), () {
+            AppShareService.instance.shareApp(context, source: 'settings');
+          }),
+          Divider(height: 1, color: HomeV2.primary.withValues(alpha: 0.08)),
           row(Icons.info_outline_rounded, tr('about_title'), () {
             Navigator.push(
               context,

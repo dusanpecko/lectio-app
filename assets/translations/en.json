@@ -1166,6 +1166,11 @@
     "sent": "Thank you, we received the report and will fix it.",
     "failed": "Could not send. Please try again later."
   },
+  "share_app": {
+    "title": "Share the app",
+    "subject": "Lectio Divina — praying with the Word of God",
+    "message": "I pray every day with the Lectio Divina app — the Gospel of the day, a reflection and audio. It is free and ad-free. Give it a try:"
+  },
   "feedback": {
     "menu_label": "Write to Us",
     "title": "Feedback",
