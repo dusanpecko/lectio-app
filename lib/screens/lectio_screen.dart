@@ -1022,83 +1022,79 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
   );
 
   // ── Spodný progres ──────────────────────────────────────────────────────
+  /// Spodná lišta: jeden nízky riadok — šípka, bodky krokov, šípka.
+  /// Názov kroku tu už nie je (je na karte pod ikonami), rezerva pod bodkami
+  /// je len minimálna nad ochrannou zónou (Dušan 23. 9.: footer bol privysoký,
+  /// karta s textom má mať čo najviac miesta).
   Widget _buildProgress(
     List<({String label, Widget child})> slides,
     int current,
   ) {
     final bottom = MediaQuery.of(context).viewPadding.bottom;
-    return Container(
+    Widget arrow(IconData icon, String tooltip, VoidCallback? onTap) => IconButton(
+      icon: Icon(icon, size: 28),
+      color: HomeV2.primary,
+      disabledColor: HomeV2.textMuted(context).withValues(alpha: 0.3),
+      tooltip: tooltip,
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 40, minHeight: 36),
+      onPressed: onTap,
+    );
+    return Padding(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.sm,
+        0,
         AppSpacing.sm,
-        AppSpacing.sm,
-        bottom + AppSpacing.md,
+        bottom + AppSpacing.xs,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Row(
         children: [
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left_rounded),
-                color: HomeV2.primary,
-                disabledColor: HomeV2.textMuted(context).withValues(alpha: 0.3),
-                tooltip: 'a11y_previous_section'.tr(),
-                onPressed: current > 0
-                    ? () => _pageController.animateToPage(
-                        current - 1,
-                        duration: HomeV2.anim,
-                        curve: HomeV2.curve,
-                      )
-                    : null,
-              ),
-              Expanded(
-                child: Text(
-                  slides[current].label,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: HomeV2.textDark(context),
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right_rounded),
-                color: HomeV2.primary,
-                disabledColor: HomeV2.textMuted(context).withValues(alpha: 0.3),
-                tooltip: 'a11y_next_section'.tr(),
-                onPressed: current < slides.length - 1
-                    ? () => _pageController.animateToPage(
-                        current + 1,
-                        duration: HomeV2.anim,
-                        curve: HomeV2.curve,
-                      )
-                    : null,
-              ),
-            ],
+          arrow(
+            Icons.chevron_left_rounded,
+            'a11y_previous_section'.tr(),
+            current > 0
+                ? () => _pageController.animateToPage(
+                    current - 1,
+                    duration: HomeV2.anim,
+                    curve: HomeV2.curve,
+                  )
+                : null,
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(slides.length, (i) {
-              final active = i == current;
-              return AnimatedContainer(
-                duration: HomeV2.anim,
-                curve: HomeV2.curve,
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                width: active ? 22 : 7,
-                height: 7,
-                decoration: BoxDecoration(
-                  color: active
-                      ? HomeV2.primary
-                      : HomeV2.primary.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              );
-            }),
+          Expanded(
+            child: Semantics(
+              label: '${slides[current].label} — ${current + 1} / ${slides.length}',
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(slides.length, (i) {
+                  final active = i == current;
+                  return AnimatedContainer(
+                    duration: HomeV2.anim,
+                    curve: HomeV2.curve,
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: active ? 22 : 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: active
+                          ? HomeV2.primary
+                          : HomeV2.primary.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
+          arrow(
+            Icons.chevron_right_rounded,
+            'a11y_next_section'.tr(),
+            current < slides.length - 1
+                ? () => _pageController.animateToPage(
+                    current + 1,
+                    duration: HomeV2.anim,
+                    curve: HomeV2.curve,
+                  )
+                : null,
           ),
         ],
       ),
