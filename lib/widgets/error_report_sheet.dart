@@ -234,9 +234,9 @@ class _ErrorReportSheetState extends State<_ErrorReportSheet> {
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 // Typy chyby v jednom rade, posúvateľné do strany (Dušan 23. 9.)
+                // Orezané na obsah karty — pilulky nesmú vyjsť za jej okraj.
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  clipBehavior: Clip.none,
                   child: Row(
                     children: [
                       for (var i = 0; i < kinds.length; i++) ...[
