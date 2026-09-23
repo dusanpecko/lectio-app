@@ -7,8 +7,8 @@ import 'umami_analytics_service.dart';
 /// Zdieľanie aplikácie (11.2.4) — v appke dovtedy nebolo, hoci odporúčanie
 /// od známeho je najlacnejší zdroj nových používateľov (Dušan 23. 9.).
 ///
-/// Zdieľa sa JEDEN odkaz na web v jazyku používateľa, nie odkaz do konkrétneho
-/// obchodu: príjemca môže mať iPhone aj Android a na webe nájde oboje.
+/// Zdieľa sa JEDEN odkaz (OneLink), ktorý sám presmeruje podľa zariadenia
+/// príjemcu: iPhone → App Store, Android → Google Play, počítač → web.
 class AppShareService {
   AppShareService._();
   static final AppShareService instance = AppShareService._();
@@ -19,14 +19,16 @@ class AppShareService {
   static String get iosUrl => 'https://apps.apple.com/app/id$_appStoreId';
   static String get appStoreId => _appStoreId;
 
-  String webUrl(BuildContext context) =>
-      'https://www.lectio.one/${context.locale.languageCode}';
+  /// Rozcestník pre všetky platformy (overené: vedie na id6443882687
+  /// a na náš Play balík). Dušan 23. 9.: odkaz na web sám obchod neotvorí.
+  static const shareUrl = 'https://onelink.to/7urysx';
+
 
   /// Otvorí systémové zdieľanie s krátkym textom a odkazom.
   /// [origin] je widget, z ktorého sa zdieľa — iOS podľa neho umiestni popover.
   Future<void> shareApp(BuildContext context, {String source = 'more_menu'}) async {
     final box = context.findRenderObject() as RenderBox?;
-    final text = '${'share_app.message'.tr()}\n\n${webUrl(context)}';
+    final text = '${'share_app.message'.tr()}\n\n$shareUrl';
     UmamiAnalyticsService().trackEvent(
       'share_app',
       eventData: {'source': source, 'language': context.locale.languageCode},
