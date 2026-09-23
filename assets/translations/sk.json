@@ -1157,14 +1157,14 @@
     "type_meaning": "Význam / preklad",
     "type_audio": "Zle nahovorené audio",
     "notes_label": "Čo je zle?",
-    "notes_hint": "Napíš, kde je chyba – napr. slovo alebo vetu.",
+    "notes_hint": "Napíšte, kde je chyba – napr. slovo alebo vetu.",
     "notes_label_audio": "Poznámka (nepovinné)",
     "notes_hint_audio": "Napr. audio je useknuté, zlá výslovnosť…",
     "corrected_label": "Ako to má byť správne? (nepovinné)",
     "send": "Odoslať",
-    "need_text": "Napíš aspoň krátko, čo je zle.",
-    "sent": "Ďakujeme, chybu sme dostali a opravíme ju.",
-    "failed": "Nepodarilo sa odoslať. Skús to neskôr."
+    "need_text": "Napíšte aspoň krátko, čo je zle.",
+    "sent": "Ďakujeme, že pomáhate zlepšovať Lectio. Chybu sme dostali a opravíme ju.",
+    "failed": "Nepodarilo sa odoslať. Skúste to neskôr."
   },
   "feedback": {
     "menu_label": "Napíšte nám",
