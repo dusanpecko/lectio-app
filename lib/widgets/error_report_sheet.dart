@@ -178,6 +178,8 @@ class _ErrorReportSheetState extends State<_ErrorReportSheet> {
           decoration: BoxDecoration(
             color: HomeV2.card(context),
             borderRadius: BorderRadius.circular(HomeV2.radius),
+            // červený okraj = „chyba“ (Dušan 23. 9.)
+            border: Border.all(color: kReportRed.withValues(alpha: 0.55), width: 1.5),
             boxShadow: HomeV2.softShadow(context),
           ),
           child: SingleChildScrollView(
