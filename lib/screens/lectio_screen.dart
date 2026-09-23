@@ -81,11 +81,12 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
   List<LectioReaderStep> _readerSteps = [];
 
   /// Offline sťahovanie: 7 dní pre všetkých; podporovateľ si môže v Nastaveniach
-  /// zvoliť 30 (bonus navyše, default ostáva 7 — 30 dní audia je veľa miesta).
-  static const int _offlineDaysMax = 30;
+  /// zvoliť 14 (bonus navyše, default ostáva 7). Dušan 23. 9.: 30 dní je na
+  /// obsah veľa a zaberá priveľa miesta v telefóne → 14.
+  static const int _offlineDaysMax = 14;
   int _offlineDaysPref = 7;
   int get _offlineDays =>
-      (_isSupporter && _offlineDaysPref == 30) ? 30 : 7;
+      (_isSupporter && _offlineDaysPref == 14) ? 14 : 7;
   bool _isDownloading = false;
   double _downloadProgress = 0;
   bool _isDownloaded = false;
@@ -243,10 +244,10 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
     if (mounted && admin) setState(() => _isAdmin = admin);
   }
 
-  /// Podporovateľ: širšie dátumové okno (60/14) a voľba offline 7/30 dní.
+  /// Podporovateľ: širšie dátumové okno (60/14) a voľba offline 7/14 dní.
   Future<void> _loadSupporter() async {
     final prefs = await SharedPreferences.getInstance();
-    final days = prefs.getInt('lectio_offline_days') == 30 ? 30 : 7;
+    final days = prefs.getInt('lectio_offline_days') == 14 ? 14 : 7;
     final supporter = await SupporterService.instance.isActiveSupporter();
     if (!mounted) return;
     if (supporter != _isSupporter || days != _offlineDaysPref) {
@@ -478,8 +479,8 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
 
   Future<void> _downloadOffline() async {
     if (_isDownloading || _isDownloaded || _data == null) return;
-    if (_offlineDays >= 30) {
-      // 30 dní audia = veľa miesta → vedomé rozhodnutie s odhadom veľkosti
+    if (_offlineDays >= 14) {
+      // 14 dní audia = pol GB → vedomé rozhodnutie s odhadom veľkosti
       // (~40 MB/deň: 5 krokov + 3 biblie + dlhé a krátke celé audio).
       final ok = await showDialog<bool>(
         context: context,
@@ -679,7 +680,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
   }
 
   Future<void> _removeOffline() async {
-    // Maž celé možné okno — používateľ mohol stiahnuť 30 a potom prepnúť na 7.
+    // Maž celé možné okno — používateľ mohol stiahnuť 14 a potom prepnúť na 7.
     for (int i = 0; i < _offlineDaysMax; i++) {
       final dateStr = DateFormat(
         'yyyy-MM-dd',

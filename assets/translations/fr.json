@@ -37,8 +37,8 @@
     "download_title": "Télécharger les données hors ligne",
     "download_7_days": "Télécharger pour 7 jours",
     "download_description_days": "Téléchargez la Lectio Divina pour les {} prochains jours et utilisez-la sans internet.",
-    "download_confirm_title": "Télécharger 30 jours ?",
-    "download_confirm_body": "Les textes et l'audio de 30 jours occupent environ {} Mo. Cela prendra un moment, de préférence en Wi-Fi.",
+    "download_confirm_title": "Télécharger 14 jours ?",
+    "download_confirm_body": "Les textes et l'audio de 14 jours occupent environ {} Mo. Cela prendra un moment, de préférence en Wi-Fi.",
     "download_confirm_ok": "Télécharger",
     "download_progress": "Téléchargement des données...",
     "download_success": "Données téléchargées avec succès",
@@ -1086,8 +1086,8 @@
       "title": "Téléchargement hors ligne",
       "days_7": "7 jours",
       "days_7_desc": "Par défaut. Textes et audio pour la semaine à venir.",
-      "days_30": "30 jours",
-      "days_30_desc": "Pour les soutiens. Environ 1,2 Go, à télécharger en Wi-Fi."
+      "days_14": "14 jours",
+      "days_14_desc": "Pour les soutiens. Environ 560 Mo, à télécharger en Wi-Fi."
     },
     "lectio_audio": {
       "title": "Audio Lectio",
@@ -1409,8 +1409,8 @@
       "tiers": "Ami · Bienfaiteur · Fondateur",
       "support_now": "Soutenez-nous",
       "contextual_title": "Merci de prier avec nous",
-      "contextual_message": "Lectio est gratuite et sans publicité pour tous. Mais chaque jour a un coût : l'enregistrement de l'audio, les traductions dans d'autres langues et les serveurs. 3 € par mois financent une journée complète de lectio – texte, audio et traductions pour toutes les langues.",
-      "contextual_bonus": "En tant que soutien, vous avez la lectio jusqu'à 60 jours en arrière et 14 jours en avant, le téléchargement hors ligne sur 30 jours, un badge dans votre profil et un court rapport annuel. Rien n'est retiré à personne ; les soutiens reçoivent simplement un peu plus.",
+      "contextual_message": "Lectio est gratuite et sans publicité pour tous. Faire vivre le projet – audio, traductions, serveurs, relectures et les personnes qui s'en occupent – coûte environ 54 € par jour. Il suffit de 18 personnes donnant 3 € par mois pour couvrir une journée de chaque mois.",
+      "contextual_bonus": "En tant que soutien, vous avez la lectio jusqu'à 60 jours en arrière et 14 jours en avant, le téléchargement hors ligne sur 14 jours, un badge dans votre profil et un court rapport annuel. Rien n'est retiré à personne ; les soutiens reçoivent simplement un peu plus.",
       "contextual_now": "Je veux soutenir",
       "contextual_later": "Pas maintenant",
       "later": "Peut-être plus tard"

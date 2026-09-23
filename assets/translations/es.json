@@ -37,8 +37,8 @@
     "download_title": "Descargar datos sin conexión",
     "download_7_days": "Descargar para 7 días",
     "download_description_days": "Descarga Lectio Divina para los próximos {} días y úsala sin internet.",
-    "download_confirm_title": "¿Descargar 30 días?",
-    "download_confirm_body": "Los textos y el audio de 30 días ocupan unos {} MB. Tardará un poco, mejor con Wi-Fi.",
+    "download_confirm_title": "¿Descargar 14 días?",
+    "download_confirm_body": "Los textos y el audio de 14 días ocupan unos {} MB. Tardará un poco, mejor con Wi-Fi.",
     "download_confirm_ok": "Descargar",
     "download_progress": "Descargando datos...",
     "download_success": "Datos descargados correctamente",
@@ -1086,8 +1086,8 @@
       "title": "Descarga sin conexión",
       "days_7": "7 días",
       "days_7_desc": "Predeterminado. Textos y audio para la semana siguiente.",
-      "days_30": "30 días",
-      "days_30_desc": "Para quienes apoyan. Unos 1,2 GB, descarga con Wi-Fi."
+      "days_14": "14 días",
+      "days_14_desc": "Para quienes apoyan. Unos 560 MB, descarga con Wi-Fi."
     },
     "lectio_audio": {
       "title": "Audio de Lectio",
@@ -1409,8 +1409,8 @@
       "tiers": "Amigo · Patrón · Fundador",
       "support_now": "Quiero apoyar",
       "contextual_title": "Gracias por rezar con nosotros",
-      "contextual_message": "Lectio es gratuita y sin publicidad para todos. Pero cada día cuesta: grabar el audio, traducir a otros idiomas y mantener los servidores. 3 € al mes pagan un día completo de lectio: texto, audio y traducciones para todos los idiomas.",
-      "contextual_bonus": "Como colaborador tienes la lectio hasta 60 días atrás y 14 adelante, descarga sin conexión de 30 días, una insignia en tu perfil y un breve informe anual. A nadie se le quita nada; quienes apoyan solo reciben algo más.",
+      "contextual_message": "Lectio es gratuita y sin publicidad para todos. Mantener el proyecto – audio, traducciones, servidores, revisiones y las personas que lo hacen posible – cuesta unos 54 € al día. Bastan 18 personas con 3 € al mes para cubrir un día de cada mes.",
+      "contextual_bonus": "Como colaborador tienes la lectio hasta 60 días atrás y 14 adelante, descarga sin conexión de 14 días, una insignia en tu perfil y un breve informe anual. A nadie se le quita nada; quienes apoyan solo reciben algo más.",
       "contextual_now": "Quiero apoyar",
       "contextual_later": "Ahora no",
       "later": "Quizás más tarde"

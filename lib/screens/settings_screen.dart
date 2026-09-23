@@ -35,7 +35,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// 'short' (celé bez hudby) alebo 'steps' (po krokoch).
   String _lectioAudioMode = 'long';
 
-  /// Offline sťahovanie: 7 dní default; podporovateľ môže zvoliť 30 (bonus navyše).
+  /// Offline sťahovanie: 7 dní default; podporovateľ môže zvoliť 14 (bonus navyše).
   int _offlineDays = 7;
   bool _isSupporter = false;
 
@@ -107,7 +107,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final keepOn = prefs.getBool('keep_screen_on') ?? true;
     final savedAudioMode = prefs.getString('lectio_audio_mode');
     final audioMode = savedAudioMode == 'short' ? 'short' : 'long';
-    final offlineDays = prefs.getInt('lectio_offline_days') == 30 ? 30 : 7;
+    final offlineDays = prefs.getInt('lectio_offline_days') == 14 ? 14 : 7;
     final supporter = await SupporterService.instance.isActiveSupporter();
 
     if (!mounted) return;
@@ -671,9 +671,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 tile(
                   Icons.calendar_month_rounded,
-                  tr('settings_screen.offline.days_30'),
-                  tr('settings_screen.offline.days_30_desc'),
-                  30,
+                  tr('settings_screen.offline.days_14'),
+                  tr('settings_screen.offline.days_14_desc'),
+                  14,
                 ),
               ],
             ),

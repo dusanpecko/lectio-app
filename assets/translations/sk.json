@@ -37,8 +37,8 @@
     "download_title": "Stiahnuť offline dáta",
     "download_7_days": "Stiahnuť na 7 dní",
     "download_description_days": "Stiahni si Lectio Divina na nasledujúcich {} dní pre používanie bez internetu.",
-    "download_confirm_title": "Stiahnuť na 30 dní?",
-    "download_confirm_body": "Texty a audio na 30 dní zaberú približne {} MB. Sťahovanie chvíľu potrvá, najlepšie cez Wi-Fi.",
+    "download_confirm_title": "Stiahnuť na 14 dní?",
+    "download_confirm_body": "Texty a audio na 14 dní zaberú približne {} MB. Sťahovanie chvíľu potrvá, najlepšie cez Wi-Fi.",
     "download_confirm_ok": "Stiahnuť",
     "download_progress": "Sťahujem dáta...",
     "download_success": "Dáta úspešne stiahnuté",
@@ -1088,8 +1088,8 @@
       "title": "Offline sťahovanie",
       "days_7": "7 dní",
       "days_7_desc": "Predvolené. Texty a audio na týždeň dopredu.",
-      "days_30": "30 dní",
-      "days_30_desc": "Pre podporovateľov. Približne 1,2 GB, sťahuj cez Wi-Fi."
+      "days_14": "14 dní",
+      "days_14_desc": "Pre podporovateľov. Približne 560 MB, sťahuj cez Wi-Fi."
     },
     "lectio_audio": {
       "title": "Lectio audio",
@@ -1409,8 +1409,8 @@
       "tiers": "Priateľ · Patrón · Zakladateľ",
       "support_now": "Chcem podporiť",
       "contextual_title": "Ďakujeme, že sa modlíš s nami",
-      "contextual_message": "Lectio je zadarmo a bez reklám pre každého. Každý deň však stojí nahovorenie audia, preklady do ďalších jazykov a servery. 3 € mesačne zaplatia jeden celý deň lectia – text, audio aj preklady pre všetky jazyky.",
-      "contextual_bonus": "Ako podporovateľ máš lectio až 60 dní dozadu a 14 dopredu, offline sťahovanie na 30 dní, označenie v profile a raz za rok krátky report. Nikomu nič neuberáme, podporovatelia dostávajú len niečo naviac.",
+      "contextual_message": "Lectio je zadarmo a bez reklám pre každého. Chod projektu – audio, preklady, servery, korektúry aj ľudia, ktorí to robia – stojí asi 54 € na deň. Stačí 18 ľudí po 3 € mesačne a jeden deň v každom mesiaci je zaplatený.",
+      "contextual_bonus": "Ako podporovateľ máš lectio až 60 dní dozadu a 14 dopredu, offline sťahovanie na 14 dní, označenie v profile a raz za rok krátky report. Nikomu nič neuberáme, podporovatelia dostávajú len niečo naviac.",
       "contextual_now": "Chcem podporiť",
       "contextual_later": "Teraz nie",
       "later": "Možno neskôr"
