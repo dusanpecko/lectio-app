@@ -67,9 +67,10 @@ android {
         getByName("release") {
             isMinifyEnabled = true
             // Odstraňovanie nepoužitých Android zdrojov (Play odporúčanie R8).
-            // Bezpečné: všetky notif./launcher ikony sú @mipmap/launcher_icon
-            // referencované v AndroidManifest (shrinker ich vidí), žiadne
-            // dynamické getIdentifier lookupy. Vyžaduje isMinifyEnabled = true.
+            // POZOR: ikony rýchlych akcií hľadá quick_actions cez getIdentifier
+            // až za behu — shrinker ich nevidí a vyhodil ich (prázdne krúžky
+            // v menu, 23. 9. 2026). Držia ich pravidlá v res/raw/keep.xml.
+            // Pri každom ďalšom dynamickom lookupe doplň kľúč do keep.xml.
             isShrinkResources = true
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(

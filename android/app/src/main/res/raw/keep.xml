@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ikony rýchlych akcií (dlhé stlačenie ikony appky) sa v kóde nespomínajú menom
+  ani v XML — balík quick_actions ich hľadá cez getIdentifier za behu. Bez tohto
+  súboru ich shrinkResources v release builde vyhodí a v menu ostanú prázdne
+  krúžky (23. 9. 2026).
+-->
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_shortcut_lectio,@drawable/ic_shortcut_audio,@drawable/ic_shortcut_intention" />
