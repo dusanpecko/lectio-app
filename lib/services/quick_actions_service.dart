@@ -1,5 +1,3 @@
-import 'dart:io' show Platform;
-
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:quick_actions/quick_actions.dart';
@@ -38,6 +36,8 @@ class QuickActionsService {
   }
 
   /// Po zmene jazyka appky prepíš názvy položiek.
+  /// Ikony: Android vektory v res/drawable (drží ich res/raw/keep.xml),
+  /// iOS template obrázky v asset katalógu — rovnaké názvy pre obe platformy.
   Future<void> refreshItems(String lang) async {
     if (_itemsLang == lang) return;
     final titles = _titles();
@@ -49,24 +49,21 @@ class QuickActionsService {
       return;
     }
     _itemsLang = lang;
-    // Ikony len na Androide: iOS berie `icon` ako template obrázok z asset
-    // katalógu a bez neho ukáže čistý text (v iOS menu je to bežné).
-    final androidIcons = Platform.isAndroid;
     await _quickActions.setShortcutItems(<ShortcutItem>[
       ShortcutItem(
         type: _typeLectio,
         localizedTitle: titles[_typeLectio]!,
-        icon: androidIcons ? 'ic_shortcut_lectio' : null,
+        icon: 'ic_shortcut_lectio',
       ),
       ShortcutItem(
         type: _typeAudio,
         localizedTitle: titles[_typeAudio]!,
-        icon: androidIcons ? 'ic_shortcut_audio' : null,
+        icon: 'ic_shortcut_audio',
       ),
       ShortcutItem(
         type: _typeIntention,
         localizedTitle: titles[_typeIntention]!,
-        icon: androidIcons ? 'ic_shortcut_intention' : null,
+        icon: 'ic_shortcut_intention',
       ),
     ]);
   }
