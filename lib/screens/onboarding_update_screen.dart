@@ -19,29 +19,26 @@ class OnboardingUpdateScreen extends StatefulWidget {
 }
 
 class _OnboardingUpdateScreenState extends State<OnboardingUpdateScreen> {
-  // Novinky AKTUÁLNEJ verzie (v11.2) — pri ďalšom update uprav (staré presuň
+  // Novinky AKTUÁLNEJ verzie (v11.2.4) — pri ďalšom update uprav (staré presuň
   // pod oddeľovač do [_featuresPrev], alebo ich vymeň úplne). Nezabudni zvýšiť
   // `kCurrentOnboardingVersion` v main.dart, inak sa obrazovka nikomu neukáže.
   static const _featuresNew = [
+    (icon: Icons.wb_twilight_rounded, key: 'reminder'),
+    (icon: Icons.flag_rounded, key: 'report_error'),
+    (icon: Icons.touch_app_rounded, key: 'quick_actions'),
+    (icon: Icons.ios_share_rounded, key: 'share_app'),
+    (icon: Icons.text_fields_rounded, key: 'select_text'),
+    (icon: Icons.favorite_rounded, key: 'supporter_bonus'),
+  ];
+
+  // Novinky predchádzajúcej verzie (v11.2) — pod oddeľovačom.
+  static const _featuresPrev = [
     (icon: Icons.auto_awesome_rounded, key: 'devotions_v2'),
     (icon: Icons.headphones_rounded, key: 'full_audio'),
     (icon: Icons.replay_rounded, key: 'novena_v2'),
     (icon: Icons.alarm_on_rounded, key: 'push_anon'),
-    (icon: Icons.spellcheck_rounded, key: 'lectio_fix'),
   ];
 
-  // Novinky predchádzajúcej verzie (v11.1) — pod oddeľovačom.
-  static const _featuresPrev = [
-    (icon: Icons.local_fire_department_rounded, key: 'novenas'),
-    (icon: Icons.favorite_border_rounded, key: 'confession'),
-    (icon: Icons.church_rounded, key: 'devotions_home'),
-    (icon: Icons.notifications_active_rounded, key: 'intentions'),
-    (icon: Icons.bolt_rounded, key: 'audio'),
-    (icon: Icons.local_shipping_rounded, key: 'cod'),
-  ];
-
-  /// E-shopové karty sú len pre SK mutáciu (e-shop zatiaľ len SK; keď pribudne
-  /// CZ mutácia appky, rozšír podmienku o 'cs').
   bool _showFeature(String key) =>
       !{'eshop', 'cod'}.contains(key) || context.locale.languageCode == 'sk';
 
@@ -110,7 +107,7 @@ class _OnboardingUpdateScreenState extends State<OnboardingUpdateScreen> {
                           ),
                           const SizedBox(height: AppSpacing.xl),
 
-                          // Novinky aktuálnej verzie (v11.1)
+                          // Novinky aktuálnej verzie (v11.2.4)
                           ..._featuresNew.where((f) => _showFeature(f.key)).map(
                                 (f) => _FeatureCard(
                                   icon: f.icon,
