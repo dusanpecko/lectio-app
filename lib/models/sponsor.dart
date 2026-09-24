@@ -23,6 +23,7 @@ class Sponsor {
     required this.websiteUrl,
     required this.amount,
     required this.currency,
+    this.isPlaceholder = false,
   });
 
   final String id;
@@ -37,6 +38,10 @@ class Sponsor {
   final double? amount;
   final String currency;
 
+  /// Dlaždica „Miesto pre vás“ — pozvánka pre nových partnerov, nie sponzor.
+  /// Názov aj popis berieme z prekladov, z API len odkaz (napr. mailto:).
+  final bool isPlaceholder;
+
   factory Sponsor.fromJson(Map<String, dynamic> j) => Sponsor(
         id: j['id'].toString(),
         name: _opt(j['name']) ?? '',
@@ -46,5 +51,6 @@ class Sponsor {
         websiteUrl: _opt(j['websiteUrl']),
         amount: _dbl(j['amount']),
         currency: _opt(j['currency']) ?? 'EUR',
+        isPlaceholder: j['isPlaceholder'] == true,
       );
 }

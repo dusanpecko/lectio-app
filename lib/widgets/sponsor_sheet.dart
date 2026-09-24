@@ -34,6 +34,45 @@ class SponsorLogoTile extends StatelessWidget {
     final useDarkLogo = dark && sponsor.logoDarkUrl != null;
     final url = useDarkLogo ? sponsor.logoDarkUrl : sponsor.logoUrl;
 
+    // Pozvánka pre nových partnerov — prerušovaný okraj a text z prekladov.
+    if (sponsor.isPlaceholder) {
+      return GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: width,
+          height: height,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: HomeV2.primary.withValues(alpha: dark ? 0.16 : 0.05),
+            borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+            border: Border.all(
+              color: HomeV2.primary.withValues(alpha: 0.35),
+              width: 1.4,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.add_rounded, size: 18, color: HomeV2.iconAccent(context)),
+              const SizedBox(height: 2),
+              Text(
+                'sponsors_placeholder_title'.tr(),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  height: 1.2,
+                  color: HomeV2.iconAccent(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final tile = Container(
       width: width,
       height: height,
@@ -107,12 +146,135 @@ String formatSponsorAmount(BuildContext context, Sponsor s) {
 
 /// Karta sponzora odspodu — rovnaký štýl ako bio člena tímu v O aplikácii.
 /// `source` ide do Umami (`home` / `about`), nech vieš, odkiaľ ľudia klikajú.
+/// Sheet pozvánky pre nových partnerov („Miesto pre vás“, 24. 9. 2026).
+Future<void> _showPlaceholderSheet(
+  BuildContext context,
+  Sponsor sponsor,
+  String source,
+) {
+  UmamiAnalyticsService().trackEvent(
+    'sponsor_placeholder_open',
+    eventData: {'source': source},
+  );
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (sheetContext) {
+      final textDark = HomeV2.textDark(sheetContext);
+      final textMuted = HomeV2.textMuted(sheetContext);
+      return SafeArea(
+        top: false,
+        child: Container(
+          margin: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
+          decoration: BoxDecoration(
+            color: HomeV2.card(sheetContext),
+            borderRadius: BorderRadius.circular(HomeV2.radius),
+            boxShadow: HomeV2.softShadow(sheetContext),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: textMuted.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: HomeV2.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+                    ),
+                    child: Icon(Icons.handshake_rounded, color: HomeV2.primary),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Text(
+                      'sponsors_placeholder_title'.tr(),
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: textDark,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'sponsors_placeholder_body'.tr(),
+                style: TextStyle(fontSize: 15, height: 1.5, color: textDark),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final url = sponsor.websiteUrl?.trim();
+                    if (url == null || url.isEmpty) return;
+                    UmamiAnalyticsService().trackEvent(
+                      'sponsor_placeholder_click',
+                      eventData: {'source': source},
+                    );
+                    final uri = Uri.tryParse(url);
+                    if (uri != null) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  icon: const Icon(Icons.mail_outline_rounded, size: 18),
+                  label: Text('sponsors_placeholder_cta'.tr()),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: HomeV2.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              TextButton(
+                onPressed: () => Navigator.of(sheetContext).pop(),
+                style: TextButton.styleFrom(foregroundColor: textMuted),
+                child: Text('close'.tr()),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
 Future<void> showSponsorSheet(
   BuildContext context,
   Sponsor sponsor, {
   required String source,
 }) {
   HapticFeedback.lightImpact();
+  // Pozvánka „Miesto pre vás“ má vlastný, kratší sheet — nie je to sponzor.
+  if (sponsor.isPlaceholder) {
+    return _showPlaceholderSheet(context, sponsor, source);
+  }
   UmamiAnalyticsService().trackEvent(
     'sponsor_open',
     eventData: {
