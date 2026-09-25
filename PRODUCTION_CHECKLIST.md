@@ -250,6 +250,10 @@
 
 ### v11.2.5 — 2026 — drobnosti po 11.2.4
 
+- [ ] **Čas strávený v appke — vlastné meranie** ⏱️ _(Dušan 25. 9. 2026; body 1 a 2 hotové na dashboarde, toto je tretí)_ — dnes vieme dve veci a obe z Umami: **priemerný čas návštevy** (`stats.totaltime / visits`) a **čas počúvania** (`audio_heartbeat` × 30 s), obe pribudli ako karty v `/admin` 25. 9. Čo chýba: čas naviazaný na zariadenie a kohorty v `/admin/retention` — `app_daily_active` vie len to, ŽE zariadenie appku v daný deň otvorilo.
+  - **Návrh:** appka už sleduje prechody popredie/pozadie (`didChangeAppLifecycleState` v `main.dart`) — sčítavať čas v popredí do shared prefs a denný súčet poslať s `POST /api/app/open` (nový stĺpec `app_daily_active.foreground_seconds`). Dáta začnú pribúdať až po vydaní.
+  - **Pozor:** čas na obrazovke pri modlitbovej appke klame — kto si pustí audio a zamkne telefón, v popredí nie je. Preto merať **oddelene** čas v popredí a čas počúvania a NIKDY ich nesčítavať do jedného čísla.
+
 - [ ] **Aktualizácia appky: ľudia dávajú „Neskôr“** 🔄 _(zistené 25. 9. 2026 — deň a pol po vydaní 11.2.4 hlási retencia 100 zariadení, Umami 284 návštevníkov → aktualizovalo sa ~35 %)_
   - **Ako to je dnes:** `AppVersionService` číta `app_versions` (min 11.0.0, latest 11.2.4, oba obchody, `enabled=true`); `maybeShowAppUpdateDialog` sa volá v `main.dart` v post-frame callbacku pri KAŽDOM štarte. Nad minimom = mäkké okno „Nová verzia k dispozícii · odporúčame aktualizovať“ s tlačidlami Aktualizovať / Neskôr. Tlačidlo len otvorí obchod (`launchUrl`), aktualizáciu musí človek potvrdiť tam.
   - **Prečo to nefunguje:** (1) po ťuknutí ešte 3 kroky navyše a čakanie na stiahnutie, pritom appku otvoril kvôli modlitbe; (2) text nehovorí, čo tým získa; (3) okno príde hneď pri štarte a **bez akéhokoľvek odstupu** — kto raz dá Neskôr, vidí to isté každý deň → slepota ako pri výzve na podporu (93 % zatvorení). **Nemáme k tomu ani meranie** (žiadny `trackEvent` v `app_update_dialog.dart`).
