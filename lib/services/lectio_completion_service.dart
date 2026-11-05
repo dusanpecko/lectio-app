@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart' show ProcessingState;
 
 import 'app_engagement_service.dart';
+import 'app_update_prompt_service.dart';
 import 'media_player_bus.dart';
 import 'notification_prompt_service.dart';
 
@@ -15,7 +16,8 @@ import 'notification_prompt_service.dart';
 ///
 /// Poradie výziev — najviac JEDNA na jedno dokončenie:
 ///   1. ranná pripomienka (NotificationPromptService) — frekvencia je priorita,
-///   2. hodnotenie / kontextová podpora (AppEngagementService) — až po
+///   2. odporúčaná aktualizácia (AppUpdatePromptService, od 11.2.5),
+///   3. hodnotenie / kontextová podpora (AppEngagementService) — až po
 ///      7 rôznych dňoch používania.
 class LectioCompletionService {
   LectioCompletionService._();
@@ -33,6 +35,9 @@ class LectioCompletionService {
       final shown =
           await NotificationPromptService.instance.onLectioFinished(context);
       if (shown || !context.mounted) return;
+      final updateShown =
+          await AppUpdatePromptService.instance.onLectioFinished(context);
+      if (updateShown || !context.mounted) return;
       await AppEngagementService.instance.onLectioFinished(context);
     } finally {
       _busy = false;

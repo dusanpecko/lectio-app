@@ -10,7 +10,21 @@ enum AppUpdateType { none, soft, force }
 class AppUpdateInfo {
   final AppUpdateType type;
   final String storeUrl;
-  const AppUpdateInfo(this.type, this.storeUrl);
+  /// Najnovšia verzia z `app_versions` (pre analytiku).
+  final String? latestVersion;
+  /// Jedna veta „čo je nové“ per jazyk (11.2.5), môže chýbať.
+  final Map<String, String> whatsNew;
+  const AppUpdateInfo(
+    this.type,
+    this.storeUrl, {
+    this.latestVersion,
+    this.whatsNew = const {},
+  });
+
+  String? whatsNewFor(String lang) {
+    final v = whatsNew[lang]?.trim();
+    return (v == null || v.isEmpty) ? null : v;
+  }
 }
 
 /// Kontrola verzie appky voči vzdialenému zdroju (`app_versions` v Supabase).
@@ -31,7 +45,7 @@ class AppVersionService {
 
       final row = await Supabase.instance.client
           .from('app_versions')
-          .select('min_version, latest_version, store_url, enabled')
+          .select('min_version, latest_version, store_url, enabled, whats_new')
           .eq('platform', platform)
           .maybeSingle();
 
@@ -44,12 +58,26 @@ class AppVersionService {
       final current = info.version; // napr. "10.2.0"
       final minV = row['min_version'] as String?;
       final latestV = row['latest_version'] as String?;
+      final rawWhatsNew = row['whats_new'];
+      final whatsNew = rawWhatsNew is Map
+          ? rawWhatsNew.map((k, v) => MapEntry('$k', '$v'))
+          : const <String, String>{};
 
       if (minV != null && _compare(current, minV) < 0) {
-        return AppUpdateInfo(AppUpdateType.force, storeUrl);
+        return AppUpdateInfo(
+          AppUpdateType.force,
+          storeUrl,
+          latestVersion: latestV,
+          whatsNew: whatsNew,
+        );
       }
       if (latestV != null && _compare(current, latestV) < 0) {
-        return AppUpdateInfo(AppUpdateType.soft, storeUrl);
+        return AppUpdateInfo(
+          AppUpdateType.soft,
+          storeUrl,
+          latestVersion: latestV,
+          whatsNew: whatsNew,
+        );
       }
       return const AppUpdateInfo(AppUpdateType.none, '');
     } catch (e) {

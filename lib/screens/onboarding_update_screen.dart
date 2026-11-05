@@ -19,24 +19,21 @@ class OnboardingUpdateScreen extends StatefulWidget {
 }
 
 class _OnboardingUpdateScreenState extends State<OnboardingUpdateScreen> {
-  // Novinky AKTUÁLNEJ verzie (v11.2.4) — pri ďalšom update uprav (staré presuň
+  // Novinky AKTUÁLNEJ verzie (v11.2.5) — pri ďalšom update uprav (staré presuň
   // pod oddeľovač do [_featuresPrev], alebo ich vymeň úplne). Nezabudni zvýšiť
   // `kCurrentOnboardingVersion` v main.dart, inak sa obrazovka nikomu neukáže.
   static const _featuresNew = [
+    (icon: Icons.bookmark_add_rounded, key: 'save_word'),
+    (icon: Icons.translate_rounded, key: 'intention_translate'),
+    (icon: Icons.edit_note_rounded, key: 'notes_autosave'),
+  ];
+
+  // Novinky predchádzajúcej verzie (v11.2.4) — pod oddeľovačom.
+  static const _featuresPrev = [
     (icon: Icons.wb_twilight_rounded, key: 'reminder'),
     (icon: Icons.flag_rounded, key: 'report_error'),
     (icon: Icons.touch_app_rounded, key: 'quick_actions'),
     (icon: Icons.ios_share_rounded, key: 'share_app'),
-    (icon: Icons.text_fields_rounded, key: 'select_text'),
-    (icon: Icons.favorite_rounded, key: 'supporter_bonus'),
-  ];
-
-  // Novinky predchádzajúcej verzie (v11.2) — pod oddeľovačom.
-  static const _featuresPrev = [
-    (icon: Icons.auto_awesome_rounded, key: 'devotions_v2'),
-    (icon: Icons.headphones_rounded, key: 'full_audio'),
-    (icon: Icons.replay_rounded, key: 'novena_v2'),
-    (icon: Icons.alarm_on_rounded, key: 'push_anon'),
   ];
 
   bool _showFeature(String key) =>
@@ -107,7 +104,7 @@ class _OnboardingUpdateScreenState extends State<OnboardingUpdateScreen> {
                           ),
                           const SizedBox(height: AppSpacing.xl),
 
-                          // Novinky aktuálnej verzie (v11.2.4)
+                          // Novinky aktuálnej verzie (v11.2.5)
                           ..._featuresNew.where((f) => _showFeature(f.key)).map(
                                 (f) => _FeatureCard(
                                   icon: f.icon,

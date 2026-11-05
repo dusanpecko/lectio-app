@@ -235,6 +235,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   List<Donation> _donations = [];
   List<SpiritualExerciseRegistration> _exerciseRegistrations = [];
   List<BankPayment> _bankPayments = [];
+  // Všetky platby predplatného (Mollie) — „Podporujete nás od … · spolu …“
+  List<({DateTime date, double amount})> _subscriptionPayments = [];
   List<PaymentHistoryItem> _paymentHistory = [];
   BillingInfo? _billingInfo;
 
@@ -297,6 +299,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _fetchDonations(),
       _fetchExerciseRegistrations(),
       _fetchBankPayments(),
+      _fetchSubscriptionPayments(),
       _fetchBillingInfo(),
       _fetchDiscount(),
     ]);
@@ -424,6 +427,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       appLogger.e('Error fetching exercise registrations: $e');
     }
+  }
+
+  Future<void> _fetchSubscriptionPayments() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+    try {
+      final data = await supabase
+          .from('donations')
+          .select('amount, created_at')
+          .eq('user_id', user.id)
+          .eq('source', 'subscription');
+      if (mounted) {
+        setState(() {
+          _subscriptionPayments = (data as List)
+              .map((e) => (
+                    date: DateTime.parse(e['created_at'] as String),
+                    amount: (e['amount'] as num).toDouble(),
+                  ))
+              .toList();
+        });
+      }
+    } catch (e) {
+      appLogger.e('Error fetching subscription payments: $e');
+    }
+  }
+
+  /// Súhrn podpory cez predplatné: Mollie platby + bankové prevody označené ako predplatné.
+  ({DateTime since, double total, int count})? get _supportSummary {
+    final all = [
+      ..._subscriptionPayments,
+      ..._bankPayments
+          .where((b) => b.paymentType == 'subscription')
+          .map((b) => (date: b.transactionDate, amount: b.amount)),
+    ];
+    if (all.isEmpty) return null;
+    final since = all.map((p) => p.date).reduce((a, b) => a.isBefore(b) ? a : b);
+    final total = all.fold<double>(0, (sum, p) => sum + p.amount);
+    return (since: since, total: total, count: all.length);
   }
 
   Future<void> _fetchBankPayments() async {
@@ -2002,6 +2043,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
           '$totalCount ${totalCount == 1 ? 'profile.payment.singular'.tr() : 'profile.payment.plural'.tr()}',
         ),
         children: [
+          // Od kedy podporuje a koľko spolu (platby predplatného)
+          if (_supportSummary case final summary?)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, AppSpacing.sm),
+              child: Text(
+                'profile.subscription.support_summary'.tr(
+                  args: [
+                    DateFormat('dd.MM.yyyy').format(summary.since.toLocal()),
+                    '€${summary.total.toStringAsFixed(2)}',
+                    '${summary.count}',
+                  ],
+                ),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: HomeV2.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           // Aktívne predplatné — detailný blok so zrušením (navrchu).
           if (hasSub) ...[
             const SizedBox(height: AppSpacing.sm),

@@ -25,6 +25,9 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
   Set<int> prayedIntentions = {};
   String? currentUserId;
 
+  // Úmysly, pri ktorých si používateľ prepol z prekladu na originál
+  final Set<int> _showOriginal = {};
+
   static const Color _danger = Color(0xFFC0392B);
   static const Color _success = Color(0xFF2E9E5B);
 
@@ -514,6 +517,18 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
     final isAdmin = role == 'admin';
     final approved = item['approved'] == true;
 
+    // Preklad z `intentions.translations` (vypĺňa backend po schválení)
+    final original = item['intention']?.toString() ?? '';
+    final appLang = context.locale.languageCode;
+    final translations = item['translations'];
+    final translated = item['lang'] != appLang && translations is Map
+        ? translations[appLang]?.toString()
+        : null;
+    final hasTranslation = translated != null && translated.isNotEmpty;
+    final showingTranslation =
+        hasTranslation && !_showOriginal.contains(intentionId);
+    final displayText = showingTranslation ? translated : original;
+
     return Container(
       margin: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
@@ -566,12 +581,52 @@ class _IntentionsListScreenState extends State<IntentionsListScreen> {
               ],
             ),
           Text(
-            item['intention']?.toString() ?? '',
+            displayText,
             style: TextStyle(
               fontSize: 16,
               height: 1.5,
               color: HomeV2.textDark(context),
             ),
+          ),
+          Row(
+            children: [
+              if (hasTranslation)
+                Expanded(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+                    onTap: () => setState(() {
+                      if (!_showOriginal.remove(intentionId)) {
+                        _showOriginal.add(intentionId);
+                      }
+                    }),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Text(
+                        showingTranslation
+                            ? '${'intention_auto_translated'.tr()} · ${'intention_show_original'.tr()}'
+                            : 'intention_show_translation'.tr(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: HomeV2.iconAccent(context),
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.copy_rounded, size: 17),
+                color: HomeV2.textMuted(context),
+                tooltip: 'intention_copy'.tr(),
+                visualDensity: VisualDensity.compact,
+                onPressed: () async {
+                  HapticFeedback.lightImpact();
+                  await Clipboard.setData(ClipboardData(text: displayText));
+                  _snack('copied_to_clipboard'.tr(), isError: false);
+                },
+              ),
+            ],
           ),
           if (hasName) ...[
             const SizedBox(height: AppSpacing.sm),

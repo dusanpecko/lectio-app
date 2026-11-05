@@ -13,7 +13,6 @@ import 'package:lectio_divina/screens/home_screen.dart';
 import 'package:lectio_divina/screens/lectio_screen.dart';
 import 'package:lectio_divina/screens/onboarding_screen.dart';
 import 'package:lectio_divina/screens/onboarding_update_screen.dart';
-import 'package:lectio_divina/widgets/app_update_dialog.dart';
 import 'package:lectio_divina/shared/app_theme.dart';
 import 'package:lectio_divina/utils/app_logger.dart';
 import 'package:lectio_divina/utils/route_observer.dart';
@@ -35,6 +34,8 @@ import 'services/home_widget_service.dart';
 import 'services/lectio_audio_player.dart';
 import 'services/local_notifications_service.dart';
 import 'services/app_activity_service.dart';
+import 'services/app_update_prompt_service.dart';
+import 'services/media_player_bus.dart';
 import 'services/quick_actions_service.dart';
 import 'services/supporter_service.dart';
 import 'services/lectio_completion_service.dart';
@@ -341,6 +342,7 @@ class _FCMInitializerState extends State<FCMInitializer>
 
     try {
       await UmamiAnalyticsService().initialize();
+      AppActivityService.instance.onForeground();
       AppActivityService.instance.recordOpen();
       AppActivityService.instance.hookAuthChanges();
       SupporterService.instance.hookAuthChanges();
@@ -425,6 +427,7 @@ class _FCMInitializerState extends State<FCMInitializer>
       _logger.i('✅ App RESUMED from background');
       NotificationController.instance.clearAppBadge();
       // Retencia (11.2.4): návrat do popredia = otvorenie (max 1× za deň)
+      AppActivityService.instance.onForeground();
       AppActivityService.instance.recordOpen();
       // Audio lectia dohralo na pozadí → ponuka pripomienky až teraz
       LectioCompletionService.instance.onAppResumed();
@@ -433,10 +436,15 @@ class _FCMInitializerState extends State<FCMInitializer>
       NotificationController.instance.checkPendingNotification(mounted);
     } else if (state == AppLifecycleState.paused) {
       _logger.i('⏸️ App PAUSED (minimized or in background)');
+      // Čas v appke (11.2.5): koniec pobytu v popredí + odoslanie súčtov
+      AppActivityService.instance.onBackground();
+      // audio_finish pri pozastavenom audiu, kým appku systém nezabije
+      MediaPlayerBus.instance.endSessionIfIdle();
     } else if (state == AppLifecycleState.inactive) {
       _logger.i('🔕 App INACTIVE (transitioning)');
     } else if (state == AppLifecycleState.detached) {
       _logger.i('🛑 App DETACHED (closing) - stopping audio');
+      AppActivityService.instance.onBackground();
       // Zastaviť audio keď sa aplikácia zavrie
       LectioAudioPlayer()
           .stop()
@@ -468,7 +476,7 @@ class _FCMInitializerState extends State<FCMInitializer>
 ///   0            → nový používateľ → plný [OnboardingScreen]
 ///   1..CURRENT-1 → existujúci po update → [OnboardingUpdateScreen]
 ///   >= CURRENT   → rovno do appky
-const int kCurrentOnboardingVersion = 5; // 5 = v11.2.4 (ranná pripomienka, nahlásenie chyby, rýchle akcie…)
+const int kCurrentOnboardingVersion = 6; // 6 = v11.2.5 (uložiť si slovo, preklad úmyslov, poznámky sa ukladajú samé)
 
 /// DOČASNE: vynúti zobrazenie „Čo je nové" ([OnboardingUpdateScreen]) pri
 /// každom štarte (test). Pred vydaním prepnúť na `false`.
@@ -542,7 +550,8 @@ class _SessionHandlerState extends State<SessionHandler> {
     // Kontrola čakajúcej notifikácie + kontrola verzie appky (force/soft update)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       NotificationController.instance.checkPendingNotification(mounted);
-      if (mounted) maybeShowAppUpdateDialog(context);
+      // Povinná aktualizácia hneď; odporúčaná až po lectiu (11.2.5)
+      if (mounted) AppUpdatePromptService.instance.onAppStart(context);
     });
   }
 

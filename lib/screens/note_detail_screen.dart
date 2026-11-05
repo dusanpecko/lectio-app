@@ -28,9 +28,14 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   bool _isDeleting = false;
   bool _hasChanges = false;
 
+  /// ID poznámky; pri novej sa doplní po prvom uložení (automatické ukladanie
+  /// nesmie pri ďalšom uložení vložiť druhú poznámku).
+  dynamic _noteId;
+
   @override
   void initState() {
     super.initState();
+    _noteId = widget.note?['id'];
     _titleCtrl = TextEditingController(text: widget.note?['title'] ?? '');
     _contentCtrl = TextEditingController(text: widget.note?['content'] ?? '');
     _bibleReferenceCtrl = TextEditingController(
@@ -61,7 +66,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     super.dispose();
   }
 
-  bool get _isEditing => widget.note != null && widget.note?['id'] != null;
+  bool get _isEditing => _noteId != null;
 
   void _showSnack(String message, {required bool isError}) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -120,14 +125,22 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     return shouldLeave ?? false;
   }
 
-  Future<void> saveNote() async {
+  /// [closeAfter] = tlačidlo dole (uloží a zavrie). Bez neho ide o automatické
+  /// uloženie (návrat späť, dopísaný text) — obrazovka ostane otvorená.
+  /// Vracia, či sa uloženie podarilo.
+  Future<bool> saveNote({bool closeAfter = true}) async {
     setState(() => _isSaving = true);
     final userId = Supabase.instance.client.auth.currentUser?.id;
 
     if (userId == null) {
       if (mounted) _showSnack(tr('note_not_logged_in'), isError: true);
       setState(() => _isSaving = false);
-      return;
+      return false;
+    }
+
+    // Názov je povinný — pri automatickom uložení bez názvu použi dátum.
+    if (_titleCtrl.text.trim().isEmpty) {
+      _titleCtrl.text = DateFormat('d.M.yyyy').format(DateTime.now());
     }
 
     final note = {
@@ -140,43 +153,50 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     };
 
     try {
-      final isInsert = widget.note == null || widget.note?['id'] == null;
+      final isInsert = _noteId == null;
 
       if (isInsert) {
-        await Supabase.instance.client.from('notes').insert(note);
+        final row = await Supabase.instance.client
+            .from('notes')
+            .insert(note)
+            .select('id')
+            .single();
+        _noteId = row['id'];
       } else {
         await Supabase.instance.client
             .from('notes')
             .update(note)
-            .eq('id', widget.note!['id']);
+            .eq('id', _noteId);
       }
 
-      setState(() => _hasChanges = false);
+      if (mounted) setState(() => _hasChanges = false);
 
       if (mounted) {
         _showSnack(
           isInsert ? tr('note_created_msg') : tr('note_saved_msg'),
           isError: false,
         );
-        Navigator.pop(context, true);
+        if (closeAfter) Navigator.pop(context, true);
       }
+      return true;
     } catch (e) {
       if (mounted) {
         _showSnack('${tr('note_save_error')}: $e', isError: true);
       }
+      return false;
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
   }
 
   Future<void> deleteNote() async {
-    if (widget.note != null && widget.note?['id'] != null) {
+    if (_noteId != null) {
       setState(() => _isDeleting = true);
       try {
         await Supabase.instance.client
             .from('notes')
             .delete()
-            .eq('id', widget.note!['id']);
+            .eq('id', _noteId);
 
         if (mounted) {
           _showSnack(tr('note_deleted'), isError: false);
@@ -261,6 +281,8 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     if (!mounted) return;
     if (result != null && result != _contentCtrl.text) {
       _contentCtrl.text = result;
+      // Dopísaná myšlienka sa uloží hneď, bez tlačidla dole.
+      await saveNote(closeAfter: false);
     }
   }
 
@@ -272,9 +294,19 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
         if (didPop) return;
         final navigator = Navigator.of(context);
         if (!mounted) return;
+        // Späť = uložiť (Dušan 10. 10.: nemusieť hľadať tlačidlo dole).
+        // Dialóg „neuložené zmeny“ len keď uloženie zlyhá.
+        if (_hasChanges && !_isDeleting) {
+          final saved = await saveNote(closeAfter: false);
+          if (!mounted) return;
+          if (saved) {
+            navigator.pop(true);
+            return;
+          }
+        }
         final shouldPop = await _onWillPop();
         if (!mounted) return;
-        if (shouldPop) navigator.pop();
+        if (shouldPop) navigator.pop(_isEditing);
       },
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle(

@@ -161,12 +161,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final GlobalKey _scIntentions = GlobalKey();
   final GlobalKey _scMore = GlobalKey();
   ShowcaseView? _showcase;
+  // Vlastný scope pre každú inštanciu: pri výmene root obrazovky (prihlásenie,
+  // zmena jazyka, onboarding) sa nová Home zaregistruje skôr, než stará zavolá
+  // dispose → unregister() predvoleného scope by zmazal registráciu NOVEJ Home
+  // a jej Showcase spadol na „No ShowcaseView is registered“ (červená obrazovka).
+  late final String _showcaseScope = 'home_${identityHashCode(this)}';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _showcase = ShowcaseView.register(
+      scope: _showcaseScope,
       // Offline/bez Spotify → chýbajúce ciele preskočí (nezasekne sa sekvencia).
       skipIfTargetNotPresent: true,
       // Posunie obsah tak, aby bol cieľ viditeľný (tour ide cez scrollovaný obsah).
@@ -1124,6 +1130,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }) {
     return Showcase(
       key: key,
+      scope: _showcaseScope,
       title: tr(titleKey),
       description: tr(descKey),
       titleTextAlign: TextAlign.center,

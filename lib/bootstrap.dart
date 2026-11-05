@@ -94,6 +94,7 @@ Future<void> bootstrap(AppBuilder builder) async {
     await UmamiAnalyticsService().initialize();
     // Retencia (11.2.4): 1× za deň nahlásiť otvorenie — nečakáme na odpoveď;
     // odložené o 3 s, aby stihla nabehnúť Supabase session (prihlásený → user_id)
+    AppActivityService.instance.onForeground();
     Future<void>.delayed(const Duration(seconds: 3), AppActivityService.instance.recordOpen);
     AppActivityService.instance.hookAuthChanges();
   } catch (e) {

@@ -8,8 +8,11 @@ import 'umami_analytics_service.dart';
 /// Zdieľanie aplikácie (11.2.4) — v appke dovtedy nebolo, hoci odporúčanie
 /// od známeho je najlacnejší zdroj nových používateľov (Dušan 23. 9.).
 ///
-/// Zdieľa sa JEDEN odkaz (OneLink), ktorý sám presmeruje podľa zariadenia
-/// príjemcu: iPhone → App Store, Android → Google Play, počítač → web.
+/// Zdieľa sa JEDEN odkaz (`lectio.one/app`), ktorý sám presmeruje podľa
+/// zariadenia príjemcu: iPhone → App Store, Android → Google Play, počítač →
+/// stránka s dvoma tlačidlami. Na rozdiel od OneLinku (do 11.2.4) vidíme
+/// vo webovom Umami (`app_link`) krajinu a znenie pozvánky a obchody dostanú
+/// značku ďalej → vieme, ktoré znenie prináša inštalácie, nielen zdieľania.
 class AppShareService {
   AppShareService._();
   static final AppShareService instance = AppShareService._();
@@ -20,9 +23,12 @@ class AppShareService {
   static String get iosUrl => 'https://apps.apple.com/app/id$_appStoreId';
   static String get appStoreId => _appStoreId;
 
-  /// Rozcestník pre všetky platformy (overené: vedie na id6443882687
-  /// a na náš Play balík). Dušan 23. 9.: odkaz na web sám obchod neotvorí.
-  static const shareUrl = 'https://onelink.to/7urysx';
+  /// Rozcestník pre všetky platformy (`backend/src/app/[locale]/app/`).
+  static const shareUrl = 'https://www.lectio.one/app';
+
+  /// Odkaz so značkou kanála a variantom pozvánky (v1–v3).
+  static String shareUrlFor(int variant) =>
+      '$shareUrl?z=app-share&utm_campaign=v$variant';
 
 
   /// Najprv nechá vybrať znenie pozvánky (3 varianty — Dušan 23. 9.), potom
@@ -35,7 +41,8 @@ class AppShareService {
     if (variant == null || !context.mounted) return;
 
     final box = context.findRenderObject() as RenderBox?;
-    final text = '${'share_app.v${variant}_text'.tr()}\n\n$shareUrl';
+    final text =
+        '${'share_app.v${variant}_text'.tr()}\n\n${shareUrlFor(variant)}';
     UmamiAnalyticsService().trackEvent(
       'share_app',
       eventData: {

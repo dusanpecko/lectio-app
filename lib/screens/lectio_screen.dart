@@ -78,6 +78,10 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
   Map<String, dynamic>? _data;
   bool _loading = true;
 
+  /// Poznámka dňa, ak si ju používateľ už uložil (záložka v hlavičke).
+  Map<String, dynamic>? _savedNote;
+  bool _savingWord = false;
+
   String _selectedBible = 'biblia_1';
 
   /// Režim prehrávania Lectio audia (Nastavenia):
@@ -461,6 +465,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
     });
     if (_data != null) {
       _maybeAutoplay(_data!);
+      _loadSavedNote();
     }
   }
 
@@ -471,6 +476,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
       _loading = true;
       _data = null;
       _episode = null;
+      _savedNote = null;
       _isDownloaded = false;
       _currentPage = 0;
     });
@@ -740,27 +746,164 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
     }
   }
 
-  void _addNote() {
-    final isLoggedIn = Supabase.instance.client.auth.currentSession != null;
-    if (!isLoggedIn) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(tr('login_required'))));
+  // ── Uložiť si slovo / poznámky ─────────────────────────────────────────
+  // Uložené slovo = poznámka dňa (názov = dátum, rovnaká súradnica), takže sa
+  // započíta aj poznámka pridaná cez kartu Poznámky a nevzniknú duplikáty.
+  String get _noteTitle => DateFormat('d.M.yyyy').format(_date);
+
+  String get _noteReference => ScriptureReference.format(
+    _data?['suradnice_pismo'] as String?,
+    _locale,
+  );
+
+  Future<void> _loadSavedNote() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    final reqDate = _date;
+    if (userId == null || _data == null) {
+      if (mounted) setState(() => _savedNote = null);
       return;
     }
-    final note = {
-      'id': null,
-      'title': DateFormat('d.M.yyyy').format(_date),
-      'content': '',
-      'bible_reference': ScriptureReference.format(
-        _data?['suradnice_pismo'] as String?,
-        _locale,
-      ),
-      'bible_quote': _data?[_selectedBible] ?? '',
-    };
-    Navigator.of(
+    try {
+      final row = await Supabase.instance.client
+          .from('notes')
+          .select()
+          .eq('user_id', userId)
+          .eq('title', _noteTitle)
+          .eq('bible_reference', _noteReference)
+          .order('created_at')
+          .limit(1)
+          .maybeSingle();
+      if (!mounted || reqDate != _date) return;
+      setState(() => _savedNote = row);
+    } catch (e) {
+      appLogger.w('⚠️ Kontrola uloženého slova zlyhala ($e)');
+    }
+  }
+
+  Future<void> _openNote(Map<String, dynamic> note) async {
+    await Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => NoteDetailScreen(note: note)));
+    // Poznámku mohol upraviť alebo zmazať → stav záložky znova z DB.
+    if (mounted) _loadSavedNote();
+  }
+
+  bool _requireLogin() {
+    if (Supabase.instance.client.auth.currentSession != null) return true;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(tr('login_required'))));
+    return false;
+  }
+
+  /// Časť na uloženie pre každý slide (index = slide), plní `_buildSlides`.
+  /// null = slide bez textu kroku: Písmo je v poznámke ako `bible_quote`,
+  /// posledný slide sú poznámky.
+  final List<({String key, String header, String text})?> _slideNoteParts =
+      [];
+
+  static const _noteRule = '────────────';
+
+  ({String key, String header, String text})? get _currentNotePart =>
+      _currentPage < _slideNoteParts.length
+      ? _slideNoteParts[_currentPage]
+      : null;
+
+  /// Krok už v poznámke je (nadpis + začiatok textu), druhýkrát sa nepridá.
+  bool _noteHasPart(
+    Map<String, dynamic> note,
+    ({String key, String header, String text}) part,
+  ) {
+    final text = part.text.trim();
+    final head = text.substring(0, min(60, text.length));
+    return ((note['content'] as String?) ?? '').contains('${part.header}\n$head');
+  }
+
+  bool get _isCurrentSaved {
+    final note = _savedNote;
+    if (note == null) return false;
+    final part = _currentNotePart;
+    return part == null || _noteHasPart(note, part);
+  }
+
+  /// Záložka v hlavičke: pridá krok, na ktorom používateľ práve je, na koniec
+  /// poznámky dňa (názov kroku, text, čiara — pod ňu vlastná myšlienka) a
+  /// otvorí poznámku. Jedna poznámka na deň; text sa kopíruje, ostane teda
+  /// aj po skončení obsahového okna.
+  Future<void> _saveWord() async {
+    if (!_requireLogin() || _data == null || _savingWord) return;
+    final part = _currentNotePart;
+    final note = _savedNote;
+    if (note != null && (part == null || _noteHasPart(note, part))) {
+      _openNote(note);
+      return;
+    }
+    setState(() => _savingWord = true);
+    try {
+      final client = Supabase.instance.client;
+      final section = part == null
+          ? ''
+          : '${part.header}\n${part.text.trim()}\n$_noteRule\n';
+      final now = DateTime.now().toIso8601String();
+      final Map<String, dynamic> row;
+      if (note == null) {
+        row = await client
+            .from('notes')
+            .insert({
+              'title': _noteTitle,
+              'content': section,
+              'bible_reference': _noteReference,
+              'bible_quote': _data?[_selectedBible] ?? '',
+              'user_id': client.auth.currentUser!.id,
+              'updated_at': now,
+            })
+            .select()
+            .single();
+      } else {
+        final old = ((note['content'] as String?) ?? '').trimRight();
+        row = await client
+            .from('notes')
+            .update({
+              'content': old.isEmpty ? section : '$old\n\n$section',
+              'updated_at': now,
+            })
+            .eq('id', note['id'])
+            .select()
+            .single();
+      }
+      if (!mounted) return;
+      setState(() => _savedNote = row);
+      UmamiAnalyticsService().trackEvent(
+        'lectio_word_saved',
+        eventData: {'language': _locale, 'step': part?.key ?? 'gospel'},
+      );
+      _openNote(row);
+    } catch (e) {
+      appLogger.w('⚠️ Uloženie slova zlyhalo ($e)');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(tr('note_save_error'))));
+      }
+    } finally {
+      if (mounted) setState(() => _savingWord = false);
+    }
+  }
+
+  void _addNote() {
+    if (!_requireLogin()) return;
+    final saved = _savedNote;
+    if (saved != null) {
+      _openNote(saved);
+      return;
+    }
+    _openNote({
+      'id': null,
+      'title': _noteTitle,
+      'content': '',
+      'bible_reference': _noteReference,
+      'bible_quote': _data?[_selectedBible] ?? '',
+    });
   }
 
   @override
@@ -919,6 +1062,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
     final dateId = DateFormat('yyyy-MM-dd').format(_date);
     final slides = <({String label, Widget child})>[];
     _readerSteps = []; // textové kroky pre fullscreen čítačku (paralelne)
+    _slideNoteParts.clear(); // časti pre záložku (paralelne so slidmi)
 
     // Biblický text (preklad z Nastavení) — prvý slide
     // (podcast je tlačidlo nad slidmi)
@@ -941,6 +1085,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
           onReport: () => _reportError('${_selectedBible}_audio', bibleTitle, bibleText),
         ),
       );
+      _slideNoteParts.add(null);
       slides.add((
         label: suradnice.isNotEmpty ? suradnice : bibleTitle,
         child: LectioStepCard(
@@ -980,6 +1125,11 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
           onReport: () => _reportError(audioField, tr(labelKey), text),
         ),
       );
+      _slideNoteParts.add((
+        key: labelKey,
+        header: tr(labelKey).toUpperCase(),
+        text: text,
+      ));
       slides.add((
         label: tr(labelKey),
         child: LectioStepCard(
@@ -1009,6 +1159,7 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
     addStep('actio', 'actio_text', 'actio_audio');
 
     // Poznámky + offline (posledný slide)
+    _slideNoteParts.add(null);
     slides.add((
       label: tr('notes_title'),
       child: _scrollSlide(
@@ -1201,6 +1352,19 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
               onTap: () => Navigator.of(context).maybePop(),
             ),
           ),
+          // Uložiť si slovo — pri adminovi vľavo od tlačidla podcastu.
+          if (_data != null)
+            Positioned(
+              top: topPad + AppSpacing.sm,
+              right: _isAdmin ? AppSpacing.lg + 44 + AppSpacing.sm : AppSpacing.lg,
+              child: _CircleButton(
+                icon: _isCurrentSaved
+                    ? Icons.bookmark_rounded
+                    : Icons.bookmark_border_rounded,
+                onTap: _saveWord,
+                semanticLabel: tr('lectio_save.button'),
+              ),
+            ),
           // Admin: pregenerovať celé audio dňa (podcast + dlhé/krátke)
           if (_isAdmin)
             Positioned(
@@ -1532,11 +1696,16 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
 class _CircleButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  const _CircleButton({required this.icon, required this.onTap});
+  final String? semanticLabel;
+  const _CircleButton({
+    required this.icon,
+    required this.onTap,
+    this.semanticLabel,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    final button = Material(
       color: HomeV2.card(context).withValues(alpha: 0.92),
       shape: const CircleBorder(),
       child: InkWell(
@@ -1552,6 +1721,8 @@ class _CircleButton extends StatelessWidget {
         ),
       ),
     );
+    if (semanticLabel == null) return button;
+    return Tooltip(message: semanticLabel!, child: button);
   }
 }
 

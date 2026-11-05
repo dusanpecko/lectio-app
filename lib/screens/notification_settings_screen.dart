@@ -330,6 +330,9 @@ class _NotificationSettingsScreenState
     );
   }
 
+  String _formatTime(TimeOfDay t) =>
+      '${t.hour}:${t.minute.toString().padLeft(2, '0')}';
+
   Future<void> _onDailyLectioTimeChanged() async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
@@ -337,7 +340,12 @@ class _NotificationSettingsScreenState
     );
 
     if (picked != null) {
-      final roundedTime = TimeOfDay(hour: picked.hour, minute: 0);
+      // Zaokrúhlenie na 15 min — server posiela v 15-min oknách (od 16.10.2026).
+      final m = (picked.minute / 15).round() * 15;
+      final roundedTime = TimeOfDay(
+        hour: (picked.hour + (m == 60 ? 1 : 0)) % 24,
+        minute: m % 60,
+      );
 
       try {
         final success = await _fcmService.updatePreferredLectioTime(
@@ -352,7 +360,7 @@ class _NotificationSettingsScreenState
         if (!mounted) return;
         _snack(
           'notifications.local.daily_lectio_time_set'
-              .tr(args: ['${roundedTime.hour}:00']),
+              .tr(args: [_formatTime(roundedTime)]),
           isError: false,
         );
       } catch (e) {
@@ -775,7 +783,7 @@ class _NotificationSettingsScreenState
           title: 'notifications.local.daily_lectio_title'.tr(),
           subtitle: _dailyLectioEnabled && _dailyLectioTime != null
               ? 'notifications.local.daily_lectio_time_subtitle'
-                  .tr(args: ['${_dailyLectioTime!.hour}:00'])
+                  .tr(args: [_formatTime(_dailyLectioTime!)])
               : 'notifications.local.daily_lectio_subtitle'.tr(),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
