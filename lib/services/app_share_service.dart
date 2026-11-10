@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../widgets/share_app_qr_screen.dart';
 import '../widgets/share_app_sheet.dart';
 import 'umami_analytics_service.dart';
 
@@ -30,6 +31,10 @@ class AppShareService {
   static String shareUrlFor(int variant) =>
       '$shareUrl?z=app-share&utm_campaign=v$variant';
 
+  /// Odkaz v QR kóde na zdieľanie z ruky do ruky (11.2.5) — krátky, nech
+  /// je kód riedky a ľahko sa načíta aj starším fotoaparátom.
+  static const qrUrl = '$shareUrl?z=app-qr';
+
 
   /// Najprv nechá vybrať znenie pozvánky (3 varianty — Dušan 23. 9.), potom
   /// otvorí systémové zdieľanie. iOS popover sa umiestni podľa widgetu.
@@ -39,6 +44,19 @@ class AppShareService {
       linkPreview: shareUrl.replaceFirst('https://', ''),
     );
     if (variant == null || !context.mounted) return;
+
+    if (variant == kShareAppQr) {
+      UmamiAnalyticsService().trackEvent(
+        'share_app',
+        eventData: {
+          'source': source,
+          'variant': 'qr',
+          'language': context.locale.languageCode,
+        },
+      );
+      await showShareAppQr(context, url: qrUrl);
+      return;
+    }
 
     final box = context.findRenderObject() as RenderBox?;
     final text =

@@ -6,7 +6,10 @@ import '../shared/app_spacing.dart';
 import 'home_v2/home_v2_tokens.dart';
 
 /// Výber znenia pozvánky pred zdieľaním aplikácie (11.2.4).
-/// Vráti číslo varianty (1–3), alebo null pri zatvorení.
+/// Vráti číslo varianty (1–3), [kShareAppQr] pre QR kód (11.2.5),
+/// alebo null pri zatvorení.
+const kShareAppQr = 0;
+
 Future<int?> showShareAppSheet(BuildContext context, {required String linkPreview}) {
   return showModalBottomSheet<int>(
     context: context,
@@ -110,6 +113,8 @@ class _ShareAppSheet extends StatelessWidget {
                       if (i < 3) const SizedBox(height: AppSpacing.sm),
                     ],
                     const SizedBox(height: AppSpacing.md),
+                    const _QrCard(),
+                    const SizedBox(height: AppSpacing.md),
                     // Odkaz, ktorý sa pripojí ku každému zneniu
                     Row(
                       children: [
@@ -208,6 +213,72 @@ class _VariantCard extends StatelessWidget {
                   height: 1.45,
                   color: HomeV2.textDark(context),
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Ukázať QR kód — pre niekoho, kto stojí vedľa (11.2.5).
+class _QrCard extends StatelessWidget {
+  const _QrCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = HomeV2.iconAccent(context);
+    return Material(
+      color: accent.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(HomeV2.radiusSm),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          Navigator.of(context).pop(kShareAppQr);
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: accent.withValues(alpha: 0.14),
+                ),
+                child: Icon(Icons.qr_code_2_rounded, size: 22, color: accent),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'share_app.qr_button'.tr(),
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: HomeV2.textDark(context),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'share_app.qr_button_desc'.tr(),
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.35,
+                        color: HomeV2.textMuted(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: HomeV2.textMuted(context),
               ),
             ],
           ),

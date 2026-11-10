@@ -1188,7 +1188,12 @@
     "v2_label": "INVITATION AU SILENCE",
     "v2_text": "Je vous envoie une invitation à un moment de silence. Dans l'application Lectio Divina, vous trouverez chaque jour l'Évangile, une méditation et l'audio pour vous arrêter auprès de la Parole de Dieu. Elle est gratuite et sans publicité.",
     "v3_label": "RECOMMANDATION PERSONNELLE",
-    "v3_text": "Je voudrais partager avec vous l'application Lectio Divina. Elle m'aide à m'arrêter chaque jour auprès de la Parole de Dieu. Vous y trouverez l'Évangile du jour, une méditation et l'audio. Elle est gratuite et sans publicité. Essayez-la :"
+    "v3_text": "Je voudrais partager avec vous l'application Lectio Divina. Elle m'aide à m'arrêter chaque jour auprès de la Parole de Dieu. Vous y trouverez l'Évangile du jour, une méditation et l'audio. Elle est gratuite et sans publicité. Essayez-la :",
+    "qr_button": "Afficher le code QR",
+    "qr_button_desc": "Pour quelqu'un à côté de vous – il scanne l'application avec l'appareil photo",
+    "qr_title": "Scannez avec l'appareil photo",
+    "qr_hint": "Dirigez l'appareil photo du téléphone vers le code. L'App Store ou Google Play s'ouvrira.",
+    "qr_platforms": "Android et iPhone · gratuit"
   },
   "feedback": {
     "menu_label": "Écrivez-nous",

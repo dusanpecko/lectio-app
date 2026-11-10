@@ -1188,7 +1188,12 @@
     "v2_label": "AN INVITATION TO SILENCE",
     "v2_text": "I'm sending you an invitation to a moment of silence. In the Lectio Divina app you'll find the Gospel, a reflection and audio every day to help you pause with God's word. It's free and ad-free.",
     "v3_label": "A PERSONAL RECOMMENDATION",
-    "v3_text": "I'd like to share the Lectio Divina app with you. It helps me pause with God's word every day. You'll find the Gospel of the day, a reflection and audio. It's free and ad-free. Give it a try:"
+    "v3_text": "I'd like to share the Lectio Divina app with you. It helps me pause with God's word every day. You'll find the Gospel of the day, a reflection and audio. It's free and ad-free. Give it a try:",
+    "qr_button": "Show QR code",
+    "qr_button_desc": "For someone next to you – they scan the app with their camera",
+    "qr_title": "Scan with your camera",
+    "qr_hint": "Point your phone's camera at the code. The App Store or Google Play will open.",
+    "qr_platforms": "Android and iPhone · free"
   },
   "feedback": {
     "menu_label": "Write to Us",

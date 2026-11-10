@@ -1188,7 +1188,12 @@
     "v2_label": "POZVANIE NA CHVÍĽU TICHA",
     "v2_text": "Posielam ti pozvanie na chvíľu ticha. V aplikácii Lectio Divina nájdeš každý deň evanjelium, zamyslenie a audio, ktoré ti pomôžu zastaviť sa pri Božom slove. Je zadarmo a bez reklám.",
     "v3_label": "OSOBNÉ ODPORÚČANIE",
-    "v3_text": "Chcem sa s tebou podeliť o aplikáciu Lectio Divina. Pomáha mi každý deň zastaviť sa pri Božom slove. Nájdeš v nej evanjelium dňa, zamyslenie aj audio. Je zadarmo a bez reklám. Skús ju:"
+    "v3_text": "Chcem sa s tebou podeliť o aplikáciu Lectio Divina. Pomáha mi každý deň zastaviť sa pri Božom slove. Nájdeš v nej evanjelium dňa, zamyslenie aj audio. Je zadarmo a bez reklám. Skús ju:",
+    "qr_button": "Ukázať QR kód",
+    "qr_button_desc": "Pre niekoho vedľa vás – appku si naskenuje fotoaparátom",
+    "qr_title": "Naskenujte fotoaparátom",
+    "qr_hint": "Namierte fotoaparát mobilu na kód. Otvorí sa App Store alebo Google Play.",
+    "qr_platforms": "Android aj iPhone · zadarmo"
   },
   "feedback": {
     "menu_label": "Napíšte nám",
