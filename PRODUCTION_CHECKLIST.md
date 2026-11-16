@@ -248,6 +248,45 @@
   - **Newsletter** (backend, bez vydania appky, ale appka číta cez API) — kanály e-mail/appka, cielenie všetci/podporovatelia/vybraní ľudia, doplnená autorizácia na 4 endpointoch. Viď pamäť `project_newsletter`.
 - [x] **Poznámky k vydaniu 11.2.4** — napísať pred vydaním (SK/EN/ES/FR, do 500 znakov): ranná pripomienka s dnešným evanjeliom a jedným ťuknutím k audiu; výber času pripomienky (aj v onboardingu, bez systémového dialógu); drobné opravy. _Pred vydaním ešte: release build BEZ `ENGAGEMENT_TEST`, AAB + push `main` (Xcode Cloud), overiť na iPhone; po vydaní sledovať `/admin/retention` a Umami `notification_prompt`, `engagement_support_*` (variant)._
 
+### v11.2.6 — 16. 11. 2026 — Advent 2026 (11.2.5 nevyšla; jej AAB 6000011 bol nahratý, preto nové číslo)
+
+- [ ] **Vydanie 11.2.6+6000012** — AAB zbuildené 16. 11. (`build/app/outputs/bundle/release/app-release.aab`); mobil commit + push → Xcode Cloud → App Store Connect; Play Console. Obsah: adventné kroky (úvodná modlitba + prosba pred Písmom, `modlitba_*`/`prosba_*`), „Čo je nové“ s kartami Advent + Nové hlasy (len SK), `kCurrentOnboardingVersion = 7`, plus všetko z 11.2.5. _Po vydaní: `/admin/app-update` „Čo je nové“ (SK/EN/ES/FR) a až potom `latest_version`; adventný push ~28. 11. („Nový liturgický rok, nový hlas“)._
+  - **Poznámky k vydaniu (limit 500 znakov, 17. 11.: nové hlasy vo všetkých jazykoch; karta Nové hlasy v Čo je nové pre všetky jazyky):**
+```
+<sk>
+• Advent s lectio.one: od 29. novembra začína každé lectio modlitbou k Duchu Svätému a prosbou za to, čím žije Cirkev a svet. Lectio vám číta dvojica nových hlasov.
+• Uložte si slovo – záložkou uložíte krok, pri ktorom ste, do poznámky dňa a pripíšete k nemu svoju myšlienku.
+• Poznámky sa ukladajú samé.
+• Úmysly z iných krajín uvidíte preložené a môžete si ich skopírovať.
+• Aplikáciu ukážete QR kódom niekomu vedľa vás.
+• Oprava prázdnej domovskej obrazovky a drobné vylepšenia.
+</sk>
+<en-US>
+• Advent with lectio.one: from 29 November every lectio opens with a prayer to the Holy Spirit and a petition for the Church and the world today. Two new voices read the lectio.
+• Keep a word – a bookmark saves your current step to the note of the day, where you add your own thought.
+• Notes save automatically.
+• Intentions from other countries appear translated and can be copied.
+• Show the app to someone next to you with a QR code.
+• Empty home screen fixed, minor improvements.
+</en-US>
+<es-ES>
+• Adviento con lectio.one: desde el 29 de noviembre cada lectio empieza con una oración al Espíritu Santo y una súplica por la Iglesia y el mundo de hoy. Dos voces nuevas leen la lectio.
+• Guarda una palabra: el marcador guarda el paso actual en la nota del día y añades tu reflexión.
+• Las notas se guardan solas.
+• Las intenciones de otros países aparecen traducidas y puedes copiarlas.
+• Muestra la app con un código QR a quien tengas al lado.
+• Corrección de la pantalla de inicio vacía.
+</es-ES>
+<fr-FR>
+• L’Avent avec lectio.one : dès le 29 novembre, chaque lectio s’ouvre par une prière à l’Esprit Saint et une supplication pour l’Église et le monde. Deux nouvelles voix lisent la lectio.
+• Gardez une parole : le signet enregistre l’étape en cours dans la note du jour, avec votre réflexion.
+• Les notes s’enregistrent seules.
+• Les intentions d’autres pays s’affichent traduites et se copient.
+• Montrez l’application par QR code à un proche.
+• Écran d’accueil vide corrigé.
+</fr-FR>
+```
+
 ### v11.2.5 — 2026 — drobnosti po 11.2.4
 
 - [ ] **Poznámky k vydaniu 11.2.5** (pripravené 10. 11. 2026, limit 500 znakov; AAB 11.2.5+6000011 zbuildené 10. 11., 88,9 MB). _Po vydaní: v admine `/admin/app-update` vyplniť „Čo je nové“ (SK/EN/ES/FR) a až potom zvýšiť `latest_version`._

@@ -1064,44 +1064,6 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
     _readerSteps = []; // textové kroky pre fullscreen čítačku (paralelne)
     _slideNoteParts.clear(); // časti pre záložku (paralelne so slidmi)
 
-    // Biblický text (preklad z Nastavení) — prvý slide
-    // (podcast je tlačidlo nad slidmi)
-    final bibleText = _plainText(data[_selectedBible] as String?);
-    if (bibleText.trim().isNotEmpty) {
-      final bibleTitle =
-          (data['nazov_$_selectedBible'] as String?)?.trim().isNotEmpty == true
-          ? data['nazov_$_selectedBible'] as String
-          : tr('lectio_divina');
-      final readerIndex = _readerSteps.length;
-      _readerSteps.add(
-        LectioReaderStep(
-          stepKey: '${_selectedBible}_audio',
-          title: bibleTitle,
-          text: bibleText,
-          reference: suradnice.isNotEmpty ? suradnice : null,
-          audioUrl: data['${_selectedBible}_audio'] as String?,
-          analyticsId: dateId,
-          language: _locale,
-          onReport: () => _reportError('${_selectedBible}_audio', bibleTitle, bibleText),
-        ),
-      );
-      _slideNoteParts.add(null);
-      slides.add((
-        label: suradnice.isNotEmpty ? suradnice : bibleTitle,
-        child: LectioStepCard(
-          stepKey: '${_selectedBible}_audio',
-          title: bibleTitle,
-          text: bibleText,
-          reference: suradnice.isNotEmpty ? suradnice : null,
-          audioUrl: data['${_selectedBible}_audio'] as String?,
-          analyticsId: dateId,
-          language: _locale,
-          onExpand: () => _openReader(readerIndex),
-          onReport: () => _reportError('${_selectedBible}_audio', bibleTitle, bibleText),
-        ),
-      ));
-    }
-
     final sourceId = (data['id'] as num?)?.toInt();
 
     void addStep(String labelKey, String textField, String audioField) {
@@ -1148,6 +1110,50 @@ class _LectioScreenState extends State<LectioScreen> with RouteAware {
           textField: textField,
           onTextSaved: (t) => _onStepTextSaved(textField, t),
           onAudioRegenerated: (url) => _onStepAudioRegenerated(audioField, url),
+        ),
+      ));
+    }
+
+    // Úvodná modlitba + Prosba — voliteľné kroky PRED Písmom (Advent, Pôst).
+    // Mimo týchto období sú polia prázdne → addStep ich preskočí a obrazovka
+    // vyzerá ako doteraz.
+    addStep('modlitba', 'modlitba_text', 'modlitba_audio');
+    addStep('prosba', 'prosba_text', 'prosba_audio');
+
+    // Biblický text (preklad z Nastavení) — prvý slide, ak deň nemá úvodnú
+    // modlitbu/prosbu (podcast je tlačidlo nad slidmi)
+    final bibleText = _plainText(data[_selectedBible] as String?);
+    if (bibleText.trim().isNotEmpty) {
+      final bibleTitle =
+          (data['nazov_$_selectedBible'] as String?)?.trim().isNotEmpty == true
+          ? data['nazov_$_selectedBible'] as String
+          : tr('lectio_divina');
+      final readerIndex = _readerSteps.length;
+      _readerSteps.add(
+        LectioReaderStep(
+          stepKey: '${_selectedBible}_audio',
+          title: bibleTitle,
+          text: bibleText,
+          reference: suradnice.isNotEmpty ? suradnice : null,
+          audioUrl: data['${_selectedBible}_audio'] as String?,
+          analyticsId: dateId,
+          language: _locale,
+          onReport: () => _reportError('${_selectedBible}_audio', bibleTitle, bibleText),
+        ),
+      );
+      _slideNoteParts.add(null);
+      slides.add((
+        label: suradnice.isNotEmpty ? suradnice : bibleTitle,
+        child: LectioStepCard(
+          stepKey: '${_selectedBible}_audio',
+          title: bibleTitle,
+          text: bibleText,
+          reference: suradnice.isNotEmpty ? suradnice : null,
+          audioUrl: data['${_selectedBible}_audio'] as String?,
+          analyticsId: dateId,
+          language: _locale,
+          onExpand: () => _openReader(readerIndex),
+          onReport: () => _reportError('${_selectedBible}_audio', bibleTitle, bibleText),
         ),
       ));
     }

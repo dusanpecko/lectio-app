@@ -19,10 +19,13 @@ class OnboardingUpdateScreen extends StatefulWidget {
 }
 
 class _OnboardingUpdateScreenState extends State<OnboardingUpdateScreen> {
-  // Novinky AKTUÁLNEJ verzie (v11.2.5) — pri ďalšom update uprav (staré presuň
-  // pod oddeľovač do [_featuresPrev], alebo ich vymeň úplne). Nezabudni zvýšiť
+  // Novinky AKTUÁLNEJ verzie (v11.2.6 — Advent 2026 + to, čo 11.2.5 nestihla
+  // vydať) — pri ďalšom update uprav (staré presuň pod oddeľovač do
+  // [_featuresPrev], alebo ich vymeň úplne). Nezabudni zvýšiť
   // `kCurrentOnboardingVersion` v main.dart, inak sa obrazovka nikomu neukáže.
   static const _featuresNew = [
+    (icon: Icons.local_fire_department_rounded, key: 'advent'),
+    (icon: Icons.record_voice_over_rounded, key: 'advent_voices'), // všetky jazyky (od Adventu 2026)
     (icon: Icons.bookmark_add_rounded, key: 'save_word'),
     (icon: Icons.translate_rounded, key: 'intention_translate'),
     (icon: Icons.edit_note_rounded, key: 'notes_autosave'),
@@ -104,7 +107,7 @@ class _OnboardingUpdateScreenState extends State<OnboardingUpdateScreen> {
                           ),
                           const SizedBox(height: AppSpacing.xl),
 
-                          // Novinky aktuálnej verzie (v11.2.5)
+                          // Novinky aktuálnej verzie (v11.2.6)
                           ..._featuresNew.where((f) => _showFeature(f.key)).map(
                                 (f) => _FeatureCard(
                                   icon: f.icon,

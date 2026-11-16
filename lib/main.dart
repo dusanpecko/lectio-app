@@ -476,7 +476,7 @@ class _FCMInitializerState extends State<FCMInitializer>
 ///   0            → nový používateľ → plný [OnboardingScreen]
 ///   1..CURRENT-1 → existujúci po update → [OnboardingUpdateScreen]
 ///   >= CURRENT   → rovno do appky
-const int kCurrentOnboardingVersion = 6; // 6 = v11.2.5 (uložiť si slovo, preklad úmyslov, poznámky sa ukladajú samé)
+const int kCurrentOnboardingVersion = 7; // 7 = v11.2.6 (Advent 2026: modlitba + prosba, nové hlasy; + novinky 11.2.5)
 
 /// DOČASNE: vynúti zobrazenie „Čo je nové" ([OnboardingUpdateScreen]) pri
 /// každom štarte (test). Pred vydaním prepnúť na `false`.

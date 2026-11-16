@@ -333,6 +333,7 @@ class AudioDownloadService extends ChangeNotifier {
     // dlhé↔krátke aj bez siete (chýbajúce sa jednoducho preskočia nižšie).
     final audioKeys = [
       'modlitba_audio',
+      'prosba_audio',
       'lectio_audio',
       'meditatio_audio',
       'oratio_audio',
@@ -342,9 +343,9 @@ class AudioDownloadService extends ChangeNotifier {
       'full_short_audio',
     ];
 
-    // Bible audio podľa vybranej biblie
+    // Bible audio podľa vybranej biblie (po modlitbe a prosbe, pred lectio)
     final bibleNumber = _extractBibleNumber(selectedBible);
-    audioKeys.insert(1, 'biblia_${bibleNumber}_audio');
+    audioKeys.insert(2, 'biblia_${bibleNumber}_audio');
 
     for (final key in audioKeys) {
       final url = lectioData[key];

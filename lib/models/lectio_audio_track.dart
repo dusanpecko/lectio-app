@@ -78,13 +78,22 @@ class LectioAudioTracksBuilder {
   List<LectioAudioTrack> build() {
     final tracks = <LectioAudioTrack>[];
 
-    // Modlitba audio
+    // Úvodná modlitba (len Advent/Pôst; inak pole prázdne → stopa sa nepridá)
     _addTrackIfExists(
       tracks: tracks,
       dataKey: 'modlitba_audio',
-      label: tr('prayer'),
-      icon: Icons.favorite,
+      label: tr('modlitba'),
+      icon: Icons.church,
       color: Colors.red,
+    );
+
+    // Prosba (len Advent/Pôst)
+    _addTrackIfExists(
+      tracks: tracks,
+      dataKey: 'prosba_audio',
+      label: tr('prosba'),
+      icon: Icons.volunteer_activism,
+      color: Colors.amber.shade800,
     );
 
     // Bible audio
